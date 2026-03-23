@@ -1,23 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
-import { documentTemplates } from '../../../data/templates';
-import { DocumentTemplate } from '../../../types/document';
+import { NextResponse } from 'next/server';
+import { documentTemplates } from '@/data/templates';
+import { getAuthSession } from '@/lib/server/auth';
+import { customTemplatesPath, readJsonFile } from '@/lib/server/storage';
+import { DocumentTemplate } from '@/types/document';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    // Get custom templates
-    const customTemplatesPath = path.join(process.cwd(), 'data', 'custom', 'templates.json');
-    let customTemplates: DocumentTemplate[] = [];
-
-    try {
-      const customData = await fs.readFile(customTemplatesPath, 'utf8');
-      customTemplates = JSON.parse(customData);
-    } catch (error) {
-      // Custom templates file doesn't exist yet, use empty array
+    const session = await getAuthSession();
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Combine default and custom templates
+    const customTemplates = await readJsonFile<DocumentTemplate[]>(customTemplatesPath, []);
     const allTemplates = [
       ...documentTemplates.map(template => ({
         ...template,
@@ -39,6 +35,8 @@ export async function GET() {
 
 function getCategoryFromId(id: string): string {
   const categories: Record<string, string> = {
+    'contractual-agreement': 'Legal',
+    'internship-letter': 'HR',
     'appointment-letter': 'HR',
     'offer-letter': 'HR',
     'termination-letter': 'HR',
