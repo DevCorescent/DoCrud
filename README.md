@@ -66,6 +66,9 @@ A comprehensive, enterprise-grade document generation platform for private limit
    EMAIL_PASS=your-app-password
    ```
 
+   For Vercel production deployments, set `NEXTAUTH_SECRET` in Project Settings -> Environment Variables.
+   `AUTH_SECRET` is also supported as an alias, but `NEXTAUTH_SECRET` is the preferred variable name for this app.
+
 4. **Start the development server**
    ```bash
    npm run dev
@@ -195,6 +198,8 @@ Modify `app/globals.css` and `tailwind.config.js` for custom themes and styling.
 ### Vercel (Recommended)
 1. Connect your GitHub repository to Vercel
 2. Add environment variables in Vercel dashboard
+   - `NEXTAUTH_SECRET`: required in production for login/session APIs
+   - `NEXTAUTH_URL`: optional on Vercel, but recommended for custom domains
 3. Deploy automatically on push
 
 ### Other Platforms
