@@ -47,6 +47,10 @@ function getLegacyPassword(user: User) {
   return `${user.role}123`;
 }
 
+function getAuthSecret() {
+  return process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET;
+}
+
 export async function getStoredUsers() {
   const users = await readJsonFile<StoredUser[]>(usersPath, defaultUsers);
   return users.map((user) => ({
@@ -89,6 +93,7 @@ export async function authenticateUser(email: string, password: string): Promise
 }
 
 export const authOptions: NextAuthOptions = {
+  secret: getAuthSecret(),
   session: {
     strategy: 'jwt',
   },
