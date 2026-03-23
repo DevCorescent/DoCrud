@@ -1,0 +1,16 @@
+[
+  {
+    "id": "1774251634303",
+    "documentType": "Appointment Letter",
+    "data": {
+      "employeeName": "kushagra",
+      "position": "CEO",
+      "department": "ALL",
+      "startDate": "2026-04-01",
+      "salary": "150000",
+      "companyName": "Corescent Technologies Private Limited",
+      "companyAddress": "Bengaluru, Karnataka"
+    },
+    "generatedAt": "2026-03-23T07:40:34.219Z"
+  }
+]
