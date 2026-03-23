@@ -1,13 +1,15 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
 import './globals.css'
 import { SessionProvider } from './components/SessionProvider'
 
-const inter = Inter({ subsets: ['latin'] })
-
 export const metadata: Metadata = {
-  title: 'Document Generator',
+  title: 'Corescent Document Generator',
   description: 'Professional document generation for private limited companies',
+  icons: {
+    icon: '/corescent-logo.png',
+    shortcut: '/corescent-logo.png',
+    apple: '/corescent-logo.png',
+  },
 }
 
 export default function RootLayout({
@@ -17,7 +19,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className="bg-slate-100 text-slate-950 antialiased">
         <SessionProvider>
           {children}
         </SessionProvider>

@@ -4,7 +4,9 @@
     "email": "admin@company.com",
     "name": "Admin User",
     "role": "admin",
-    "permissions": ["all"],
+    "permissions": [
+      "all"
+    ],
     "isActive": true,
     "createdAt": "2024-01-01T00:00:00Z",
     "lastLogin": "2024-01-01T00:00:00Z"
@@ -14,17 +16,24 @@
     "email": "hr@company.com",
     "name": "HR Manager",
     "role": "hr",
-    "permissions": ["appointment-letter", "offer-letter", "termination-letter", "resignation-letter", "performance-appraisal"],
+    "permissions": [
+      "internship-letter"
+    ],
     "isActive": true,
-    "createdAt": "2024-01-01T00:00:00Z"
+    "createdAt": "2024-01-01T00:00:00Z",
+    "lastLogin": "2024-01-01T00:00:00Z"
   },
   {
     "id": "3",
     "email": "legal@company.com",
     "name": "Legal Advisor",
     "role": "legal",
-    "permissions": ["nda", "employment-contract", "loan-agreement", "service-agreement", "partnership-agreement"],
+    "permissions": [
+      "nda",
+      "contractual-agreement"
+    ],
     "isActive": true,
-    "createdAt": "2024-01-01T00:00:00Z"
+    "createdAt": "2024-01-01T00:00:00Z",
+    "lastLogin": "2024-01-01T00:00:00Z"
   }
 ]

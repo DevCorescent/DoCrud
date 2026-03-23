@@ -1,27 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
-import { User } from '../../../types/document';
+import { getAuthSession, getStoredUsers, saveStoredUsers } from '@/lib/server/auth';
+import { createPasswordHash, isValidEmail, normalizeEmail } from '@/lib/server/security';
+import { User } from '@/types/document';
 
-const usersPath = path.join(process.cwd(), 'data', 'users.json');
+export const dynamic = 'force-dynamic';
 
-async function getUsers(): Promise<User[]> {
-  try {
-    const data = await fs.readFile(usersPath, 'utf8');
-    return JSON.parse(data);
-  } catch (error) {
-    return [];
-  }
-}
+type UserWritePayload = Omit<User, 'id' | 'createdAt' | 'lastLogin'> & {
+  password?: string;
+};
 
-async function saveUsers(users: User[]): Promise<void> {
-  await fs.writeFile(usersPath, JSON.stringify(users, null, 2));
+function isAdmin(session: Awaited<ReturnType<typeof getAuthSession>>) {
+  return session?.user?.role === 'admin';
 }
 
 export async function GET() {
   try {
-    const users = await getUsers();
-    return NextResponse.json(users);
+    const session = await getAuthSession();
+    if (!isAdmin(session)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const users = await getStoredUsers();
+    return NextResponse.json(users.map(({ passwordHash, passwordSalt, ...user }) => user));
   } catch (error) {
     console.error('Error fetching users:', error);
     return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
@@ -30,25 +30,37 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const userData: Omit<User, 'id' | 'createdAt' | 'lastLogin'> = await request.json();
+    const session = await getAuthSession();
+    if (!isAdmin(session)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
-    const users = await getUsers();
+    const userData = await request.json() as UserWritePayload;
+    if (!userData.name?.trim() || !isValidEmail(userData.email) || !userData.password || userData.password.length < 8) {
+      return NextResponse.json({ error: 'Name, valid email, and password of at least 8 characters are required' }, { status: 400 });
+    }
 
-    // Check if email already exists
-    if (users.some(u => u.email === userData.email)) {
+    const users = await getStoredUsers();
+    const normalizedEmail = normalizeEmail(userData.email);
+
+    if (users.some(u => u.email === normalizedEmail)) {
       return NextResponse.json({ error: 'Email already exists' }, { status: 400 });
     }
 
-    const newUser: User = {
+    const newUser = {
       ...userData,
+      email: normalizedEmail,
       id: `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       createdAt: new Date().toISOString(),
+      ...createPasswordHash(userData.password),
     };
+    delete newUser.password;
 
     users.push(newUser);
-    await saveUsers(users);
+    await saveStoredUsers(users);
 
-    return NextResponse.json(newUser, { status: 201 });
+    const { passwordHash, passwordSalt, ...safeUser } = newUser;
+    return NextResponse.json(safeUser, { status: 201 });
   } catch (error) {
     console.error('Error creating user:', error);
     return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
@@ -57,19 +69,41 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const { id, ...updates }: Partial<User> & { id: string } = await request.json();
+    const session = await getAuthSession();
+    if (!isAdmin(session)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
-    const users = await getUsers();
+    const { id, password, ...updates } = await request.json() as Partial<UserWritePayload> & { id: string };
+    if (!id) {
+      return NextResponse.json({ error: 'User ID required' }, { status: 400 });
+    }
+
+    const users = await getStoredUsers();
     const userIndex = users.findIndex(u => u.id === id);
 
     if (userIndex === -1) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    users[userIndex] = { ...users[userIndex], ...updates };
-    await saveUsers(users);
+    const nextEmail = updates.email ? normalizeEmail(updates.email) : users[userIndex].email;
+    if (!isValidEmail(nextEmail)) {
+      return NextResponse.json({ error: 'Valid email required' }, { status: 400 });
+    }
+    if (users.some(u => u.email === nextEmail && u.id !== id)) {
+      return NextResponse.json({ error: 'Email already exists' }, { status: 400 });
+    }
 
-    return NextResponse.json(users[userIndex]);
+    users[userIndex] = {
+      ...users[userIndex],
+      ...updates,
+      email: nextEmail,
+      ...(password ? createPasswordHash(password) : {}),
+    };
+    await saveStoredUsers(users);
+
+    const { passwordHash, passwordSalt, ...safeUser } = users[userIndex];
+    return NextResponse.json(safeUser);
   } catch (error) {
     console.error('Error updating user:', error);
     return NextResponse.json({ error: 'Failed to update user' }, { status: 500 });
@@ -78,6 +112,11 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const session = await getAuthSession();
+    if (!isAdmin(session)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
@@ -85,14 +124,14 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 });
     }
 
-    const users = await getUsers();
+    const users = await getStoredUsers();
     const filteredUsers = users.filter(u => u.id !== id);
 
     if (filteredUsers.length === users.length) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    await saveUsers(filteredUsers);
+    await saveStoredUsers(filteredUsers);
 
     return NextResponse.json({ message: 'User deleted successfully' });
   } catch (error) {

@@ -1,16 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { renderDocumentTemplate } from '@/lib/template';
 import { DocumentTemplate, DocumentField } from '@/types/document';
-import { Plus, Edit, Trash2, MoveUp, MoveDown, Save, Eye } from 'lucide-react';
+import { Plus, Trash2, MoveUp, MoveDown, Save, Eye } from 'lucide-react';
+import RichTextEditor from './RichTextEditor';
 
 interface TemplateEditorProps {
   template?: DocumentTemplate;
@@ -31,6 +31,7 @@ export default function TemplateEditor({ template, onSave, onClose }: TemplateEd
   });
   const [previewData, setPreviewData] = useState<Record<string, string>>({});
   const [showPreview, setShowPreview] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const categories = ['HR', 'Legal', 'Finance', 'General'];
 
@@ -82,17 +83,27 @@ export default function TemplateEditor({ template, onSave, onClose }: TemplateEd
   };
 
   const generatePreview = () => {
-    let html = formData.template || '';
-    formData.fields?.forEach(field => {
-      const value = previewData[field.name] || `{{${field.name}}}`;
-      html = html.replace(new RegExp(`{{${field.name}}}`, 'g'), value);
-    });
-    return html;
+    return renderDocumentTemplate(
+      {
+        id: template?.id || 'preview',
+        name: formData.name || 'Preview',
+        category: formData.category || 'General',
+        fields: formData.fields || [],
+        template: formData.template || '',
+        isCustom: true,
+      },
+      previewData
+    );
   };
 
   const handleSave = () => {
     if (!formData.name || !formData.template) {
-      alert('Please fill in all required fields');
+      setErrorMessage('Template name and HTML are required.');
+      return;
+    }
+
+    if (formData.fields?.some((field) => !field.name.trim() || !field.label.trim())) {
+      setErrorMessage('Every field must include both a field name and label.');
       return;
     }
 
@@ -110,6 +121,7 @@ export default function TemplateEditor({ template, onSave, onClose }: TemplateEd
       version: (template?.version || 0) + 1,
     };
 
+    setErrorMessage('');
     onSave(templateToSave);
   };
 
@@ -133,6 +145,7 @@ export default function TemplateEditor({ template, onSave, onClose }: TemplateEd
           </Button>
         </div>
       </div>
+      {errorMessage && <p className="text-sm text-red-600">{errorMessage}</p>}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-6">
@@ -315,11 +328,11 @@ export default function TemplateEditor({ template, onSave, onClose }: TemplateEd
                         {field.label} {field.required && '*'}
                       </label>
                       {field.type === 'textarea' ? (
-                        <Textarea
+                        <RichTextEditor
                           value={previewData[field.name] || ''}
-                          onChange={(e) => setPreviewData(prev => ({
+                          onChange={(nextValue) => setPreviewData(prev => ({
                             ...prev,
-                            [field.name]: e.target.value
+                            [field.name]: nextValue
                           }))}
                           placeholder={`Enter ${field.label.toLowerCase()}`}
                         />
@@ -358,9 +371,10 @@ export default function TemplateEditor({ template, onSave, onClose }: TemplateEd
                 </div>
                 <div className="mt-6">
                   <h3 className="text-lg font-semibold mb-4">Rendered Preview</h3>
-                  <div
-                    className="border rounded p-4 bg-white"
-                    dangerouslySetInnerHTML={{ __html: generatePreview() }}
+                  <iframe
+                    title="Template Preview"
+                    srcDoc={generatePreview()}
+                    className="w-full min-h-[700px] rounded border bg-white"
                   />
                 </div>
               </CardContent>

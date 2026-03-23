@@ -2,1044 +2,280 @@ import { DocumentTemplate } from '../types/document';
 
 export const documentTemplates: DocumentTemplate[] = [
   {
-    id: 'appointment-letter',
-    name: 'Appointment Letter',
-    category: 'HR',
-    fields: [
-      { id: 'employeeName', name: 'employeeName', label: 'Employee Name', type: 'text', required: true, order: 1 },
-      { id: 'position', name: 'position', label: 'Position', type: 'text', required: true, order: 2 },
-      { id: 'department', name: 'department', label: 'Department', type: 'text', required: true, order: 3 },
-      { id: 'startDate', name: 'startDate', label: 'Start Date', type: 'date', required: true, order: 4 },
-      { id: 'salary', name: 'salary', label: 'Salary', type: 'number', required: true, order: 5 },
-      { id: 'companyName', name: 'companyName', label: 'Company Name', type: 'text', required: true, order: 6 },
-      { id: 'companyAddress', name: 'companyAddress', label: 'Company Address', type: 'textarea', required: true, order: 7 },
-    ],
-    template: `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Appointment Letter</title>
-<style>
-body { font-family: 'Times New Roman', serif; margin: 40px; line-height: 1.6; color: #333; }
-.header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 30px; }
-.content { margin-bottom: 20px; }
-.signature { margin-top: 50px; text-align: left; }
-.signature div { margin-bottom: 20px; }
-</style>
-</head>
-<body>
-<div class="header">
-<h1>{{companyName}}</h1>
-<p>{{companyAddress}}</p>
-<p>Phone: [Company Phone] | Email: [Company Email]</p>
-</div>
-<div class="content">
-<p><strong>Date:</strong> {{startDate}}</p>
-<p><strong>To:</strong></p>
-<p>{{employeeName}}</p>
-<p>{{companyAddress}}</p>
-<br>
-<p><strong>Subject: Appointment as {{position}} in {{department}}</strong></p>
-<br>
-<p>Dear {{employeeName}},</p>
-<p>We are pleased to inform you that you have been appointed as <strong>{{position}}</strong> in the <strong>{{department}}</strong> department of {{companyName}}, effective {{startDate}}.</p>
-<p><strong>1. Compensation:</strong> Your annual gross salary will be {{salary}}. This includes basic salary, HRA, conveyance allowance, LTA, and other benefits as per company policy.</p>
-<p><strong>2. Probation Period:</strong> You will be on probation for 6 months from the date of joining. During this period, your performance will be reviewed.</p>
-<p><strong>3. Working Hours:</strong> The standard working hours are 9:00 AM to 6:00 PM, Monday to Friday, with one hour lunch break.</p>
-<p><strong>4. Leave Policy:</strong> You will be entitled to 20 days of annual leave, 12 days of sick leave, and other leaves as per company policy.</p>
-<p><strong>5. Confidentiality:</strong> You agree to maintain confidentiality of company information.</p>
-<p><strong>6. Termination:</strong> Either party may terminate this employment with one month's notice.</p>
-<p>Please sign and return this letter as acceptance of your appointment.</p>
-<br>
-<p>Yours sincerely,</p>
-<div class="signature">
-<div>
-<p>[Authorized Signatory]</p>
-<p>{{companyName}}</p>
-<p>Date: {{startDate}}</p>
-</div>
-</div>
-<br>
-<p><strong>Acceptance:</strong></p>
-<div class="signature">
-<div>
-<p>{{employeeName}}</p>
-<p>Date: ________</p>
-</div>
-</div>
-</div>
-</body>
-</html>
-`,
+    id: 'general-letterhead',
+    name: 'General Letterhead',
+    category: 'General',
+    description: 'Reusable Corescent letterhead document with the same approved contractual-agreement visual shell.',
     isCustom: false,
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
     version: 1,
+    fields: [
+      { id: 'letterDate', name: 'letterDate', label: 'Letter Date', type: 'text', required: true, order: 1 },
+      { id: 'recipientName', name: 'recipientName', label: 'Recipient Name', type: 'text', required: false, order: 2 },
+      { id: 'recipientAddress', name: 'recipientAddress', label: 'Recipient Address', type: 'textarea', required: false, order: 3 },
+      { id: 'subjectLine', name: 'subjectLine', label: 'Subject Line', type: 'text', required: false, order: 4 },
+      { id: 'bodyContent', name: 'bodyContent', label: 'Letter Body', type: 'textarea', required: true, order: 5 },
+      { id: 'closingLine', name: 'closingLine', label: 'Closing Line', type: 'textarea', required: false, order: 6 },
+    ],
+    template: `
+      <p>${'{{letterDate}}'}</p>
+      <p><strong>${'{{recipientName}}'}</strong></p>
+      <p>${'{{recipientAddress}}'}</p>
+      <p><strong>Subject:</strong> ${'{{subjectLine}}'}</p>
+      <div>${'{{bodyContent}}'}</div>
+      <div>${'{{closingLine}}'}</div>
+      <p><strong>For Corescent Technologies Pvt. Ltd.</strong></p>
+      <p>Kushagra Sharma<br/>CEO &amp; MD</p>
+    `,
   },
-
+  {
+    id: 'contractual-agreement',
+    name: 'Contractual Agreement',
+    category: 'Legal',
+    description: 'Corescent Technologies contractual agreement template based on the approved company PDF.',
+    isCustom: false,
+    createdAt: '2024-01-01T00:00:00.000Z',
+    updatedAt: '2024-01-01T00:00:00.000Z',
+    version: 1,
+    fields: [
+      { id: 'agreementDay', name: 'agreementDay', label: 'Agreement Day', type: 'text', required: true, order: 1 },
+      { id: 'agreementMonth', name: 'agreementMonth', label: 'Agreement Month', type: 'text', required: true, order: 2 },
+      { id: 'agreementYear', name: 'agreementYear', label: 'Agreement Year', type: 'text', required: true, order: 3 },
+      { id: 'engagedIndividualName', name: 'engagedIndividualName', label: 'Engaged Individual Name', type: 'text', required: true, order: 4 },
+      { id: 'address', name: 'address', label: 'Address', type: 'textarea', required: true, order: 5 },
+      { id: 'state', name: 'state', label: 'State', type: 'text', required: true, order: 6 },
+      { id: 'country', name: 'country', label: 'Country', type: 'text', required: true, order: 7 },
+      { id: 'servicesDescription', name: 'servicesDescription', label: 'Scope of Services', type: 'textarea', required: true, order: 8 },
+      { id: 'startDate', name: 'startDate', label: 'Start Date', type: 'date', required: true, order: 9 },
+      { id: 'termEndCondition', name: 'termEndCondition', label: 'Term End Condition', type: 'textarea', required: true, order: 10 },
+      { id: 'compensationModel', name: 'compensationModel', label: 'Compensation Model', type: 'textarea', required: true, order: 11 },
+      { id: 'paymentSchedule', name: 'paymentSchedule', label: 'Payment Schedule', type: 'textarea', required: true, order: 12 },
+      { id: 'paymentWindowDays', name: 'paymentWindowDays', label: 'Payment Window (Days)', type: 'number', required: true, order: 13 },
+      { id: 'nonSolicitMonths', name: 'nonSolicitMonths', label: 'Non-Solicitation Period (Months)', type: 'number', required: true, order: 14 },
+      { id: 'noticePeriodDays', name: 'noticePeriodDays', label: 'Notice Period (Days)', type: 'number', required: true, order: 15 },
+      { id: 'governingLaw', name: 'governingLaw', label: 'Governing Law', type: 'text', required: true, order: 16 },
+      { id: 'jurisdictionCity', name: 'jurisdictionCity', label: 'Jurisdiction City', type: 'text', required: true, order: 17 },
+    ],
+    template: `
+      <p>This Agreement is made on this {{agreementDay}} day of {{agreementMonth}}, {{agreementYear}}</p>
+      <h2>By and Between</h2>
+      <p>Corescent Technologies, a company incorporated under the Companies Act, 2013, having its registered office at WeWork Latitude, 10th floor, RMZ Latitude, Hebbal, Bengaluru, Karnataka PIN-560024 (hereinafter referred to as the “Company”).</p>
+      <p>And</p>
+      <p>Mr./Ms. {{engagedIndividualName}}, residing at {{address}}, {{state}}, {{country}} (hereinafter referred to as the “Engaged Individual”). The Company and the Engaged Individual shall collectively be referred to as the “Parties” and individually as a “Party”.</p>
+      <h3>1. Purpose</h3>
+      <p>The Company engages the Engaged Individual to perform certain services/work as mutually agreed, and the Engaged Individual agrees to perform such services under the terms of this Agreement.</p>
+      <h3>2. Scope of Services</h3>
+      <p>The Engaged Individual shall perform the following services:</p>
+      <p>{{servicesDescription}}</p>
+      <ul>
+        <li>Perform services with due skill, care, and diligence.</li>
+        <li>Follow reasonable instructions of the Company.</li>
+        <li>Meet agreed timelines and quality standards.</li>
+      </ul>
+      <h3>3. Term</h3>
+      <p>This Agreement shall commence on {{startDate}} and shall continue until {{termEndCondition}}.</p>
+      <h3>4. Compensation &amp; Payment Terms</h3>
+      <p>4.1 The Engaged Individual shall be paid: {{compensationModel}}</p>
+      <p>4.2 Payment schedule: {{paymentSchedule}}</p>
+      <p>4.3 Payments shall be made within {{paymentWindowDays}} days of invoice or milestone completion unless otherwise agreed.</p>
+      <p>4.4 The Engaged Individual shall be solely responsible for taxes, duties, and statutory obligations relating to compensation.</p>
+      <h3>5. Independent Engaged Individual Status</h3>
+      <p>The Engaged Individual is an independent Engaged Individual and not an employee, partner, or agent of the Company. Nothing in this Agreement creates an employment relationship, partnership, joint venture, or agency.</p>
+      <h3>6. Confidentiality</h3>
+      <p>The Engaged Individual shall keep strictly confidential all non-public information received from the Company, including business and financial information, client and vendor data, trade secrets, and technical or operational information. This obligation survives termination.</p>
+      <h3>7. Intellectual Property Rights</h3>
+      <p>Unless otherwise agreed in writing, all work product, deliverables, inventions, materials, designs, documents, or results created under this Agreement shall become the exclusive property of the Company upon full payment. The Engaged Individual assigns all rights, title, and interest in such work to the Company.</p>
+      <h3>8. Non-Disclosure &amp; Non-Use</h3>
+      <ul>
+        <li>Do not disclose Company information to third parties.</li>
+        <li>Do not use Company information for personal benefit.</li>
+        <li>Do not use Company information for competing activities.</li>
+      </ul>
+      <h3>9. Non-Solicitation</h3>
+      <p>During the term and for {{nonSolicitMonths}} months after termination, the Engaged Individual shall not solicit Company clients or employees, induce termination of Company relationships, or divert business opportunities.</p>
+      <h3>10. Representations &amp; Warranties</h3>
+      <ul>
+        <li>The Engaged Individual has the right and ability to perform the services.</li>
+        <li>Services will not infringe third-party rights.</li>
+        <li>Work will be original unless agreed otherwise.</li>
+        <li>The Engaged Individual will comply with applicable laws.</li>
+      </ul>
+      <h3>11. Liability &amp; Indemnity</h3>
+      <p>The Engaged Individual shall indemnify and hold harmless the Company from losses, damages, claims, or expenses arising from breach of this Agreement, negligence or misconduct, legal violations, and IP infringement. Except for wilful misconduct or fraud, neither Party shall be liable for indirect or consequential damages.</p>
+      <h3>12. Limitation of Liability</h3>
+      <p>To the maximum extent permitted by law, the Company’s total liability under this Agreement shall not exceed the total amount paid to the Engaged Individual.</p>
+      <h3>13. Termination</h3>
+      <p>13.1 Either Party may terminate this Agreement with {{noticePeriodDays}} days written notice.</p>
+      <p>13.2 The Company may terminate immediately in case of breach of Agreement, misconduct or negligence, non-performance, confidentiality breach, or legal/reputational risk.</p>
+      <p>13.3 Upon termination, the Engaged Individual shall cease work immediately, return all Company materials, and provide completed work.</p>
+      <p>13.4 The Engaged Individual shall be paid for services properly performed up to the termination date.</p>
+      <h3>14. Return of Property</h3>
+      <p>Upon termination or request, the Engaged Individual shall return all Company property, documents, data, and materials.</p>
+      <h3>15. Force Majeure</h3>
+      <p>Neither Party shall be liable for failure or delay caused by events beyond reasonable control, including natural disasters, war, government actions, or infrastructure failures.</p>
+      <h3>16. Assignment</h3>
+      <p>The Engaged Individual shall not assign or subcontract obligations without prior written consent of the Company.</p>
+      <h3>17. Amendment</h3>
+      <p>Any modification to this Agreement must be in writing and signed by both Parties.</p>
+      <h3>18. Waiver</h3>
+      <p>Failure to enforce any provision shall not constitute waiver of that provision or future rights.</p>
+      <h3>19. Severability</h3>
+      <p>If any provision is held invalid or unenforceable, the remaining provisions shall remain in full force.</p>
+      <h3>20. Notices</h3>
+      <p>All notices under this Agreement shall be in writing and sent via email or registered post to the addresses of the Parties.</p>
+      <h3>21. Governing Law &amp; Jurisdiction</h3>
+      <p>This Agreement shall be governed by the laws of {{governingLaw}}. Courts of {{jurisdictionCity}} shall have exclusive jurisdiction.</p>
+      <h3>22. Entire Agreement</h3>
+      <p>This Agreement constitutes the entire understanding between the Parties and supersedes all prior agreements or communications.</p>
+      <p><strong>For Corescent Technologies Pvt. Ltd.</strong></p>
+      <p>Kushagra Sharma<br/>CEO &amp; MD</p>
+      <p><strong>Engaged Individual</strong><br/>{{engagedIndividualName}}</p>
+    `,
+  },
+  {
+    id: 'internship-letter',
+    name: 'Letter of Internship',
+    category: 'HR',
+    description: 'Official Corescent internship letter template with annexed terms and conditions.',
+    isCustom: false,
+    createdAt: '2024-01-01T00:00:00.000Z',
+    updatedAt: '2024-01-01T00:00:00.000Z',
+    version: 1,
+    fields: [
+      { id: 'internFullName', name: 'internFullName', label: 'Intern Full Name', type: 'text', required: true, order: 1 },
+      { id: 'internFirstName', name: 'internFirstName', label: 'Intern First Name', type: 'text', required: true, order: 2 },
+      { id: 'addressLine1', name: 'addressLine1', label: 'Address Line 1', type: 'text', required: true, order: 3 },
+      { id: 'addressLine2', name: 'addressLine2', label: 'Address Line 2', type: 'text', required: false, order: 4 },
+      { id: 'addressLine3', name: 'addressLine3', label: 'Address Line 3', type: 'text', required: false, order: 5 },
+      { id: 'letterDate', name: 'letterDate', label: 'Letter Date', type: 'text', required: true, order: 6 },
+      { id: 'internshipReferenceNo', name: 'internshipReferenceNo', label: 'Internship Reference No.', type: 'text', required: true, order: 7 },
+      { id: 'designation', name: 'designation', label: 'Designation / Role', type: 'text', required: true, order: 8 },
+      { id: 'startDate', name: 'startDate', label: 'Internship Start Date', type: 'date', required: true, order: 9 },
+      { id: 'endDate', name: 'endDate', label: 'Internship End Date', type: 'date', required: true, order: 10 },
+      { id: 'mode', name: 'mode', label: 'Mode of Internship', type: 'select', required: true, order: 11, options: ['Remote', 'On-site', 'Hybrid'] },
+      { id: 'internType', name: 'internType', label: 'Intern Type', type: 'select', required: true, order: 12, options: ['Paid', 'Unpaid'] },
+      { id: 'stipendAmount', name: 'stipendAmount', label: 'Stipend Amount (INR)', type: 'number', required: true, order: 13 },
+      { id: 'managerName', name: 'managerName', label: 'Reporting Manager Name', type: 'text', required: true, order: 14 },
+      { id: 'managerDesignation', name: 'managerDesignation', label: 'Reporting Manager Designation', type: 'text', required: true, order: 15 },
+      { id: 'internshipDuration', name: 'internshipDuration', label: 'Internship Duration', type: 'text', required: true, order: 16 },
+      { id: 'probationDays', name: 'probationDays', label: 'Probation Days', type: 'number', required: true, order: 17 },
+    ],
+    template: `
+      <p>{{internFullName}}<br/>{{addressLine1}}<br/>{{addressLine2}}<br/>{{addressLine3}}</p>
+      <p>{{letterDate}}<br/>{{internshipReferenceNo}}</p>
+      <p>Dear {{internFirstName}},</p>
+      <p>Congratulations! Welcome to Corescent Technologies Pvt. Ltd.</p>
+      <p>We are pleased to inform you that based on your interview and subsequent discussions, you have been selected for an Internship Program with Corescent Technologies ("Company" or "Corescent"). Your internship will be governed by the terms and conditions outlined in this letter and the annexure attached.</p>
+      <p>The details of your internship are as follows:</p>
+      <ul>
+        <li><strong>Position:</strong> {{designation}}</li>
+        <li><strong>Internship Start Date:</strong> {{startDate}}</li>
+        <li><strong>Internship End Date:</strong> {{endDate}}</li>
+        <li><strong>Mode of Internship:</strong> {{mode}}</li>
+        <li><strong>Location:</strong> WeWork Latitude, 10th floor, RMZ Latitude, Hebbal, Bengaluru, Karnataka, 560024</li>
+        <li><strong>Intern Type:</strong> {{internType}}</li>
+        <li><strong>Stipend:</strong> INR {{stipendAmount}}/-</li>
+        <li><strong>Reporting Manager:</strong> {{managerName}}, {{managerDesignation}}</li>
+      </ul>
+      <p>Please note that this internship does not assure full-time employment; however, a full-time role may be offered based on your performance. Kindly review the detailed terms and conditions outlined below. Your acceptance will be subject to signing and returning a copy of this offer letter and submitting the required documents.</p>
+      <h2>Terms &amp; Conditions</h2>
+      <h3>1. Duration and Probation</h3>
+      <p>Your internship period is for {{internshipDuration}}. The first {{probationDays}} days shall be treated as a probationary period during which your performance, conduct, and suitability will be assessed. The Company reserves the right to terminate the internship during probation without prior notice if necessary. Any extension of your internship will be communicated in writing.</p>
+      <h3>2. Stipend</h3>
+      <p>The internship may be paid or unpaid based on the type offered to you. If paid, a monthly stipend will be credited to your bank account on the last day of each month, subject to satisfactory attendance and completion of required tasks. Stipend payments do not constitute salary, and no employment benefits will accrue.</p>
+      <h3>3. Working Days and Hours</h3>
+      <p>Working Days: Monday to Friday (Weekends off, unless otherwise required during project demands with prior notice). Working Hours: 8-9 hours per day. However, responsiveness to official communications during working hours is mandatory.</p>
+      <h3>4. Leave Policy</h3>
+      <p>You are entitled to 2 days of leave per month during your internship. Any leave taken without prior approval will result in a proportionate deduction from the monthly stipend, calculated on a per-day basis as per the working days of the month. Absence for more than 4 consecutive days without intimation will lead to automatic termination of your internship and no stipend will be released.</p>
+      <h3>5. Certificate of Completion</h3>
+      <p>Upon successful completion of the internship and fulfillment of all obligations, you will receive a Certificate of Internship acknowledging your contributions and achievements.</p>
+      <h3>6. Code of Conduct</h3>
+      <p>You are expected to adhere strictly to the company's professional code, including ethical behavior, mutual respect for colleagues, and compliance with organizational rules and legal standards. Misconduct, breach of trust, or unprofessional behavior can lead to immediate termination.</p>
+      <h3>7. Confidentiality and NDA</h3>
+      <p>Before commencement, you must sign a Non-Disclosure Agreement (NDA). You are expected to protect and not disclose any confidential, proprietary, or sensitive information during or after the internship. Unauthorized disclosure may result in legal action and immediate termination.</p>
+      <h3>8. Intellectual Property</h3>
+      <p>All works developed or created during your internship, such as ideas, inventions, software, documents, or designs, will be the sole property of Corescent Technologies. You agree to assign any rights to intellectual property created during your internship to the Company and not use any intellectual property outside the company without explicit written consent.</p>
+      <h3>9. Conflict of Interest</h3>
+      <p>You are prohibited from undertaking any freelance or external work without prior written approval and from engaging in activities or associations conflicting with the interests of Corescent Technologies. For one year post-internship, you agree not to solicit company employees, customers, or vendors for competing businesses.</p>
+      <h3>10. IT Security and Data Privacy</h3>
+      <p>You must comply with the Company's Information Security Policies, refrain from unauthorized installation or download of software or files, and handle company and client data in line with data protection regulations.</p>
+      <h3>11. Use of Company Resources</h3>
+      <p>All tools, assets, devices, or materials provided must be used only for official purposes. You are responsible for returning all assets on termination/completion of the internship. Failure to do so may result in recovery charges or legal action.</p>
+      <h3>12. Termination of Internship</h3>
+      <p>The Intern may terminate this internship by providing 7 days’ prior written notice to the Company. In case of voluntary termination without notice, stipend dues will be forfeited. The Company reserves the right to terminate the internship at any time without prior notice in the event of unsatisfactory performance, misconduct, unprofessional behavior, breach of company policies, or continued unavailability/non-responsiveness of the Intern with all relevant evidence documented and maintained by the Company.</p>
+      <h3>13. Social Media Policy</h3>
+      <p>Exercise discretion when posting on personal social media accounts. Sharing confidential company information without authorization is strictly prohibited and will be treated as a violation.</p>
+      <p>Please sign and return a copy of this offer letter to confirm your acceptance of the internship terms and conditions.</p>
+      <p><strong>For Corescent Technologies Pvt. Ltd.</strong><br/>Kushagra Sharma<br/>Authorized Signatory &amp; CEO</p>
+      <p><strong>Acceptance by Candidate</strong><br/>I have read and understood the above terms and conditions of the Internship and further agree to abide by the same. I hereby affix my signature as a token of acceptance.</p>
+      <p>Name: {{internFullName}}</p>
+      <p>Signature:</p>
+      <p>Date:</p>
+    `,
+  },
   {
     id: 'nda',
-    name: 'Non-Disclosure Agreement (NDA)',
+    name: 'Non-Disclosure Agreement',
     category: 'Legal',
-    fields: [
-      { id: 'party1', name: 'party1', label: 'Party 1 (Disclosing Party)', type: 'text', required: true, order: 1 },
-      { id: 'party2', name: 'party2', label: 'Party 2 (Receiving Party)', type: 'text', required: true, order: 2 },
-      { id: 'date', name: 'date', label: 'Date', type: 'date', required: true, order: 3 },
-      { id: 'confidentialInfo', name: 'confidentialInfo', label: 'Description of Confidential Information', type: 'textarea', required: true, order: 4 },
-    ],
-    template: `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Non-Disclosure Agreement</title>
-<style>
-body { font-family: 'Times New Roman', serif; margin: 40px; line-height: 1.6; color: #333; font-size: 12pt; }
-.title { text-align: center; font-size: 24px; margin-bottom: 30px; text-decoration: underline; }
-.section { margin-bottom: 20px; }
-.signature { margin-top: 50px; display: flex; justify-content: space-between; }
-h3 { font-size: 14pt; margin-top: 20px; margin-bottom: 10px; }
-p { text-align: justify; margin-bottom: 10px; }
-</style>
-</head>
-<body>
-<div class="title">NON-DISCLOSURE AGREEMENT</div>
-<div class="section">
-<p>This Non-Disclosure Agreement (the "Agreement") is made and entered into as of {{date}} (the "Effective Date"), by and between:</p>
-<p><strong>{{party1}}</strong>, a [legal entity type] organized and existing under the laws of [jurisdiction], with its principal place of business at [address] (hereinafter referred to as the "Disclosing Party"),</p>
-<p>and</p>
-<p><strong>{{party2}}</strong>, a [legal entity type] organized and existing under the laws of [jurisdiction], with its principal place of business at [address] (hereinafter referred to as the "Receiving Party").</p>
-<p>The Disclosing Party and the Receiving Party are collectively referred to as the "Parties" and individually as a "Party".</p>
-</div>
-<div class="section">
-<h3>1. DEFINITIONS</h3>
-<p>1.1 "Confidential Information" means any information or material disclosed by the Disclosing Party to the Receiving Party, including but not limited to: {{confidentialInfo}}, whether disclosed orally, in writing, electronically, or by any other means. Confidential Information shall not include information that: (a) is or becomes publicly known through no fault of the Receiving Party; (b) is already known to the Receiving Party at the time of disclosure; (c) is independently developed by the Receiving Party without use of the Confidential Information; or (d) is lawfully obtained from a third party without breach of any confidentiality obligation.</p>
-<p>1.2 "Purpose" means [describe the purpose for which the Confidential Information is being disclosed, e.g., evaluation of potential business relationship].</p>
-</div>
-<div class="section">
-<h3>2. OBLIGATIONS OF THE RECEIVING PARTY</h3>
-<p>2.1 The Receiving Party agrees to hold and maintain the Confidential Information in strict confidence and take all reasonable precautions to protect it against unauthorized disclosure, including measures at least as protective as those used for its own confidential information of similar importance.</p>
-<p>2.2 The Receiving Party shall not disclose, reproduce, or disseminate the Confidential Information to any third party without the prior written consent of the Disclosing Party.</p>
-<p>2.3 The Receiving Party shall use the Confidential Information solely for the Purpose and shall not use it for any other purpose, including but not limited to competitive purposes.</p>
-<p>2.4 The Receiving Party shall limit access to the Confidential Information to its employees, agents, or advisors who have a need to know and are bound by similar confidentiality obligations.</p>
-<p>2.5 The Receiving Party shall promptly notify the Disclosing Party of any unauthorized use or disclosure of the Confidential Information and cooperate fully in mitigating any such breach.</p>
-</div>
-<div class="section">
-<h3>3. TERM</h3>
-<p>3.1 This Agreement shall remain in effect for a period of five (5) years from the Effective Date, unless terminated earlier in accordance with this Agreement.</p>
-<p>3.2 The obligations of confidentiality with respect to Confidential Information shall survive the termination or expiration of this Agreement for a period of ten (10) years thereafter.</p>
-</div>
-<div class="section">
-<h3>4. RETURN OF CONFIDENTIAL INFORMATION</h3>
-<p>Upon termination of this Agreement or at the request of the Disclosing Party, the Receiving Party shall promptly return or destroy all Confidential Information, including all copies, extracts, and derivatives thereof, and certify in writing to the Disclosing Party that such return or destruction has been completed.</p>
-</div>
-<div class="section">
-<h3>5. REMEDIES</h3>
-<p>The Receiving Party acknowledges that any breach of this Agreement may cause irreparable harm to the Disclosing Party for which monetary damages may be inadequate. Accordingly, the Receiving Party agrees that the Disclosing Party shall be entitled to seek injunctive relief, in addition to any other remedies available at law or in equity, without the necessity of posting bond or proving actual damages.</p>
-</div>
-<div class="section">
-<h3>6. NO WARRANTY</h3>
-<p>The Disclosing Party makes no warranty, express or implied, as to the accuracy, completeness, or usefulness of the Confidential Information. The Receiving Party acknowledges that it assumes all risks associated with the use of the Confidential Information.</p>
-</div>
-<div class="section">
-<h3>7. GOVERNING LAW</h3>
-<p>This Agreement shall be governed by and construed in accordance with the laws of [jurisdiction], without regard to its conflict of laws principles. Any legal action or proceeding arising under this Agreement shall be brought exclusively in the courts of [jurisdiction].</p>
-</div>
-<div class="section">
-<h3>8. ENTIRE AGREEMENT</h3>
-<p>This Agreement constitutes the entire understanding between the Parties with respect to the subject matter hereof and supersedes all prior agreements, whether written or oral, relating to the Confidential Information.</p>
-</div>
-<div class="section">
-<h3>9. SEVERABILITY</h3>
-<p>If any provision of this Agreement is held to be invalid or unenforceable under applicable law, the remaining provisions shall continue in full force and effect, and the Parties shall negotiate in good faith to replace such invalid or unenforceable provision with a valid and enforceable provision that achieves, to the greatest extent possible, the original intent of the Parties.</p>
-</div>
-<div class="section">
-<h3>10. AMENDMENT</h3>
-<p>This Agreement may be amended or modified only by a written instrument signed by both Parties.</p>
-</div>
-<div class="section">
-<h3>11. WAIVER</h3>
-<p>The failure of either Party to enforce any provision of this Agreement shall not constitute a waiver of such provision or of the right to enforce it at a later time.</p>
-</div>
-<div class="section">
-<h3>12. INDEPENDENT CONTRACTORS</h3>
-<p>Nothing in this Agreement shall be construed as creating a partnership, joint venture, or agency relationship between the Parties. Each Party is an independent contractor and neither Party has the authority to bind the other.</p>
-</div>
-<p>IN WITNESS WHEREOF, the Parties have executed this Agreement as of the Effective Date.</p>
-<div class="signature">
-<div>
-<p>{{party1}}</p>
-<p>By: ___________________________</p>
-<p>Name: [Authorized Signatory]</p>
-<p>Title: [Title]</p>
-<p>Date: {{date}}</p>
-</div>
-<div>
-<p>{{party2}}</p>
-<p>By: ___________________________</p>
-<p>Name: [Authorized Signatory]</p>
-<p>Title: [Title]</p>
-<p>Date: {{date}}</p>
-</div>
-</div>
-</body>
-</html>
-`,
+    description: 'Official Corescent NDA template based on the approved company PDF.',
     isCustom: false,
-  },
-
-  {
-    id: 'employment-contract',
-    name: 'Employment Contract',
-    category: 'HR',
-    isCustom: false,
+    createdAt: '2024-01-01T00:00:00.000Z',
+    updatedAt: '2024-01-01T00:00:00.000Z',
+    version: 1,
     fields: [
-      { id: 'employeeName', name: 'employeeName', label: 'Employee Name', type: 'text', required: true, order: 1 },
-      { id: 'employerName', name: 'employerName', label: 'Employer Name', type: 'text', required: true, order: 2 },
-      { id: 'position', name: 'position', label: 'Position', type: 'text', required: true, order: 3 },
-      { id: 'startDate', name: 'startDate', label: 'Start Date', type: 'date', required: true, order: 4 },
-      { id: 'salary', name: 'salary', label: 'Salary', type: 'number', required: true, order: 5 },
-      { id: 'duties', name: 'duties', label: 'Job Duties', type: 'textarea', required: true, order: 6 },
+      { id: 'agreementDay', name: 'agreementDay', label: 'Agreement Day', type: 'text', required: true, order: 1 },
+      { id: 'agreementMonth', name: 'agreementMonth', label: 'Agreement Month', type: 'text', required: true, order: 2 },
+      { id: 'agreementYear', name: 'agreementYear', label: 'Agreement Year', type: 'text', required: true, order: 3 },
+      { id: 'engagedIndividualName', name: 'engagedIndividualName', label: 'Engaged Individual Name', type: 'text', required: true, order: 4 },
+      { id: 'address', name: 'address', label: 'Address', type: 'textarea', required: true, order: 5 },
+      { id: 'state', name: 'state', label: 'State', type: 'text', required: true, order: 6 },
+      { id: 'country', name: 'country', label: 'Country', type: 'text', required: true, order: 7 },
+      { id: 'governingLawDate', name: 'governingLawDate', label: 'Agreement Date (DD/MM/YYYY)', type: 'text', required: true, order: 8 },
     ],
     template: `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Employment Contract</title>
-<style>
-body { font-family: 'Times New Roman', serif; margin: 40px; line-height: 1.6; color: #333; font-size: 12pt; }
-.title { text-align: center; font-size: 24px; margin-bottom: 30px; text-decoration: underline; }
-.section { margin-bottom: 20px; }
-.signature { margin-top: 50px; display: flex; justify-content: space-between; }
-h3 { font-size: 14pt; margin-top: 20px; margin-bottom: 10px; }
-p { text-align: justify; margin-bottom: 10px; }
-</style>
-</head>
-<body>
-<div class="title">EMPLOYMENT CONTRACT</div>
-<div class="section">
-<p>This Employment Contract (the "Contract") is made and entered into as of {{startDate}} (the "Effective Date"), by and between:</p>
-<p><strong>{{employerName}}</strong>, a company incorporated under the Companies Act, 2013, having its registered office at [address] (hereinafter referred to as the "Employer"),</p>
-<p>and</p>
-<p><strong>{{employeeName}}</strong>, residing at [address] (hereinafter referred to as the "Employee").</p>
-</div>
-<div class="section">
-<h3>1. POSITION AND DUTIES</h3>
-<p>1.1 The Employer hereby employs the Employee as {{position}}, and the Employee hereby accepts such employment.</p>
-<p>1.2 The Employee shall perform the following duties: {{duties}}. The Employee shall devote full time, attention, and energies to the Employer's business and shall perform all duties faithfully and to the best of their ability.</p>
-<p>1.3 The Employee shall comply with all reasonable instructions given by the Employer and shall not engage in any other employment or business activity without the prior written consent of the Employer.</p>
-</div>
-<div class="section">
-<h3>2. COMPENSATION</h3>
-<p>2.1 The Employer shall pay the Employee a monthly salary of {{salary}} ({{salary}} per annum), payable on the last working day of each month. The salary includes basic pay, House Rent Allowance (HRA), Conveyance Allowance, Leave Travel Allowance (LTA), and other benefits as per company policy.</p>
-<p>2.2 The Employee shall be entitled to annual increments, bonuses, and other benefits as determined by the Employer from time to time.</p>
-<p>2.3 All payments shall be subject to applicable tax deductions as per law.</p>
-</div>
-<div class="section">
-<h3>3. WORKING HOURS AND LEAVE</h3>
-<p>3.1 The Employee shall work from 9:00 AM to 6:00 PM, Monday to Saturday, with one hour lunch break. The Employer may require overtime work as necessary, with appropriate compensation.</p>
-<p>3.2 The Employee is entitled to 20 days of annual leave, 12 days of sick leave, maternity/paternity leave as per applicable laws, and other leaves as per company policy.</p>
-<p>3.3 Leave shall be taken with prior approval and shall not be carried forward beyond [number] days.</p>
-</div>
-<div class="section">
-<h3>4. PROBATION</h3>
-<p>4.1 The Employee shall serve a probation period of 6 months from the Effective Date. During probation, employment may be terminated with 15 days' notice by either party.</p>
-<p>4.2 Upon successful completion of probation, the Employee shall be confirmed in employment with the terms of this Contract applying fully.</p>
-</div>
-<div class="section">
-<h3>5. CONFIDENTIALITY AND NON-DISCLOSURE</h3>
-<p>5.1 The Employee agrees to maintain strict confidentiality of all proprietary information, trade secrets, customer data, and other confidential matters of the Employer.</p>
-<p>5.2 The Employee shall not disclose any confidential information to third parties or use it for personal gain during or after employment.</p>
-<p>5.3 This obligation shall survive the termination of this Contract for a period of [number] years.</p>
-</div>
-<div class="section">
-<h3>6. INTELLECTUAL PROPERTY</h3>
-<p>6.1 Any work product, inventions, designs, software, or other intellectual property created by the Employee during employment, whether alone or jointly, shall be the sole property of the Employer.</p>
-<p>6.2 The Employee hereby assigns all rights, title, and interest in such intellectual property to the Employer.</p>
-</div>
-<div class="section">
-<h3>7. NON-COMPETE AND NON-SOLICITATION</h3>
-<p>7.1 During employment and for a period of 1 year thereafter, the Employee shall not engage in any competing business or solicit the Employer's customers or employees.</p>
-<p>7.2 The Employee acknowledges that this restriction is reasonable and necessary to protect the Employer's legitimate business interests.</p>
-</div>
-<div class="section">
-<h3>8. DISCIPLINARY ACTION AND TERMINATION</h3>
-<p>8.1 Either party may terminate this Contract with one month's notice in writing.</p>
-<p>8.2 The Employer may terminate the Employee's employment without notice for gross misconduct, including but not limited to theft, fraud, or breach of confidentiality.</p>
-<p>8.3 Upon termination, the Employee shall return all company property and settle all dues.</p>
-<p>8.4 The Employee shall be entitled to notice pay or salary in lieu of notice, whichever is applicable.</p>
-</div>
-<div class="section">
-<h3>9. GRIEVANCE PROCEDURE</h3>
-<p>Any disputes arising under this Contract shall first be resolved through internal discussions. If unresolved, the matter may be referred to arbitration under the Arbitration and Conciliation Act, 1996.</p>
-</div>
-<div class="section">
-<h3>10. GOVERNING LAW</h3>
-<p>This Contract shall be governed by and construed in accordance with the laws of India. Any disputes shall be subject to the exclusive jurisdiction of the courts in [city].</p>
-</div>
-<div class="section">
-<h3>11. ENTIRE AGREEMENT</h3>
-<p>This Contract constitutes the entire agreement between the parties and supersedes all prior understandings. It may be amended only in writing signed by both parties.</p>
-</div>
-<div class="section">
-<h3>12. SEVERABILITY</h3>
-<p>If any provision of this Contract is held invalid, the remaining provisions shall remain in full force and effect.</p>
-</div>
-<p>IN WITNESS WHEREOF, the parties have executed this Contract as of the Effective Date.</p>
-<div class="signature">
-<div>
-<p>{{employerName}}</p>
-<p>By: ___________________________</p>
-<p>Name: [Authorized Signatory]</p>
-<p>Title: [Title]</p>
-<p>Date: {{startDate}}</p>
-</div>
-<div>
-<p>{{employeeName}}</p>
-<p>___________________________</p>
-<p>Date: {{startDate}}</p>
-</div>
-</div>
-</body>
-</html>
-`,
-  },
-
-  {
-    id: 'offer-letter',
-    name: 'Offer Letter',
-    category: 'HR',
-    fields: [
-      { id: 'candidateName', name: 'candidateName', label: 'Candidate Name', type: 'text', required: true, order: 1 },
-      { id: 'position', name: 'position', label: 'Position', type: 'text', required: true, order: 2 },
-      { id: 'salary', name: 'salary', label: 'Salary', type: 'number', required: true, order: 3 },
-      { id: 'startDate', name: 'startDate', label: 'Start Date', type: 'date', required: true, order: 4 },
-      { id: 'companyName', name: 'companyName', label: 'Company Name', type: 'text', required: true, order: 5 },
-    ],
-    template: `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Offer Letter</title>
-<style>
-body { font-family: 'Times New Roman', serif; margin: 40px; line-height: 1.6; color: #333; }
-.header { text-align: center; margin-bottom: 30px; }
-.content { margin-bottom: 20px; }
-.signature { margin-top: 50px; }
-</style>
-</head>
-<body>
-<div class="header">
-<h1>{{companyName}}</h1>
-<p>{{companyAddress}}</p>
-<p>Phone: [Company Phone] | Email: [Company Email]</p>
-</div>
-<div class="content">
-<p><strong>Date:</strong> {{startDate}}</p>
-<p><strong>To:</strong></p>
-<p>{{candidateName}}</p>
-<p>[Candidate Address]</p>
-<br>
-<p><strong>Subject: Offer of Employment as {{position}}</strong></p>
-<br>
-<p>Dear {{candidateName}},</p>
-<p>We are pleased to extend an offer of employment for the position of {{position}} at {{companyName}}. This offer is contingent upon satisfactory completion of background checks and reference verification.</p>
-<p><strong>1. Compensation:</strong> Your annual gross salary will be {{salary}}. This includes basic salary, HRA, conveyance allowance, LTA, and other benefits as per company policy.</p>
-<p><strong>2. Start Date:</strong> Your employment will commence on {{startDate}}.</p>
-<p><strong>3. Probation:</strong> You will be on probation for 6 months.</p>
-<p><strong>4. Benefits:</strong> You will be eligible for health insurance, provident fund, gratuity, and other benefits as per company policy and applicable laws.</p>
-<p><strong>5. Working Hours:</strong> Standard working hours are 9:00 AM to 6:00 PM, Monday to Friday.</p>
-<p><strong>6. Location:</strong> Your primary work location will be {{companyAddress}}.</p>
-<p>Please sign and return this letter by [deadline] to accept this offer.</p>
-<br>
-<p>Yours sincerely,</p>
-<div class="signature">
-<p>[Authorized Signatory]</p>
-<p>{{companyName}}</p>
-<p>Date: {{startDate}}</p>
-</div>
-<br>
-<p><strong>Acceptance:</strong></p>
-<div class="signature">
-<p>{{candidateName}}</p>
-<p>Date: ________</p>
-</div>
-</div>
-</body>
-</html>
-`,
-  },
-
-  {
-    id: 'invoice',
-    name: 'Invoice',
-    category: 'Finance',
-    isCustom: false,
-      { id: 'invoiceNumber', name: 'invoiceNumber', label: 'Invoice Number', type: 'text', required: true, order: 1 },
-      { id: 'date', name: 'date', label: 'Date', type: 'date', required: true, order: 2 },
-      { id: 'clientName', name: 'clientName', label: 'Client Name', type: 'text', required: true, order: 3 },
-      { id: 'clientAddress', name: 'clientAddress', label: 'Client Address', type: 'textarea', required: true, order: 4 },
-      { id: 'companyName', name: 'companyName', label: 'Company Name', type: 'text', required: true, order: 5 },
-      { id: 'companyAddress', name: 'companyAddress', label: 'Company Address', type: 'textarea', required: true, order: 6 },
-      { id: 'items', name: 'items', label: 'Items', type: 'textarea', required: true, order: 7 },
-      { id: 'total', name: 'total', label: 'Total Amount', type: 'number', required: true, order: 8 },
-    ],
-    template: `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Invoice</title>
-<style>
-body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; color: #333; }
-.header { text-align: center; margin-bottom: 30px; }
-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-th { background-color: #f2f2f2; }
-.total { text-align: right; font-weight: bold; }
-</style>
-</head>
-<body>
-<div class="header">
-<h1>Invoice</h1>
-<p><strong>Invoice Number:</strong> {{invoiceNumber}}</p>
-<p><strong>Date:</strong> {{date}}</p>
-<p><strong>Due Date:</strong> [Due Date]</p>
-</div>
-<div>
-<p><strong>From:</strong></p>
-<p>{{companyName}}</p>
-<p>{{companyAddress}}</p>
-<p>GSTIN: [GST Number]</p>
-<p>PAN: [PAN Number]</p>
-</div>
-<div>
-<p><strong>Bill To:</strong></p>
-<p>{{clientName}}</p>
-<p>{{clientAddress}}</p>
-<p>GSTIN: [Client GST]</p>
-</div>
-<table>
-<thead>
-<tr>
-<th>Description</th>
-<th>Quantity</th>
-<th>Unit Price</th>
-<th>Amount</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>{{items}}</td>
-<td>[Quantity]</td>
-<td>[Unit Price]</td>
-<td>[Amount]</td>
-</tr>
-</tbody>
-<tfoot>
-<tr>
-<td colspan="3" class="total">Subtotal:</td>
-<td>[Subtotal]</td>
-</tr>
-<tr>
-<td colspan="3" class="total">GST (18%):</td>
-<td>[GST Amount]</td>
-</tr>
-<tr>
-<td colspan="3" class="total">Total:</td>
-<td>{{total}}</td>
-</tr>
-</tfoot>
-</table>
-<p><strong>Payment Terms:</strong> Payment due within 30 days of invoice date.</p>
-<p><strong>Bank Details:</strong></p>
-<p>Account Name: {{companyName}}</p>
-<p>Account Number: [Account Number]</p>
-<p>IFSC Code: [IFSC]</p>
-<p>Bank: [Bank Name]</p>
-<p>Thank you for your business!</p>
-</body>
-</html>
-`,
-  },
-
-  {
-    id: 'termination-letter',
-    name: 'Termination Letter',
-    category: 'HR',
-    isCustom: false,
-      { id: 'employeeName', name: 'employeeName', label: 'Employee Name', type: 'text', required: true, order: 1 },
-      { id: 'position', name: 'position', label: 'Position', type: 'text', required: true, order: 2 },
-      { id: 'terminationDate', name: 'terminationDate', label: 'Termination Date', type: 'date', required: true, order: 3 },
-      { id: 'reason', name: 'reason', label: 'Reason for Termination', type: 'textarea', required: true, order: 4 },
-      { id: 'companyName', name: 'companyName', label: 'Company Name', type: 'text', required: true, order: 5 },
-    ],
-    template: `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Termination Letter</title>
-<style>
-body { font-family: 'Times New Roman', serif; margin: 40px; line-height: 1.6; color: #333; }
-.header { text-align: center; margin-bottom: 30px; }
-.content { margin-bottom: 20px; }
-.signature { margin-top: 50px; }
-</style>
-</head>
-<body>
-<div class="header">
-<h1>{{companyName}}</h1>
-<p>{{companyAddress}}</p>
-<p>Phone: [Company Phone] | Email: [Company Email]</p>
-</div>
-<div class="content">
-<p><strong>Date:</strong> {{terminationDate}}</p>
-<p><strong>To:</strong></p>
-<p>{{employeeName}}</p>
-<p>[Employee Address]</p>
-<br>
-<p><strong>Subject: Termination of Employment</strong></p>
-<br>
-<p>Dear {{employeeName}},</p>
-<p>This letter serves as formal notice of termination of your employment as {{position}} at {{companyName}}, effective {{terminationDate}}.</p>
-<p><strong>Reason for Termination:</strong> {{reason}}</p>
-<p>As per your employment contract and applicable labor laws, you are entitled to the following:</p>
-<ul>
-<li>Salary for the notice period or payment in lieu thereof.</li>
-<li>Gratuity, if applicable.</li>
-<li>Encashment of unused leave.</li>
-<li>Provident Fund and other benefits.</li>
-</ul>
-<p>Please return all company property, including ID cards, laptops, and access cards, by {{terminationDate}}.</p>
-<p>We wish you the best in your future endeavors.</p>
-<br>
-<p>Yours sincerely,</p>
-<div class="signature">
-<p>[Authorized Signatory]</p>
-<p>{{companyName}}</p>
-<p>Date: {{terminationDate}}</p>
-</div>
-</div>
-</body>
-</html>
-`,
-  },
-
-  {
-    id: 'receipt',
-    name: 'Receipt',
-    category: 'Finance',
-    isCustom: false,
-    fields: [
-      { id: 'receiptNumber', name: 'receiptNumber', label: 'Receipt Number', type: 'text', required: true, order: 1 },
-      { id: 'date', name: 'date', label: 'Date', type: 'date', required: true, order: 2 },
-      { id: 'receivedFrom', name: 'receivedFrom', label: 'Received From', type: 'text', required: true, order: 3 },
-      { id: 'amount', name: 'amount', label: 'Amount', type: 'number', required: true, order: 4 },
-      { id: 'forWhat', name: 'forWhat', label: 'For', type: 'textarea', required: true, order: 5 },
-      { id: 'companyName', name: 'companyName', label: 'Company Name', type: 'text', required: true, order: 6 },
-    ],
-    template: `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Receipt</title>
-<style>
-body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; color: #333; }
-.header { text-align: center; margin-bottom: 30px; }
-.content { margin-bottom: 20px; }
-.signature { margin-top: 50px; text-align: center; }
-</style>
-</head>
-<body>
-<div class="header">
-<h1>{{companyName}}</h1>
-<p>{{companyAddress}}</p>
-<p>Phone: [Company Phone] | Email: [Company Email]</p>
-</div>
-<div class="content">
-<p><strong>Receipt Number:</strong> {{receiptNumber}}</p>
-<p><strong>Date:</strong> {{date}}</p>
-<p><strong>Received From:</strong> {{receivedFrom}}</p>
-<p><strong>Amount Received:</strong> {{amount}}</p>
-<p><strong>For:</strong> {{forWhat}}</p>
-<p><strong>Payment Method:</strong> [Cash/Cheque/Online Transfer]</p>
-<p><strong>Received By:</strong> [Receiver Name]</p>
-<p>This is to certify that the above amount has been received in full settlement of the mentioned purpose.</p>
-<p>Thank you for your payment.</p>
-</div>
-<div class="signature">
-<p>___________________________</p>
-<p>{{companyName}}</p>
-<p>Date: {{date}}</p>
-</div>
-</body>
-</html>
-`,
-  },
-
-  {
-    id: 'board-resolution',
-    name: 'Board Resolution',
-    category: 'Legal',
-    isCustom: false,
-      { id: 'companyName', name: 'companyName', label: 'Company Name', type: 'text', required: true, order: 1 },
-      { id: 'meetingDate', name: 'meetingDate', label: 'Meeting Date', type: 'date', required: true, order: 2 },
-      { id: 'resolution', name: 'resolution', label: 'Resolution Text', type: 'textarea', required: true, order: 3 },
-    ],
-    template: `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Board Resolution</title>
-<style>
-body { font-family: 'Times New Roman', serif; margin: 40px; line-height: 1.6; color: #333; }
-.title { text-align: center; font-size: 24px; margin-bottom: 30px; }
-.content { margin-bottom: 20px; }
-.signature { margin-top: 50px; }
-</style>
-</head>
-<body>
-<div class="title">Board Resolution</div>
-<div class="content">
-<p><strong>Company:</strong> {{companyName}}</p>
-<p><strong>Meeting Date:</strong> {{meetingDate}}</p>
-<p><strong>Board Members Present:</strong> [List of members]</p>
-<p><strong>Quorum:</strong> [Quorum details]</p>
-<br>
-<p><strong>Resolution:</strong></p>
-<p>RESOLVED THAT {{resolution}}</p>
-<br>
-<p>RESOLVED FURTHER THAT [Authorized Signatory] be and is hereby authorized to sign all necessary documents and do all acts, deeds, and things as may be necessary to give effect to the above resolution.</p>
-<br>
-<p>Approved by the Board of Directors.</p>
-</div>
-<div class="signature">
-<p>___________________________</p>
-<p>Chairman/Director</p>
-<p>{{companyName}}</p>
-<p>Date: {{meetingDate}}</p>
-</div>
-</body>
-</html>
-`,
-  },
-
-  {
-    id: 'resignation-letter',
-    name: 'Resignation Letter',
-    fields: [
-      { name: 'employeeName', label: 'Employee Name', type: 'text', required: true },
-      { name: 'position', label: 'Position', type: 'text', required: true },
-      { name: 'lastWorkingDay', label: 'Last Working Day', type: 'date', required: true },
-      { name: 'reason', label: 'Reason for Resignation', type: 'textarea', required: false },
-      { name: 'companyName', label: 'Company Name', type: 'text', required: true },
-    ],
-    template: `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Resignation Letter</title>
-<style>
-body { font-family: 'Times New Roman', serif; margin: 40px; line-height: 1.6; color: #333; }
-.header { text-align: center; margin-bottom: 30px; }
-.content { margin-bottom: 20px; }
-.signature { margin-top: 50px; }
-</style>
-</head>
-<body>
-<div class="header">
-<h1>{{companyName}}</h1>
-<p>{{companyAddress}}</p>
-<p>Phone: [Company Phone] | Email: [Company Email]</p>
-</div>
-<div class="content">
-<p><strong>Date:</strong> {{lastWorkingDay}}</p>
-<p><strong>To:</strong></p>
-<p>The Human Resources Manager</p>
-<p>{{companyName}}</p>
-<p>{{companyAddress}}</p>
-<br>
-<p><strong>Subject: Resignation from the Position of {{position}}</strong></p>
-<br>
-<p>Dear Sir/Madam,</p>
-<p>I, {{employeeName}}, hereby tender my resignation from the position of {{position}} at {{companyName}}, effective from {{lastWorkingDay}}.</p>
-<p>{{reason}}</p>
-<p>I assure you of my cooperation during the transition period and will ensure a smooth handover of my responsibilities.</p>
-<p>I would like to express my gratitude for the opportunities provided and the support received during my tenure.</p>
-<p>Thank you for the valuable experience and learning.</p>
-<br>
-<p>Yours sincerely,</p>
-<div class="signature">
-<p>{{employeeName}}</p>
-<p>{{position}}</p>
-<p>Date: {{lastWorkingDay}}</p>
-</div>
-</div>
-</body>
-</html>
-`,
-  },
-
-  {
-    id: 'performance-appraisal',
-    name: 'Performance Appraisal',
-    fields: [
-      { id: 'employeeName', name: 'employeeName', label: 'Employee Name', type: 'text', required: true, order: 1 },
-      { id: 'position', name: 'position', label: 'Position', type: 'text', required: true, order: 2 },
-      { id: 'reviewPeriod', name: 'reviewPeriod', label: 'Review Period', type: 'text', required: true, order: 3 },
-      { id: 'overallRating', name: 'overallRating', label: 'Overall Rating', type: 'text', required: true, order: 4 },
-      { id: 'strengths', name: 'strengths', label: 'Strengths', type: 'textarea', required: true, order: 5 },
-      { id: 'areasForImprovement', name: 'areasForImprovement', label: 'Areas for Improvement', type: 'textarea', required: true, order: 6 },
-      { id: 'goals', name: 'goals', label: 'Future Goals', type: 'textarea', required: true, order: 7 },
-      { id: 'companyName', name: 'companyName', label: 'Company Name', type: 'text', required: true, order: 8 },
-    ],
-    template: `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Performance Appraisal</title>
-<style>
-body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; color: #333; }
-.header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 10px; }
-.section { margin-bottom: 20px; }
-.section h3 { color: #555; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
-.signature { margin-top: 50px; }
-</style>
-</head>
-<body>
-<div class="header">
-<h1>{{companyName}}</h1>
-<h2>Performance Appraisal Report</h2>
-</div>
-<div class="section">
-<h3>Employee Details</h3>
-<p><strong>Name:</strong> {{employeeName}}</p>
-<p><strong>Position:</strong> {{position}}</p>
-<p><strong>Review Period:</strong> {{reviewPeriod}}</p>
-<p><strong>Overall Rating:</strong> {{overallRating}}/5</p>
-</div>
-<div class="section">
-<h3>Strengths</h3>
-<p>{{strengths}}</p>
-</div>
-<div class="section">
-<h3>Areas for Improvement</h3>
-<p>{{areasForImprovement}}</p>
-</div>
-<div class="section">
-<h3>Goals for Next Period</h3>
-<p>{{goals}}</p>
-</div>
-<div class="section">
-<h3>Comments</h3>
-<p>[Manager's Comments]</p>
-</div>
-<div class="signature">
-<p>Reviewed by: ___________________________ Date: ________</p>
-<p>Employee Signature: ___________________________ Date: ________</p>
-</div>
-</body>
-</html>
-`,
-  },
-
-  {
-    id: 'loan-agreement',
-    name: 'Loan Agreement',
-    fields: [
-      { id: 'lenderName', name: 'lenderName', label: 'Lender Name', type: 'text', required: true, order: 1 },
-      { id: 'borrowerName', name: 'borrowerName', label: 'Borrower Name', type: 'text', required: true, order: 2 },
-      { id: 'loanAmount', name: 'loanAmount', label: 'Loan Amount', type: 'number', required: true, order: 3 },
-      { id: 'interestRate', name: 'interestRate', label: 'Interest Rate (%)', type: 'number', required: true, order: 4 },
-      { id: 'repaymentPeriod', name: 'repaymentPeriod', label: 'Repayment Period', type: 'text', required: true, order: 5 },
-      { id: 'date', name: 'date', label: 'Agreement Date', type: 'date', required: true, order: 6 },
-    ],
-    template: `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Loan Agreement</title>
-<style>
-body { font-family: 'Times New Roman', serif; margin: 40px; line-height: 1.6; color: #333; }
-.title { text-align: center; font-size: 24px; margin-bottom: 30px; text-decoration: underline; }
-.parties { margin-bottom: 20px; }
-.terms { margin-bottom: 20px; }
-.signature { margin-top: 50px; display: flex; justify-content: space-between; }
-</style>
-</head>
-<body>
-<div class="title">Loan Agreement</div>
-<div class="parties">
-<p>This Loan Agreement (the "Agreement") is made and entered into as of {{date}} by and between:</p>
-<p><strong>{{lenderName}}</strong>, residing at [address] ("Lender")</p>
-<p>and</p>
-<p><strong>{{borrowerName}}</strong>, residing at [address] ("Borrower")</p>
-</div>
-<div class="terms">
-<h3>1. Loan Amount</h3>
-<p>The Lender agrees to lend the Borrower the principal sum of {{loanAmount}} (the "Loan").</p>
-<h3>2. Interest Rate</h3>
-<p>The Loan shall bear interest at the rate of {{interestRate}}% per annum, compounded [monthly/quarterly/annually].</p>
-<h3>3. Repayment Terms</h3>
-<p>The Borrower shall repay the Loan in {{repaymentPeriod}}. Repayment shall commence from [start date] and continue until the Loan is fully repaid.</p>
-<h3>4. Default</h3>
-<p>If the Borrower fails to make any payment when due, the entire outstanding amount shall become immediately due and payable.</p>
-<h3>5. Governing Law</h3>
-<p>This Agreement shall be governed by the laws of [jurisdiction].</p>
-</div>
-<div class="signature">
-<div>
-<p>{{lenderName}}</p>
-<p>___________________________</p>
-<p>Date: {{date}}</p>
-</div>
-<div>
-<p>{{borrowerName}}</p>
-<p>___________________________</p>
-<p>Date: {{date}}</p>
-</div>
-</div>
-</body>
-</html>
-`,
-  },
-
-  {
-    id: 'service-agreement',
-    name: 'Service Agreement',
-    fields: [
-      { name: 'serviceProvider', label: 'Service Provider', type: 'text', required: true },
-      { name: 'clientName', label: 'Client Name', type: 'text', required: true },
-      { name: 'services', label: 'Services Description', type: 'textarea', required: true },
-      { name: 'fee', label: 'Service Fee', type: 'number', required: true },
-      { name: 'duration', label: 'Agreement Duration', type: 'text', required: true },
-      { name: 'date', label: 'Agreement Date', type: 'date', required: true },
-    ],
-    template: `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Service Agreement</title>
-<style>
-body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; color: #333; }
-.title { text-align: center; font-size: 24px; margin-bottom: 30px; }
-.section { margin-bottom: 20px; }
-.signature { margin-top: 50px; display: flex; justify-content: space-between; }
-</style>
-</head>
-<body>
-<div class="title">Service Agreement</div>
-<div class="section">
-<p>This Service Agreement (the "Agreement") is entered into as of {{date}} by and between:</p>
-<p><strong>{{serviceProvider}}</strong>, a [legal entity] with its principal place of business at [address] ("Service Provider")</p>
-<p>and</p>
-<p><strong>{{clientName}}</strong>, a [legal entity] with its principal place of business at [address] ("Client")</p>
-</div>
-<div class="section">
-<h3>1. Services</h3>
-<p>The Service Provider agrees to provide the following services: {{services}}</p>
-</div>
-<div class="section">
-<h3>2. Compensation</h3>
-<p>The Client agrees to pay the Service Provider {{fee}} for the services rendered. Payment terms: [e.g., 50% upfront, 50% on completion].</p>
-</div>
-<div class="section">
-<h3>3. Term</h3>
-<p>This Agreement shall commence on {{date}} and continue for {{duration}}, unless terminated earlier as provided herein.</p>
-</div>
-<div class="section">
-<h3>4. Confidentiality</h3>
-<p>Both parties agree to maintain confidentiality of proprietary information disclosed during the term of this Agreement.</p>
-</div>
-<div class="section">
-<h3>5. Termination</h3>
-<p>Either party may terminate this Agreement with 30 days' written notice. Immediate termination for material breach.</p>
-</div>
-<div class="section">
-<h3>6. Governing Law</h3>
-<p>This Agreement shall be governed by the laws of [jurisdiction].</p>
-</div>
-<div class="signature">
-<div>
-<p>{{serviceProvider}}</p>
-<p>By: ___________________________</p>
-<p>Name: [Name]</p>
-<p>Title: [Title]</p>
-<p>Date: {{date}}</p>
-</div>
-<div>
-<p>{{clientName}}</p>
-<p>By: ___________________________</p>
-<p>Name: [Name]</p>
-<p>Title: [Title]</p>
-<p>Date: {{date}}</p>
-</div>
-</div>
-</body>
-</html>
-`,
-  },
-
-  {
-    id: 'partnership-agreement',
-    name: 'Partnership Agreement',
-    fields: [
-      { id: 'partner1', name: 'partner1', label: 'Partner 1 Name', type: 'text', required: true, order: 1 },
-      { id: 'partner2', name: 'partner2', label: 'Partner 2 Name', type: 'text', required: true, order: 2 },
-      { id: 'businessName', name: 'businessName', label: 'Business Name', type: 'text', required: true, order: 3 },
-      { id: 'contribution1', name: 'contribution1', label: 'Partner 1 Contribution', type: 'textarea', required: true, order: 4 },
-      { id: 'contribution2', name: 'contribution2', label: 'Partner 2 Contribution', type: 'textarea', required: true, order: 5 },
-      { id: 'profitSharing', name: 'profitSharing', label: 'Profit Sharing Ratio', type: 'text', required: true, order: 6 },
-      { id: 'date', name: 'date', label: 'Agreement Date', type: 'date', required: true, order: 7 },
-    ],
-    template: `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Partnership Agreement</title>
-<style>
-body { font-family: 'Times New Roman', serif; margin: 40px; line-height: 1.6; color: #333; }
-.title { text-align: center; font-size: 24px; margin-bottom: 30px; }
-.section { margin-bottom: 20px; }
-.signature { margin-top: 50px; display: flex; justify-content: space-between; }
-</style>
-</head>
-<body>
-<div class="title">Partnership Agreement</div>
-<div class="section">
-<p>This Partnership Agreement (the "Agreement") is made and entered into as of {{date}} by and between:</p>
-<p><strong>{{partner1}}</strong>, residing at [address] ("Partner 1")</p>
-<p>and</p>
-<p><strong>{{partner2}}</strong>, residing at [address] ("Partner 2")</p>
-<p>collectively referred to as the "Partners" for the purpose of carrying on the business of {{businessName}}.</p>
-</div>
-<div class="section">
-<h3>1. Formation</h3>
-<p>The Partners hereby form a partnership under the Partnership Act, 1932, for the purpose of [business purpose].</p>
-</div>
-<div class="section">
-<h3>2. Contributions</h3>
-<p>{{partner1}} shall contribute: {{contribution1}}</p>
-<p>{{partner2}} shall contribute: {{contribution2}}</p>
-</div>
-<div class="section">
-<h3>3. Profit and Loss Sharing</h3>
-<p>Profits and losses shall be shared in the ratio of {{profitSharing}}.</p>
-</div>
-<div class="section">
-<h3>4. Management</h3>
-<p>All decisions shall be made jointly by both Partners. Major decisions require unanimous consent.</p>
-</div>
-<div class="section">
-<h3>5. Term</h3>
-<p>This partnership shall commence on {{date}} and continue until dissolved by mutual agreement or as per law.</p>
-</div>
-<div class="section">
-<h3>6. Dissolution</h3>
-<p>The partnership may be dissolved upon the death, bankruptcy, or withdrawal of a Partner, subject to applicable laws.</p>
-</div>
-<div class="section">
-<h3>7. Governing Law</h3>
-<p>This Agreement shall be governed by the laws of India.</p>
-</div>
-<div class="signature">
-<div>
-<p>{{partner1}}</p>
-<p>___________________________</p>
-<p>Date: {{date}}</p>
-</div>
-<div>
-<p>{{partner2}}</p>
-<p>___________________________</p>
-<p>Date: {{date}}</p>
-</div>
-</div>
-</body>
-</html>
-`,
-  },
-
-  {
-    id: 'meeting-minutes',
-    name: 'Meeting Minutes',
-    fields: [
-      { id: 'meetingTitle', name: 'meetingTitle', label: 'Meeting Title', type: 'text', required: true, order: 1 },
-      { id: 'date', name: 'date', label: 'Date', type: 'date', required: true, order: 2 },
-      { id: 'time', name: 'time', label: 'Time', type: 'text', required: true, order: 3 },
-      { id: 'location', name: 'location', label: 'Location', type: 'text', required: true, order: 4 },
-      { id: 'attendees', name: 'attendees', label: 'Attendees', type: 'textarea', required: true, order: 5 },
-      { id: 'agenda', name: 'agenda', label: 'Agenda', type: 'textarea', required: true, order: 6 },
-      { id: 'discussions', name: 'discussions', label: 'Discussions', type: 'textarea', required: true, order: 7 },
-      { id: 'decisions', name: 'decisions', label: 'Decisions', type: 'textarea', required: true, order: 8 },
-      { id: 'nextSteps', name: 'nextSteps', label: 'Next Steps', type: 'textarea', required: true, order: 9 },
-    ],
-    template: `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Meeting Minutes</title>
-<style>
-body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; color: #333; }
-.header { text-align: center; margin-bottom: 30px; }
-.section { margin-bottom: 20px; }
-.section h3 { color: #555; }
-.signature { margin-top: 50px; }
-</style>
-</head>
-<body>
-<div class="header">
-<h1>Meeting Minutes</h1>
-<h2>{{meetingTitle}}</h2>
-</div>
-<div class="section">
-<p><strong>Date:</strong> {{date}}</p>
-<p><strong>Time:</strong> {{time}}</p>
-<p><strong>Location:</strong> {{location}}</p>
-<p><strong>Facilitator:</strong> [Name]</p>
-<p><strong>Note Taker:</strong> [Name]</p>
-</div>
-<div class="section">
-<h3>Attendees</h3>
-<p>{{attendees}}</p>
-</div>
-<div class="section">
-<h3>Agenda</h3>
-<p>{{agenda}}</p>
-</div>
-<div class="section">
-<h3>Discussions</h3>
-<p>{{discussions}}</p>
-</div>
-<div class="section">
-<h3>Decisions</h3>
-<p>{{decisions}}</p>
-</div>
-<div class="section">
-<h3>Action Items</h3>
-<p>{{nextSteps}}</p>
-</div>
-<div class="section">
-<h3>Next Meeting</h3>
-<p>Date: [Next Date] | Time: [Time] | Location: [Location]</p>
-</div>
-<div class="signature">
-<p>Minutes prepared by: ___________________________ Date: {{date}}</p>
-<p>Approved by: ___________________________ Date: ________</p>
-</div>
-</body>
-</html>
-`,
+      <p>This Agreement is made on this {{agreementDay}} day of {{agreementMonth}}, {{agreementYear}}</p>
+      <h2>By and Between</h2>
+      <p>Corescent Technologies, a company incorporated under the Companies Act, 2013, having its registered office at WeWork Latitude, 10th floor, RMZ Latitude, Hebbal, Bengaluru, Karnataka PIN-560024 (hereinafter referred to as the “Company”).</p>
+      <p>AND</p>
+      <p>Mr./Ms. {{engagedIndividualName}}, residing at {{address}}, {{state}}, {{country}} (hereinafter referred to as the “Engaged Individual”). The Company and the Engaged Individual shall collectively be referred to as the “Parties” and individually as a “Party”.</p>
+      <h3>Whereas</h3>
+      <ol>
+        <li>The Company wishes to engage the Engaged Individual for certain assignments, tasks, or projects as may be mutually agreed.</li>
+        <li>In the course of such engagement, the Engaged Individual may receive or have access to the Company’s confidential, proprietary, and sensitive information.</li>
+        <li>The Company desires to protect such information, and the Engaged Individual acknowledges and agrees to maintain confidentiality.</li>
+      </ol>
+      <p>Now, therefore, in consideration of the engagement and access to Confidential Information, the Parties agree as follows:</p>
+      <h3>1. Definition of Confidential Information</h3>
+      <p>“Confidential Information” includes all non-public information disclosed by the Company to the Engaged Individual, whether in oral, written, electronic, visual, or any other form, including but not limited to business plans, strategies, pricing, financials; client information, vendor information, and communication; software, source code, algorithms, research, technical data; project details, documentation, internal processes, and systems; and any information that a reasonable person would understand as confidential. Confidential Information includes all copies, summaries, analyses, and derivative materials.</p>
+      <h3>2. Obligations of the Engaged Individual</h3>
+      <ul>
+        <li>Maintain absolute confidentiality of the Company’s Confidential Information.</li>
+        <li>Use such information solely for the purpose of performing agreed assignments or projects.</li>
+        <li>Not disclose, share, or publish Confidential Information to any third party without prior written approval of the Company.</li>
+        <li>Take reasonable measures to prevent unauthorized access or misuse.</li>
+        <li>Immediately inform the Company of any breach or suspected breach.</li>
+      </ul>
+      <h3>3. Return or Destruction of Information</h3>
+      <p>Upon completion or termination of the engagement, the Engaged Individual shall return all Company property, documents, devices, materials, or data, delete all Confidential Information stored on personal devices or systems, and certify compliance in writing if requested by the Company.</p>
+      <h3>4. Exceptions to Confidentiality</h3>
+      <p>Confidential Information does not include information that the Engaged Individual can prove is publicly available without breach of this Agreement, was lawfully known prior to joining the Company, was independently developed without using Company resources, or is required to be disclosed by law or court order, provided the Company is notified before disclosure.</p>
+      <h3>5. Non-Disclosure, Non-Use, and Non-Solicitation</h3>
+      <p>The Engaged Individual shall not directly or indirectly use Company information for any competing business activities. For 1 year after leaving the Company, the Engaged Individual shall not solicit the Company’s clients, Engaged Individuals, or contractors for competing purposes.</p>
+      <h3>6. Remedies for Breach</h3>
+      <p>The Engaged Individual acknowledges that any breach of this Agreement may cause irreparable harm to the Company. The Company shall be entitled to injunctive relief, recovery of damages, and legal and court costs.</p>
+      <h3>7. Governing Law and Dispute Resolution</h3>
+      <p>This Agreement is governed by the laws of India. Any disputes shall be resolved by arbitration under the Arbitration and Conciliation Act, 1996. The seat and venue of arbitration shall be Bangalore, Karnataka, with proceedings in English.</p>
+      <h3>8. No Assignment</h3>
+      <p>The Engaged Individual may not assign or transfer any rights or obligations under this Agreement.</p>
+      <h3>9. Entire Agreement</h3>
+      <p>This document constitutes the entire understanding between the Parties regarding confidentiality. No oral modifications are valid unless made in writing and signed by both Parties.</p>
+      <h3>10. Term</h3>
+      <p>This Agreement remains effective throughout the Engaged Individual’s employment and continues for five (5) years after termination of employment.</p>
+      <p>In witness whereof, the Parties have executed this Agreement as of the date mentioned above.</p>
+      <p>Date: {{governingLawDate}}</p>
+      <p><strong>For Corescent Technologies Pvt. Ltd.</strong><br/>Kushagra Sharma<br/>CEO &amp; MD</p>
+      <p><strong>Engaged Individual</strong><br/>{{engagedIndividualName}}</p>
+    `,
   },
 ];

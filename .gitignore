@@ -1,1 +1,12 @@
 node_modules
+.next
+.DS_Store
+*.swp
+*.swo
+tmp-logo-extract
+.env.local
+data/history.json
+data/mail-settings.json
+data/signature-settings.json
+data/automation-settings.json
+data/collaboration-settings.json
