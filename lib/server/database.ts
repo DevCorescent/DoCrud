@@ -1,3 +1,4 @@
+import dns from 'node:dns';
 import path from 'path';
 import { Pool } from 'pg';
 
@@ -7,6 +8,8 @@ declare global {
 }
 
 const APP_STATE_TABLE = 'app_state';
+
+dns.setDefaultResultOrder('ipv4first');
 
 function getDatabaseUrl() {
   return process.env.DATABASE_URL || process.env.SUPABASE_DB_URL || '';
@@ -22,7 +25,6 @@ function createPool() {
     ssl: getDatabaseUrl().includes('supabase.co')
       ? { rejectUnauthorized: false }
       : undefined,
-    family: 4,
     max: 5,
   });
 }
