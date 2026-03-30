@@ -74,13 +74,19 @@ export function isDatabaseConfigured() {
 }
 
 function createPool() {
-  return new Pool({
-    connectionString: getDatabaseUrl(),
-    ssl: getDatabaseUrl().includes('supabase.co')
+  const connectionString = getDatabaseUrl();
+  const poolConfig = {
+    connectionString,
+    ssl: connectionString.includes('supabase.co')
       ? { rejectUnauthorized: false }
       : undefined,
     max: 5,
-  });
+    lookup(hostname: string, _options: unknown, callback: (error: NodeJS.ErrnoException | null, address: string, family: number) => void) {
+      dns.lookup(hostname, { family: 4 }, callback);
+    },
+  };
+
+  return new Pool(poolConfig as ConstructorParameters<typeof Pool>[0]);
 }
 
 export function getDbPool() {
