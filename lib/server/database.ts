@@ -22,6 +22,7 @@ function createPool() {
     ssl: getDatabaseUrl().includes('supabase.co')
       ? { rejectUnauthorized: false }
       : undefined,
+    family: 4,
     max: 5,
   });
 }
