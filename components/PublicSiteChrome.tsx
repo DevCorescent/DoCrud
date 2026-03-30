@@ -20,18 +20,14 @@ const mobileNavItems = [
 
 export default function PublicSiteChrome({ softwareName, accentLabel, settings, children }: PublicSiteChromeProps) {
   return (
-    <main className="min-h-screen bg-[#f5f5f7] px-3 py-3 pb-28 text-slate-950 sm:px-5 sm:py-5 sm:pb-8 lg:px-8">
-      <div className="mx-auto max-w-[92rem] space-y-6 lg:space-y-8">
-        <header className="sticky top-3 z-30 rounded-[1.4rem] border border-black/5 bg-white/88 px-4 py-3 shadow-[0_18px_45px_rgba(15,23,42,0.06)] backdrop-blur-2xl sm:px-6">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.10),transparent_22%),radial-gradient(circle_at_top_right,rgba(148,163,184,0.10),transparent_20%),linear-gradient(180deg,#ffffff_0%,#f8fafc_28%,#ffffff_100%)] px-3 py-3 pb-28 text-slate-950 sm:px-5 sm:py-5 sm:pb-8 lg:px-8 xl:px-10 2xl:px-12">
+      <div className="mx-auto w-full max-w-[112rem] space-y-6 lg:space-y-8">
+        <header className="sticky top-3 z-30 rounded-[1.4rem] border border-black/5 bg-white/92 px-4 py-3 shadow-[0_18px_45px_rgba(15,23,42,0.06)] backdrop-blur-2xl sm:px-6 lg:px-8 2xl:px-10">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="flex items-center justify-between gap-4">
               <Link href="/" className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.34em] text-slate-500 sm:text-[11px]">{accentLabel}</p>
                 <h1 className="mt-1 text-xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-[1.8rem]">{softwareName}</h1>
               </Link>
-              <div className="hidden rounded-full border border-black/5 bg-slate-50 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-600 sm:inline-flex">
-                Enterprise-grade workflows
-              </div>
             </div>
 
             <nav className="hidden flex-wrap items-center gap-2 text-sm text-slate-600 md:flex">
@@ -39,13 +35,13 @@ export default function PublicSiteChrome({ softwareName, accentLabel, settings, 
               <Link href="/pricing" className="rounded-full px-3 py-2 transition hover:bg-slate-100 hover:text-slate-950">Pricing</Link>
               <Link href="/contact" className="rounded-full px-3 py-2 transition hover:bg-slate-100 hover:text-slate-950">Contact</Link>
               <Link href="/schedule-demo" className="rounded-full px-3 py-2 transition hover:bg-slate-100 hover:text-slate-950">Schedule Demo</Link>
-              <Button asChild variant="outline" className="rounded-full border-slate-200 bg-white">
+              <Button asChild variant="outline" className="rounded-xl border-slate-300 bg-white text-slate-950 hover:bg-slate-950 hover:text-white">
                 <Link href="/login">Login</Link>
               </Button>
-              <Button asChild variant="outline" className="rounded-full border-slate-200 bg-white">
+              <Button asChild variant="outline" className="rounded-xl border-slate-300 bg-white text-slate-950 hover:bg-slate-950 hover:text-white">
                 <Link href="/signup">Start Free</Link>
               </Button>
-              <Button asChild className="rounded-full bg-slate-950 text-white hover:bg-slate-800">
+              <Button asChild className="rounded-xl bg-slate-950 text-white shadow-[0_16px_38px_rgba(15,23,42,0.18)] hover:bg-slate-800">
                 <a href={settings.primaryCtaHref || '/schedule-demo'}>
                   {settings.primaryCtaLabel}
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -57,11 +53,10 @@ export default function PublicSiteChrome({ softwareName, accentLabel, settings, 
 
         {children}
 
-        <footer className="rounded-[1.6rem] border border-black/5 bg-white px-5 py-6 shadow-[0_18px_44px_rgba(15,23,42,0.05)] sm:px-6">
+        <footer className="rounded-[1.6rem] border border-black/5 bg-white px-5 py-6 shadow-[0_18px_44px_rgba(15,23,42,0.05)] sm:px-6 lg:px-8 2xl:px-10">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">{accentLabel}</p>
-              <p className="mt-2 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">{softwareName}</p>
+              <p className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">{softwareName}</p>
               <p className="mt-3 text-sm leading-6 text-slate-600">
                 Premium document operations software for teams that need stronger controls, cleaner execution, and a better client-facing experience.
               </p>

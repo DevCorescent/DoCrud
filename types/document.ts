@@ -651,8 +651,24 @@ export interface LandingScreenshotCard {
   imagePath: string;
 }
 
+export interface LandingHeroBanner {
+  id: string;
+  eyebrow: string;
+  title: string;
+  description: string;
+  imagePath: string;
+}
+
+export interface LandingAudienceCard {
+  id: string;
+  businessType: string;
+  usage: string;
+  benefit: string;
+}
+
 export interface HomepageSectionToggles {
   hero: boolean;
+  audiences: boolean;
   snapshot: boolean;
   softwareModules: boolean;
   screenshots: boolean;
@@ -671,6 +687,8 @@ export interface LandingSettings {
   secondaryCtaHref: string;
   socialProofLabel: string;
   socialProofItems: string[];
+  audienceSectionTitle: string;
+  audienceSectionSubtitle: string;
   featureSectionTitle: string;
   softwareModulesTitle: string;
   softwareModulesSubtitle: string;
@@ -694,6 +712,8 @@ export interface LandingSettings {
   stats: LandingStat[];
   softwareModules: LandingSoftwareModule[];
   featureScreenshots: LandingScreenshotCard[];
+  heroBanners: LandingHeroBanner[];
+  audienceProfiles: LandingAudienceCard[];
   pricingPlans: LandingPricingPlan[];
   enabledSections: HomepageSectionToggles;
 }

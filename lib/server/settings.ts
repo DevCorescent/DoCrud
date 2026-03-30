@@ -47,6 +47,8 @@ export const defaultLandingSettings: LandingSettings = {
   secondaryCtaHref: '/login',
   socialProofLabel: 'Built for founders, HR leaders, legal teams, and client-facing operations',
   socialProofItems: ['Approvals', 'Client Portals', 'Audit Trails', 'Custom Workflows'],
+  audienceSectionTitle: 'Who can use docrud?',
+  audienceSectionSubtitle: 'From internal ops teams to client-facing businesses, docrud helps standardize document workflows, reduce delays, and present a more premium digital experience.',
   featureSectionTitle: 'What makes docrud premium',
   softwareModulesTitle: 'Everything your teams need in one document operating system',
   softwareModulesSubtitle: 'Each capability is built to work together so super admins, internal teams, and clients all move through the same clean lifecycle.',
@@ -148,6 +150,55 @@ export const defaultLandingSettings: LandingSettings = {
       imagePath: '/screenshots/roles-permissions.png',
     },
   ],
+  heroBanners: [
+    {
+      id: 'hero-banner-ops',
+      eyebrow: 'Document operations command center',
+      title: 'Run enterprise document workflows with calmer execution and sharper control.',
+      description: 'Bring generation, approvals, collaboration, and tracked delivery into one polished workspace built for modern teams.',
+      imagePath: '/screenshots/document-ops.png',
+    },
+    {
+      id: 'hero-banner-analytics',
+      eyebrow: 'Leadership-grade visibility',
+      title: 'Give operations, legal, and leadership a dashboard that feels premium and useful.',
+      description: 'Surface the right activity, turnaround signals, and bottlenecks without turning the homepage into clutter.',
+      imagePath: '/screenshots/dashboard-overview.png',
+    },
+    {
+      id: 'hero-banner-governance',
+      eyebrow: 'Governance without friction',
+      title: 'Present a cleaner approval system with branded, client-ready document experiences.',
+      description: 'Keep controls strong while making the product feel modern, elegant, and easier to trust on every device.',
+      imagePath: '/screenshots/admin-panel.png',
+    },
+  ],
+  audienceProfiles: [
+    {
+      id: 'audience-legal',
+      businessType: 'Legal and compliance teams',
+      usage: 'Run contracts, notices, approvals, and governed review cycles from one controlled workspace.',
+      benefit: 'Reduce turnaround time while keeping evidence, access control, and policy-led execution visible.',
+    },
+    {
+      id: 'audience-hr',
+      businessType: 'HR and people operations',
+      usage: 'Handle offer letters, onboarding packets, employee forms, and signature collection with cleaner workflows.',
+      benefit: 'Improve candidate and employee experience while reducing repetitive admin work.',
+    },
+    {
+      id: 'audience-client-services',
+      businessType: 'Agencies and client service businesses',
+      usage: 'Share branded documents, collect approvals, request supporting files, and manage delivery from one portal.',
+      benefit: 'Present a more polished client experience and keep every request easier to track.',
+    },
+    {
+      id: 'audience-finance',
+      businessType: 'Finance and procurement teams',
+      usage: 'Coordinate vendor documents, purchase approvals, compliance packs, and renewal workflows.',
+      benefit: 'Create stronger audit readiness and reduce delays caused by fragmented paperwork.',
+    },
+  ],
   pricingPlans: [
     {
       id: 'launch',
@@ -173,6 +224,7 @@ export const defaultLandingSettings: LandingSettings = {
   ],
   enabledSections: {
     hero: true,
+    audiences: true,
     snapshot: true,
     softwareModules: true,
     screenshots: true,
@@ -244,6 +296,8 @@ export async function getLandingSettings() {
     stats: Array.isArray(settings.stats) && settings.stats.length ? settings.stats : defaultLandingSettings.stats,
     softwareModules: Array.isArray(settings.softwareModules) && settings.softwareModules.length ? settings.softwareModules : defaultLandingSettings.softwareModules,
     featureScreenshots: Array.isArray(settings.featureScreenshots) && settings.featureScreenshots.length ? settings.featureScreenshots : defaultLandingSettings.featureScreenshots,
+    heroBanners: Array.isArray(settings.heroBanners) && settings.heroBanners.length ? settings.heroBanners : defaultLandingSettings.heroBanners,
+    audienceProfiles: Array.isArray(settings.audienceProfiles) && settings.audienceProfiles.length ? settings.audienceProfiles : defaultLandingSettings.audienceProfiles,
     pricingPlans: Array.isArray(settings.pricingPlans) && settings.pricingPlans.length ? settings.pricingPlans : defaultLandingSettings.pricingPlans,
     enabledSections: {
       ...defaultLandingSettings.enabledSections,

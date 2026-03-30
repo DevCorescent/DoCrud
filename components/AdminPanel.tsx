@@ -66,6 +66,8 @@ const emptyLandingSettings: LandingSettings = {
   secondaryCtaHref: '/login',
   socialProofLabel: '',
   socialProofItems: [''],
+  audienceSectionTitle: '',
+  audienceSectionSubtitle: '',
   featureSectionTitle: '',
   softwareModulesTitle: '',
   softwareModulesSubtitle: '',
@@ -88,10 +90,13 @@ const emptyLandingSettings: LandingSettings = {
   featureCards: [],
   stats: [],
   softwareModules: [],
+  heroBanners: [],
+  audienceProfiles: [],
   featureScreenshots: [],
   pricingPlans: [],
   enabledSections: {
     hero: true,
+    audiences: true,
     snapshot: true,
     softwareModules: true,
     screenshots: true,
@@ -494,9 +499,15 @@ export default function AdminPanel() {
       body: JSON.stringify({
         ...landingSettings,
         heroBadge: landingSettings.heroBadge.trim(),
+        heroTitle: landingSettings.heroTitle.trim(),
+        heroSubtitle: landingSettings.heroSubtitle.trim(),
+        primaryCtaLabel: landingSettings.primaryCtaLabel.trim(),
+        primaryCtaHref: landingSettings.primaryCtaHref.trim(),
         secondaryCtaLabel: landingSettings.secondaryCtaLabel.trim(),
         secondaryCtaHref: landingSettings.secondaryCtaHref.trim(),
         socialProofLabel: landingSettings.socialProofLabel.trim(),
+        audienceSectionTitle: landingSettings.audienceSectionTitle.trim(),
+        audienceSectionSubtitle: landingSettings.audienceSectionSubtitle.trim(),
         socialProofItems: landingSettings.socialProofItems.map((item) => item.trim()).filter(Boolean),
         featureSectionTitle: landingSettings.featureSectionTitle.trim(),
         softwareModulesTitle: landingSettings.softwareModulesTitle.trim(),
@@ -539,6 +550,25 @@ export default function AdminPanel() {
             capabilities: module.capabilities.map((item) => item.trim()).filter(Boolean),
           }))
           .filter((module) => module.title && module.description),
+        heroBanners: landingSettings.heroBanners
+          .map((banner, index) => ({
+            ...banner,
+            id: banner.id?.trim() || `hero-banner-${index + 1}`,
+            eyebrow: banner.eyebrow.trim(),
+            title: banner.title.trim(),
+            description: banner.description.trim(),
+            imagePath: banner.imagePath.trim(),
+          }))
+          .filter((banner) => banner.eyebrow && banner.title && banner.description && banner.imagePath),
+        audienceProfiles: landingSettings.audienceProfiles
+          .map((card, index) => ({
+            ...card,
+            id: card.id?.trim() || `audience-${index + 1}`,
+            businessType: card.businessType.trim(),
+            usage: card.usage.trim(),
+            benefit: card.benefit.trim(),
+          }))
+          .filter((card) => card.businessType && card.usage && card.benefit),
         featureScreenshots: landingSettings.featureScreenshots
           .map((shot, index) => ({
             ...shot,
@@ -1652,6 +1682,7 @@ export default function AdminPanel() {
                   <p className="text-sm font-semibold text-slate-900">Homepage Section Visibility</p>
                   <div className="mt-4 grid gap-3 md:grid-cols-2">
                     <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={landingSettings.enabledSections.hero} onChange={(e) => setLandingSettings((prev) => ({ ...prev, enabledSections: { ...prev.enabledSections, hero: e.target.checked } }))} />Hero section</label>
+                    <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={landingSettings.enabledSections.audiences} onChange={(e) => setLandingSettings((prev) => ({ ...prev, enabledSections: { ...prev.enabledSections, audiences: e.target.checked } }))} />Who can use docrud section</label>
                     <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={landingSettings.enabledSections.snapshot} onChange={(e) => setLandingSettings((prev) => ({ ...prev, enabledSections: { ...prev.enabledSections, snapshot: e.target.checked } }))} />Platform snapshot</label>
                     <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={landingSettings.enabledSections.softwareModules} onChange={(e) => setLandingSettings((prev) => ({ ...prev, enabledSections: { ...prev.enabledSections, softwareModules: e.target.checked } }))} />Software modules</label>
                     <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={landingSettings.enabledSections.screenshots} onChange={(e) => setLandingSettings((prev) => ({ ...prev, enabledSections: { ...prev.enabledSections, screenshots: e.target.checked } }))} />Screenshots section</label>
@@ -1697,8 +1728,20 @@ export default function AdminPanel() {
                   <Input value={landingSettings.contactHeading} onChange={(e) => setLandingSettings((prev) => ({ ...prev, contactHeading: e.target.value }))} />
                 </div>
                 <div>
+                  <label className="mb-1 block text-sm font-medium">Audience Section Title</label>
+                  <Input value={landingSettings.audienceSectionTitle} onChange={(e) => setLandingSettings((prev) => ({ ...prev, audienceSectionTitle: e.target.value }))} />
+                </div>
+                <div>
                   <label className="mb-1 block text-sm font-medium">Social Proof Label</label>
                   <Input value={landingSettings.socialProofLabel} onChange={(e) => setLandingSettings((prev) => ({ ...prev, socialProofLabel: e.target.value }))} />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="mb-1 block text-sm font-medium">Audience Section Subtitle</label>
+                  <textarea
+                    value={landingSettings.audienceSectionSubtitle}
+                    onChange={(e) => setLandingSettings((prev) => ({ ...prev, audienceSectionSubtitle: e.target.value }))}
+                    className="min-h-[90px] w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                  />
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium">Contact Email</label>
@@ -1792,6 +1835,143 @@ export default function AdminPanel() {
                     className="min-h-[90px] w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm"
                   />
                 </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-lg font-semibold">Hero Banner Slides</h3>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setLandingSettings((prev) => ({
+                      ...prev,
+                      heroBanners: [...prev.heroBanners, { id: `hero-banner-${Date.now()}`, eyebrow: '', title: '', description: '', imagePath: '' }],
+                    }))}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Banner
+                  </Button>
+                </div>
+                {landingSettings.heroBanners.map((banner, index) => (
+                  <Card key={banner.id || `hero-banner-${index}`}>
+                    <CardContent className="grid gap-4 p-5 md:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-sm font-medium">Eyebrow</label>
+                        <Input value={banner.eyebrow} onChange={(e) => setLandingSettings((prev) => ({
+                          ...prev,
+                          heroBanners: prev.heroBanners.map((entry, entryIndex) => entryIndex === index ? { ...entry, eyebrow: e.target.value } : entry),
+                        }))} />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-sm font-medium">Image Path</label>
+                        <Input value={banner.imagePath} onChange={(e) => setLandingSettings((prev) => ({
+                          ...prev,
+                          heroBanners: prev.heroBanners.map((entry, entryIndex) => entryIndex === index ? { ...entry, imagePath: e.target.value } : entry),
+                        }))} placeholder="/screenshots/document-ops.png" />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="mb-1 block text-sm font-medium">Title</label>
+                        <Input value={banner.title} onChange={(e) => setLandingSettings((prev) => ({
+                          ...prev,
+                          heroBanners: prev.heroBanners.map((entry, entryIndex) => entryIndex === index ? { ...entry, title: e.target.value } : entry),
+                        }))} />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="mb-1 block text-sm font-medium">Description</label>
+                        <textarea
+                          value={banner.description}
+                          onChange={(e) => setLandingSettings((prev) => ({
+                            ...prev,
+                            heroBanners: prev.heroBanners.map((entry, entryIndex) => entryIndex === index ? { ...entry, description: e.target.value } : entry),
+                          }))}
+                          className="min-h-[90px] w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                        />
+                      </div>
+                      <div className="md:col-span-2 flex justify-end">
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => setLandingSettings((prev) => ({
+                            ...prev,
+                            heroBanners: prev.heroBanners.filter((_, entryIndex) => entryIndex !== index),
+                          }))}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Remove Banner
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-lg font-semibold">Who Can Use docrud Cards</h3>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setLandingSettings((prev) => ({
+                      ...prev,
+                      audienceProfiles: [...prev.audienceProfiles, { id: `audience-${Date.now()}`, businessType: '', usage: '', benefit: '' }],
+                    }))}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Audience Card
+                  </Button>
+                </div>
+                {landingSettings.audienceProfiles.map((profile, index) => (
+                  <Card key={profile.id || `audience-${index}`}>
+                    <CardContent className="grid gap-4 p-5 md:grid-cols-2">
+                      <div className="md:col-span-2">
+                        <label className="mb-1 block text-sm font-medium">Business Type</label>
+                        <Input value={profile.businessType} onChange={(e) => setLandingSettings((prev) => ({
+                          ...prev,
+                          audienceProfiles: prev.audienceProfiles.map((entry, entryIndex) => entryIndex === index ? { ...entry, businessType: e.target.value } : entry),
+                        }))} />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-sm font-medium">How They Use docrud</label>
+                        <textarea
+                          value={profile.usage}
+                          onChange={(e) => setLandingSettings((prev) => ({
+                            ...prev,
+                            audienceProfiles: prev.audienceProfiles.map((entry, entryIndex) => entryIndex === index ? { ...entry, usage: e.target.value } : entry),
+                          }))}
+                          className="min-h-[90px] w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-sm font-medium">Business Benefit</label>
+                        <textarea
+                          value={profile.benefit}
+                          onChange={(e) => setLandingSettings((prev) => ({
+                            ...prev,
+                            audienceProfiles: prev.audienceProfiles.map((entry, entryIndex) => entryIndex === index ? { ...entry, benefit: e.target.value } : entry),
+                          }))}
+                          className="min-h-[90px] w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                        />
+                      </div>
+                      <div className="md:col-span-2 flex justify-end">
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => setLandingSettings((prev) => ({
+                            ...prev,
+                            audienceProfiles: prev.audienceProfiles.filter((_, entryIndex) => entryIndex !== index),
+                          }))}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Remove Audience Card
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
 
               <div className="space-y-3">
