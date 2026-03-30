@@ -9,7 +9,7 @@
     ],
     "isActive": true,
     "createdAt": "2024-01-01T00:00:00Z",
-    "lastLogin": "2024-01-01T00:00:00Z"
+    "lastLogin": "2026-03-30T06:27:43.622Z"
   },
   {
     "id": "2",
@@ -35,5 +35,66 @@
     "isActive": true,
     "createdAt": "2024-01-01T00:00:00Z",
     "lastLogin": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "user-1774505469593-09o7fuh",
+    "createdAt": "2026-03-26T06:11:09.593Z",
+    "email": "abhishekm@corescent.in",
+    "name": "Abhishek Malviya",
+    "role": "employee",
+    "permissions": [
+      "internship-letter"
+    ],
+    "isActive": true,
+    "passwordHash": "9887749619b91de9b5e8acfa9fa66d62b14afe10e30b874604c1ac87f62e15ec07b6337cb7f31ea222cac25c283818c76f664dba2b902c3f2b0d01029727337f",
+    "passwordSalt": "77ad2561f4fdacaf56291dfa8ec206d3"
+  },
+  {
+    "id": "user-1774506351280",
+    "name": "test",
+    "email": "test@gmail.com",
+    "role": "client",
+    "permissions": [
+      "all"
+    ],
+    "isActive": true,
+    "createdAt": "2026-03-26T06:25:51.280Z",
+    "organizationId": "org-1774506351280",
+    "organizationName": "test",
+    "organizationDomain": "test.com",
+    "createdFromSignup": true,
+    "subscription": {
+      "planId": "free-starter",
+      "planName": "Free Starter",
+      "status": "trial",
+      "startedAt": "2026-03-26T06:25:51.280Z"
+    },
+    "passwordHash": "37e8fb9f44ad199bf661e49decefea47f05b093308e1ff14e7671051eb79d9fd1b814637236754c01d057dbe1f2651a98cd57c9ebc8b73ae49f09d3bb4fee26d",
+    "passwordSalt": "15bdd9f6a9a7a916e5262ccf41763806",
+    "lastLogin": "2026-03-26T06:38:31.163Z"
+  },
+  {
+    "id": "user-1774851249906",
+    "name": "test123",
+    "email": "test123@gmail.com",
+    "role": "client",
+    "permissions": [
+      "all"
+    ],
+    "isActive": true,
+    "createdAt": "2026-03-30T06:14:09.906Z",
+    "organizationId": "user-1774851249906",
+    "organizationName": "test1234",
+    "organizationDomain": "test.com",
+    "createdFromSignup": true,
+    "subscription": {
+      "planId": "free-starter",
+      "planName": "Free Starter",
+      "status": "trial",
+      "startedAt": "2026-03-30T06:14:09.906Z"
+    },
+    "passwordHash": "1a2820a4e2f7a5206b6476dfcf8942457f4f68f0ef62bb4a1cc7d160b86609b4686459b08c14e9183789ecbe75f77bdf43de4681b180d2e60080f4b38e69ad54",
+    "passwordSalt": "e48346f35a9212f44b041bf4b67cb8e9",
+    "lastLogin": "2026-03-30T06:14:22.434Z"
   }
 ]

@@ -80,6 +80,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       referenceNumber: entry.referenceNumber,
       generatedAt: entry.generatedAt,
       generatedBy: entry.generatedBy,
+      designPreset: entry.editorState?.designPreset,
       signature: adminSignature,
       recipientSignature,
     });

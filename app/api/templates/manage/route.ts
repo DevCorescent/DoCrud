@@ -17,6 +17,10 @@ function isAdmin(session: Awaited<ReturnType<typeof getAuthSession>>) {
   return session?.user?.role === 'admin';
 }
 
+function canManageTemplates(session: Awaited<ReturnType<typeof getAuthSession>>) {
+  return session?.user?.role === 'admin' || session?.user?.role === 'client';
+}
+
 function isValidField(field: DocumentField) {
   return Boolean(field.id && field.name && field.label && field.type);
 }
@@ -34,7 +38,7 @@ function isValidTemplatePayload(template: Partial<DocumentTemplate>) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getAuthSession();
-    if (!isAdmin(session)) {
+    if (!canManageTemplates(session)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -53,6 +57,8 @@ export async function POST(request: NextRequest) {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       version: 1,
+      organizationId: session?.user?.role === 'client' ? session.user.id : undefined,
+      organizationName: session?.user?.role === 'client' ? session.user.organizationName || session.user.name || 'Business Workspace' : undefined,
     };
 
     customTemplates.push(newTemplate);
@@ -68,7 +74,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const session = await getAuthSession();
-    if (!isAdmin(session)) {
+    if (!canManageTemplates(session)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -82,6 +88,9 @@ export async function PUT(request: NextRequest) {
 
     if (templateIndex === -1) {
       return NextResponse.json({ error: 'Template not found' }, { status: 404 });
+    }
+    if (session?.user?.role === 'client' && customTemplates[templateIndex].organizationId !== session.user.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     customTemplates[templateIndex] = {
@@ -103,7 +112,7 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const session = await getAuthSession();
-    if (!isAdmin(session)) {
+    if (!canManageTemplates(session)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -115,11 +124,14 @@ export async function DELETE(request: NextRequest) {
     }
 
     const customTemplates = await getCustomTemplates();
-    const filteredTemplates = customTemplates.filter(t => t.id !== id);
-
-    if (filteredTemplates.length === customTemplates.length) {
+    const targetTemplate = customTemplates.find((template) => template.id === id);
+    if (!targetTemplate) {
       return NextResponse.json({ error: 'Template not found' }, { status: 404 });
     }
+    if (session?.user?.role === 'client' && targetTemplate.organizationId !== session.user.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    const filteredTemplates = customTemplates.filter(t => t.id !== id);
 
     await saveCustomTemplates(filteredTemplates);
 

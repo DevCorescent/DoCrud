@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -23,6 +22,14 @@ interface SharedDocumentPayload {
   templateFields?: DocumentField[];
   data?: Record<string, string>;
   recipientAccess?: RecipientAccessLevel;
+  dataCollectionEnabled?: boolean;
+  dataCollectionStatus?: 'disabled' | 'sent' | 'submitted' | 'reviewed';
+  dataCollectionInstructions?: string;
+  dataCollectionSubmittedAt?: string;
+  dataCollectionSubmittedBy?: string;
+  dataCollectionReviewNotes?: string;
+  dataCollectionReviewedAt?: string;
+  dataCollectionReviewedBy?: string;
   requiredDocumentWorkflowEnabled?: boolean;
   requiredDocuments?: string[];
   submittedDocuments?: SubmittedDocument[];
@@ -156,10 +163,10 @@ export default function SharedDocumentPage() {
 
   const shareDocument = async () => {
     if (!shareUrl) return;
-    const text = `Review this Corescent Technologies document${sharePassword ? `\nSigning password: ${sharePassword}` : ''}`;
+    const text = `Review this docrud document${sharePassword ? `\nSigning password: ${sharePassword}` : ''}`;
     if (navigator.share) {
       await navigator.share({
-        title: documentData?.templateName || 'Corescent Document',
+        title: documentData?.templateName || 'docrud Document',
         text,
         url: shareUrl,
       });
@@ -297,6 +304,14 @@ export default function SharedDocumentPage() {
         ...prev,
         data: payload.data || editableData,
         previewHtml: payload.previewHtml || prev.previewHtml,
+        dataCollectionEnabled: payload.dataCollectionEnabled ?? prev.dataCollectionEnabled,
+        dataCollectionStatus: payload.dataCollectionStatus || prev.dataCollectionStatus,
+        dataCollectionInstructions: payload.dataCollectionInstructions ?? prev.dataCollectionInstructions,
+        dataCollectionSubmittedAt: payload.dataCollectionSubmittedAt || prev.dataCollectionSubmittedAt,
+        dataCollectionSubmittedBy: payload.dataCollectionSubmittedBy || prev.dataCollectionSubmittedBy,
+        dataCollectionReviewNotes: payload.dataCollectionReviewNotes ?? prev.dataCollectionReviewNotes,
+        dataCollectionReviewedAt: payload.dataCollectionReviewedAt || prev.dataCollectionReviewedAt,
+        dataCollectionReviewedBy: payload.dataCollectionReviewedBy || prev.dataCollectionReviewedBy,
         collaborationComments: payload.collaborationComments || prev.collaborationComments || [],
       } : prev);
       setSuccessMessage('Document updates saved successfully.');
@@ -453,13 +468,9 @@ export default function SharedDocumentPage() {
       <div className="mx-auto max-w-7xl space-y-4">
         <Card className="rounded-3xl border-0 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
           <CardHeader>
-            <Image
-              src="/corescent-logo.png"
-              alt="Corescent"
-              width={188}
-              height={72}
-              className="h-auto w-[136px] sm:w-[164px] lg:w-[188px]"
-            />
+            <div className="inline-flex w-fit items-center rounded-2xl bg-slate-950 px-4 py-2 text-xl font-black lowercase tracking-[0.12em] text-white shadow-[0_16px_36px_rgba(15,23,42,0.18)]">
+              docrud
+            </div>
             <CardTitle className="text-2xl md:text-3xl">{documentData?.templateName || 'Shared Document'}</CardTitle>
             {documentData && (
               <>
@@ -471,9 +482,11 @@ export default function SharedDocumentPage() {
           <CardContent className="space-y-4">
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
               <div className="min-w-0 rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 p-5 text-white">
-                <p className="text-xs uppercase tracking-[0.22em] text-emerald-200">Secure Signing</p>
+                <p className="text-xs uppercase tracking-[0.22em] text-emerald-200">{documentData?.dataCollectionEnabled ? 'Secure Data Collection' : 'Secure Signing'}</p>
                 <p className="mt-3 text-sm text-slate-200">
-                  Review the document, verify the password shared with you, and sign directly on this secure Corescent page.
+                  {documentData?.dataCollectionEnabled
+                    ? 'Complete the requested document form, submit your details securely, and the admin team will review and finalize the generated document.'
+                    : 'Review the document, verify the password shared with you, and sign directly on this secure docrud page.'}
                 </p>
               </div>
               <div className="min-w-0 rounded-3xl border bg-slate-50 p-5">
@@ -679,7 +692,43 @@ export default function SharedDocumentPage() {
               <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
                 {documentData.recipientAccess === 'edit' && (
                   <div className="min-w-0 rounded-2xl border bg-white p-4 md:p-6">
-                    <h2 className="mb-4 text-lg font-semibold text-slate-900">Editable Document Fields</h2>
+                    <div className="mb-4 space-y-2">
+                      <h2 className="text-lg font-semibold text-slate-900">{documentData.dataCollectionEnabled ? 'Complete Requested Form Fields' : 'Editable Document Fields'}</h2>
+                      {documentData.dataCollectionEnabled && (
+                        <>
+                          <p className="text-sm text-slate-600">
+                            Status: <span className="font-medium text-slate-900">
+                              {documentData.dataCollectionStatus === 'finalized'
+                                ? 'Finalized for document preparation'
+                                : documentData.dataCollectionStatus === 'reviewed'
+                                  ? 'Reviewed by admin'
+                                  : documentData.dataCollectionStatus === 'changes_requested'
+                                    ? 'Changes requested'
+                                    : documentData.dataCollectionStatus === 'submitted'
+                                      ? 'Submitted'
+                                      : 'Awaiting your submission'}
+                            </span>
+                          </p>
+                          {documentData.dataCollectionReviewNotes && (
+                            <div className="rounded-2xl bg-rose-50 p-4 text-sm text-rose-900">
+                              <p className="font-medium">Admin review note</p>
+                              <p className="mt-1">{documentData.dataCollectionReviewNotes}</p>
+                              {documentData.dataCollectionReviewedAt && (
+                                <p className="mt-2 text-xs text-rose-700">
+                                  Updated on {new Date(documentData.dataCollectionReviewedAt).toLocaleString()}
+                                  {documentData.dataCollectionReviewedBy ? ` by ${documentData.dataCollectionReviewedBy}` : ''}.
+                                </p>
+                              )}
+                            </div>
+                          )}
+                          {documentData.dataCollectionInstructions && (
+                            <div className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-900">
+                              {documentData.dataCollectionInstructions}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       {(documentData.templateFields || []).map((field) => (
                         <div key={field.id} className={field.type === 'textarea' ? 'md:col-span-2' : ''}>
@@ -701,9 +750,15 @@ export default function SharedDocumentPage() {
                     </div>
                     <div className="mt-4 flex justify-end">
                       <Button onClick={() => void saveEdits()} disabled={isSavingEdits || !reviewerName.trim()}>
-                        {isSavingEdits ? 'Saving...' : 'Save Document Updates'}
+                        {isSavingEdits ? 'Saving...' : documentData.dataCollectionEnabled ? 'Submit Form Data' : 'Save Document Updates'}
                       </Button>
                     </div>
+                    {documentData.dataCollectionEnabled && documentData.dataCollectionSubmittedAt && (
+                      <p className="mt-3 text-xs text-slate-500">
+                        Latest submission saved on {new Date(documentData.dataCollectionSubmittedAt).toLocaleString()}
+                        {documentData.dataCollectionSubmittedBy ? ` by ${documentData.dataCollectionSubmittedBy}` : ''}.
+                      </p>
+                    )}
                   </div>
                 )}
 

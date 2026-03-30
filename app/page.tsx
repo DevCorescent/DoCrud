@@ -1,30 +1,20 @@
-'use client';
+import PublicHomepage from '@/components/PublicHomepage';
+import { getLandingSettings, getThemeSettings } from '@/lib/server/settings';
+import { getPublicSaasPlans } from '@/lib/server/saas';
 
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import DocumentGenerator from '../components/DocumentGenerator';
-
-export default function Home() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (status === 'loading') return; // Still loading
-    if (!session) router.push('/login');
-  }, [session, status, router]);
-
-  if (status === 'loading') {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-  }
-
-  if (!session) {
-    return null;
-  }
+export default async function Home() {
+  const [landingSettings, themeSettings, saasPlans] = await Promise.all([
+    getLandingSettings(),
+    getThemeSettings(),
+    getPublicSaasPlans(),
+  ]);
 
   return (
-    <main className="min-h-screen bg-gray-100">
-      <DocumentGenerator />
-    </main>
+    <PublicHomepage
+      settings={landingSettings}
+      softwareName={themeSettings.softwareName}
+      accentLabel={themeSettings.accentLabel}
+      saasPlans={saasPlans}
+    />
   );
 }

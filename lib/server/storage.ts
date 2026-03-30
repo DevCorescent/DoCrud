@@ -9,6 +9,14 @@ export const mailSettingsPath = path.join(dataDir, 'mail-settings.json');
 export const automationSettingsPath = path.join(dataDir, 'automation-settings.json');
 export const collaborationSettingsPath = path.join(dataDir, 'collaboration-settings.json');
 export const signatureSettingsPath = path.join(dataDir, 'signature-settings.json');
+export const roleProfilesPath = path.join(dataDir, 'role-profiles.json');
+export const dropdownOptionsPath = path.join(dataDir, 'dropdown-options.json');
+export const themeSettingsPath = path.join(dataDir, 'theme-settings.json');
+export const platformConfigPath = path.join(dataDir, 'platform-config.json');
+export const landingSettingsPath = path.join(dataDir, 'landing-settings.json');
+export const contactRequestsPath = path.join(dataDir, 'contact-requests.json');
+export const saasPlansPath = path.join(dataDir, 'saas-plans.json');
+export const businessSettingsPath = path.join(dataDir, 'business-settings.json');
 
 export async function ensureDirectory(filePath: string) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });

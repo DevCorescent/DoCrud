@@ -9,6 +9,15 @@ import { getDeviceLabel, getRequestIp, getRequestUserAgent } from '@/lib/server/
 
 export const dynamic = 'force-dynamic';
 
+function getShareAccessError(entry: Awaited<ReturnType<typeof getHistoryEntries>>[number]) {
+  if (entry.revokedAt) return 'This shared link has been revoked.';
+  if (entry.shareExpiresAt && new Date(entry.shareExpiresAt).getTime() < Date.now()) return 'This shared link has expired.';
+  const totalAccesses = (entry.openCount || 0) + (entry.downloadCount || 0);
+  if (entry.shareAccessPolicy === 'one_time' && totalAccesses >= 1) return 'This one-time link has already been used.';
+  if (entry.maxAccessCount && totalAccesses >= entry.maxAccessCount) return 'This shared link has reached its allowed access limit.';
+  return null;
+}
+
 export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const history = await getHistoryEntries();
@@ -22,6 +31,11 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
     const template = [...documentTemplates, ...customTemplates].find((item) => item.id === entry.templateId);
     const password = _request.nextUrl.searchParams.get('password')?.trim().toUpperCase();
     const passwordValid = password && entry.sharePassword === password;
+    const accessError = passwordValid ? getShareAccessError(entry) : null;
+
+    if (passwordValid && accessError) {
+      return NextResponse.json({ error: accessError, requiresPassword: true, passwordValidated: false }, { status: 410 });
+    }
 
     if (passwordValid) {
       await updateHistoryEntry(entry.id, (current) => ({
@@ -44,6 +58,8 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
     return NextResponse.json({
       requiresPassword: true,
       passwordValidated: Boolean(passwordValid),
+      shareAccessPolicy: entry.shareAccessPolicy || 'standard',
+      shareExpiresAt: entry.shareExpiresAt,
       id: entry.id,
       shareId: entry.shareId,
       templateName: entry.templateName,
@@ -53,6 +69,14 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
       templateFields: passwordValid ? template?.fields || [] : [],
       data: passwordValid ? entry.data : {},
       recipientAccess: passwordValid ? entry.recipientAccess : undefined,
+      dataCollectionEnabled: passwordValid ? entry.dataCollectionEnabled : false,
+      dataCollectionStatus: passwordValid ? entry.dataCollectionStatus : 'disabled',
+      dataCollectionInstructions: passwordValid ? entry.dataCollectionInstructions : undefined,
+      dataCollectionSubmittedAt: passwordValid ? entry.dataCollectionSubmittedAt : undefined,
+      dataCollectionSubmittedBy: passwordValid ? entry.dataCollectionSubmittedBy : undefined,
+      dataCollectionReviewNotes: passwordValid ? entry.dataCollectionReviewNotes : undefined,
+      dataCollectionReviewedAt: passwordValid ? entry.dataCollectionReviewedAt : undefined,
+      dataCollectionReviewedBy: passwordValid ? entry.dataCollectionReviewedBy : undefined,
       requiredDocumentWorkflowEnabled: passwordValid ? entry.requiredDocumentWorkflowEnabled : false,
       requiredDocuments: passwordValid ? entry.requiredDocuments || [] : [],
       submittedDocuments: passwordValid ? entry.submittedDocuments || [] : [],
@@ -105,7 +129,11 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     if (entry.sharePassword !== payload.password?.trim().toUpperCase()) {
       return NextResponse.json({ error: 'Valid document password is required' }, { status: 403 });
     }
-    if (entry.recipientAccess !== 'edit') {
+    const accessError = getShareAccessError(entry);
+    if (accessError) {
+      return NextResponse.json({ error: accessError }, { status: 410 });
+    }
+    if (entry.recipientAccess !== 'edit' && !entry.dataCollectionEnabled) {
       return NextResponse.json({ error: 'This shared document is not editable' }, { status: 403 });
     }
 
@@ -137,14 +165,23 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       referenceNumber: entry.referenceNumber,
       generatedAt: entry.generatedAt,
       generatedBy: entry.generatedBy,
+      designPreset: entry.editorState?.designPreset,
       signature: adminSignature,
       recipientSignature,
+      watermarkLabel: entry.editorState?.watermarkLabel,
+      letterheadMode: entry.editorState?.letterheadMode,
+      letterheadImageDataUrl: entry.editorState?.letterheadImageDataUrl,
+      letterheadHtml: entry.editorState?.letterheadHtml,
     });
 
     const updated = await updateHistoryEntry(entry.id, (current) => ({
       ...current,
       data: nextData,
       previewHtml,
+      dataCollectionStatus: current.dataCollectionEnabled ? 'submitted' : current.dataCollectionStatus,
+      dataCollectionSubmittedAt: current.dataCollectionEnabled ? new Date().toISOString() : current.dataCollectionSubmittedAt,
+      dataCollectionSubmittedBy: current.dataCollectionEnabled ? (payload.reviewerName?.trim() || 'Recipient') : current.dataCollectionSubmittedBy,
+      dataCollectionReviewNotes: current.dataCollectionEnabled ? undefined : current.dataCollectionReviewNotes,
       editCount: (current.editCount || 0) + 1,
       lastEditedAt: new Date().toISOString(),
       accessEvents: [
@@ -160,6 +197,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       ].slice(0, 50),
       automationNotes: [
         ...(current.automationNotes || []),
+        ...(current.dataCollectionEnabled ? [`Data collection form submitted${payload.reviewerName?.trim() ? ` by ${payload.reviewerName.trim()}` : ''}`] : []),
         `Recipient content update saved${payload.reviewerName?.trim() ? ` by ${payload.reviewerName.trim()}` : ''}`,
       ],
     }));
