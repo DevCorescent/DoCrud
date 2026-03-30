@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/server/auth';
 import { defaultLandingSettings, getLandingSettings, saveLandingSettings } from '@/lib/server/settings';
-import { HomepageSectionToggles, LandingFeatureCard, LandingPricingPlan, LandingScreenshotCard, LandingSettings, LandingSoftwareModule, LandingStat } from '@/types/document';
+import { HomepageSectionToggles, LandingAudienceCard, LandingFeatureCard, LandingHeroBanner, LandingPricingPlan, LandingScreenshotCard, LandingSettings, LandingSoftwareModule, LandingStat } from '@/types/document';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,9 +53,29 @@ function normalizeScreenshotCard(card: Partial<LandingScreenshotCard>, fallbackI
   };
 }
 
+function normalizeHeroBanner(card: Partial<LandingHeroBanner>, fallbackIndex: number): LandingHeroBanner {
+  return {
+    id: card.id?.trim() || `hero-banner-${fallbackIndex + 1}`,
+    eyebrow: card.eyebrow?.trim() || `Banner ${fallbackIndex + 1}`,
+    title: card.title?.trim() || `Hero banner ${fallbackIndex + 1}`,
+    description: card.description?.trim() || 'Describe the banner story for this hero slide.',
+    imagePath: card.imagePath?.trim() || '',
+  };
+}
+
+function normalizeAudienceCard(card: Partial<LandingAudienceCard>, fallbackIndex: number): LandingAudienceCard {
+  return {
+    id: card.id?.trim() || `audience-${fallbackIndex + 1}`,
+    businessType: card.businessType?.trim() || `Business ${fallbackIndex + 1}`,
+    usage: card.usage?.trim() || 'Describe how this business would use docrud.',
+    benefit: card.benefit?.trim() || 'Describe the outcome or benefit for this business.',
+  };
+}
+
 function normalizeSectionToggles(toggles: Partial<HomepageSectionToggles> | undefined, current: HomepageSectionToggles): HomepageSectionToggles {
   return {
     hero: typeof toggles?.hero === 'boolean' ? toggles.hero : current.hero,
+    audiences: typeof toggles?.audiences === 'boolean' ? toggles.audiences : current.audiences,
     snapshot: typeof toggles?.snapshot === 'boolean' ? toggles.snapshot : current.snapshot,
     softwareModules: typeof toggles?.softwareModules === 'boolean' ? toggles.softwareModules : current.softwareModules,
     screenshots: typeof toggles?.screenshots === 'boolean' ? toggles.screenshots : current.screenshots,
@@ -92,6 +112,8 @@ export async function PUT(request: NextRequest) {
       secondaryCtaLabel: payload.secondaryCtaLabel?.trim() || current.secondaryCtaLabel,
       secondaryCtaHref: payload.secondaryCtaHref?.trim() || current.secondaryCtaHref,
       socialProofLabel: payload.socialProofLabel?.trim() || current.socialProofLabel,
+      audienceSectionTitle: payload.audienceSectionTitle?.trim() || current.audienceSectionTitle,
+      audienceSectionSubtitle: payload.audienceSectionSubtitle?.trim() || current.audienceSectionSubtitle,
       socialProofItems: Array.isArray(payload.socialProofItems)
         ? payload.socialProofItems.map((item) => String(item).trim()).filter(Boolean)
         : current.socialProofItems,
@@ -127,6 +149,12 @@ export async function PUT(request: NextRequest) {
       softwareModules: Array.isArray(payload.softwareModules) && payload.softwareModules.length
         ? payload.softwareModules.map((module, index) => normalizeSoftwareModule(module, index))
         : current.softwareModules,
+      heroBanners: Array.isArray(payload.heroBanners) && payload.heroBanners.length
+        ? payload.heroBanners.map((card, index) => normalizeHeroBanner(card, index))
+        : current.heroBanners,
+      audienceProfiles: Array.isArray(payload.audienceProfiles) && payload.audienceProfiles.length
+        ? payload.audienceProfiles.map((card, index) => normalizeAudienceCard(card, index))
+        : current.audienceProfiles,
       featureScreenshots: Array.isArray(payload.featureScreenshots) && payload.featureScreenshots.length
         ? payload.featureScreenshots.map((card, index) => normalizeScreenshotCard(card, index))
         : current.featureScreenshots,

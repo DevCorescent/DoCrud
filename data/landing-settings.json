@@ -1,7 +1,7 @@
 {
   "heroBadge": "B2B Business Document Software",
   "heroTitle": "The sleekest way to run document operations across teams, approvals, and clients",
-  "heroSubtitle": "Docuside brings together document generation, approval routing, client collaboration, file governance, and premium white-label workflows in one polished control layer.",
+  "heroSubtitle": "docrud brings together document generation, approval routing, client collaboration, file governance, and premium white-label workflows in one polished control layer.",
   "primaryCtaLabel": "Book a Demo",
   "primaryCtaHref": "#contact-us",
   "secondaryCtaLabel": "Open Login",
@@ -13,7 +13,9 @@
     "Audit Trails",
     "Custom Workflows"
   ],
-  "featureSectionTitle": "What makes Docuside premium",
+  "audienceSectionTitle": "Who can use docrud?",
+  "audienceSectionSubtitle": "docrud is built for businesses that want cleaner document execution, stronger governance, and a more premium experience for both teams and clients.",
+  "featureSectionTitle": "What makes docrud premium",
   "softwareModulesTitle": "Everything your teams need in one document operating system",
   "softwareModulesSubtitle": "Each capability is built to work together so super admins, internal teams, and clients all move through the same clean lifecycle.",
   "pricingSectionTitle": "One-time purchase plans",
@@ -24,9 +26,9 @@
   "contactPhone": "+91 98765 43210",
   "contactHeading": "Talk to our team about your rollout",
   "contactSubtitle": "Share your document workflows, approval complexity, client portal needs, and branding expectations. We will shape the right one-time purchase and customization scope.",
-  "contactPageTitle": "Speak with Docuside",
+  "contactPageTitle": "Speak with docrud",
   "contactPageSubtitle": "Tell us where your document process slows down today. We will help you scope the right setup, customization path, and purchase plan.",
-  "demoPageTitle": "Schedule a tailored Docuside demo",
+  "demoPageTitle": "Schedule a tailored docrud demo",
   "demoPageSubtitle": "Walk through the platform with your workflows, teams, and approval structure in mind so the demo feels like your future system, not a generic showcase.",
   "demoBenefits": [
     "See document ops, approvals, file governance, and client flows together",
@@ -34,7 +36,7 @@
     "Discuss customization, migration, branding, and rollout planning live"
   ],
   "screenshotsSectionTitle": "See the software in action",
-  "screenshotsSectionSubtitle": "Real product views help buyers understand the depth of the workspace before they book a call. Showcase the parts of Docuside that matter most to your rollout.",
+  "screenshotsSectionSubtitle": "Real product views help buyers understand the depth of the workspace before they book a call. Showcase the parts of docrud that matter most to your rollout.",
   "featureHighlights": [
     "Role-based document generation, review, approval, and audit visibility",
     "Client-ready portal experience with controlled access and tracked activity",
@@ -146,6 +148,55 @@
       "imagePath": "/screenshots/roles-permissions.png"
     }
   ],
+  "heroBanners": [
+    {
+      "id": "hero-banner-ops",
+      "eyebrow": "Document operations command center",
+      "title": "Run enterprise document workflows with calmer execution and sharper control.",
+      "description": "Bring generation, approvals, collaboration, and tracked delivery into one polished workspace built for modern teams.",
+      "imagePath": "/screenshots/document-ops.png"
+    },
+    {
+      "id": "hero-banner-analytics",
+      "eyebrow": "Leadership-grade visibility",
+      "title": "Give operations, legal, and leadership a dashboard that feels premium and useful.",
+      "description": "Surface the right activity, turnaround signals, and bottlenecks without turning the homepage into clutter.",
+      "imagePath": "/screenshots/dashboard-overview.png"
+    },
+    {
+      "id": "hero-banner-governance",
+      "eyebrow": "Governance without friction",
+      "title": "Present a cleaner approval system with branded, client-ready document experiences.",
+      "description": "Keep controls strong while making the product feel modern, elegant, and easier to trust on every device.",
+      "imagePath": "/screenshots/admin-panel.png"
+    }
+  ],
+  "audienceProfiles": [
+    {
+      "id": "audience-legal",
+      "businessType": "Legal and compliance teams",
+      "usage": "Manage contracts, notices, approval flows, and governed review cycles from one structured workspace.",
+      "benefit": "Reduce legal turnaround time while keeping audit trails, accountability, and controlled access intact."
+    },
+    {
+      "id": "audience-hr",
+      "businessType": "HR and people operations",
+      "usage": "Run offer letters, onboarding packs, employee forms, and signature workflows with less manual follow-up.",
+      "benefit": "Deliver a smoother employee experience and reduce repetitive coordination work for HR teams."
+    },
+    {
+      "id": "audience-client-services",
+      "businessType": "Agencies and client service businesses",
+      "usage": "Share branded documents, collect requirements, route approvals, and coordinate delivery through one client-ready portal.",
+      "benefit": "Present a more premium client experience while keeping every request and document easier to track."
+    },
+    {
+      "id": "audience-finance",
+      "businessType": "Finance and procurement teams",
+      "usage": "Handle vendor paperwork, approval chains, compliance packs, and renewal workflows with stronger process visibility.",
+      "benefit": "Improve audit readiness and reduce delays caused by fragmented files, email trails, and manual approvals."
+    }
+  ],
   "pricingPlans": [
     {
       "id": "launch",
@@ -186,6 +237,7 @@
   ],
   "enabledSections": {
     "hero": true,
+    "audiences": true,
     "snapshot": false,
     "softwareModules": true,
     "screenshots": false,
