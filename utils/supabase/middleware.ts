@@ -6,19 +6,25 @@ function getSupabaseConfig() {
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Supabase middleware env vars are missing.');
+    return null;
   }
 
   return { supabaseUrl, supabaseKey };
 }
 
 export async function updateSession(request: NextRequest) {
-  const { supabaseUrl, supabaseKey } = getSupabaseConfig();
+  const config = getSupabaseConfig();
   let response = NextResponse.next({
     request: {
       headers: request.headers,
     },
   });
+
+  if (!config) {
+    return response;
+  }
+
+  const { supabaseUrl, supabaseKey } = config;
 
   const supabase = createServerClient(supabaseUrl, supabaseKey, {
     cookies: {
@@ -35,7 +41,11 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  await supabase.auth.getUser();
+  try {
+    await supabase.auth.getUser();
+  } catch {
+    return response;
+  }
 
   return response;
 }
