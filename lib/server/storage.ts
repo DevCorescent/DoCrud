@@ -1,5 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
+import { getAppStateKey, isDatabaseConfigured, readAppState, writeAppState } from '@/lib/server/database';
 
 export const dataDir = path.join(process.cwd(), 'data');
 export const customTemplatesPath = path.join(dataDir, 'custom', 'templates.json');
@@ -23,15 +24,48 @@ export async function ensureDirectory(filePath: string) {
 }
 
 export async function readJsonFile<T>(filePath: string, fallback: T): Promise<T> {
+  const appStateKey = getAppStateKey(filePath);
+
+  if (isDatabaseConfigured()) {
+    try {
+      const databaseValue = await readAppState<T>(appStateKey);
+      if (databaseValue !== null) {
+        return databaseValue;
+      }
+    } catch (error) {
+      console.error(`Failed to read app state from database for ${appStateKey}`, error);
+    }
+  }
+
   try {
     const content = await fs.readFile(filePath, 'utf8');
-    return JSON.parse(content) as T;
+    const parsed = JSON.parse(content) as T;
+
+    if (isDatabaseConfigured()) {
+      try {
+        await writeAppState(appStateKey, parsed);
+      } catch (error) {
+        console.error(`Failed to seed app state into database for ${appStateKey}`, error);
+      }
+    }
+
+    return parsed;
   } catch {
     return fallback;
   }
 }
 
 export async function writeJsonFile<T>(filePath: string, data: T) {
+  if (isDatabaseConfigured()) {
+    try {
+      await writeAppState(getAppStateKey(filePath), data);
+      return;
+    } catch (error) {
+      console.error(`Failed to write app state to database for ${getAppStateKey(filePath)}`, error);
+      throw error;
+    }
+  }
+
   try {
     await ensureDirectory(filePath);
     await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
