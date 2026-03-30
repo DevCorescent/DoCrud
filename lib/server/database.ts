@@ -40,28 +40,33 @@ function getSupabaseProjectRef() {
 }
 
 function getDatabaseUrl() {
-  const rawUrl = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL || '';
-  if (!rawUrl) {
+  const explicitUrl = process.env.DATABASE_URL;
+  if (explicitUrl) {
+    return explicitUrl;
+  }
+
+  const supabaseDbUrl = process.env.SUPABASE_DB_URL || '';
+  if (!supabaseDbUrl) {
     return '';
   }
 
   const supabaseProjectRef = getSupabaseProjectRef();
-  if (!supabaseProjectRef || !rawUrl.includes('supabase.co')) {
-    return rawUrl;
+  if (!supabaseProjectRef || !supabaseDbUrl.includes('supabase.co')) {
+    return supabaseDbUrl;
   }
 
   try {
-    const parsed = new URL(rawUrl);
+    const parsed = new URL(supabaseDbUrl);
     const expectedHost = `db.${supabaseProjectRef}.supabase.co`;
     if (parsed.hostname !== expectedHost) {
       parsed.hostname = expectedHost;
       return parsed.toString();
     }
   } catch {
-    return rawUrl;
+    return supabaseDbUrl;
   }
 
-  return rawUrl;
+  return supabaseDbUrl;
 }
 
 export function isDatabaseConfigured() {
