@@ -11,8 +11,57 @@ const APP_STATE_TABLE = 'app_state';
 
 dns.setDefaultResultOrder('ipv4first');
 
+function getSupabaseProjectRef() {
+  const projectUrl = process.env.SUPABASE_URL || '';
+  if (projectUrl) {
+    try {
+      return new URL(projectUrl).hostname.split('.')[0] || '';
+    } catch {
+      return '';
+    }
+  }
+
+  const anonKey = process.env.SUPABASE_ANON_KEY || '';
+  if (!anonKey) {
+    return '';
+  }
+
+  const parts = anonKey.split('.');
+  if (parts.length < 2) {
+    return '';
+  }
+
+  try {
+    const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8')) as { ref?: string };
+    return payload.ref || '';
+  } catch {
+    return '';
+  }
+}
+
 function getDatabaseUrl() {
-  return process.env.DATABASE_URL || process.env.SUPABASE_DB_URL || '';
+  const rawUrl = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL || '';
+  if (!rawUrl) {
+    return '';
+  }
+
+  const supabaseProjectRef = getSupabaseProjectRef();
+  if (!supabaseProjectRef || !rawUrl.includes('supabase.co')) {
+    return rawUrl;
+  }
+
+  try {
+    const parsed = new URL(rawUrl);
+    const expectedHost = `db.${supabaseProjectRef}.supabase.co`;
+    if (parsed.hostname !== expectedHost) {
+      parsed.hostname = expectedHost;
+      return parsed.toString();
+    }
+  } catch {
+    return rawUrl;
+  }
+
+  return rawUrl;
 }
 
 export function isDatabaseConfigured() {
