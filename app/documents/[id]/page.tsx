@@ -7,7 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Copy, Download, MessageSquare, Share2 } from 'lucide-react';
 import SignaturePad from '@/components/SignaturePad';
-import { CollaborationComment, DocumentField, RecipientAccessLevel, SubmittedDocument } from '@/types/document';
+import {
+  CollaborationComment,
+  DataCollectionStatus,
+  DocumentField,
+  RecipientAccessLevel,
+  SubmittedDocument,
+} from '@/types/document';
 import RichTextEditor from '@/components/RichTextEditor';
 
 interface SharedDocumentPayload {
@@ -23,7 +29,7 @@ interface SharedDocumentPayload {
   data?: Record<string, string>;
   recipientAccess?: RecipientAccessLevel;
   dataCollectionEnabled?: boolean;
-  dataCollectionStatus?: 'disabled' | 'sent' | 'submitted' | 'reviewed';
+  dataCollectionStatus?: DataCollectionStatus;
   dataCollectionInstructions?: string;
   dataCollectionSubmittedAt?: string;
   dataCollectionSubmittedBy?: string;

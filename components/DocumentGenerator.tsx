@@ -76,11 +76,12 @@ const examplePreviewTemplate: DocumentTemplate = {
   name: 'Master Services Agreement',
   category: 'Legal',
   description: 'Example preview template for document design presets.',
+  isCustom: false,
   fields: [
-    { id: 'company-name', name: 'companyName', label: 'Company Name', type: 'text', required: true },
-    { id: 'recipient-name', name: 'recipientName', label: 'Recipient Name', type: 'text', required: true },
-    { id: 'effective-date', name: 'effectiveDate', label: 'Effective Date', type: 'date', required: true },
-    { id: 'summary', name: 'summary', label: 'Summary', type: 'textarea', required: true },
+    { id: 'company-name', name: 'companyName', label: 'Company Name', type: 'text', required: true, order: 1 },
+    { id: 'recipient-name', name: 'recipientName', label: 'Recipient Name', type: 'text', required: true, order: 2 },
+    { id: 'effective-date', name: 'effectiveDate', label: 'Effective Date', type: 'date', required: true, order: 3 },
+    { id: 'summary', name: 'summary', label: 'Summary', type: 'textarea', required: true, order: 4 },
   ],
   template: `
     <p>This Master Services Agreement is entered into between <strong>{{companyName}}</strong> and <strong>{{recipientName}}</strong> effective from <strong>{{effectiveDate}}</strong>.</p>
