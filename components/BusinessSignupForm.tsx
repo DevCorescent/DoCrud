@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 import { ArrowRight, Building2, CheckCircle2, Layers3, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -60,10 +61,27 @@ export default function BusinessSignupForm() {
         throw new Error(payload?.error || 'Failed to create business profile');
       }
 
-      setSuccess(payload?.message || 'Business profile created successfully.');
-      setTimeout(() => {
-        router.push('/login');
-      }, 1400);
+      const loginResult = await signIn('credentials', {
+        email: form.email.trim(),
+        password: form.password,
+        redirect: false,
+        callbackUrl: '/workspace',
+      });
+
+      if (!loginResult || loginResult.error) {
+        setSuccess('Workspace created successfully. Please log in to continue.');
+        setTimeout(() => {
+          router.push('/login');
+        }, 1200);
+        return;
+      }
+
+      setSuccess(payload?.message || 'Business workspace created successfully.');
+      const destination = loginResult.url
+        ? new URL(loginResult.url, window.location.origin).pathname
+        : '/workspace';
+      router.replace(destination);
+      router.refresh();
     } catch (signupError) {
       setError(signupError instanceof Error ? signupError.message : 'Failed to create business profile');
     } finally {
