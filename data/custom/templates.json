@@ -1,1 +1,130 @@
-[]
+[
+  {
+    "id": "custom-1774507261567-7ftz1ck0h",
+    "name": "Appointement Letter",
+    "description": "Letter for appointment",
+    "category": "HR",
+    "fields": [
+      {
+        "id": "field-1774507172378",
+        "name": "name ",
+        "label": "name",
+        "type": "text",
+        "required": true,
+        "order": 0
+      },
+      {
+        "id": "field-1774507180528",
+        "name": "Age",
+        "label": "Age",
+        "type": "number",
+        "required": true,
+        "order": 1
+      }
+    ],
+    "template": "hello {{name}} {{age}}",
+    "isCustom": true,
+    "createdBy": "test@gmail.com",
+    "createdAt": "2026-03-26T06:41:01.567Z",
+    "updatedAt": "2026-03-26T06:41:01.567Z",
+    "version": 1,
+    "organizationId": "user-1774506351280",
+    "organizationName": "test"
+  },
+  {
+    "name": "Legal Notice Draft",
+    "category": "Legal",
+    "description": "Starter legal notice format for governed outbound communication.",
+    "createdBy": "test123@gmail.com",
+    "fields": [
+      {
+        "id": "legal-company",
+        "name": "companyName",
+        "label": "Issuing Entity",
+        "type": "text",
+        "required": true,
+        "order": 1
+      },
+      {
+        "id": "legal-recipient",
+        "name": "recipientName",
+        "label": "Notice Recipient",
+        "type": "text",
+        "required": true,
+        "order": 2
+      },
+      {
+        "id": "legal-date",
+        "name": "effectiveDate",
+        "label": "Notice Date",
+        "type": "date",
+        "required": true,
+        "order": 3
+      },
+      {
+        "id": "legal-summary",
+        "name": "scopeSummary",
+        "label": "Notice Summary",
+        "type": "textarea",
+        "required": true,
+        "order": 4
+      }
+    ],
+    "template": "\n  <p>This document records the approved legal notice workflow between <strong>{{companyName}}</strong> and <strong>{{recipientName}}</strong>.</p>\n  <p>This notice framework is intended for formal communication, demand articulation, and governed legal record keeping.</p>\n  <h3>Commercial Scope</h3>\n  <p>{{scopeSummary}}</p>\n  <h3>Effective Date</h3>\n  <p>The parties agree that this document becomes effective on <strong>{{effectiveDate}}</strong>.</p>\n",
+    "id": "custom-seed-user-1774851249906-1",
+    "isCustom": true,
+    "createdAt": "2026-03-30T06:14:09.963Z",
+    "updatedAt": "2026-03-30T06:15:21.143Z",
+    "version": 2,
+    "organizationId": "user-1774851249906",
+    "organizationName": "test1234"
+  },
+  {
+    "name": "Contract Review Memo",
+    "category": "Legal",
+    "description": "Starter memo for internal legal review decisions and recommendation notes.",
+    "createdBy": "system",
+    "fields": [
+      {
+        "id": "memo-company",
+        "name": "companyName",
+        "label": "Business Unit",
+        "type": "text",
+        "required": true,
+        "order": 1
+      },
+      {
+        "id": "memo-recipient",
+        "name": "recipientName",
+        "label": "Stakeholder",
+        "type": "text",
+        "required": true,
+        "order": 2
+      },
+      {
+        "id": "memo-date",
+        "name": "effectiveDate",
+        "label": "Review Date",
+        "type": "date",
+        "required": true,
+        "order": 3
+      },
+      {
+        "id": "memo-summary",
+        "name": "scopeSummary",
+        "label": "Review Recommendation",
+        "type": "textarea",
+        "required": true,
+        "order": 4
+      }
+    ],
+    "template": "\n  <p>This document records the approved contract review memo workflow between <strong>{{companyName}}</strong> and <strong>{{recipientName}}</strong>.</p>\n  <p>This memo summarizes legal review status, negotiation items, and approval readiness for internal stakeholders.</p>\n  <h3>Commercial Scope</h3>\n  <p>{{scopeSummary}}</p>\n  <h3>Effective Date</h3>\n  <p>The parties agree that this document becomes effective on <strong>{{effectiveDate}}</strong>.</p>\n",
+    "id": "custom-seed-user-1774851249906-2",
+    "isCustom": true,
+    "createdAt": "2026-03-30T06:14:09.963Z",
+    "updatedAt": "2026-03-30T06:14:09.963Z",
+    "version": 1,
+    "organizationId": "user-1774851249906",
+    "organizationName": "test1234"
+  }
+]

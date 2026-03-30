@@ -3,6 +3,8 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import { User } from '@/types/document';
 import { readJsonFile, usersPath, writeJsonFile } from '@/lib/server/storage';
 import { createPasswordHash, normalizeEmail, verifyPassword } from '@/lib/server/security';
+import { defaultRoleProfiles } from '@/lib/server/roles';
+import { getSaasPlanById } from '@/lib/server/saas';
 
 interface StoredUser extends User {
   passwordHash?: string;
@@ -16,6 +18,8 @@ const defaultUsers: StoredUser[] = [
     name: 'Admin User',
     role: 'admin',
     permissions: ['all'],
+    roleProfileId: defaultRoleProfiles[0].id,
+    roleProfileName: defaultRoleProfiles[0].name,
     isActive: true,
     createdAt: '2024-01-01T00:00:00Z',
     lastLogin: '2024-01-01T00:00:00Z',
@@ -27,6 +31,8 @@ const defaultUsers: StoredUser[] = [
     name: 'HR Manager',
     role: 'hr',
     permissions: ['appointment-letter', 'offer-letter', 'termination-letter', 'resignation-letter', 'performance-appraisal', 'internship-letter'],
+    roleProfileId: defaultRoleProfiles[1].id,
+    roleProfileName: defaultRoleProfiles[1].name,
     isActive: true,
     createdAt: '2024-01-01T00:00:00Z',
     ...createPasswordHash('hr123'),
@@ -37,6 +43,8 @@ const defaultUsers: StoredUser[] = [
     name: 'Legal Advisor',
     role: 'legal',
     permissions: ['nda', 'employment-contract', 'loan-agreement', 'service-agreement', 'partnership-agreement', 'contractual-agreement'],
+    roleProfileId: defaultRoleProfiles[2].id,
+    roleProfileName: defaultRoleProfiles[2].name,
     isActive: true,
     createdAt: '2024-01-01T00:00:00Z',
     ...createPasswordHash('legal123'),
@@ -44,7 +52,7 @@ const defaultUsers: StoredUser[] = [
 ];
 
 function getLegacyPassword(user: User) {
-  return `${user.role}123`;
+  return user.role === 'client' || user.role === 'employee' ? `${user.role}123` : `${user.role}123`;
 }
 
 function getAuthSecret() {
@@ -116,9 +124,13 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
+        const plan = user.subscription?.planId ? await getSaasPlanById(user.subscription.planId) : null;
         token.id = user.id;
         token.role = user.role;
         token.permissions = user.permissions;
+        token.organizationName = user.organizationName;
+        token.subscription = user.subscription;
+        token.planFeatures = plan?.includedFeatures || [];
       }
 
       return token;
@@ -128,6 +140,9 @@ export const authOptions: NextAuthOptions = {
         session.user.id = String(token.id ?? '');
         session.user.role = String(token.role ?? 'user');
         session.user.permissions = Array.isArray(token.permissions) ? token.permissions.map(String) : [];
+        session.user.organizationName = token.organizationName ? String(token.organizationName) : undefined;
+        session.user.subscription = token.subscription;
+        session.user.planFeatures = Array.isArray(token.planFeatures) ? token.planFeatures.map(String) : [];
       }
 
       return session;

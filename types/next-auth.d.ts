@@ -1,4 +1,5 @@
 import NextAuth from 'next-auth';
+import { SaasSubscription } from '@/types/document';
 
 declare module 'next-auth' {
   interface Session {
@@ -9,6 +10,9 @@ declare module 'next-auth' {
       image?: string | null;
       role: string;
       permissions: string[];
+      organizationName?: string | null;
+      subscription?: SaasSubscription;
+      planFeatures?: string[];
     };
   }
 
@@ -19,6 +23,9 @@ declare module 'next-auth' {
     image?: string | null;
     role: string;
     permissions: string[];
+    organizationName?: string | null;
+    subscription?: SaasSubscription;
+    planFeatures?: string[];
   }
 }
 
@@ -27,5 +34,8 @@ declare module 'next-auth/jwt' {
     id: string;
     role: string;
     permissions: string[];
+    organizationName?: string | null;
+    subscription?: SaasSubscription;
+    planFeatures?: string[];
   }
 }

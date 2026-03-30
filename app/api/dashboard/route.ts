@@ -15,7 +15,11 @@ export async function GET() {
     const history = await getHistoryEntries();
     const visibleHistory = session.user.role === 'admin'
       ? history
-      : history.filter((entry) => entry.generatedBy === session.user.email);
+      : session.user.role === 'employee'
+        ? history.filter((entry) => entry.employeeEmail?.toLowerCase() === (session.user.email || '').toLowerCase())
+      : session.user.role === 'client'
+        ? history.filter((entry) => entry.organizationId === session.user.id || entry.clientEmail?.toLowerCase() === (session.user.email || '').toLowerCase())
+        : history.filter((entry) => entry.generatedBy === session.user.email);
 
     return NextResponse.json(buildDashboardMetrics(visibleHistory));
   } catch (error) {

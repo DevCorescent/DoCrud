@@ -18,7 +18,18 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    return NextResponse.json(await getSignatureSettings());
+    const settings = await getSignatureSettings();
+    if (session.user.role === 'admin') {
+      return NextResponse.json(settings);
+    }
+
+    if (session.user.role === 'client') {
+      return NextResponse.json({
+        signatures: settings.signatures.filter((signature) => signature.organizationId === session.user.id),
+      });
+    }
+
+    return NextResponse.json(settings);
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: 'Failed to load signature settings' }, { status: 500 });
@@ -28,7 +39,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const session = await getAuthSession();
-    if (session?.user?.role !== 'admin') {
+    if (session?.user?.role !== 'admin' && session?.user?.role !== 'client') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -46,6 +57,8 @@ export async function POST(request: NextRequest) {
       signedAt: new Date().toISOString(),
       signedIp: getRequestIp(request),
       createdBy: session.user.email || 'unknown',
+      organizationId: session.user.role === 'client' ? session.user.id : undefined,
+      organizationName: session.user.role === 'client' ? session.user.organizationName || session.user.name || 'Business Workspace' : undefined,
     };
 
     const nextSettings: SignatureSettings = {
@@ -63,7 +76,7 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const session = await getAuthSession();
-    if (session?.user?.role !== 'admin') {
+    if (session?.user?.role !== 'admin' && session?.user?.role !== 'client') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -74,6 +87,13 @@ export async function DELETE(request: NextRequest) {
     }
 
     const settings = await getSignatureSettings();
+    const target = settings.signatures.find((signature) => signature.id === id);
+    if (!target) {
+      return NextResponse.json({ error: 'Signature not found' }, { status: 404 });
+    }
+    if (session.user.role === 'client' && target.organizationId !== session.user.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
     const nextSettings: SignatureSettings = {
       signatures: settings.signatures.filter((signature) => signature.id !== id),
     };

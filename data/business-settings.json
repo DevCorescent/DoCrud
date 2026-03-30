@@ -1,0 +1,23 @@
+[
+  {
+    "organizationId": "user-1774851249906",
+    "organizationName": "test1234",
+    "displayName": "test1234",
+    "industry": "legal_services",
+    "companySize": "1-25",
+    "primaryUseCase": "legal documents",
+    "workspacePreset": "executive_control",
+    "onboardingCompleted": true,
+    "onboardingCompletedAt": "2026-03-30T06:14:09.906Z",
+    "starterTemplatesSeededAt": "2026-03-30T06:14:09.906Z",
+    "supportEmail": "test123@gmail.com",
+    "supportPhone": "",
+    "accentColor": "#2719FF",
+    "watermarkLabel": "Docuside Free Generation",
+    "letterheadMode": "default",
+    "letterheadImageDataUrl": "",
+    "letterheadHtml": "",
+    "businessDescription": "legal documents",
+    "updatedAt": "2026-03-30T06:14:09.906Z"
+  }
+]

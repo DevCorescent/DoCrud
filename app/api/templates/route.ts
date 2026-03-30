@@ -14,6 +14,11 @@ export async function GET() {
     }
 
     const customTemplates = await readJsonFile<DocumentTemplate[]>(customTemplatesPath, []);
+    const visibleCustomTemplates = session.user.role === 'admin'
+      ? customTemplates
+      : session.user.role === 'client'
+        ? customTemplates.filter((template) => !template.organizationId || template.organizationId === session.user.id)
+        : customTemplates;
     const allTemplates = [
       ...documentTemplates.map(template => ({
         ...template,
@@ -23,7 +28,7 @@ export async function GET() {
         updatedAt: '2024-01-01T00:00:00Z',
         version: 1,
       })),
-      ...customTemplates
+      ...visibleCustomTemplates
     ];
 
     return NextResponse.json(allTemplates);

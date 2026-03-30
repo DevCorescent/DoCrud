@@ -27,12 +27,14 @@ export async function POST(request: NextRequest) {
       subject: nextSubject,
       text,
       attachment,
+      emailType,
     }: {
       historyId?: string;
       to: string;
       subject: string;
       text: string;
       attachment?: number[];
+      emailType?: 'document_delivery' | 'collection_request';
     } = await request.json();
     historyId = nextHistoryId;
     to = nextTo;
@@ -101,6 +103,7 @@ export async function POST(request: NextRequest) {
           deliveryHistory: [...(entry.deliveryHistory || []), deliveryEvent],
           automationNotes: [
             ...(entry.automationNotes || []),
+            ...(emailType === 'collection_request' ? ['Collection request email sent'] : ['Document delivery email sent']),
             ...(ccList.length > 0 ? ['Generator copied on email'] : []),
             ...(bccList.length > 0 ? [`Audit mailbox notified: ${automations.auditMailbox}`] : []),
           ],

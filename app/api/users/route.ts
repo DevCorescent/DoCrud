@@ -52,6 +52,9 @@ export async function POST(request: NextRequest) {
       email: normalizedEmail,
       id: `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       createdAt: new Date().toISOString(),
+      permissions: Array.isArray(userData.permissions) ? userData.permissions.map(String) : [],
+      roleProfileId: userData.roleProfileId ? String(userData.roleProfileId) : undefined,
+      roleProfileName: userData.roleProfileName ? String(userData.roleProfileName) : undefined,
       ...createPasswordHash(userData.password),
     };
     delete newUser.password;
@@ -98,6 +101,9 @@ export async function PUT(request: NextRequest) {
       ...users[userIndex],
       ...updates,
       email: nextEmail,
+      permissions: Array.isArray(updates.permissions) ? updates.permissions.map(String) : users[userIndex].permissions,
+      roleProfileId: updates.roleProfileId ? String(updates.roleProfileId) : updates.roleProfileId === '' ? undefined : users[userIndex].roleProfileId,
+      roleProfileName: updates.roleProfileName ? String(updates.roleProfileName) : updates.roleProfileName === '' ? undefined : users[userIndex].roleProfileName,
       ...(password ? createPasswordHash(password) : {}),
     };
     await saveStoredUsers(users);

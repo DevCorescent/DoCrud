@@ -1,4 +1,5 @@
 import { DocumentTemplate, RecipientSignatureRecord, SignatureRecord } from '@/types/document';
+import { DEFAULT_DOCUMENT_DESIGN_PRESET, type DocumentDesignPreset, isDocumentDesignPreset } from '@/lib/document-designs';
 import { formatSignatureLocation } from '@/lib/location';
 
 const BRAND_LOGO_SRC = '/corescent-logo.png';
@@ -8,7 +9,7 @@ function generateDocumentNumber(referenceNumber?: string) {
     return referenceNumber;
   }
 
-  return `COR-DOC-${Math.random().toString(36).slice(2, 6).toUpperCase()}-${Date.now().toString().slice(-6)}`;
+  return `DCR-DOC-${Math.random().toString(36).slice(2, 6).toUpperCase()}-${Date.now().toString().slice(-6)}`;
 }
 
 export function escapeHtml(value: string) {
@@ -57,7 +58,7 @@ function buildFallbackBody(template: DocumentTemplate, data: Record<string, stri
   return `
     <section class="summary-block">
       <p class="lead">
-        This ${escapeHtml(template.name)} has been generated using the approved Corescent workflow.
+        This ${escapeHtml(template.name)} has been generated using the approved docrud workflow.
         Please review the details below before circulation.
       </p>
     </section>
@@ -67,7 +68,7 @@ function buildFallbackBody(template: DocumentTemplate, data: Record<string, stri
       </table>
     </section>
     <section class="footer-note">
-      <p>This document is system generated and carries an internal Corescent watermark for audit control.</p>
+      <p>This document is system generated and carries an internal docrud sample and audit watermark when required.</p>
     </section>
   `;
 }
@@ -85,6 +86,72 @@ function injectValues(html: string, template: DocumentTemplate, data: Record<str
   return output;
 }
 
+function buildDocumentHeader(
+  designPreset: DocumentDesignPreset,
+  brandLogoSrc: string,
+  pageCounter: string,
+) {
+  const presetCopy: Record<DocumentDesignPreset, { eyebrow: string; tagline: string }> = {
+    'corporate-grid': {
+      eyebrow: 'Enterprise Document Suite',
+      tagline: 'Structured communication for operational, client, and compliance workflows.',
+    },
+    'executive-frame': {
+      eyebrow: 'Executive Correspondence',
+      tagline: 'Premium presentation format for approvals, external circulation, and leadership review.',
+    },
+    'legal-classic': {
+      eyebrow: 'Registered Corporate Office',
+      tagline: 'Formal legal drafting standard for agreements, notices, and governed records.',
+    },
+    'modern-panel': {
+      eyebrow: 'Business Operations Letterhead',
+      tagline: 'Contemporary enterprise format with high-clarity metadata and clean review lines.',
+    },
+    'minimal-edge': {
+      eyebrow: 'Official Business Communication',
+      tagline: 'Minimal enterprise styling for trusted internal and client-ready documentation.',
+    },
+    'meridian-slate': {
+      eyebrow: 'Operational Control Deck',
+      tagline: 'Premium slate-toned format for account operations, client delivery, and executive reporting.',
+    },
+    'studio-band': {
+      eyebrow: 'Brand Studio Letterhead',
+      tagline: 'Modern banner-led presentation for proposals, summaries, and high-clarity external packets.',
+    },
+    'luxe-serif': {
+      eyebrow: 'Formal Correspondence Suite',
+      tagline: 'Editorial serif-led document styling for polished legal, investor, and board-ready communication.',
+    },
+  };
+
+  const copy = presetCopy[designPreset];
+
+  return `
+    <section class="hero hero-${designPreset}">
+      <div class="brand brand-${designPreset}">
+        <div class="brand-mark">
+          <div class="brand-wordmark">docrud</div>
+        </div>
+        <div class="brand-copy">
+          <p class="brand-eyebrow">${copy.eyebrow}</p>
+          <p class="brand-company">docrud document workspace</p>
+          <p class="brand-tagline">${copy.tagline}</p>
+        </div>
+      </div>
+      <div class="meta meta-${designPreset}">
+        <div class="meta-row meta-row-page"><span class="meta-page-chip">${pageCounter}</span></div>
+        <div class="meta-row"><span class="meta-label">Platform:</span> <span class="meta-value">docrud secure document cloud</span></div>
+        <div class="meta-row"><span class="meta-value">sample.workspace@docrud.app</span></div>
+        <div class="meta-row"><span class="meta-value">Tenant-safe preview and export flow</span></div>
+        <div class="meta-row"><span class="meta-value">Audit-ready metadata and approvals</span></div>
+        <div class="meta-row website-row"><span class="meta-value">www.docrud.app</span></div>
+      </div>
+    </section>
+  `;
+}
+
 export function renderDocumentTemplate(
   template: DocumentTemplate,
   data: Record<string, string>,
@@ -94,8 +161,16 @@ export function renderDocumentTemplate(
     generatedAt?: string;
     signature?: SignatureRecord | null;
     recipientSignature?: RecipientSignatureRecord | null;
+    watermarkLabel?: string;
+    letterheadMode?: 'default' | 'image' | 'html';
+    letterheadImageDataUrl?: string;
+    letterheadHtml?: string;
+    brandLogoSrc?: string;
+    designPreset?: DocumentDesignPreset;
   }
 ) {
+  const brandLogoSrc = options?.brandLogoSrc || BRAND_LOGO_SRC;
+  const designPreset = isDocumentDesignPreset(options?.designPreset) ? options.designPreset : DEFAULT_DOCUMENT_DESIGN_PRESET;
   const rawBody = template.template && template.template.trim() !== '...' && template.template.trim().length > 20
     ? injectValues(template.template, template, data)
     : buildFallbackBody(template, data);
@@ -103,6 +178,7 @@ export function renderDocumentTemplate(
   const generatedAt = options?.generatedAt ? new Date(options.generatedAt).toLocaleString() : new Date().toLocaleString();
   const pageCounter = template.id === 'contractual-agreement' ? 'Page 1 of 3' : 'Page 1 of 1';
   const documentNumber = generateDocumentNumber(options?.referenceNumber);
+  const headerMarkup = buildDocumentHeader(designPreset, brandLogoSrc, pageCounter);
 
   const signatureMarkup = options?.signature?.signatureDataUrl
     ? `
@@ -143,17 +219,17 @@ export function renderDocumentTemplate(
       <div class="powered-footer-copy">
         <span class="powered-footer-line powered-footer-strong">Document No.: ${escapeHtml(documentNumber)}</span>
         <span class="powered-footer-line">Generated on ${escapeHtml(generatedAt)}</span>
-        <span class="powered-footer-line">Developed &amp; Powered by Corescent Technologies Private Limited</span>
+        <span class="powered-footer-line">Developed &amp; Powered by docrud</span>
         <span class="powered-footer-line">
           This document has been generated using our proprietary software, designed to ensure the highest standards of data integrity, security, and compliance. All information is protected through advanced encryption protocols, keeping your data safe and reliable at every step.
         </span>
         <span class="powered-footer-line">
-          If you’re looking to streamline and organize your business documents with a secure and efficient solution, we’d be happy to assist you.
+          docrud is designed to streamline business documents with secure workflows, tenant-safe collaboration, and controlled distribution.
         </span>
-        <span class="powered-footer-line">For business inquiries and purchases, please contact our Sales team.</span>
-        <span class="powered-footer-line">Corescent Technologies keeps the rights to maintain and secure this document, and the client is expected to maintain the same confidentiality and compliance standards throughout its lifecycle.</span>
+        <span class="powered-footer-line">For workspace setup, platform enablement, and premium rollout support, contact the docrud team.</span>
+        <span class="powered-footer-line">docrud maintains platform controls and security boundaries, while each client tenant is expected to maintain its own confidentiality and compliance standards throughout the document lifecycle.</span>
       </div>
-      <a class="powered-footer-button" href="https://www.corescent.in/contact" target="_blank" rel="noreferrer">Contact Sales</a>
+      <a class="powered-footer-button" href="https://www.docrud.app/contact" target="_blank" rel="noreferrer">Contact docrud</a>
     </footer>
   `;
 
@@ -191,9 +267,23 @@ export function renderDocumentTemplate(
             z-index: 0;
           }
           .watermark-logo {
-            width: min(76%, 560px);
-            height: auto;
+            font-size: min(14vw, 118px);
+            font-weight: 900;
+            letter-spacing: 0.18em;
+            text-transform: lowercase;
+            color: rgba(15, 23, 42, 0.06);
             opacity: 0.08;
+          }
+          .watermark-text {
+            position: absolute;
+            transform: rotate(-24deg);
+            font-size: 54px;
+            font-weight: 700;
+            letter-spacing: 0.28em;
+            text-transform: uppercase;
+            color: rgba(15, 23, 42, 0.08);
+            text-align: center;
+            line-height: 1.25;
           }
           .letterhead-top {
             position: absolute;
@@ -271,55 +361,332 @@ export function renderDocumentTemplate(
             z-index: 1;
             padding: 80px 38px 82px;
           }
+          .custom-letterhead {
+            position: relative;
+            z-index: 2;
+            margin-bottom: 18px;
+            border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+            padding-bottom: 16px;
+          }
+          .custom-letterhead img {
+            display: block;
+            width: 100%;
+            height: auto;
+          }
           .hero {
-            display: flex;
-            justify-content: space-between;
-            gap: 22px;
-            align-items: flex-start;
-            padding-bottom: 18px;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 270px;
+            gap: 28px;
+            align-items: start;
+            padding: 0 0 20px;
+            margin-bottom: 14px;
+            border-bottom: 1px solid rgba(15, 23, 42, 0.12);
           }
           .brand {
-            max-width: 47%;
             display: flex;
-            align-items: flex-start;
+            align-items: center;
             justify-content: flex-start;
             margin: 0;
-            padding: 0;
+            min-height: 108px;
+            padding: 12px 0 10px;
+            gap: 18px;
           }
-          .brand-logo {
-            width: 274px;
-            max-width: 100%;
-            display: block;
+          .brand-mark {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            min-width: 210px;
+          }
+          .brand-wordmark {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 168px;
+            min-height: 58px;
+            padding: 0 20px;
+            border-radius: 18px;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 52%, #ff5a14 100%);
+            color: #ffffff;
+            font-size: 24px;
+            font-weight: 900;
+            letter-spacing: 0.08em;
+            text-transform: lowercase;
+            box-shadow: 0 18px 34px rgba(15, 23, 42, 0.14);
+          }
+          .brand-copy {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 0;
+          }
+          .brand-eyebrow {
             margin: 0;
+            color: #ff5a14;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+          }
+          .brand-company {
+            margin: 0;
+            color: #0f172a;
+            font-size: 18px;
+            font-weight: 800;
+            line-height: 1.2;
+          }
+          .brand-tagline {
+            margin: 0;
+            color: #475569;
+            font-size: 12px;
+            line-height: 1.5;
           }
           .meta {
-            min-width: 250px;
+            min-width: 0;
             margin: 0;
-            padding-top: 0;
-            align-self: flex-start;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            align-self: stretch;
           }
           .meta-row {
             display: block;
             font-size: 12px;
-            line-height: 1.45;
+            line-height: 1.4;
             padding: 0;
-            margin: 0 0 2px;
+            margin: 0;
             text-align: right;
             border-bottom: 0;
           }
+          .meta-row-page {
+            margin-bottom: 4px;
+          }
+          .meta-page-chip {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 28px;
+            padding: 0 12px;
+            border: 1px solid rgba(15, 23, 42, 0.16);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.96);
+            color: #0f172a;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+          }
           .meta-label {
-            color: #444444;
+            color: #475569;
             font-weight: 700;
             display: inline;
           }
           .meta-value {
-            color: #444444;
+            color: #334155;
             font-weight: 600;
             display: inline;
           }
           .website-row .meta-value {
             color: #ff5a14;
             font-weight: 700;
+          }
+          .page.design-corporate-grid .hero {
+            grid-template-columns: minmax(0, 1fr) 270px;
+          }
+          .page.design-executive-frame .hero {
+            grid-template-columns: minmax(0, 1fr) 290px;
+            padding: 18px 22px;
+            margin-bottom: 18px;
+            border: 1px solid rgba(15, 23, 42, 0.12);
+            border-radius: 24px;
+            background: linear-gradient(135deg, rgba(255, 247, 237, 0.9), rgba(255, 255, 255, 1));
+          }
+          .page.design-executive-frame .brand {
+            min-height: 120px;
+            padding: 0;
+          }
+          .page.design-executive-frame .brand-mark {
+            min-width: 220px;
+            padding: 14px 0;
+          }
+          .page.design-executive-frame .meta {
+            padding: 18px;
+            border-radius: 20px;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            background: rgba(255, 255, 255, 0.96);
+          }
+          .page.design-legal-classic {
+            box-shadow: none;
+            border: 1px solid rgba(87, 83, 78, 0.28);
+          }
+          .page.design-legal-classic .letterhead-top,
+          .page.design-legal-classic .letterhead-bottom {
+            display: none;
+          }
+          .page.design-legal-classic .content {
+            padding-top: 52px;
+          }
+          .page.design-legal-classic .hero {
+            grid-template-columns: minmax(0, 1fr) 250px;
+            gap: 24px;
+            padding: 12px 0;
+            border-top: 4px double rgba(68, 64, 60, 0.8);
+            border-bottom: 4px double rgba(68, 64, 60, 0.8);
+          }
+          .page.design-legal-classic .brand {
+            min-height: 96px;
+            padding: 0;
+          }
+          .page.design-legal-classic .brand-copy {
+            gap: 4px;
+          }
+          .page.design-legal-classic .brand-eyebrow,
+          .page.design-legal-classic .brand-tagline,
+          .page.design-legal-classic .meta-value,
+          .page.design-legal-classic .meta-label {
+            color: #44403c;
+          }
+          .page.design-legal-classic .brand-company,
+          .page.design-legal-classic .document-title {
+            font-family: Georgia, "Times New Roman", serif;
+            letter-spacing: 0.04em;
+          }
+          .page.design-legal-classic .brand-company {
+            font-size: 20px;
+            text-transform: uppercase;
+          }
+          .page.design-legal-classic .document-title {
+            font-size: 20px;
+          }
+          .page.design-legal-classic .meta-page-chip {
+            border-color: rgba(68, 64, 60, 0.35);
+            color: #44403c;
+          }
+          .page.design-modern-panel .hero {
+            grid-template-columns: minmax(0, 1fr) 304px;
+            gap: 24px;
+            border-bottom: 0;
+            margin-bottom: 18px;
+          }
+          .page.design-modern-panel .brand {
+            min-height: 124px;
+            padding: 12px 0 12px 18px;
+            border-left: 6px solid #ff5a14;
+            background: linear-gradient(135deg, rgba(255, 247, 237, 0.6), rgba(255, 255, 255, 0.96));
+            border-radius: 20px;
+          }
+          .page.design-modern-panel .meta {
+            padding: 18px 20px;
+            border-radius: 22px;
+            background: linear-gradient(180deg, #0f172a, #1e293b);
+            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.14);
+          }
+          .page.design-modern-panel .meta-label,
+          .page.design-modern-panel .meta-value {
+            color: rgba(255, 255, 255, 0.9);
+          }
+          .page.design-modern-panel .meta-page-chip {
+            border-color: rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.08);
+            color: #ffffff;
+          }
+          .page.design-minimal-edge .letterhead-top::before,
+          .page.design-minimal-edge .letterhead-top::after,
+          .page.design-minimal-edge .letterhead-top-accent,
+          .page.design-minimal-edge .letterhead-bottom::before,
+          .page.design-minimal-edge .letterhead-bottom::after,
+          .page.design-minimal-edge .letterhead-bottom-accent {
+            background: #d4d4d8;
+            border-top-color: #d4d4d8;
+          }
+          .page.design-minimal-edge .hero {
+            grid-template-columns: minmax(0, 1fr) 260px;
+            gap: 22px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(113, 113, 122, 0.22);
+          }
+          .page.design-minimal-edge .brand {
+            min-height: 92px;
+            padding: 0;
+          }
+          .page.design-minimal-edge .brand-eyebrow {
+            color: #71717a;
+          }
+          .page.design-minimal-edge .brand-company {
+            font-size: 17px;
+          }
+          .page.design-minimal-edge .meta {
+            padding-left: 18px;
+            border-left: 1px solid rgba(113, 113, 122, 0.22);
+          }
+          .page.design-minimal-edge .website-row .meta-value {
+            color: #0f172a;
+          }
+          .page.design-meridian-slate .hero {
+            grid-template-columns: minmax(0, 1fr) 300px;
+            padding: 18px 20px;
+            border-radius: 24px;
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.05), rgba(71, 85, 105, 0.02));
+          }
+          .page.design-meridian-slate .brand-wordmark {
+            background: linear-gradient(135deg, #111827, #334155);
+          }
+          .page.design-meridian-slate .meta {
+            padding: 18px 20px;
+            border-radius: 22px;
+            background: #0f172a;
+          }
+          .page.design-meridian-slate .meta-label,
+          .page.design-meridian-slate .meta-value,
+          .page.design-meridian-slate .website-row .meta-value,
+          .page.design-meridian-slate .meta-page-chip {
+            color: #f8fafc;
+          }
+          .page.design-meridian-slate .meta-page-chip {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.12);
+          }
+          .page.design-studio-band .hero {
+            grid-template-columns: 1fr;
+            gap: 18px;
+            padding-top: 18px;
+            border-top: 10px solid #0f172a;
+          }
+          .page.design-studio-band .brand {
+            padding: 0 18px 16px;
+            border-radius: 24px;
+            background: linear-gradient(135deg, rgba(255, 90, 20, 0.08), rgba(255,255,255,0.98));
+          }
+          .page.design-studio-band .meta {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px 16px;
+            padding: 0 18px;
+          }
+          .page.design-studio-band .meta-row {
+            text-align: left;
+          }
+          .page.design-luxe-serif {
+            box-shadow: 0 20px 50px rgba(28, 25, 23, 0.12);
+            border: 1px solid rgba(120, 113, 108, 0.28);
+          }
+          .page.design-luxe-serif .hero {
+            grid-template-columns: minmax(0, 1fr) 260px;
+            border-top: 1px solid rgba(120, 113, 108, 0.34);
+            border-bottom: 1px solid rgba(120, 113, 108, 0.34);
+          }
+          .page.design-luxe-serif .brand-wordmark {
+            background: linear-gradient(135deg, #292524, #78716c);
+            font-family: Georgia, "Times New Roman", serif;
+            letter-spacing: 0.12em;
+          }
+          .page.design-luxe-serif .brand-company,
+          .page.design-luxe-serif .document-title {
+            font-family: Georgia, "Times New Roman", serif;
+          }
+          .page.design-luxe-serif .brand-company {
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
           }
           .document-title {
             margin: 8px 0 12px;
@@ -469,24 +836,38 @@ export function renderDocumentTemplate(
               padding: 24px 18px 30px;
             }
             .hero {
-              flex-direction: column;
-              gap: 14px;
+              grid-template-columns: 1fr;
+              gap: 16px;
             }
             .brand {
-              max-width: 100%;
+              min-height: 0;
+              padding: 0;
+              gap: 14px;
             }
-            .brand-logo {
-              width: 220px;
+            .brand-mark {
+              min-width: 0;
+            }
+            .page.design-executive-frame .hero,
+            .page.design-modern-panel .hero,
+            .page.design-meridian-slate .hero {
+              padding: 16px;
             }
             .meta {
               width: 100%;
-              min-width: 0;
             }
-            .watermark {
-              inset: 150px 18px 100px 18px;
+            .meta-row {
+              text-align: left;
             }
-            .watermark-logo {
-              width: min(88%, 380px);
+            .page.design-studio-band .meta {
+              grid-template-columns: 1fr;
+              padding: 0;
+            }
+            .page.design-minimal-edge .meta {
+              padding-left: 0;
+              border-left: 0;
+            }
+            .watermark-text {
+              font-size: 32px;
             }
             .powered-footer {
               flex-direction: column;
@@ -499,25 +880,17 @@ export function renderDocumentTemplate(
         </style>
       </head>
       <body>
-        <div class="page">
+        <div class="page design-${designPreset}">
           <div class="letterhead-top"><div class="letterhead-top-accent"></div></div>
-          <div class="watermark"><img class="watermark-logo" src="${BRAND_LOGO_SRC}" alt="Corescent watermark" /></div>
+          <div class="watermark">
+            <div class="watermark-logo">docrud</div>
+            ${options?.watermarkLabel ? `<div class="watermark-text">${escapeHtml(options.watermarkLabel)}</div>` : ''}
+          </div>
           <div class="letterhead-bottom"><div class="letterhead-bottom-accent"></div></div>
           <div class="content">
-            <section class="hero">
-              <div class="brand">
-                <img class="brand-logo" src="${BRAND_LOGO_SRC}" alt="Corescent Technologies" />
-              </div>
-              <div class="meta">
-                <div class="meta-row"><span class="meta-label">${pageCounter}</span></div>
-                <div class="meta-row"><span class="meta-label">CIN:</span> <span class="meta-value">U62011KA2023PTC178858</span></div>
-                <div class="meta-row"><span class="meta-value">contact@corescent.in</span></div>
-                <div class="meta-row"><span class="meta-value">WeWork Latitude, 10th floor, RMZ Latitude,</span></div>
-                <div class="meta-row"><span class="meta-value">Hebbal, Bengaluru, Karnataka</span></div>
-                <div class="meta-row"><span class="meta-value">PIN- 560024</span></div>
-                <div class="meta-row website-row"><span class="meta-value">www.corescent.in</span></div>
-              </div>
-            </section>
+            ${options?.letterheadMode === 'html' && options.letterheadHtml ? `<section class="custom-letterhead">${sanitizeRichText(options.letterheadHtml)}</section>` : ''}
+            ${options?.letterheadMode === 'image' && options.letterheadImageDataUrl ? `<section class="custom-letterhead"><img src="${options.letterheadImageDataUrl}" alt="Business letterhead" /></section>` : ''}
+            ${headerMarkup}
             <div class="document-title">${escapeHtml(template.name)}</div>
             <section class="document-body">${rawBody}${signatureMarkup}${recipientSignatureMarkup}${poweredFooter}</section>
           </div>

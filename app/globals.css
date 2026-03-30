@@ -26,6 +26,114 @@
     --radius: 1rem;
   }
 
+  :root[data-theme='slate'] {
+    --background: 220 23% 97%;
+    --foreground: 222 21% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 21% 12%;
+    --primary: 222 28% 17%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 215 25% 93%;
+    --secondary-foreground: 222 21% 12%;
+    --muted: 215 25% 93%;
+    --muted-foreground: 220 9% 39%;
+    --accent: 214 32% 92%;
+    --accent-foreground: 222 21% 12%;
+    --border: 214 20% 84%;
+    --input: 214 20% 84%;
+    --ring: 222 28% 17%;
+  }
+
+  :root[data-theme='ocean'] {
+    --background: 194 100% 98%;
+    --foreground: 204 33% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 204 33% 12%;
+    --primary: 201 91% 32%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 193 68% 93%;
+    --secondary-foreground: 204 33% 12%;
+    --muted: 193 68% 93%;
+    --muted-foreground: 200 20% 38%;
+    --accent: 187 74% 91%;
+    --accent-foreground: 204 33% 12%;
+    --border: 191 35% 84%;
+    --input: 191 35% 84%;
+    --ring: 201 91% 32%;
+  }
+
+  :root[data-theme='forest'] {
+    --background: 95 44% 97%;
+    --foreground: 140 22% 14%;
+    --card: 0 0% 100%;
+    --card-foreground: 140 22% 14%;
+    --primary: 142 52% 28%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 96 32% 91%;
+    --secondary-foreground: 140 22% 14%;
+    --muted: 96 32% 91%;
+    --muted-foreground: 120 12% 35%;
+    --accent: 94 42% 88%;
+    --accent-foreground: 140 22% 14%;
+    --border: 96 18% 82%;
+    --input: 96 18% 82%;
+    --ring: 142 52% 28%;
+  }
+
+  :root[data-theme='midnight'] {
+    --background: 222 35% 96%;
+    --foreground: 224 34% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 224 34% 12%;
+    --primary: 231 46% 19%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 223 30% 90%;
+    --secondary-foreground: 224 34% 12%;
+    --muted: 223 30% 92%;
+    --muted-foreground: 220 14% 38%;
+    --accent: 222 44% 89%;
+    --accent-foreground: 224 34% 12%;
+    --border: 223 20% 82%;
+    --input: 223 20% 82%;
+    --ring: 231 46% 19%;
+  }
+
+  :root[data-theme='rose'] {
+    --background: 20 100% 98%;
+    --foreground: 345 24% 14%;
+    --card: 0 0% 100%;
+    --card-foreground: 345 24% 14%;
+    --primary: 346 61% 32%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 16 71% 93%;
+    --secondary-foreground: 345 24% 14%;
+    --muted: 16 71% 94%;
+    --muted-foreground: 10 14% 42%;
+    --accent: 12 77% 91%;
+    --accent-foreground: 345 24% 14%;
+    --border: 14 38% 84%;
+    --input: 14 38% 84%;
+    --ring: 346 61% 32%;
+  }
+
+  :root[data-theme='graphite'] {
+    --background: 210 10% 96%;
+    --foreground: 220 12% 14%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 12% 14%;
+    --primary: 215 14% 20%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 10% 89%;
+    --secondary-foreground: 220 12% 14%;
+    --muted: 210 10% 91%;
+    --muted-foreground: 215 8% 38%;
+    --accent: 210 12% 87%;
+    --accent-foreground: 220 12% 14%;
+    --border: 214 10% 80%;
+    --input: 214 10% 80%;
+    --ring: 215 14% 20%;
+  }
+
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
@@ -60,9 +168,82 @@
       radial-gradient(circle at center right, rgba(255, 237, 213, 0.85), transparent 30%),
       linear-gradient(135deg, rgba(255,255,255,0.92) 0%, rgba(255,247,237,0.96) 100%);
   }
+
+  :root[data-theme='slate'] body {
+    background-image:
+      radial-gradient(circle at top left, rgba(71, 85, 105, 0.12), transparent 28%),
+      radial-gradient(circle at center right, rgba(226, 232, 240, 0.82), transparent 30%),
+      linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(241,245,249,0.98) 100%);
+  }
+
+  :root[data-theme='ocean'] body {
+    background-image:
+      radial-gradient(circle at top left, rgba(6, 182, 212, 0.16), transparent 28%),
+      radial-gradient(circle at center right, rgba(207, 250, 254, 0.88), transparent 30%),
+      linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(236,254,255,0.98) 100%);
+  }
+
+  :root[data-theme='forest'] body {
+    background-image:
+      radial-gradient(circle at top left, rgba(34, 197, 94, 0.16), transparent 28%),
+      radial-gradient(circle at center right, rgba(220, 252, 231, 0.88), transparent 30%),
+      linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(247,254,231,0.98) 100%);
+  }
+
+  :root[data-theme='midnight'] body {
+    background-image:
+      radial-gradient(circle at top left, rgba(99, 102, 241, 0.14), transparent 28%),
+      radial-gradient(circle at center right, rgba(191, 219, 254, 0.82), transparent 32%),
+      linear-gradient(135deg, rgba(248,250,252,0.96) 0%, rgba(238,242,255,0.98) 100%);
+  }
+
+  :root[data-theme='rose'] body {
+    background-image:
+      radial-gradient(circle at top left, rgba(244, 63, 94, 0.12), transparent 28%),
+      radial-gradient(circle at center right, rgba(254, 205, 211, 0.72), transparent 32%),
+      linear-gradient(135deg, rgba(255,255,255,0.96) 0%, rgba(255,241,242,0.98) 100%);
+  }
+
+  :root[data-theme='graphite'] body {
+    background-image:
+      radial-gradient(circle at top left, rgba(100, 116, 139, 0.10), transparent 28%),
+      radial-gradient(circle at center right, rgba(226, 232, 240, 0.72), transparent 32%),
+      linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(241,245,249,0.99) 100%);
+  }
 }
 
 @layer components {
+  .clay-panel {
+    @apply border border-white/60 bg-white/65 backdrop-blur-xl;
+    box-shadow:
+      20px 20px 45px rgba(148, 163, 184, 0.18),
+      -14px -14px 36px rgba(255, 255, 255, 0.9),
+      inset 1px 1px 0 rgba(255, 255, 255, 0.75);
+  }
+
+  .clay-soft {
+    @apply border border-white/70 bg-white/70 backdrop-blur;
+    box-shadow:
+      12px 12px 28px rgba(148, 163, 184, 0.14),
+      -10px -10px 24px rgba(255, 255, 255, 0.82);
+  }
+
+  .clay-chip {
+    @apply border border-white/70 bg-white/70 backdrop-blur;
+    box-shadow:
+      8px 8px 18px rgba(148, 163, 184, 0.12),
+      -6px -6px 14px rgba(255, 255, 255, 0.85);
+  }
+
+  .clay-hero {
+    background:
+      radial-gradient(circle at top left, rgba(255,255,255,0.22), transparent 30%),
+      linear-gradient(135deg, rgba(15,23,42,0.96) 0%, rgba(30,41,59,0.94) 40%, rgba(234,88,12,0.9) 100%);
+    box-shadow:
+      24px 24px 60px rgba(15, 23, 42, 0.18),
+      inset 1px 1px 0 rgba(255,255,255,0.16);
+  }
+
   .prose {
     color: var(--foreground);
     max-width: none;
