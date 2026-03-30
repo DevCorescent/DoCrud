@@ -98,6 +98,7 @@ export async function POST(request: NextRequest) {
     }, { status: 201 });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: 'Failed to create business profile' }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Failed to create business profile';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

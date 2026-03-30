@@ -32,6 +32,16 @@ export async function readJsonFile<T>(filePath: string, fallback: T): Promise<T>
 }
 
 export async function writeJsonFile<T>(filePath: string, data: T) {
-  await ensureDirectory(filePath);
-  await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
+  try {
+    await ensureDirectory(filePath);
+    await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
+  } catch (error) {
+    if (error && typeof error === 'object' && 'code' in error) {
+      const code = String(error.code);
+      if (code === 'EROFS' || code === 'EPERM' || code === 'EACCES') {
+        throw new Error('Persistent writes are not available on this deployment. Configure a database or hosted key-value store for production workspace creation.');
+      }
+    }
+    throw error;
+  }
 }
