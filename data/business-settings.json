@@ -19,5 +19,33 @@
     "letterheadHtml": "",
     "businessDescription": "legal documents",
     "updatedAt": "2026-03-30T06:14:09.906Z"
+  },
+  {
+    "organizationId": "user-1775033740318",
+    "organizationName": "corescent tech",
+    "displayName": "corescent tech",
+    "industry": "technology",
+    "companySize": "1-25",
+    "primaryUseCase": "testtt",
+    "workspacePreset": "executive_control",
+    "onboardingCompleted": true,
+    "onboardingCompletedAt": "2026-04-01T08:55:40.318Z",
+    "starterTemplatesSeededAt": "2026-04-01T08:55:40.318Z",
+    "supportEmail": "shashank@corescent.in",
+    "supportPhone": "",
+    "accentColor": "#2719FF",
+    "watermarkLabel": "docrud trial workspace",
+    "letterheadMode": "default",
+    "letterheadImageDataUrl": "",
+    "letterheadHtml": "",
+    "businessDescription": "testtt",
+    "workspaceSetupChecklist": {
+      "profileConfigured": true,
+      "brandingConfigured": true,
+      "starterTemplatesReady": true,
+      "signaturesReady": false,
+      "firstDocumentGenerated": false
+    },
+    "updatedAt": "2026-04-01T08:55:40.318Z"
   }
 ]

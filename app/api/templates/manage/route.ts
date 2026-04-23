@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/server/auth';
-import { customTemplatesPath, readJsonFile, writeJsonFile } from '@/lib/server/storage';
+import { getCustomTemplatesFromRepository, saveCustomTemplatesToRepository } from '@/lib/server/repositories';
 import { DocumentField, DocumentTemplate } from '@/types/document';
 
 export const dynamic = 'force-dynamic';
 
 async function getCustomTemplates(): Promise<DocumentTemplate[]> {
-  return readJsonFile<DocumentTemplate[]>(customTemplatesPath, []);
+  return getCustomTemplatesFromRepository();
 }
 
 async function saveCustomTemplates(templates: DocumentTemplate[]): Promise<void> {
-  await writeJsonFile(customTemplatesPath, templates);
+  await saveCustomTemplatesToRepository(templates);
 }
 
 function isAdmin(session: Awaited<ReturnType<typeof getAuthSession>>) {
@@ -18,7 +18,7 @@ function isAdmin(session: Awaited<ReturnType<typeof getAuthSession>>) {
 }
 
 function canManageTemplates(session: Awaited<ReturnType<typeof getAuthSession>>) {
-  return session?.user?.role === 'admin' || session?.user?.role === 'client';
+  return session?.user?.role === 'admin' || session?.user?.role === 'client' || session?.user?.role === 'individual';
 }
 
 function isValidField(field: DocumentField) {

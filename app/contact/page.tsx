@@ -2,7 +2,16 @@ import { Mail, Phone } from 'lucide-react';
 import PublicSiteChrome from '@/components/PublicSiteChrome';
 import InquiryForm from '@/components/InquiryForm';
 import { Card, CardContent } from '@/components/ui/card';
+import { buildPageMetadata } from '@/lib/seo';
 import { getLandingSettings, getThemeSettings } from '@/lib/server/settings';
+
+export const metadata = buildPageMetadata({
+  title: 'Contact Docrud | Sales, Product Questions & Support',
+  description:
+    'Contact Docrud for product questions, onboarding help, demo requests, support, and business conversations.',
+  path: '/contact',
+  keywords: ['contact docrud', 'docrud sales', 'support contact', 'demo request'],
+});
 
 export default async function ContactPage() {
   const [settings, themeSettings] = await Promise.all([getLandingSettings(), getThemeSettings()]);

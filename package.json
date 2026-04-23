@@ -1,12 +1,14 @@
 {
-  "name": "docgenerator",
+  "name": "docrud",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db:init": "node scripts/db-init.mjs",
+    "db:seed": "node scripts/db-seed.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",
@@ -20,16 +22,22 @@
     "@types/pg": "^8.20.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "jszip": "^3.10.1",
     "lucide-react": "^0.577.0",
+    "mammoth": "^1.12.0",
     "next": "14.2.0",
     "next-auth": "^4.24.13",
     "nodemailer": "^7.0.13",
+    "pdf-lib": "^1.17.1",
+    "pdf-parse": "^2.4.5",
+    "pdfjs-dist": "^5.6.205",
     "pg": "^8.20.0",
     "puppeteer": "^24.40.0",
     "react": "^18",
     "react-dom": "^18",
     "tailwind-merge": "^3.5.0",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/node": "^20",

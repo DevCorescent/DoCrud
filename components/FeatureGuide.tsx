@@ -21,7 +21,7 @@ export default function FeatureGuide({ title, purpose, whyItMatters = [], tutori
       <div className="flex justify-end">
         <Button type="button" variant="outline" className="clay-chip" onClick={() => setOpen((prev) => !prev)}>
           <BookOpen className="mr-2 h-4 w-4" />
-          {open ? 'Hide Tutorial' : 'Show Tutorial & Examples'}
+          {open ? 'Hide Help' : 'How to use this'}
           {open ? <ChevronUp className="ml-2 h-4 w-4" /> : <ChevronDown className="ml-2 h-4 w-4" />}
         </Button>
       </div>
@@ -50,7 +50,7 @@ export default function FeatureGuide({ title, purpose, whyItMatters = [], tutori
             )}
             <div className="grid gap-6 lg:grid-cols-2">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">How To Use</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">How to get value from it</p>
               <div className="mt-3 space-y-3">
                 {tutorial.map((step, index) => (
                   <div key={step} className="rounded-2xl bg-white/70 p-4 text-sm text-slate-700 shadow-[inset_4px_4px_10px_rgba(255,255,255,0.9),inset_-4px_-4px_10px_rgba(203,213,225,0.4)]">
@@ -61,7 +61,7 @@ export default function FeatureGuide({ title, purpose, whyItMatters = [], tutori
               </div>
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Practical Examples</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">What good usage looks like</p>
               <div className="mt-3 space-y-3">
                 {examples.map((example) => (
                   <div key={example} className="rounded-2xl bg-slate-950/95 p-4 text-sm text-slate-100 shadow-[0_18px_45px_rgba(15,23,42,0.18)]">

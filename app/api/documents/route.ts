@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/server/auth';
 import { createAccessEvent, getHistoryEntries, updateHistoryEntry } from '@/lib/server/history';
-import { DataCollectionStatus, ManagedFile } from '@/types/document';
+import { DataCollectionStatus, DocumentHistory, ManagedFile } from '@/types/document';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,14 +9,77 @@ function isAdmin(session: Awaited<ReturnType<typeof getAuthSession>>) {
   return session?.user?.role === 'admin';
 }
 
-export async function GET() {
+function sanitizeDocumentForSuperAdmin(entry: DocumentHistory): DocumentHistory {
+  if (!entry.organizationId) {
+    return entry;
+  }
+
+  return {
+    ...entry,
+    data: {},
+    previewHtml: undefined,
+    pdfUrl: undefined,
+    uploadedPdfDataUrl: undefined,
+    signedPdfDataUrl: undefined,
+    emailTo: undefined,
+    emailSubject: undefined,
+    emailError: undefined,
+    deliveryHistory: [],
+    automationNotes: [],
+    shareUrl: undefined,
+    sharePassword: undefined,
+    submittedDocuments: [],
+    documentsSubmittedBy: undefined,
+    documentsVerificationNotes: undefined,
+    dataCollectionInstructions: undefined,
+    dataCollectionReviewNotes: undefined,
+    recipientSignerName: undefined,
+    recipientSignatureDataUrl: undefined,
+    recipientSignedIp: undefined,
+    recipientSignedLocationLabel: undefined,
+    recipientSignedLatitude: undefined,
+    recipientSignedLongitude: undefined,
+    recipientSignedAccuracyMeters: undefined,
+    collaborationComments: [],
+    accessEvents: [],
+    managedFiles: [],
+    clientEmail: undefined,
+    employeeEmail: undefined,
+    onboardingCredentials: undefined,
+    employeeQuestions: [],
+    superAdminLocked: true,
+    superAdminUnlockScope: 'tenant_document',
+    superAdminUnlockHint: entry.organizationName || entry.clientOrganization || entry.generatedBy,
+    superAdminUnlockMessage: 'This tenant-owned document is hidden from super admin until the tenant shares the generated access password.',
+  };
+}
+
+export async function GET(request: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!isAdmin(session)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    return NextResponse.json(await getHistoryEntries());
+    const accessPassword = request.nextUrl.searchParams.get('accessPassword')?.trim().toUpperCase();
+    const entries = await getHistoryEntries();
+
+    return NextResponse.json(entries.map((entry) => {
+      if (!entry.organizationId) {
+        return entry;
+      }
+
+      if (accessPassword && entry.sharePassword === accessPassword) {
+        return {
+          ...entry,
+          superAdminLocked: false,
+          superAdminUnlockScope: 'tenant_document',
+          superAdminUnlockHint: entry.organizationName || entry.clientOrganization || entry.generatedBy,
+        };
+      }
+
+      return sanitizeDocumentForSuperAdmin(entry);
+    }));
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: 'Failed to load documents' }, { status: 500 });
@@ -55,6 +118,7 @@ export async function PATCH(request: NextRequest) {
       folderLabel?: string;
       organizationId?: string;
       organizationName?: string;
+      adminAccessPassword?: string;
     };
     if (!payload.id) {
       return NextResponse.json({ error: 'Document id is required' }, { status: 400 });
@@ -64,6 +128,9 @@ export async function PATCH(request: NextRequest) {
     const existing = history.find((entry) => entry.id === payload.id);
     if (!existing) {
       return NextResponse.json({ error: 'Document not found' }, { status: 404 });
+    }
+    if (existing.organizationId && existing.sharePassword !== payload.adminAccessPassword?.trim().toUpperCase()) {
+      return NextResponse.json({ error: 'Tenant access password is required before super admin can open or edit this document' }, { status: 403 });
     }
     if (payload.documentsVerificationStatus) {
       if (!existing.requiredDocumentWorkflowEnabled) {

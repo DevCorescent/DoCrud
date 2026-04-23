@@ -7,6 +7,7 @@ export const customTemplatesPath = path.join(dataDir, 'custom', 'templates.json'
 export const historyFilePath = path.join(dataDir, 'history.json');
 export const usersPath = path.join(dataDir, 'users.json');
 export const mailSettingsPath = path.join(dataDir, 'mail-settings.json');
+export const authSettingsPath = path.join(dataDir, 'auth-settings.json');
 export const automationSettingsPath = path.join(dataDir, 'automation-settings.json');
 export const collaborationSettingsPath = path.join(dataDir, 'collaboration-settings.json');
 export const signatureSettingsPath = path.join(dataDir, 'signature-settings.json');
@@ -18,6 +19,29 @@ export const landingSettingsPath = path.join(dataDir, 'landing-settings.json');
 export const contactRequestsPath = path.join(dataDir, 'contact-requests.json');
 export const saasPlansPath = path.join(dataDir, 'saas-plans.json');
 export const businessSettingsPath = path.join(dataDir, 'business-settings.json');
+export const parserHistoryPath = path.join(dataDir, 'parser-history.json');
+export const fileTransfersPath = path.join(dataDir, 'file-transfers.json');
+export const fileDirectoryLockersPath = path.join(dataDir, 'file-directory-lockers.json');
+export const fileManagerFoldersPath = path.join(dataDir, 'file-manager-folders.json');
+export const billingTransactionsPath = path.join(dataDir, 'billing-transactions.json');
+export const internalMailboxPath = path.join(dataDir, 'internal-mailbox.json');
+export const dealRoomsPath = path.join(dataDir, 'deal-rooms.json');
+export const meetingRoomsPath = path.join(dataDir, 'meeting-rooms.json');
+export const notificationStatePath = path.join(dataDir, 'notifications.json');
+export const userActivityPath = path.join(dataDir, 'user-activity.json');
+export const userFeedbackPath = path.join(dataDir, 'user-feedback.json');
+export const hiringJobsPath = path.join(dataDir, 'hiring-jobs.json');
+export const hiringApplicationsPath = path.join(dataDir, 'hiring-applications.json');
+export const gigsPath = path.join(dataDir, 'gigs.json');
+export const gigConnectionsPath = path.join(dataDir, 'gig-connections.json');
+export const gigBidsPath = path.join(dataDir, 'gig-bids.json');
+export const docrudiansPath = path.join(dataDir, 'docrudians.json');
+export const virtualIdsPath = path.join(dataDir, 'virtual-ids.json');
+export const certificatesPath = path.join(dataDir, 'certificates.json');
+export const docwordDocumentsPath = path.join(dataDir, 'docword-documents.json');
+export const blogPostsPath = path.join(dataDir, 'blog-posts.json');
+export const webTelemetryPath = path.join(dataDir, 'web-telemetry.json');
+export const securityBlocklistPath = path.join(dataDir, 'security-blocklist.json');
 
 export async function ensureDirectory(filePath: string) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });

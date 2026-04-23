@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { documentTemplates } from '@/data/templates';
 import { getAuthSession } from '@/lib/server/auth';
-import { customTemplatesPath, readJsonFile } from '@/lib/server/storage';
+import { getCustomTemplatesFromRepository } from '@/lib/server/repositories';
 import { DocumentTemplate } from '@/types/document';
 
 export const dynamic = 'force-dynamic';
@@ -13,11 +13,13 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const customTemplates = await readJsonFile<DocumentTemplate[]>(customTemplatesPath, []);
+    const customTemplates = await getCustomTemplatesFromRepository();
     const visibleCustomTemplates = session.user.role === 'admin'
       ? customTemplates
       : session.user.role === 'client'
         ? customTemplates.filter((template) => !template.organizationId || template.organizationId === session.user.id)
+      : session.user.role === 'individual'
+        ? customTemplates.filter((template) => !template.organizationId && (!template.createdBy || template.createdBy.toLowerCase() === (session.user.email || '').toLowerCase()))
         : customTemplates;
     const allTemplates = [
       ...documentTemplates.map(template => ({

@@ -4,97 +4,59 @@
     "email": "admin@company.com",
     "name": "Admin User",
     "role": "admin",
+    "accountType": "business",
     "permissions": [
       "all"
     ],
+    "roleProfileId": "role-admin-control",
+    "roleProfileName": "Admin Control",
     "isActive": true,
     "createdAt": "2024-01-01T00:00:00Z",
-    "lastLogin": "2026-03-30T06:27:43.622Z"
+    "lastLogin": "2024-01-01T00:00:00Z",
+    "passwordHash": "16d337c3e1e87a26744898a93d53506bd3adf54307cc74ad48f5c58a78f7ef3d486b9afd2491b640b5d55c74fdca345f053bcae3ba53b78b3f3adb475d3450a4",
+    "passwordSalt": "41ad24b94ee75a149e5f2f171cd74093",
+    "lastActivityAt": "2026-04-23T11:41:02.624Z"
   },
   {
     "id": "2",
     "email": "hr@company.com",
     "name": "HR Manager",
     "role": "hr",
+    "accountType": "business",
     "permissions": [
+      "appointment-letter",
+      "offer-letter",
+      "termination-letter",
+      "resignation-letter",
+      "performance-appraisal",
       "internship-letter"
     ],
+    "roleProfileId": "role-hr-operations",
+    "roleProfileName": "HR Operations",
     "isActive": true,
     "createdAt": "2024-01-01T00:00:00Z",
-    "lastLogin": "2024-01-01T00:00:00Z"
+    "passwordHash": "f4ac50e8dd4d542db5079488b319d54492006263d0bfb9e69417256084bcb2f0a49670d83a3b67f7527790b156c5559db39893fc8081f92bef502059d156ee7e",
+    "passwordSalt": "dee88ac9a7ba398f697b4a2272acd3f6"
   },
   {
     "id": "3",
     "email": "legal@company.com",
     "name": "Legal Advisor",
     "role": "legal",
+    "accountType": "business",
     "permissions": [
       "nda",
+      "employment-contract",
+      "loan-agreement",
+      "service-agreement",
+      "partnership-agreement",
       "contractual-agreement"
     ],
+    "roleProfileId": "role-legal-governance",
+    "roleProfileName": "Legal Governance",
     "isActive": true,
     "createdAt": "2024-01-01T00:00:00Z",
-    "lastLogin": "2024-01-01T00:00:00Z"
-  },
-  {
-    "id": "user-1774505469593-09o7fuh",
-    "createdAt": "2026-03-26T06:11:09.593Z",
-    "email": "abhishekm@corescent.in",
-    "name": "Abhishek Malviya",
-    "role": "employee",
-    "permissions": [
-      "internship-letter"
-    ],
-    "isActive": true,
-    "passwordHash": "9887749619b91de9b5e8acfa9fa66d62b14afe10e30b874604c1ac87f62e15ec07b6337cb7f31ea222cac25c283818c76f664dba2b902c3f2b0d01029727337f",
-    "passwordSalt": "77ad2561f4fdacaf56291dfa8ec206d3"
-  },
-  {
-    "id": "user-1774506351280",
-    "name": "test",
-    "email": "test@gmail.com",
-    "role": "client",
-    "permissions": [
-      "all"
-    ],
-    "isActive": true,
-    "createdAt": "2026-03-26T06:25:51.280Z",
-    "organizationId": "org-1774506351280",
-    "organizationName": "test",
-    "organizationDomain": "test.com",
-    "createdFromSignup": true,
-    "subscription": {
-      "planId": "free-starter",
-      "planName": "Free Starter",
-      "status": "trial",
-      "startedAt": "2026-03-26T06:25:51.280Z"
-    },
-    "passwordHash": "37e8fb9f44ad199bf661e49decefea47f05b093308e1ff14e7671051eb79d9fd1b814637236754c01d057dbe1f2651a98cd57c9ebc8b73ae49f09d3bb4fee26d",
-    "passwordSalt": "15bdd9f6a9a7a916e5262ccf41763806",
-    "lastLogin": "2026-03-26T06:38:31.163Z"
-  },
-  {
-    "id": "user-1774851249906",
-    "name": "test123",
-    "email": "test123@gmail.com",
-    "role": "client",
-    "permissions": [
-      "all"
-    ],
-    "isActive": true,
-    "createdAt": "2026-03-30T06:14:09.906Z",
-    "organizationId": "user-1774851249906",
-    "organizationName": "test1234",
-    "organizationDomain": "test.com",
-    "createdFromSignup": true,
-    "subscription": {
-      "planId": "free-starter",
-      "planName": "Free Starter",
-      "status": "trial",
-      "startedAt": "2026-03-30T06:14:09.906Z"
-    },
-    "passwordHash": "1a2820a4e2f7a5206b6476dfcf8942457f4f68f0ef62bb4a1cc7d160b86609b4686459b08c14e9183789ecbe75f77bdf43de4681b180d2e60080f4b38e69ad54",
-    "passwordSalt": "e48346f35a9212f44b041bf4b67cb8e9",
-    "lastLogin": "2026-03-30T06:14:22.434Z"
+    "passwordHash": "51a85fda475a45ffd835cea83617bf2c64b7c295da57f9943b84bab82b584c0842dfa284888f36f36c9cc2cb900d67b867e5aa5569aa50002543b390da246b1e",
+    "passwordSalt": "05b40e3971cacb5303390359ea162319"
   }
 ]

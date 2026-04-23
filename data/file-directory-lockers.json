@@ -1,0 +1,154 @@
+[
+  {
+    "id": "locker-1776878469844-6mf8f2",
+    "ownerUserId": "1",
+    "ownerEmail": "admin@company.com",
+    "ownerName": "Admin User",
+    "name": "Aadhaar_Authentication_API-2.5_Revision-1_of_January_2022 (1)",
+    "currentPassword": "PZWAEK",
+    "passwordVersion": 1,
+    "passwordLastChangedAt": "2026-04-22T17:21:09.844Z",
+    "fileTransferIds": [
+      "transfer-1776878469880-guwy7i"
+    ],
+    "createdAt": "2026-04-22T17:21:09.844Z",
+    "updatedAt": "2026-04-22T17:21:09.921Z",
+    "history": [
+      {
+        "id": "locker-history-1776878469921-qvmbny",
+        "createdAt": "2026-04-22T17:21:09.921Z",
+        "type": "file_added",
+        "actorName": "Admin User",
+        "actorUserId": "1",
+        "note": "Aadhaar_Authentication_API-2.5_Revision-1_of_January_2022 (1).pdf added to locker."
+      },
+      {
+        "id": "locker-history-1776878469844-mbke04",
+        "createdAt": "2026-04-22T17:21:09.844Z",
+        "type": "created",
+        "actorName": "Admin User",
+        "actorUserId": "1",
+        "note": "Locker created and ready for multi-file publishing."
+      }
+    ]
+  },
+  {
+    "id": "locker-1776878452671-kd9x0w",
+    "ownerUserId": "1",
+    "ownerEmail": "admin@company.com",
+    "ownerName": "Admin User",
+    "name": "Aadhaar_Authentication_API-2.5_Revision-1_of_January_2022 (1)",
+    "currentPassword": "TEST",
+    "passwordVersion": 1,
+    "passwordLastChangedAt": "2026-04-22T17:20:52.671Z",
+    "fileTransferIds": [
+      "transfer-1776878452711-tevvgo"
+    ],
+    "createdAt": "2026-04-22T17:20:52.671Z",
+    "updatedAt": "2026-04-22T17:20:52.770Z",
+    "history": [
+      {
+        "id": "locker-history-1776878452770-ghfxze",
+        "createdAt": "2026-04-22T17:20:52.770Z",
+        "type": "file_added",
+        "actorName": "Admin User",
+        "actorUserId": "1",
+        "note": "Aadhaar_Authentication_API-2.5_Revision-1_of_January_2022 (1).pdf added to locker."
+      },
+      {
+        "id": "locker-history-1776878452671-1qewzo",
+        "createdAt": "2026-04-22T17:20:52.671Z",
+        "type": "created",
+        "actorName": "Admin User",
+        "actorUserId": "1",
+        "note": "Locker created and ready for multi-file publishing."
+      }
+    ]
+  },
+  {
+    "id": "locker-1776080900514-gb321g",
+    "ownerUserId": "1",
+    "ownerEmail": "admin@company.com",
+    "ownerName": "Admin User",
+    "name": "test (1)",
+    "currentPassword": "VIVEKSIR",
+    "passwordVersion": 1,
+    "passwordLastChangedAt": "2026-04-13T11:48:20.514Z",
+    "fileTransferIds": [
+      "transfer-1776080900555-aqin3r"
+    ],
+    "createdAt": "2026-04-13T11:48:20.514Z",
+    "updatedAt": "2026-04-13T11:48:20.617Z",
+    "history": [
+      {
+        "id": "locker-history-1776080900617-5oxkph",
+        "createdAt": "2026-04-13T11:48:20.617Z",
+        "type": "file_added",
+        "actorName": "Admin User",
+        "actorUserId": "1",
+        "note": "test (1).pdf added to locker."
+      },
+      {
+        "id": "locker-history-1776080900514-ndtinw",
+        "createdAt": "2026-04-13T11:48:20.514Z",
+        "type": "created",
+        "actorName": "Admin User",
+        "actorUserId": "1",
+        "note": "Locker created and ready for multi-file publishing."
+      }
+    ]
+  },
+  {
+    "id": "locker-1775736164395-9mq5yl",
+    "ownerUserId": "1",
+    "ownerEmail": "admin@company.com",
+    "ownerName": "Admin User",
+    "name": "Corescent",
+    "category": "testimg1",
+    "currentPassword": "84UM95",
+    "passwordVersion": 2,
+    "passwordRotationDays": 30,
+    "passwordLastChangedAt": "2026-04-09T12:16:08.227Z",
+    "lastRotationDueAt": "2026-05-09T12:16:08.227Z",
+    "fileTransferIds": [
+      "transfer-1775736230403-nqu3nb",
+      "transfer-1775736164802-p95hia"
+    ],
+    "createdAt": "2026-04-09T12:02:44.395Z",
+    "updatedAt": "2026-04-09T12:16:08.227Z",
+    "history": [
+      {
+        "id": "locker-history-1775736968227-yyttlq",
+        "createdAt": "2026-04-09T12:16:08.227Z",
+        "type": "password_changed",
+        "actorName": "Admin User",
+        "actorUserId": "1",
+        "note": "Locker password rotated to version 2. Existing access was revoked automatically."
+      },
+      {
+        "id": "locker-history-1775736230450-i37xr9",
+        "createdAt": "2026-04-09T12:03:50.450Z",
+        "type": "file_added",
+        "actorName": "Admin User",
+        "actorUserId": "1",
+        "note": "ChatGPT Image Apr 9, 2026, 05_05_37 PM.png added to locker."
+      },
+      {
+        "id": "locker-history-1775736164933-7q4uhp",
+        "createdAt": "2026-04-09T12:02:44.933Z",
+        "type": "file_added",
+        "actorName": "Admin User",
+        "actorUserId": "1",
+        "note": "ChatGPT Image Apr 9, 2026, 01_07_22 PM (1).png added to locker."
+      },
+      {
+        "id": "locker-history-1775736164395-5sq49a",
+        "createdAt": "2026-04-09T12:02:44.395Z",
+        "type": "created",
+        "actorName": "Admin User",
+        "actorUserId": "1",
+        "note": "Locker created and ready for multi-file publishing."
+      }
+    ]
+  }
+]

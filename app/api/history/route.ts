@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/server/auth';
-import { appendHistoryEntry, getHistoryEntries, updateHistoryEntry } from '@/lib/server/history';
+import { appendHistoryEntry, deleteHistoryEntry, getHistoryEntries, updateHistoryEntry } from '@/lib/server/history';
 import { DocumentHistory } from '@/types/document';
 import { defaultBackgroundVerificationDocuments, ensureEmployeeAccessAccount, isOnboardingTemplate } from '@/lib/server/onboarding';
 import { getStoredUsers } from '@/lib/server/auth';
 import { canUserAccessFeature, getUserUsageSummary } from '@/lib/server/saas';
 import { getBusinessSettings } from '@/lib/server/business';
+import { applyWatermarkToPdfDataUrl } from '@/lib/server/shared-uploaded-pdf';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,11 +37,12 @@ export async function GET() {
     }
 
     const history = await getHistoryEntries();
+    const isPlanScopedUser = session.user.role === 'client' || session.user.role === 'individual';
     const visibleHistory = session.user.role === 'admin'
       ? history
       : session.user.role === 'employee'
         ? history.filter((entry) => entry.employeeEmail?.toLowerCase() === (session.user.email || '').toLowerCase())
-      : session.user.role === 'client'
+      : isPlanScopedUser
         ? history.filter((entry) => entry.organizationId === session.user.id || entry.clientEmail?.toLowerCase() === (session.user.email || '').toLowerCase())
         : history.filter((entry) => entry.generatedBy === session.user.email);
 
@@ -60,7 +62,8 @@ export async function POST(request: NextRequest) {
 
     const payload = await request.json() as Partial<DocumentHistory>;
     const storedUser = (await getStoredUsers()).find((user) => user.email === session.user.email);
-    if (storedUser?.role === 'client') {
+    const isPlanScopedUser = storedUser?.role === 'client' || storedUser?.role === 'individual';
+    if (isPlanScopedUser && storedUser) {
       const [canGenerate, usageSummary] = await Promise.all([
         canUserAccessFeature(storedUser, 'generate_documents'),
         getUserUsageSummary(storedUser),
@@ -94,16 +97,24 @@ export async function POST(request: NextRequest) {
         ])
       : [null, null];
     const shouldApplyFreeWatermark = Boolean(
-      storedUser?.role === 'client'
+      isPlanScopedUser
       && clientPlanUsage?.plan?.watermarkOnFreeGenerations
       && clientPlanUsage.usage.totalGeneratedDocuments < (clientPlanUsage.plan?.freeDocumentGenerations ?? 5),
     );
+    const resolvedWatermarkLabel = shouldApplyFreeWatermark
+      ? (clientBusinessSettings?.watermarkLabel || (storedUser?.role === 'individual' ? 'docrud workspace' : 'docrud workspace'))
+      : payload.editorState?.watermarkLabel;
+    const uploadedPdfDataUrl = payload.documentSourceType === 'uploaded_pdf' && payload.uploadedPdfDataUrl
+      ? await applyWatermarkToPdfDataUrl(payload.uploadedPdfDataUrl, resolvedWatermarkLabel)
+      : payload.uploadedPdfDataUrl;
+
     const historyEntry = await appendHistoryEntry({
       ...payload,
+      uploadedPdfDataUrl,
       generatedBy: session.user.email || payload.generatedBy || 'unknown',
       generatedAt: payload.generatedAt || new Date().toISOString(),
-      clientEmail: storedUser?.role === 'client' ? storedUser.email : payload.clientEmail || undefined,
-      clientName: storedUser?.role === 'client' ? storedUser.name : payload.clientName || undefined,
+      clientEmail: isPlanScopedUser ? storedUser?.email : payload.clientEmail || undefined,
+      clientName: isPlanScopedUser ? storedUser?.name : payload.clientName || undefined,
       clientOrganization: storedUser?.role === 'client' ? storedUser.organizationName : payload.clientOrganization || undefined,
       organizationId: storedUser?.role === 'client' ? storedUser.id : payload.organizationId,
       organizationName: storedUser?.role === 'client' ? storedUser.organizationName : payload.organizationName,
@@ -125,11 +136,11 @@ export async function POST(request: NextRequest) {
       automationNotes: [
         ...(payload.automationNotes || []),
         ...(employeeAccount ? [`Employee onboarding credentials generated for ${employeeAccount.user.email}`] : []),
-        ...(storedUser?.role === 'client' ? [`Generated under SaaS plan ${storedUser.subscription?.planName || 'Free Starter'}`] : []),
+        ...(isPlanScopedUser ? [`Generated under plan ${storedUser?.subscription?.planName || 'Current plan'}`] : []),
       ],
       editorState: {
         ...(payload.editorState || {}),
-        watermarkLabel: shouldApplyFreeWatermark ? (clientBusinessSettings?.watermarkLabel || 'docrud trial workspace') : payload.editorState?.watermarkLabel,
+        watermarkLabel: resolvedWatermarkLabel,
       },
     });
 
@@ -159,7 +170,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const allowed = session.user.role === 'admin'
-      || (session.user.role === 'client' && (current.organizationId === session.user.id || current.clientEmail?.toLowerCase() === (session.user.email || '').toLowerCase()))
+      || ((session.user.role === 'client' || session.user.role === 'individual') && (current.organizationId === session.user.id || current.clientEmail?.toLowerCase() === (session.user.email || '').toLowerCase()))
       || (session.user.role === 'employee' && current.employeeEmail?.toLowerCase() === (session.user.email || '').toLowerCase())
       || current.generatedBy === session.user.email;
     if (!allowed) {
@@ -180,5 +191,44 @@ export async function PATCH(request: NextRequest) {
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: 'Failed to update history' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getAuthSession();
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const id = request.nextUrl.searchParams.get('id');
+    if (!id) {
+      return NextResponse.json({ error: 'History ID is required' }, { status: 400 });
+    }
+
+    const history = await getHistoryEntries();
+    const current = history.find((entry) => entry.id === id);
+    if (!current) {
+      return NextResponse.json({ error: 'History entry not found' }, { status: 404 });
+    }
+
+    const allowed = session.user.role === 'admin'
+      || ((session.user.role === 'client' || session.user.role === 'individual') && (current.organizationId === session.user.id || current.clientEmail?.toLowerCase() === (session.user.email || '').toLowerCase()))
+      || (session.user.role === 'employee' && current.employeeEmail?.toLowerCase() === (session.user.email || '').toLowerCase())
+      || current.generatedBy === session.user.email;
+
+    if (!allowed) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const deleted = await deleteHistoryEntry(id);
+    if (!deleted) {
+      return NextResponse.json({ error: 'History entry not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: 'Failed to delete history entry' }, { status: 500 });
   }
 }

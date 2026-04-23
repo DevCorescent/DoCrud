@@ -92,7 +92,8 @@ export default function TemplateEditor({ template, onSave, onClose }: TemplateEd
         template: formData.template || '',
         isCustom: true,
       },
-      previewData
+      previewData,
+      { renderMode: 'plain' }
     );
   };
 

@@ -1,7 +1,8 @@
 import { DocumentAccessEvent, DocumentHistory, EmailLogEntry } from '@/types/document';
 import { DEFAULT_DOCUMENT_DESIGN_PRESET, isDocumentDesignPreset } from '@/lib/document-designs';
+import { normalizeDocSheetWorkbook } from '@/lib/docsheet';
 import { defaultBackgroundVerificationDocuments, deriveOnboardingProgress, deriveOnboardingStage, isOnboardingTemplate } from '@/lib/server/onboarding';
-import { historyFilePath, readJsonFile, writeJsonFile } from '@/lib/server/storage';
+import { getHistoryEntriesFromRepository, saveHistoryEntriesToRepository } from '@/lib/server/repositories';
 
 type HistoryInput = Partial<DocumentHistory> & {
   documentType?: string;
@@ -25,6 +26,7 @@ export function generateSharePassword() {
 export function normalizeHistoryEntry(entry: HistoryInput): DocumentHistory {
   const generatedAt = entry.generatedAt || new Date().toISOString();
   const shareId = entry.shareId || `doc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const shareRequiresPassword = entry.shareRequiresPassword !== false;
   const onboardingRequired = entry.onboardingRequired ?? isOnboardingTemplate(entry.templateId || entry.documentType, entry.category);
   const backgroundVerificationRequired = entry.backgroundVerificationRequired ?? onboardingRequired;
   const normalizedSubmittedDocuments = Array.isArray(entry.submittedDocuments) ? entry.submittedDocuments.map((document) => ({
@@ -62,6 +64,7 @@ export function normalizeHistoryEntry(entry: HistoryInput): DocumentHistory {
     shareId,
     shareUrl: entry.shareUrl || `/documents/${shareId}`,
     referenceNumber: entry.referenceNumber || generateReferenceNumber(entry.templateName || entry.documentType || 'Document', generatedAt),
+    documentSourceType: entry.documentSourceType === 'uploaded_pdf' ? 'uploaded_pdf' : 'generated',
     templateId: entry.templateId || entry.documentType || 'unknown-template',
     templateName: entry.templateName || entry.documentType || 'Untitled Document',
     category: entry.category || 'General',
@@ -70,6 +73,11 @@ export function normalizeHistoryEntry(entry: HistoryInput): DocumentHistory {
     generatedAt,
     previewHtml: entry.previewHtml,
     pdfUrl: entry.pdfUrl,
+    uploadedPdfFileName: entry.uploadedPdfFileName ? String(entry.uploadedPdfFileName) : undefined,
+    uploadedPdfMimeType: entry.uploadedPdfMimeType ? String(entry.uploadedPdfMimeType) : undefined,
+    uploadedPdfDataUrl: entry.uploadedPdfDataUrl ? String(entry.uploadedPdfDataUrl) : undefined,
+    signedPdfFileName: entry.signedPdfFileName ? String(entry.signedPdfFileName) : undefined,
+    signedPdfDataUrl: entry.signedPdfDataUrl ? String(entry.signedPdfDataUrl) : undefined,
     emailSent: Boolean(entry.emailSent),
     emailTo: entry.emailTo,
     emailSubject: entry.emailSubject,
@@ -83,7 +91,8 @@ export function normalizeHistoryEntry(entry: HistoryInput): DocumentHistory {
     signatureRole: entry.signatureRole,
     signatureSignedAt: entry.signatureSignedAt,
     signatureSignedIp: entry.signatureSignedIp,
-    sharePassword: entry.sharePassword || generateSharePassword(),
+    sharePassword: shareRequiresPassword ? (entry.sharePassword || generateSharePassword()) : undefined,
+    shareRequiresPassword,
     shareAccessPolicy: entry.shareAccessPolicy === 'expiring' || entry.shareAccessPolicy === 'one_time' ? entry.shareAccessPolicy : 'standard',
     shareExpiresAt: entry.shareExpiresAt ? String(entry.shareExpiresAt) : undefined,
     maxAccessCount: typeof entry.maxAccessCount === 'number' ? entry.maxAccessCount : undefined,
@@ -106,6 +115,16 @@ export function normalizeHistoryEntry(entry: HistoryInput): DocumentHistory {
     dataCollectionInstructions: entry.dataCollectionInstructions ? String(entry.dataCollectionInstructions) : undefined,
     dataCollectionSubmittedAt: entry.dataCollectionSubmittedAt ? String(entry.dataCollectionSubmittedAt) : undefined,
     dataCollectionSubmittedBy: entry.dataCollectionSubmittedBy ? String(entry.dataCollectionSubmittedBy) : undefined,
+    dataCollectionSubmissions: Array.isArray(entry.dataCollectionSubmissions)
+      ? entry.dataCollectionSubmissions.map((submission, index) => ({
+          id: String(submission.id || `submission-${Date.now()}-${index}`),
+          submittedAt: String(submission.submittedAt || new Date().toISOString()),
+          submittedBy: String(submission.submittedBy || 'Recipient'),
+          data: submission.data && typeof submission.data === 'object'
+            ? Object.fromEntries(Object.entries(submission.data).map(([key, value]) => [key, String(value ?? '')]))
+            : {},
+        }))
+      : [],
     dataCollectionReviewNotes: entry.dataCollectionReviewNotes ? String(entry.dataCollectionReviewNotes) : undefined,
     dataCollectionReviewedAt: entry.dataCollectionReviewedAt ? String(entry.dataCollectionReviewedAt) : undefined,
     dataCollectionReviewedBy: entry.dataCollectionReviewedBy ? String(entry.dataCollectionReviewedBy) : undefined,
@@ -114,6 +133,24 @@ export function normalizeHistoryEntry(entry: HistoryInput): DocumentHistory {
     recipientSignatureSource: entry.recipientSignatureSource === 'uploaded' ? 'uploaded' : entry.recipientSignatureSource === 'drawn' ? 'drawn' : undefined,
     recipientSignedAt: entry.recipientSignedAt,
     recipientSignedIp: entry.recipientSignedIp,
+    recipientPhotoDataUrl: entry.recipientPhotoDataUrl ? String(entry.recipientPhotoDataUrl) : undefined,
+    recipientPhotoCapturedAt: entry.recipientPhotoCapturedAt ? String(entry.recipientPhotoCapturedAt) : undefined,
+    recipientPhotoCapturedIp: entry.recipientPhotoCapturedIp ? String(entry.recipientPhotoCapturedIp) : undefined,
+    recipientPhotoCaptureMethod: entry.recipientPhotoCaptureMethod === 'live_camera' ? 'live_camera' : undefined,
+    recipientAadhaarVerificationRequired: entry.recipientAadhaarVerificationRequired ?? undefined,
+    recipientAadhaarVerifiedAt: entry.recipientAadhaarVerifiedAt ? String(entry.recipientAadhaarVerifiedAt) : undefined,
+    recipientAadhaarVerifiedIp: entry.recipientAadhaarVerifiedIp ? String(entry.recipientAadhaarVerifiedIp) : undefined,
+    recipientAadhaarReferenceId: entry.recipientAadhaarReferenceId ? String(entry.recipientAadhaarReferenceId) : undefined,
+    recipientAadhaarMaskedId: entry.recipientAadhaarMaskedId ? String(entry.recipientAadhaarMaskedId) : undefined,
+    recipientAadhaarVerificationMode: entry.recipientAadhaarVerificationMode === 'otp' ? 'otp' : undefined,
+    recipientAadhaarProviderLabel: entry.recipientAadhaarProviderLabel ? String(entry.recipientAadhaarProviderLabel) : undefined,
+    pendingRecipientPhotoDataUrl: entry.pendingRecipientPhotoDataUrl ? String(entry.pendingRecipientPhotoDataUrl) : undefined,
+    pendingRecipientPhotoCapturedAt: entry.pendingRecipientPhotoCapturedAt ? String(entry.pendingRecipientPhotoCapturedAt) : undefined,
+    pendingRecipientPhotoCapturedIp: entry.pendingRecipientPhotoCapturedIp ? String(entry.pendingRecipientPhotoCapturedIp) : undefined,
+    pendingRecipientPhotoCaptureToken: entry.pendingRecipientPhotoCaptureToken ? String(entry.pendingRecipientPhotoCaptureToken) : undefined,
+    pendingRecipientAadhaarTransactionId: entry.pendingRecipientAadhaarTransactionId ? String(entry.pendingRecipientAadhaarTransactionId) : undefined,
+    pendingRecipientAadhaarMaskedId: entry.pendingRecipientAadhaarMaskedId ? String(entry.pendingRecipientAadhaarMaskedId) : undefined,
+    pendingRecipientAadhaarRequestedAt: entry.pendingRecipientAadhaarRequestedAt ? String(entry.pendingRecipientAadhaarRequestedAt) : undefined,
     recipientSignedLocationLabel: entry.recipientSignedLocationLabel,
     recipientSignedLatitude: typeof entry.recipientSignedLatitude === 'number' ? entry.recipientSignedLatitude : undefined,
     recipientSignedLongitude: typeof entry.recipientSignedLongitude === 'number' ? entry.recipientSignedLongitude : undefined,
@@ -236,6 +273,7 @@ export function normalizeHistoryEntry(entry: HistoryInput): DocumentHistory {
       onboardingCredentials,
       recipientSignedAt: entry.recipientSignedAt,
     }),
+    docsheetWorkbook: entry.docsheetWorkbook ? normalizeDocSheetWorkbook(entry.docsheetWorkbook) : undefined,
   };
 }
 
@@ -249,6 +287,7 @@ function normalizeEventType(value: unknown): DocumentAccessEvent['eventType'] {
     case 'sign':
     case 'upload':
     case 'verify':
+    case 'camera_capture':
       return value;
     default:
       return 'open';
@@ -263,12 +302,12 @@ export function createAccessEvent(input: Omit<DocumentAccessEvent, 'id'>): Docum
 }
 
 export async function getHistoryEntries() {
-  const history = await readJsonFile<HistoryInput[]>(historyFilePath, []);
+  const history = await getHistoryEntriesFromRepository();
   return history.map(normalizeHistoryEntry);
 }
 
 export async function saveHistoryEntries(entries: DocumentHistory[]) {
-  await writeJsonFile(historyFilePath, entries);
+  await saveHistoryEntriesToRepository(entries);
 }
 
 export async function appendHistoryEntry(entry: HistoryInput) {
@@ -290,6 +329,16 @@ export async function updateHistoryEntry(id: string, updater: (entry: DocumentHi
   entries[index] = normalizeHistoryEntry(updater(entries[index]));
   await saveHistoryEntries(entries);
   return entries[index];
+}
+
+export async function deleteHistoryEntry(id: string) {
+  const entries = await getHistoryEntries();
+  const nextEntries = entries.filter((entry) => entry.id !== id);
+  if (nextEntries.length === entries.length) {
+    return false;
+  }
+  await saveHistoryEntries(nextEntries);
+  return true;
 }
 
 export function createEmailLogEntry(input: Omit<EmailLogEntry, 'id'>): EmailLogEntry {

@@ -6,6 +6,13 @@ export function ThemeController() {
   useEffect(() => {
     let mounted = true;
 
+    document.documentElement.setAttribute('data-ui-mode', 'light');
+    try {
+      window.localStorage.removeItem('docrud-ui-mode');
+    } catch {
+      // ignore storage cleanup issues
+    }
+
     const applyTheme = async () => {
       try {
         const response = await fetch('/api/settings/theme', { cache: 'no-store' });

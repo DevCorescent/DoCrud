@@ -1,0 +1,34 @@
+[
+  {
+    "id": "job-1775219368036",
+    "organizationId": "1",
+    "organizationName": "Admin User",
+    "createdByUserId": "1",
+    "createdByEmail": "admin@company.com",
+    "title": "Php & Laravel",
+    "department": "Engineering",
+    "location": "Bengaluru",
+    "employmentType": "full_time",
+    "workMode": "hybrid",
+    "experienceLevel": "associate",
+    "description": "asd",
+    "responsibilities": [
+      "asd"
+    ],
+    "requirements": [
+      "asd"
+    ],
+    "preferredSkills": [
+      "asd"
+    ],
+    "targetRoleKeywords": [
+      "Php",
+      "&",
+      "Laravel"
+    ],
+    "minimumAtsScore": 50,
+    "status": "published",
+    "createdAt": "2026-04-03T12:29:28.036Z",
+    "updatedAt": "2026-04-03T12:29:28.036Z"
+  }
+]

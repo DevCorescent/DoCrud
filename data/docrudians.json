@@ -1,0 +1,303 @@
+{
+  "profiles": [
+    {
+      "id": "seed-profile-1",
+      "userId": "seed-user-1",
+      "email": "rooms@docrud.app",
+      "name": "Aarav Mehta",
+      "organizationName": "Orbit Ops Studio",
+      "accountType": "individual",
+      "headline": "Builds useful rooms for teams and communities.",
+      "bio": "I use Docrudians rooms for launches, collabs, and knowledge sharing.",
+      "location": "Bengaluru",
+      "domain": "Operations",
+      "skills": [
+        "Rooms",
+        "Operations",
+        "Collaboration"
+      ],
+      "interests": [
+        "Community",
+        "Systems",
+        "Knowledge sharing"
+      ],
+      "lookingFor": [
+        "collaborators",
+        "community"
+      ],
+      "badges": [
+        "Builder"
+      ],
+      "links": [],
+      "visibility": "public",
+      "createdAt": "2026-04-01T10:00:00.000Z",
+      "updatedAt": "2026-04-01T10:00:00.000Z"
+    }
+  ],
+  "posts": [
+    {
+      "id": "seed-post-1",
+      "roomId": "seed-room-1",
+      "authorUserId": "seed-user-1",
+      "authorName": "Aarav Mehta",
+      "authorHeadline": "Builds useful rooms for teams and communities.",
+      "visibility": "public",
+      "attachments": [],
+      "title": "Starter pack added for this week",
+      "content": "Dropped a reusable launch checklist and clean docs pack for builders shipping this weekend.",
+      "category": "showcase",
+      "tags": [
+        "docs",
+        "launch"
+      ],
+      "createdAt": "2026-04-03T10:00:00.000Z"
+    }
+  ],
+  "circles": [
+    {
+      "id": "seed-room-1",
+      "slug": "dev-ship-room",
+      "ownerUserId": "seed-user-1",
+      "ownerName": "Aarav Mehta",
+      "title": "Dev Ship Room",
+      "description": "A public build room for developers sharing updates, docs, and launch resources.",
+      "category": "developers",
+      "visibility": "public",
+      "useCase": "developer",
+      "tags": [
+        "developers",
+        "ship",
+        "resources"
+      ],
+      "featureFlags": [
+        "resources",
+        "invite_link",
+        "compression",
+        "announcements"
+      ],
+      "shareLink": "/docrudians/room/seed-room-1",
+      "memberUserIds": [
+        "seed-user-1"
+      ],
+      "joinRequests": [],
+      "resources": [
+        {
+          "id": "seed-room-resource-1",
+          "type": "document",
+          "name": "Launch checklist.pdf",
+          "url": "data:text/plain;charset=utf-8,Launch%20checklist%0A-%20Open%20the%20room%0A-%20Share%20the%20link%0A-%20Drop%20the%20resources%0A-%20Track%20who%20opened%20and%20downloaded",
+          "mimeType": "text/plain",
+          "sizeLabel": "1 KB",
+          "shareUrl": "/docrudians/room/seed-room-1/file/seed-room-resource-1",
+          "qrUrl": "https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=0&data=https%3A%2F%2Fwww.docrud.app%2Fdocrudians%2Froom%2Fseed-room-1%2Ffile%2Fseed-room-resource-1"
+        }
+      ],
+      "activity": [
+        {
+          "id": "room-activity-1775740625860-lm4yxk",
+          "type": "view",
+          "createdAt": "2026-04-09T13:17:05.860Z",
+          "actorName": "Admin User",
+          "actorUserId": "admin@company.com"
+        },
+        {
+          "id": "room-activity-1775740625850-l45d2g",
+          "type": "view",
+          "createdAt": "2026-04-09T13:17:05.850Z",
+          "actorName": "Admin User",
+          "actorUserId": "admin@company.com"
+        },
+        {
+          "id": "room-activity-1775740619914-j6e918",
+          "type": "file_open",
+          "createdAt": "2026-04-09T13:16:59.914Z",
+          "resourceId": "seed-room-resource-1",
+          "resourceName": "Launch checklist.pdf",
+          "note": "Opened from dedicated file page"
+        },
+        {
+          "id": "room-activity-1775740619912-ozqcgj",
+          "type": "file_open",
+          "createdAt": "2026-04-09T13:16:59.912Z",
+          "resourceId": "seed-room-resource-1",
+          "resourceName": "Launch checklist.pdf",
+          "note": "Opened from dedicated file page"
+        },
+        {
+          "id": "room-activity-1775740556439-erjoj7",
+          "type": "file_open",
+          "createdAt": "2026-04-09T13:15:56.439Z",
+          "resourceId": "seed-room-resource-1",
+          "resourceName": "Launch checklist.pdf",
+          "note": "Opened from dedicated file page"
+        },
+        {
+          "id": "room-activity-1775740551086-1ya3ia",
+          "type": "file_open",
+          "createdAt": "2026-04-09T13:15:51.086Z",
+          "actorName": "Admin User",
+          "actorUserId": "admin@company.com",
+          "resourceId": "seed-room-resource-1",
+          "resourceName": "Launch checklist.pdf"
+        },
+        {
+          "id": "room-activity-1775740543628-k1s2iz",
+          "type": "view",
+          "createdAt": "2026-04-09T13:15:43.628Z",
+          "actorName": "Admin User",
+          "actorUserId": "admin@company.com"
+        },
+        {
+          "id": "room-activity-1775740543554-dkd0y6",
+          "type": "view",
+          "createdAt": "2026-04-09T13:15:43.554Z",
+          "actorName": "Admin User",
+          "actorUserId": "admin@company.com"
+        },
+        {
+          "id": "room-activity-1775728447676-cbxss6",
+          "type": "file_open",
+          "createdAt": "2026-04-09T09:54:07.676Z",
+          "actorName": "Admin User",
+          "actorUserId": "admin@company.com",
+          "resourceId": "seed-room-resource-1",
+          "resourceName": "Launch checklist.pdf"
+        },
+        {
+          "id": "room-activity-1775728446757-m1a9zu",
+          "type": "file_open",
+          "createdAt": "2026-04-09T09:54:06.757Z",
+          "actorName": "Admin User",
+          "actorUserId": "admin@company.com",
+          "resourceId": "ChatGPT Image Apr 9, 2026, 01_07_22 PM.png-1775727868861",
+          "resourceName": "ChatGPT Image Apr 9, 2026, 01_07_22 PM.png"
+        },
+        {
+          "id": "room-activity-1775728439660-jeg9h1",
+          "type": "file_open",
+          "createdAt": "2026-04-09T09:53:59.660Z",
+          "actorName": "Admin User",
+          "actorUserId": "admin@company.com",
+          "resourceId": "ChatGPT Image Apr 9, 2026, 01_07_22 PM.png-1775727868861",
+          "resourceName": "ChatGPT Image Apr 9, 2026, 01_07_22 PM.png"
+        },
+        {
+          "id": "room-activity-1775728438739-7lmla4",
+          "type": "file_open",
+          "createdAt": "2026-04-09T09:53:58.739Z",
+          "actorName": "Admin User",
+          "actorUserId": "admin@company.com",
+          "resourceId": "seed-room-resource-1",
+          "resourceName": "Launch checklist.pdf"
+        },
+        {
+          "id": "room-activity-1775728431528-482s6u",
+          "type": "download",
+          "createdAt": "2026-04-09T09:53:51.528Z",
+          "actorName": "Admin User",
+          "actorUserId": "admin@company.com",
+          "resourceId": "ChatGPT Image Apr 9, 2026, 01_07_22 PM.png-1775727868861",
+          "resourceName": "ChatGPT Image Apr 9, 2026, 01_07_22 PM.png"
+        },
+        {
+          "id": "room-activity-1775728422690-nm3ucf",
+          "type": "share",
+          "createdAt": "2026-04-09T09:53:42.690Z",
+          "actorName": "Admin User",
+          "actorUserId": "admin@company.com",
+          "resourceId": "ChatGPT Image Apr 9, 2026, 01_07_22 PM.png-1775727868861",
+          "resourceName": "ChatGPT Image Apr 9, 2026, 01_07_22 PM.png"
+        },
+        {
+          "id": "room-activity-1775728418511-r86t85",
+          "type": "share",
+          "createdAt": "2026-04-09T09:53:38.511Z",
+          "actorName": "Admin User",
+          "actorUserId": "admin@company.com",
+          "resourceId": "ChatGPT Image Apr 9, 2026, 01_07_22 PM.png-1775727868861",
+          "resourceName": "ChatGPT Image Apr 9, 2026, 01_07_22 PM.png"
+        },
+        {
+          "id": "room-activity-1775728415778-zv3d1x",
+          "type": "file_open",
+          "createdAt": "2026-04-09T09:53:35.778Z",
+          "actorName": "Admin User",
+          "actorUserId": "admin@company.com",
+          "resourceId": "ChatGPT Image Apr 9, 2026, 01_07_22 PM.png-1775727868861",
+          "resourceName": "ChatGPT Image Apr 9, 2026, 01_07_22 PM.png"
+        },
+        {
+          "id": "room-activity-1775728414729-h4mgpp",
+          "type": "file_open",
+          "createdAt": "2026-04-09T09:53:34.729Z",
+          "actorName": "Admin User",
+          "actorUserId": "admin@company.com",
+          "resourceId": "ChatGPT Image Apr 9, 2026, 01_07_22 PM.png-1775727868861",
+          "resourceName": "ChatGPT Image Apr 9, 2026, 01_07_22 PM.png"
+        },
+        {
+          "id": "room-activity-1775728398761-nklr7n",
+          "type": "file_open",
+          "createdAt": "2026-04-09T09:53:18.761Z",
+          "actorName": "Admin User",
+          "actorUserId": "admin@company.com",
+          "resourceId": "seed-room-resource-1",
+          "resourceName": "Launch checklist.pdf"
+        },
+        {
+          "id": "room-activity-1775728396526-8kyarm",
+          "type": "file_open",
+          "createdAt": "2026-04-09T09:53:16.526Z",
+          "actorName": "Admin User",
+          "actorUserId": "admin@company.com",
+          "resourceId": "ChatGPT Image Apr 9, 2026, 01_07_22 PM.png-1775727868861",
+          "resourceName": "ChatGPT Image Apr 9, 2026, 01_07_22 PM.png"
+        },
+        {
+          "id": "room-activity-1775728395386-fsnwst",
+          "type": "file_open",
+          "createdAt": "2026-04-09T09:53:15.386Z",
+          "actorName": "Admin User",
+          "actorUserId": "admin@company.com",
+          "resourceId": "seed-room-resource-1",
+          "resourceName": "Launch checklist.pdf"
+        }
+      ],
+      "createdAt": "2026-04-02T10:00:00.000Z",
+      "updatedAt": "2026-04-02T10:00:00.000Z"
+    },
+    {
+      "id": "seed-room-2",
+      "slug": "college-fest-core-room",
+      "ownerUserId": "seed-user-1",
+      "ownerName": "Aarav Mehta",
+      "title": "College Fest Core Room",
+      "description": "A private room for student coordinators to collect docs, posters, and execution plans.",
+      "category": "colleges",
+      "visibility": "private",
+      "useCase": "college",
+      "tags": [
+        "college",
+        "events",
+        "coordination"
+      ],
+      "featureFlags": [
+        "resources",
+        "invite_link",
+        "submissions",
+        "compression"
+      ],
+      "shareLink": "/docrudians/room/seed-room-2",
+      "accessCode": "FEST2026",
+      "memberUserIds": [
+        "seed-user-1"
+      ],
+      "joinRequests": [],
+      "resources": [],
+      "activity": [],
+      "createdAt": "2026-04-03T10:00:00.000Z",
+      "updatedAt": "2026-04-03T10:00:00.000Z"
+    }
+  ],
+  "opportunities": []
+}

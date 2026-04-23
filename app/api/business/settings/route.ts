@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/server/auth';
 import { buildWorkspaceSetupChecklist, getBusinessSettings, saveBusinessSettings, seedStarterTemplatesForBusiness } from '@/lib/server/business';
 import { BusinessSettings } from '@/types/document';
-import { customTemplatesPath, readJsonFile } from '@/lib/server/storage';
 import { getSignatureSettings } from '@/lib/server/settings';
 import { getHistoryEntries } from '@/lib/server/history';
 import { DocumentTemplate } from '@/types/document';
+import { getCustomTemplatesFromRepository } from '@/lib/server/repositories';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,7 +26,7 @@ export async function GET() {
 
     const [settings, templates, signatures, history] = await Promise.all([
       getBusinessSettings(session.user.id, session.user.organizationName || session.user.name || 'Business Workspace'),
-      readJsonFile<DocumentTemplate[]>(customTemplatesPath, []),
+      getCustomTemplatesFromRepository(),
       getSignatureSettings(),
       getHistoryEntries(),
     ]);
@@ -60,7 +60,7 @@ export async function PUT(request: NextRequest) {
     const payload = await request.json() as Partial<BusinessSettings>;
     const [existingSettings, templates, signatures, history] = await Promise.all([
       getBusinessSettings(session.user.id, session.user.organizationName || session.user.name || 'Business Workspace'),
-      readJsonFile<DocumentTemplate[]>(customTemplatesPath, []),
+      getCustomTemplatesFromRepository(),
       getSignatureSettings(),
       getHistoryEntries(),
     ]);
@@ -78,7 +78,7 @@ export async function PUT(request: NextRequest) {
       supportEmail: payload.supportEmail?.trim() || '',
       supportPhone: payload.supportPhone?.trim() || '',
       accentColor: payload.accentColor?.trim() || '#2719FF',
-      watermarkLabel: payload.watermarkLabel?.trim() || 'docrud trial workspace',
+      watermarkLabel: payload.watermarkLabel?.trim() || 'docrud workspace',
       letterheadMode: payload.letterheadMode === 'image' || payload.letterheadMode === 'html' ? payload.letterheadMode : 'default',
       letterheadImageDataUrl: payload.letterheadImageDataUrl?.trim() || '',
       letterheadHtml: payload.letterheadHtml?.trim() || '',

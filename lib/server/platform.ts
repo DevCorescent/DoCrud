@@ -1,5 +1,45 @@
-import { ExpiryRule, IntegrationConfig, OrganizationProfile, PlatformConfig, WorkflowTemplateRecord, ClauseLibraryItem } from '@/types/document';
+import { ExpiryRule, IntegrationConfig, OrganizationProfile, PlatformConfig, WorkflowTemplateRecord, ClauseLibraryItem, PlatformFeatureControlKey } from '@/types/document';
 import { platformConfigPath, readJsonFile, writeJsonFile } from '@/lib/server/storage';
+
+export const defaultPlatformFeatureControls: Record<PlatformFeatureControlKey, boolean> = {
+  dashboard: true,
+  document_summary: true,
+  generate_documents: true,
+  history: true,
+  client_portal: true,
+  tutorials: true,
+  doxpert: true,
+  analytics: true,
+  file_manager: true,
+  roles_permissions: true,
+  approvals: true,
+  versions: true,
+  clauses: true,
+  audit: true,
+  bulk_ops: true,
+  renewals: true,
+  integrations: true,
+  organizations: true,
+  ai_copilot: true,
+  api_docs: true,
+  branding: true,
+  team_workspace: true,
+  deal_room: true,
+  hiring_desk: true,
+  docrudians: true,
+  virtual_id: true,
+  e_certificates: true,
+  editable_sheet_shares: true,
+  document_encrypter: true,
+  visualizer: true,
+  docsheet: true,
+  support: true,
+  internal_mailbox: true,
+  qr_drop: true,
+  offline_locker: true,
+  workspace: true,
+  admin_panel: true,
+};
 
 export const defaultPlatformConfig: PlatformConfig = {
   workflows: [
@@ -39,7 +79,7 @@ export const defaultPlatformConfig: PlatformConfig = {
       name: 'Corescent Technologies',
       domain: 'company.com',
       brandColor: '#ea580c',
-      logoUrl: '/corescent-logo.png',
+      logoUrl: '/docrud-logo.png',
     },
   ],
   expiryRules: [
@@ -51,6 +91,7 @@ export const defaultPlatformConfig: PlatformConfig = {
     },
   ],
   folderLibrary: ['Contracts', 'HR Records', 'Client Agreements', 'Policies'],
+  featureControls: defaultPlatformFeatureControls,
 };
 
 function normalizeWorkflow(workflow: WorkflowTemplateRecord): WorkflowTemplateRecord {
@@ -122,6 +163,10 @@ export function normalizePlatformConfig(config: PlatformConfig): PlatformConfig 
     organizations: Array.isArray(config.organizations) ? config.organizations.map(normalizeOrganization) : [],
     expiryRules: Array.isArray(config.expiryRules) ? config.expiryRules.map(normalizeExpiryRule) : [],
     folderLibrary: Array.isArray(config.folderLibrary) ? Array.from(new Set(config.folderLibrary.map(String).filter(Boolean))) : [],
+    featureControls: {
+      ...defaultPlatformFeatureControls,
+      ...(config.featureControls || {}),
+    },
   };
 }
 

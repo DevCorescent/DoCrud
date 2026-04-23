@@ -1,8 +1,88 @@
+import { promises as fs } from 'fs';
 import { getHistoryEntries } from '@/lib/server/history';
-import { getStoredUsers, saveStoredUsers } from '@/lib/server/auth';
-import { readJsonFile, saasPlansPath, writeJsonFile } from '@/lib/server/storage';
-import { SaasFeatureKey, SaasOverview, SaasPlan, SaasUsageSummary, User } from '@/types/document';
+import { getStoredUsers, saveStoredUsers, type StoredUser } from '@/lib/server/auth';
+import { CustomPlanConfiguration, SaasFeatureKey, SaasOverview, SaasPlan, SaasUsageSummary, User } from '@/types/document';
 import { getAllBusinessSettings } from '@/lib/server/business';
+import { getSaasPlansFromRepository, saveSaasPlansToRepository } from '@/lib/server/repositories';
+import { getFileTransfers } from '@/lib/server/file-transfers';
+import { getInternalMailThreads } from '@/lib/server/internal-mailbox';
+import { getCertificateAdminStats } from '@/lib/server/certificates';
+import { getVirtualIdAdminStats } from '@/lib/server/virtual-ids';
+import {
+  billingTransactionsPath,
+  certificatesPath,
+  fileTransfersPath,
+  historyFilePath,
+  internalMailboxPath,
+  parserHistoryPath,
+  usersPath,
+  virtualIdsPath,
+} from '@/lib/server/storage';
+import { isDatabaseConfigured } from '@/lib/server/database';
+
+function addDays(isoDate: string, days: number) {
+  const base = new Date(isoDate);
+  base.setDate(base.getDate() + days);
+  return base.toISOString();
+}
+
+async function getFileSizeSafe(filePath: string) {
+  try {
+    const stats = await fs.stat(filePath);
+    return stats.size;
+  } catch {
+    return 0;
+  }
+}
+
+export const roadmapPromotionCampaign = {
+  campaignId: 'roadmap-april-2026-upgrade-window',
+  label: 'Purchase today and get all new upgrades free for 3 months',
+  cutoffAt: '2026-04-14T23:59:59+05:30',
+  validUntil: '2026-07-14T23:59:59+05:30',
+};
+
+export function canQualifyForRoadmapPromotion(at = new Date()) {
+  return at.getTime() <= new Date(roadmapPromotionCampaign.cutoffAt).getTime();
+}
+
+export function getRoadmapPromotionSnapshot(subscription?: User['subscription']) {
+  return {
+    campaignId: roadmapPromotionCampaign.campaignId,
+    label: roadmapPromotionCampaign.label,
+    cutoffAt: roadmapPromotionCampaign.cutoffAt,
+    validUntil: subscription?.roadmapPromoValidUntil || roadmapPromotionCampaign.validUntil,
+    eligible: Boolean(subscription?.roadmapPromoQualifiedAt),
+    qualifiedAt: subscription?.roadmapPromoQualifiedAt,
+  };
+}
+
+export function applyRoadmapPromotionToSubscription(subscription: User['subscription'] | undefined, atIso = new Date().toISOString()) {
+  if (!subscription) {
+    return subscription;
+  }
+
+  if (subscription.roadmapPromoQualifiedAt) {
+    return {
+      ...subscription,
+      roadmapPromoCampaignId: subscription.roadmapPromoCampaignId || roadmapPromotionCampaign.campaignId,
+      roadmapPromoValidUntil: subscription.roadmapPromoValidUntil || roadmapPromotionCampaign.validUntil,
+      roadmapPromoLabel: subscription.roadmapPromoLabel || roadmapPromotionCampaign.label,
+    };
+  }
+
+  if (!canQualifyForRoadmapPromotion(new Date(atIso))) {
+    return subscription;
+  }
+
+  return {
+    ...subscription,
+    roadmapPromoCampaignId: roadmapPromotionCampaign.campaignId,
+    roadmapPromoQualifiedAt: atIso,
+    roadmapPromoValidUntil: roadmapPromotionCampaign.validUntil,
+    roadmapPromoLabel: roadmapPromotionCampaign.label,
+  };
+}
 
 const coreFeatures: SaasFeatureKey[] = [
   'dashboard',
@@ -13,70 +93,172 @@ const coreFeatures: SaasFeatureKey[] = [
   'tutorials',
 ];
 
+const aiFeatureKeys: SaasFeatureKey[] = ['doxpert', 'analytics', 'ai_copilot'];
+const workspaceFeatureSet: SaasFeatureKey[] = [
+  'dashboard',
+  'document_summary',
+  'generate_documents',
+  'history',
+  'client_portal',
+  'tutorials',
+  'file_manager',
+  'roles_permissions',
+  'approvals',
+  'versions',
+  'clauses',
+  'audit',
+  'bulk_ops',
+  'renewals',
+  'integrations',
+  'organizations',
+  'branding',
+  'team_workspace',
+  'deal_room',
+  'hiring_desk',
+  'docrudians',
+  'virtual_id',
+  'e_certificates',
+  'editable_sheet_shares',
+  'document_encrypter',
+];
+const trialWorkspaceFeatures = workspaceFeatureSet.filter((feature) => !aiFeatureKeys.includes(feature));
+const fullWorkspaceFeatures = Array.from(new Set<SaasFeatureKey>([...workspaceFeatureSet, ...aiFeatureKeys]));
+const defaultTrialAiRuns = 6;
+const defaultProAiCredits = 300;
+
+function getCustomPlanAiCredits(customConfiguration?: CustomPlanConfiguration | null) {
+  if (!customConfiguration) {
+    return 0;
+  }
+
+  if (typeof customConfiguration.monthlyAiCredits === 'number' && customConfiguration.monthlyAiCredits > 0) {
+    return customConfiguration.monthlyAiCredits;
+  }
+
+  const selectedAiFeatures = (customConfiguration.featureKeys || []).filter((feature) => aiFeatureKeys.includes(feature));
+  return selectedAiFeatures.length ? 120 + (selectedAiFeatures.length * 60) : 0;
+}
+
+function resolveAiEntitlements(
+  plan: SaasPlan,
+  customConfiguration?: CustomPlanConfiguration | null,
+  existing?: User['subscription'],
+) {
+  const isTrialWorkspace = plan.id === 'workspace-trial';
+  const monthlyAiCredits = plan.id === 'workspace-build-your-own'
+    ? getCustomPlanAiCredits(customConfiguration)
+    : (plan.monthlyAiCredits || 0);
+  const freeAiRuns = plan.freeAiRuns ?? (isTrialWorkspace ? defaultTrialAiRuns : 0);
+  const aiTrialUsed = isTrialWorkspace ? Math.min(existing?.aiTrialUsed || 0, freeAiRuns) : 0;
+
+  return {
+    aiTrialLimit: freeAiRuns,
+    aiTrialUsed,
+    monthlyAiCredits,
+    remainingAiCredits: monthlyAiCredits,
+  };
+}
+
+function resetAiCreditsIfNeeded(subscription?: User['subscription']) {
+  if (!subscription || !subscription.monthlyAiCredits || subscription.monthlyAiCredits <= 0) {
+    return subscription;
+  }
+
+  const resetAt = subscription.aiCreditsResetAt || subscription.currentPeriodEnd;
+  if (!resetAt || new Date(resetAt).getTime() > Date.now()) {
+    return subscription;
+  }
+
+  return {
+    ...subscription,
+    remainingAiCredits: subscription.monthlyAiCredits,
+    aiCreditsResetAt: subscription.currentPeriodEnd || addDays(new Date().toISOString(), 30),
+  };
+}
+
 export const defaultSaasPlans: SaasPlan[] = [
   {
-    id: 'free-starter',
-    name: 'Free Starter',
-    description: 'Best for businesses trying Docuside with controlled self-serve generation and Docuside watermarking.',
-    priceLabel: 'Free',
+    id: 'workspace-trial',
+    name: 'docrud Workspace Trial',
+    description: 'Start with a clean login-based workspace for 30 days. Every admin-enabled non-AI feature is ready immediately, while AI stays habit-forming with a few guided tries before upgrade.',
+    targetAudience: 'business',
+    priceLabel: 'Free for 30 days',
+    amountInPaise: 0,
     billingModel: 'free',
-    includedFeatures: coreFeatures,
-    freeDocumentGenerations: 5,
-    maxDocumentGenerations: 5,
-    overagePriceLabel: 'Upgrade required after 5 documents',
-    watermarkOnFreeGenerations: true,
+    includedFeatures: trialWorkspaceFeatures,
+    freeDocumentGenerations: 50,
+    maxDocumentGenerations: 150,
+    freeAiRuns: defaultTrialAiRuns,
+    monthlyAiCredits: 0,
+    maxInternalUsers: 10,
+    maxMailboxThreads: 500,
+    overagePriceLabel: 'Upgrade to Workspace Pro before AI usage and higher monthly volume become daily blockers',
+    watermarkOnFreeGenerations: false,
     isPublic: true,
     isDefault: true,
     active: true,
-    ctaLabel: 'Start Free',
-    createdAt: '2026-01-01T00:00:00.000Z',
-    updatedAt: '2026-01-01T00:00:00.000Z',
+    ctaLabel: 'Start Trial',
+    createdAt: '2026-04-15T00:00:00.000Z',
+    updatedAt: '2026-04-15T00:00:00.000Z',
   },
   {
-    id: 'growth',
-    name: 'Growth',
-    description: 'For growing businesses that need more generation capacity, analytics visibility, and platform-level access.',
-    priceLabel: 'INR 19,999 / org',
+    id: 'workspace-pro',
+    name: 'docrud Workspace Pro',
+    description: 'Full docrud workspace access at one simple monthly price. Unlock every feature, sustainable AI credits, governed collaboration, and the smoothest upgrade path in the product.',
+    targetAudience: 'business',
     billingModel: 'subscription',
-    includedFeatures: [...coreFeatures, 'analytics', 'api_docs', 'branding'],
-    freeDocumentGenerations: 5,
-    maxDocumentGenerations: 50,
-    overagePriceLabel: 'Custom billed above plan limit',
+    priceLabel: '₹299 / month',
+    amountInPaise: 29900,
+    includedFeatures: fullWorkspaceFeatures,
+    freeDocumentGenerations: 100,
+    maxDocumentGenerations: 600,
+    freeAiRuns: 0,
+    monthlyAiCredits: defaultProAiCredits,
+    maxInternalUsers: 25,
+    maxMailboxThreads: 3000,
+    overagePriceLabel: 'Includes 300 AI credits monthly. Upgrade to Build Your Own when you need more seats, volume, or specific governance add-ons.',
     watermarkOnFreeGenerations: false,
     isPublic: true,
     isDefault: false,
     active: true,
-    ctaLabel: 'Choose Growth',
-    createdAt: '2026-01-01T00:00:00.000Z',
-    updatedAt: '2026-01-01T00:00:00.000Z',
+    ctaLabel: 'Upgrade to Pro',
+    createdAt: '2026-04-15T00:00:00.000Z',
+    updatedAt: '2026-04-15T00:00:00.000Z',
   },
   {
-    id: 'scale',
-    name: 'Scale',
-    description: 'For businesses that want deeper controls, integrations, and higher document volumes.',
-    priceLabel: 'Custom pricing',
+    id: 'workspace-build-your-own',
+    name: 'Build Your Own Workspace',
+    description: 'Shape a monthly docrud workspace around the exact features, capacity, and AI intensity you want. The pricing stays transparent and the resulting workspace behaves like a regular subscription plan.',
+    targetAudience: 'business',
+    priceLabel: 'Custom monthly pricing',
+    amountInPaise: 0,
     billingModel: 'custom',
-    includedFeatures: [...coreFeatures, 'analytics', 'api_docs', 'branding', 'integrations', 'organizations'],
-    freeDocumentGenerations: 5,
-    maxDocumentGenerations: 250,
-    overagePriceLabel: 'Enterprise commercial agreement',
+    includedFeatures: trialWorkspaceFeatures,
+    freeDocumentGenerations: 100,
+    maxDocumentGenerations: 400,
+    freeAiRuns: 0,
+    monthlyAiCredits: 0,
+    maxInternalUsers: 20,
+    maxMailboxThreads: 1500,
+    overagePriceLabel: 'AI credits, extra capacity, and selected modules are priced into your live monthly total.',
     watermarkOnFreeGenerations: false,
     isPublic: true,
     isDefault: false,
     active: true,
-    ctaLabel: 'Talk to Sales',
-    createdAt: '2026-01-01T00:00:00.000Z',
-    updatedAt: '2026-01-01T00:00:00.000Z',
+    ctaLabel: 'Build Your Plan',
+    createdAt: '2026-04-15T00:00:00.000Z',
+    updatedAt: '2026-04-15T00:00:00.000Z',
   },
 ];
 
 export const saasFeatureCatalog: Array<{ key: SaasFeatureKey; label: string }> = [
   { key: 'dashboard', label: 'Dashboard' },
   { key: 'document_summary', label: 'Document Summary' },
-  { key: 'generate_documents', label: 'Document Generation' },
+  { key: 'generate_documents', label: 'E-sign Documents' },
   { key: 'history', label: 'History' },
   { key: 'client_portal', label: 'Client Portal' },
   { key: 'tutorials', label: 'Tutorials' },
+  { key: 'doxpert', label: 'DoXpert AI Advisor' },
   { key: 'analytics', label: 'Analytics' },
   { key: 'file_manager', label: 'File Manager' },
   { key: 'roles_permissions', label: 'Roles & Permissions' },
@@ -91,15 +273,56 @@ export const saasFeatureCatalog: Array<{ key: SaasFeatureKey; label: string }> =
   { key: 'ai_copilot', label: 'AI Copilot' },
   { key: 'api_docs', label: 'API Docs' },
   { key: 'branding', label: 'Branding Controls' },
+  { key: 'team_workspace', label: 'Team Workspace + Internal Mailbox' },
+  { key: 'deal_room', label: 'Board Room Workflows' },
+  { key: 'hiring_desk', label: 'Hiring Desk + ATS Job Matching' },
+  { key: 'docrudians', label: 'Docrudians Community' },
+  { key: 'virtual_id', label: 'Virtual ID Cards' },
+  { key: 'e_certificates', label: 'E-Certificates' },
+  { key: 'editable_sheet_shares', label: 'Editable Sheet Shares' },
+  { key: 'document_encrypter', label: 'Document Encrypter' },
 ];
 
 export async function getSaasPlans() {
-  const plans = await readJsonFile<SaasPlan[]>(saasPlansPath, defaultSaasPlans);
-  return plans;
+  const storedPlans = await getSaasPlansFromRepository(defaultSaasPlans);
+  const storedPlanMap = new Map(storedPlans.map((plan) => [plan.id, plan]));
+
+  return defaultSaasPlans.map((standard) => {
+    const stored = storedPlanMap.get(standard.id);
+    if (!stored) {
+      return standard;
+    }
+
+    return {
+      ...stored,
+      id: standard.id,
+      name: standard.name,
+      targetAudience: stored.targetAudience || standard.targetAudience || 'business',
+      billingModel: stored.billingModel || standard.billingModel,
+      priceLabel: stored.priceLabel || standard.priceLabel,
+      amountInPaise: stored.amountInPaise ?? standard.amountInPaise,
+      includedFeatures: Array.from(new Set([...(stored.includedFeatures || []), ...(standard.includedFeatures || [])])),
+      description: standard.description || stored.description,
+      ctaLabel: standard.ctaLabel || stored.ctaLabel,
+      overagePriceLabel: stored.overagePriceLabel || standard.overagePriceLabel,
+      monthlyAiCredits: stored.monthlyAiCredits ?? standard.monthlyAiCredits,
+      freeAiRuns: stored.freeAiRuns ?? standard.freeAiRuns,
+      freeDocumentGenerations: stored.freeDocumentGenerations ?? standard.freeDocumentGenerations,
+      maxDocumentGenerations: stored.maxDocumentGenerations ?? standard.maxDocumentGenerations,
+      maxInternalUsers: stored.maxInternalUsers ?? standard.maxInternalUsers,
+      maxMailboxThreads: stored.maxMailboxThreads ?? standard.maxMailboxThreads,
+      watermarkOnFreeGenerations: stored.watermarkOnFreeGenerations ?? standard.watermarkOnFreeGenerations,
+      isPublic: stored.isPublic ?? standard.isPublic,
+      isDefault: stored.isDefault ?? standard.isDefault,
+      active: stored.active ?? standard.active,
+      createdAt: stored.createdAt || standard.createdAt,
+      updatedAt: stored.updatedAt || standard.updatedAt,
+    };
+  });
 }
 
 export async function saveSaasPlans(plans: SaasPlan[]) {
-  await writeJsonFile(saasPlansPath, plans);
+  await saveSaasPlansToRepository(plans);
 }
 
 export async function getPublicSaasPlans() {
@@ -107,9 +330,18 @@ export async function getPublicSaasPlans() {
   return plans.filter((plan) => plan.isPublic && plan.active);
 }
 
-export async function getDefaultPublicPlan() {
+export async function getPublicSaasPlansByAudience(targetAudience: 'business' | 'individual') {
+  const plans = await getPublicSaasPlans();
+  const matched = plans.filter((plan) => (plan.targetAudience || 'business') === targetAudience);
+  return matched.length ? matched : plans;
+}
+
+export async function getDefaultPublicPlan(targetAudience: 'business' | 'individual' = 'business') {
   const plans = await getSaasPlans();
-  return plans.find((plan) => plan.isDefault && plan.active) || plans[0];
+  return plans.find((plan) => plan.isDefault && plan.active && (plan.targetAudience || 'business') === targetAudience)
+    || plans.find((plan) => plan.active && (plan.targetAudience || 'business') === targetAudience)
+    || plans.find((plan) => plan.id === 'workspace-trial')
+    || plans[0];
 }
 
 export async function getSaasPlanById(planId?: string) {
@@ -117,24 +349,83 @@ export async function getSaasPlanById(planId?: string) {
   return plans.find((plan) => plan.id === planId) || null;
 }
 
-export async function assignUserPlan(userId: string, planId: string, status: 'trial' | 'active' | 'upgrade_required' | 'suspended' = 'active') {
+function mergePlanWithCustomConfiguration(plan: SaasPlan | null, customConfiguration?: CustomPlanConfiguration | null) {
+  if (!plan) {
+    return null;
+  }
+
+  if (!customConfiguration) {
+    return plan;
+  }
+
+  return {
+    ...plan,
+    name: `${plan.name} Custom`,
+    includedFeatures: Array.from(new Set([...(plan.includedFeatures || []), ...(customConfiguration.featureKeys || [])])),
+    maxDocumentGenerations: Math.max(plan.maxDocumentGenerations || 0, customConfiguration.maxDocumentGenerations || 0),
+    maxInternalUsers: Math.max(plan.maxInternalUsers || 0, customConfiguration.maxInternalUsers || 0),
+    maxMailboxThreads: Math.max(plan.maxMailboxThreads || 0, customConfiguration.maxMailboxThreads || 0),
+  };
+}
+
+type UserPlanCarrier = {
+  subscription?: User['subscription'] | null;
+};
+
+export async function getEffectiveSaasPlanForUser(user?: UserPlanCarrier | null) {
+  if (!user?.subscription?.planId) {
+    return null;
+  }
+
+  const plan = await getSaasPlanById(user.subscription.planId);
+  return mergePlanWithCustomConfiguration(plan, user.subscription.customConfiguration);
+}
+
+export async function assignUserPlan(
+  userId: string,
+  planId: string,
+  status: 'trial' | 'active' | 'upgrade_required' | 'suspended' = 'active',
+  customConfiguration?: CustomPlanConfiguration | null,
+) {
   const [users, plan] = await Promise.all([getStoredUsers(), getSaasPlanById(planId)]);
   if (!plan) {
     throw new Error('Plan not found');
   }
 
+  const currentPeriodStart = new Date().toISOString();
+  const currentPeriodEnd = (plan.billingModel === 'subscription' || plan.billingModel === 'free' || plan.id === 'workspace-build-your-own')
+    ? addDays(currentPeriodStart, 30)
+    : undefined;
   const nextUsers = users.map((user) =>
     user.id === userId
-      ? {
-          ...user,
-          subscription: {
-            planId: plan.id,
-            planName: plan.name,
-            status,
-            startedAt: user.subscription?.startedAt || new Date().toISOString(),
-            renewalDate: user.subscription?.renewalDate,
-          },
-        }
+      ? (() => {
+          const aiEntitlements = resolveAiEntitlements(plan, customConfiguration, user.subscription);
+          return {
+            ...user,
+            subscription: {
+              planId: plan.id,
+              planName: plan.name,
+              status,
+              billingProvider: plan.billingModel === 'free' || plan.billingModel === 'custom' ? user.subscription?.billingProvider : 'razorpay',
+              startedAt: currentPeriodStart,
+              currentPeriodStart,
+              currentPeriodEnd,
+              renewalDate: currentPeriodEnd,
+              lastPaymentAt: status === 'active' && plan.billingModel !== 'free' ? currentPeriodStart : user.subscription?.lastPaymentAt,
+              lastOrderId: user.subscription?.lastOrderId,
+              customConfiguration: customConfiguration || user.subscription?.customConfiguration,
+              roadmapPromoCampaignId: user.subscription?.roadmapPromoCampaignId,
+              roadmapPromoQualifiedAt: user.subscription?.roadmapPromoQualifiedAt,
+              roadmapPromoValidUntil: user.subscription?.roadmapPromoValidUntil,
+              roadmapPromoLabel: user.subscription?.roadmapPromoLabel,
+              aiTrialLimit: aiEntitlements.aiTrialLimit,
+              aiTrialUsed: aiEntitlements.aiTrialUsed,
+              monthlyAiCredits: aiEntitlements.monthlyAiCredits,
+              remainingAiCredits: aiEntitlements.remainingAiCredits,
+              aiCreditsResetAt: currentPeriodEnd,
+            },
+          };
+        })()
       : user,
   );
   await saveStoredUsers(nextUsers);
@@ -143,19 +434,37 @@ export async function assignUserPlan(userId: string, planId: string, status: 'tr
 
 export async function getUserUsageSummary(user: User, preloadedHistory?: Awaited<ReturnType<typeof getHistoryEntries>>) {
   const history = preloadedHistory || await getHistoryEntries();
-  const plan = await getSaasPlanById(user.subscription?.planId);
+  const plan = await getEffectiveSaasPlanForUser(user);
+  const refreshedSubscription = resetAiCreditsIfNeeded(user.subscription);
+  const cycleStartAt = user.subscription?.currentPeriodStart || user.subscription?.startedAt || user.createdAt;
+  const cycleEndAt = user.subscription?.currentPeriodEnd;
   const generatedDocuments = history.filter((entry) => (
     entry.generatedBy?.toLowerCase() === user.email.toLowerCase()
     || entry.clientEmail?.toLowerCase() === user.email.toLowerCase()
-  )).length;
+  ) && new Date(entry.generatedAt).getTime() >= new Date(cycleStartAt).getTime()
+    && (!cycleEndAt || new Date(entry.generatedAt).getTime() <= new Date(cycleEndAt).getTime())).length;
   const planFreeLimit = plan?.freeDocumentGenerations ?? 5;
   const planMaxLimit = plan?.maxDocumentGenerations ?? planFreeLimit;
+  const percentUsed = planMaxLimit > 0 ? Math.min(100, Math.round((generatedDocuments / planMaxLimit) * 100)) : 0;
+  const thresholdState = generatedDocuments >= planMaxLimit
+    ? 'limit_reached'
+    : percentUsed >= 90
+      ? 'critical'
+      : percentUsed >= 75
+        ? 'watch'
+        : 'healthy';
 
   const usage: SaasUsageSummary = {
     totalGeneratedDocuments: generatedDocuments,
     freeGeneratedDocuments: Math.min(generatedDocuments, planFreeLimit),
     remainingGenerations: Math.max(planMaxLimit - generatedDocuments, 0),
+    remainingAiTrialRuns: Math.max((refreshedSubscription?.aiTrialLimit || 0) - (refreshedSubscription?.aiTrialUsed || 0), 0),
+    remainingAiCredits: Math.max(refreshedSubscription?.remainingAiCredits || 0, 0),
     limitReached: generatedDocuments >= planMaxLimit,
+    thresholdState,
+    thresholdPercentUsed: percentUsed,
+    cycleStartAt,
+    cycleEndAt,
   };
 
   return {
@@ -169,14 +478,121 @@ export async function canUserAccessFeature(user: User, feature: SaasFeatureKey) 
     return true;
   }
 
-  const plan = await getSaasPlanById(user.subscription?.planId);
+  const plan = await getEffectiveSaasPlanForUser(user);
   const features = new Set(plan?.includedFeatures || coreFeatures);
   return features.has(feature);
 }
 
+export async function getAiEntitlementSnapshot(user: User) {
+  if (user.role === 'admin' || user.role === 'hr' || user.role === 'legal' || user.role === 'employee') {
+    return {
+      allowed: true,
+      remainingTrialRuns: Number.POSITIVE_INFINITY,
+      remainingCredits: Number.POSITIVE_INFINITY,
+      monthlyCredits: Number.POSITIVE_INFINITY,
+      reason: 'Workspace admin access',
+    };
+  }
+
+  const refreshedSubscription = resetAiCreditsIfNeeded(user.subscription);
+  const remainingTrialRuns = Math.max((refreshedSubscription?.aiTrialLimit || 0) - (refreshedSubscription?.aiTrialUsed || 0), 0);
+  const remainingCredits = Math.max(refreshedSubscription?.remainingAiCredits || 0, 0);
+  const monthlyCredits = Math.max(refreshedSubscription?.monthlyAiCredits || 0, 0);
+
+  if (remainingCredits > 0) {
+    return {
+      allowed: true,
+      remainingTrialRuns,
+      remainingCredits,
+      monthlyCredits,
+      reason: 'Paid AI credits available',
+    };
+  }
+
+  if (remainingTrialRuns > 0) {
+    return {
+      allowed: true,
+      remainingTrialRuns,
+      remainingCredits,
+      monthlyCredits,
+      reason: 'Free AI trial runs available',
+    };
+  }
+
+  return {
+    allowed: false,
+    remainingTrialRuns,
+    remainingCredits,
+    monthlyCredits,
+    reason: 'Upgrade required for continued AI usage',
+  };
+}
+
+export async function consumeAiUsageByEmail(email: string) {
+  const users = await getStoredUsers();
+  const normalizedEmail = email.trim().toLowerCase();
+  const targetUser = users.find((user) => user.email.trim().toLowerCase() === normalizedEmail);
+
+  if (!targetUser) {
+    throw new Error('User not found.');
+  }
+
+  if (targetUser.role === 'admin' || targetUser.role === 'hr' || targetUser.role === 'legal' || targetUser.role === 'employee') {
+    return getAiEntitlementSnapshot(targetUser);
+  }
+
+  const refreshedSubscription = resetAiCreditsIfNeeded(targetUser.subscription);
+  if (!refreshedSubscription) {
+    throw new Error('Subscription is not configured for this user.');
+  }
+  const remainingCredits = Math.max(refreshedSubscription?.remainingAiCredits || 0, 0);
+  const remainingTrialRuns = Math.max((refreshedSubscription?.aiTrialLimit || 0) - (refreshedSubscription?.aiTrialUsed || 0), 0);
+
+  if (remainingCredits <= 0 && remainingTrialRuns <= 0) {
+    throw new Error('AI usage limit reached. Upgrade to docrud Workspace Pro or configure a custom AI-ready workspace plan.');
+  }
+
+  const nextUsers: StoredUser[] = users.map((user) => {
+    if (user.id !== targetUser.id) {
+      return user;
+    }
+
+    return {
+      ...user,
+      subscription: {
+        ...refreshedSubscription,
+        remainingAiCredits: remainingCredits > 0 ? remainingCredits - 1 : remainingCredits,
+        aiTrialUsed: remainingCredits > 0 ? (refreshedSubscription?.aiTrialUsed || 0) : ((refreshedSubscription?.aiTrialUsed || 0) + 1),
+      },
+    };
+  });
+
+  await saveStoredUsers(nextUsers);
+  const updatedUser = nextUsers.find((user) => user.id === targetUser.id) || targetUser;
+  return getAiEntitlementSnapshot(updatedUser);
+}
+
 export async function getSaasOverview(): Promise<SaasOverview> {
-  const [plans, users, history, businessSettings] = await Promise.all([getSaasPlans(), getStoredUsers(), getHistoryEntries(), getAllBusinessSettings()]);
+  const [plans, users, history, businessSettings, fileTransfers, mailboxThreads, virtualIdStats, certificateStats, historySize, usersSize, transfersSize, mailboxSize, parserHistorySize, billingSize, virtualIdsSize, certificatesSize] = await Promise.all([
+    getSaasPlans(),
+    getStoredUsers(),
+    getHistoryEntries(),
+    getAllBusinessSettings(),
+    getFileTransfers(),
+    getInternalMailThreads(),
+    getVirtualIdAdminStats(),
+    getCertificateAdminStats(),
+    getFileSizeSafe(historyFilePath),
+    getFileSizeSafe(usersPath),
+    getFileSizeSafe(fileTransfersPath),
+    getFileSizeSafe(internalMailboxPath),
+    getFileSizeSafe(parserHistoryPath),
+    getFileSizeSafe(billingTransactionsPath),
+    getFileSizeSafe(virtualIdsPath),
+    getFileSizeSafe(certificatesPath),
+  ]);
   const businessUsers = users.filter((user) => user.role === 'client');
+  const teamMembers = users.filter((user) => user.role === 'member');
   const businessSettingsMap = new Map(businessSettings.map((entry) => [entry.organizationId, entry]));
 
   const businessUsage = await Promise.all(
@@ -220,17 +636,123 @@ export async function getSaasOverview(): Promise<SaasOverview> {
     const checklist = businessSettingsMap.get(user.id)?.workspaceSetupChecklist;
     return checklist && Object.values(checklist).every(Boolean);
   }).length;
+  const eligiblePromotionUsers = businessUsers.filter((user) => user.subscription?.roadmapPromoQualifiedAt);
+  const paidBusinessAccounts = businessUsers.filter((user) => user.subscription?.status === 'active' && user.subscription?.planId && user.subscription.planId !== 'workspace-trial').length;
+  const trialBusinessAccounts = businessUsers.filter((user) => user.subscription?.status === 'trial').length;
+  const policyAcceptedAccounts = businessUsers.filter((user) => user.policyAcceptance?.acceptedAt).length;
+  const recentLogins24h = businessUsers.filter((user) => {
+    if (!user.lastLogin) return false;
+    return Date.now() - new Date(user.lastLogin).getTime() <= 24 * 60 * 60 * 1000;
+  }).length;
+  const averageSetupReadiness = businessUsage.length
+    ? Math.round(businessUsage.reduce((sum, entry) => sum + (entry.setupReadinessScore || 0), 0) / businessUsage.length)
+    : 0;
+  const activeFileTransfers = fileTransfers.filter((entry) => !entry.revokedAt && (!entry.expiresAt || new Date(entry.expiresAt).getTime() > Date.now())).length;
+  const recentActivityAt = [
+    ...history.map((entry) => entry.generatedAt),
+    ...fileTransfers.map((entry) => entry.updatedAt || entry.createdAt),
+    ...mailboxThreads.map((entry) => entry.updatedAt || entry.createdAt),
+    ...businessUsers.map((entry) => entry.lastLogin || entry.createdAt),
+  ]
+    .filter(Boolean)
+    .sort((left, right) => new Date(right).getTime() - new Date(left).getTime())[0];
+
+  const totalStorageBytes = historySize + usersSize + transfersSize + mailboxSize + parserHistorySize + billingSize + virtualIdsSize + certificatesSize;
+  const storageEntries = [
+    { label: 'Document history', size: historySize },
+    { label: 'Users', size: usersSize },
+    { label: 'File transfers', size: transfersSize },
+    { label: 'Internal mailbox', size: mailboxSize },
+    { label: 'Parser history', size: parserHistorySize },
+    { label: 'Billing transactions', size: billingSize },
+    { label: 'Virtual IDs', size: virtualIdsSize },
+    { label: 'Certificates', size: certificatesSize },
+  ];
+  const largestStore = storageEntries.sort((left, right) => right.size - left.size)[0] || { label: 'No data', size: 0 };
+  const memoryUsage = process.memoryUsage();
+  const memoryRssMb = Math.round(memoryUsage.rss / (1024 * 1024));
+  const memoryUsedMb = Math.round(memoryUsage.heapUsed / (1024 * 1024));
+  const memoryTotalMb = Math.max(1, Math.round(memoryUsage.heapTotal / (1024 * 1024)));
+  const memoryPressurePercent = Math.min(100, Math.round((memoryUsedMb / memoryTotalMb) * 100));
+  const activeTenantRate = businessUsers.length === 0 ? 0 : Math.round((businessUsers.filter((user) => user.subscription?.status === 'active' || user.subscription?.status === 'trial').length / businessUsers.length) * 100);
+  const softwareScore = Math.round(((activeTenantRate * 0.4) + ((businessUsers.length === 0 ? 100 : Math.round((setupReadyAccounts / businessUsers.length) * 100)) * 0.3) + ((policyAcceptedAccounts === 0 && businessUsers.length > 0 ? 0 : Math.round((policyAcceptedAccounts / Math.max(businessUsers.length, 1)) * 100)) * 0.3)));
+  const softwareStatus = softwareScore >= 75 ? 'healthy' : softwareScore >= 50 ? 'watch' : 'critical';
+  const serverStatus = memoryPressurePercent >= 90 ? 'critical' : memoryPressurePercent >= 75 ? 'watch' : 'healthy';
+  const storageStatus = totalStorageBytes >= 250 * 1024 * 1024 ? 'critical' : totalStorageBytes >= 75 * 1024 * 1024 ? 'watch' : 'healthy';
+  const recommendations: NonNullable<SaasOverview['platformHealth']>['recommendations'] = [];
+
+  if ((businessUsers.length === 0 ? 0 : Math.round((onboardingCompletedAccounts / businessUsers.length) * 100)) < 60) {
+    recommendations.push({
+      id: 'improve-onboarding',
+      title: 'Tighten business onboarding completion',
+      detail: 'A large share of tenant workspaces are still not fully configured. Push the guided setup checklist and starter templates more aggressively.',
+      priority: 'high',
+    });
+  }
+  if ((businessUsers.filter((user) => user.subscription?.status === 'upgrade_required').length) > 0) {
+    recommendations.push({
+      id: 'upgrade-recovery',
+      title: 'Recover accounts at upgrade threshold',
+      detail: 'Several organizations have already hit plan pressure. Use billing nudges and plan-delta messaging to convert them before they stall.',
+      priority: 'high',
+    });
+  }
+  if (trialBusinessAccounts > paidBusinessAccounts) {
+    recommendations.push({
+      id: 'trial-conversion',
+      title: 'Focus on trial-to-paid conversion',
+      detail: 'Trials currently outnumber paid active businesses. Highlight internal mailbox, governed sharing, and team controls during the first week.',
+      priority: 'medium',
+    });
+  }
+  if (memoryPressurePercent >= 75) {
+    recommendations.push({
+      id: 'memory-watch',
+      title: 'Watch runtime memory pressure',
+      detail: 'Current heap utilization is elevated. Keep an eye on long-lived dev sessions, larger transfer payloads, and heavy analytics views.',
+      priority: memoryPressurePercent >= 90 ? 'high' : 'medium',
+    });
+  }
+  if (storageStatus !== 'healthy') {
+    recommendations.push({
+      id: 'storage-pressure',
+      title: 'Storage footprint is climbing',
+      detail: `The largest data surface right now is ${largestStore.label}. Archive low-value payloads and review retention for heavy transfer or history files.`,
+      priority: storageStatus === 'critical' ? 'high' : 'medium',
+    });
+  }
+  if (recommendations.length === 0) {
+    recommendations.push({
+      id: 'platform-steady',
+      title: 'Platform is operating within healthy bounds',
+      detail: 'Adoption, setup readiness, and storage pressure are currently in a stable range. The next best move is to deepen paid feature adoption.',
+      priority: 'low',
+    });
+  }
 
   return {
     plans,
     totalBusinessAccounts: businessUsers.length,
     activeBusinessAccounts: businessUsers.filter((user) => user.subscription?.status === 'active' || user.subscription?.status === 'trial').length,
     upgradeRequiredAccounts: businessUsers.filter((user) => user.subscription?.status === 'upgrade_required').length,
+    paidBusinessAccounts,
+    trialBusinessAccounts,
     totalGeneratedDocuments: history.length,
+    totalFileTransfers: fileTransfers.length,
+    activeFileTransfers,
+    totalInternalMailboxThreads: mailboxThreads.length,
+    totalVirtualIds: virtualIdStats.totalCards,
+    totalCertificateRecords: certificateStats.totalCertificates,
+    totalVirtualIdScans: virtualIdStats.totalScans,
+    totalCertificateDownloads: certificateStats.totalDownloads,
+    totalStorageBytes,
     onboardingCompletedAccounts,
     onboardingInProgressAccounts,
     onboardingCompletionRate: businessUsers.length === 0 ? 0 : Math.round((onboardingCompletedAccounts / businessUsers.length) * 100),
     setupReadyAccounts,
+    averageSetupReadiness,
+    policyAcceptanceRate: businessUsers.length === 0 ? 100 : Math.round((policyAcceptedAccounts / businessUsers.length) * 100),
+    recentLogins24h,
     planDistribution: plans.map((plan) => ({
       planId: plan.id,
       planName: plan.name,
@@ -253,5 +775,82 @@ export async function getSaasOverview(): Promise<SaasOverview> {
         };
       }),
     businessUsage,
+    totalTeamMembers: teamMembers.length,
+    activeTeamMembers: teamMembers.filter((user) => user.isActive !== false).length,
+    collaborationEnabledAccounts: businessUsers.filter((user) => {
+      const plan = plans.find((entry) => entry.id === user.subscription?.planId);
+      return Boolean(plan?.includedFeatures?.includes('team_workspace'));
+    }).length,
+    moduleUsage: {
+      virtualIds: {
+        cards: virtualIdStats.totalCards,
+        scans: virtualIdStats.totalScans,
+        opens: virtualIdStats.totalOpens,
+        downloads: virtualIdStats.totalDownloads,
+      },
+      certificates: {
+        records: certificateStats.totalCertificates,
+        opens: certificateStats.totalOpens,
+        downloads: certificateStats.totalDownloads,
+        verifies: certificateStats.totalVerifies,
+      },
+    },
+    roadmapPromotion: {
+      campaignId: roadmapPromotionCampaign.campaignId,
+      label: roadmapPromotionCampaign.label,
+      cutoffAt: roadmapPromotionCampaign.cutoffAt,
+      validUntil: roadmapPromotionCampaign.validUntil,
+      eligibleAccounts: eligiblePromotionUsers.length,
+      activeEligibleAccounts: eligiblePromotionUsers.filter((user) => user.subscription?.status === 'active' || user.subscription?.status === 'trial').length,
+      recentQualifiedAccounts: [...eligiblePromotionUsers]
+        .sort((left, right) => new Date(right.subscription?.roadmapPromoQualifiedAt || right.createdAt).getTime() - new Date(left.subscription?.roadmapPromoQualifiedAt || left.createdAt).getTime())
+        .slice(0, 6)
+        .map((user) => ({
+          userId: user.id,
+          organizationName: user.organizationName,
+          email: user.email,
+          qualifiedAt: user.subscription?.roadmapPromoQualifiedAt || user.createdAt,
+        })),
+    },
+    platformHealth: {
+      software: {
+        status: softwareStatus,
+        score: softwareScore,
+        activeTenantRate,
+        setupCompletionRate: businessUsers.length === 0 ? 100 : Math.round((onboardingCompletedAccounts / businessUsers.length) * 100),
+        recentActivityAt,
+        insight: softwareStatus === 'healthy'
+          ? 'Tenant adoption and workspace readiness are tracking in a healthy range.'
+          : softwareStatus === 'watch'
+            ? 'Adoption is present, but setup quality or conversion pressure needs attention.'
+            : 'Platform value is being discovered, but setup completion and tenant health need intervention.',
+      },
+      server: {
+        status: serverStatus,
+        runtime: isDatabaseConfigured() ? 'database' : 'file',
+        memoryUsedMb,
+        memoryRssMb,
+        memoryPressurePercent,
+        nodeVersion: process.version,
+        insight: serverStatus === 'healthy'
+          ? 'Runtime memory pressure is within a comfortable operating band.'
+          : serverStatus === 'watch'
+            ? 'Server memory use is elevated and should be watched during heavier workspace activity.'
+            : 'Server memory pressure is high. Review heavy payload flows and long-running processes.',
+      },
+      storage: {
+        status: storageStatus,
+        totalEstimatedBytes: totalStorageBytes,
+        largestStoreLabel: largestStore.label,
+        largestStoreBytes: largestStore.size,
+        managedFiles: fileTransfers.length,
+        insight: storageStatus === 'healthy'
+          ? 'Storage footprint is still well within a manageable range.'
+          : storageStatus === 'watch'
+            ? 'Storage growth is noticeable. Review transfers, history retention, and bulky parser payloads.'
+            : 'Storage usage is becoming a risk area and should be actively governed.',
+      },
+      recommendations,
+    },
   };
 }

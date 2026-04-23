@@ -13,8 +13,8 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       submittedDocuments?: SubmittedDocument[];
     };
 
-    if (!payload.password?.trim() || !payload.submitterName?.trim() || !Array.isArray(payload.submittedDocuments) || payload.submittedDocuments.length === 0) {
-      return NextResponse.json({ error: 'Password, submitter name, and uploaded documents are required' }, { status: 400 });
+    if (!payload.submitterName?.trim() || !Array.isArray(payload.submittedDocuments) || payload.submittedDocuments.length === 0) {
+      return NextResponse.json({ error: 'Submitter name and uploaded documents are required' }, { status: 400 });
     }
 
     const history = await getHistoryEntries();
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     if (!entry) {
       return NextResponse.json({ error: 'Document not found' }, { status: 404 });
     }
-    if (entry.sharePassword !== payload.password.trim().toUpperCase()) {
+    if (entry.shareRequiresPassword !== false && entry.sharePassword !== payload.password?.trim().toUpperCase()) {
       return NextResponse.json({ error: 'Valid document password is required' }, { status: 403 });
     }
     if (!entry.requiredDocumentWorkflowEnabled) {

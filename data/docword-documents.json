@@ -1,0 +1,350 @@
+[
+  {
+    "id": "dwd-1776938437664-8xutmp",
+    "ownerUserId": "1",
+    "ownerEmail": "admin@company.com",
+    "title": "proposal_corescent_TDS",
+    "emoji": "✍️",
+    "isFavorite": false,
+    "folderName": "General",
+    "documentTheme": "classic",
+    "requireSignature": true,
+    "signatures": [],
+    "trackChangesEnabled": false,
+    "trackedChanges": [],
+    "selectionComments": [],
+    "blocks": [
+      {
+        "id": "dwb-1776938439267-hu3j6i",
+        "type": "paragraph",
+        "html": "<p>Start typing...</p>",
+        "text": "Start typing..."
+      }
+    ],
+    "html": "<div><p>Start typing...</p></div>",
+    "plainText": "Start typing...",
+    "wordCount": 2,
+    "readTimeMinutes": 1,
+    "shareMode": "private",
+    "sharedAccess": [],
+    "accessGroups": [],
+    "createdAt": "2026-04-23T10:00:37.664Z",
+    "updatedAt": "2026-04-23T10:23:30.777Z",
+    "versions": [
+      {
+        "id": "dwv-1776939810777-1mxx36",
+        "title": "Untitled document",
+        "html": "<div><p>Start typing...</p></div>",
+        "plainText": "Start typing...",
+        "createdAt": "2026-04-23T10:23:30.777Z",
+        "source": "autosave"
+      },
+      {
+        "id": "dwv-1776938439267-hgx5f4",
+        "title": "Untitled document",
+        "html": "<div><p></p></div>",
+        "plainText": "",
+        "createdAt": "2026-04-23T10:00:39.267Z",
+        "source": "manual"
+      }
+    ]
+  },
+  {
+    "id": "dwd-1776856738939-5n3990",
+    "ownerUserId": "1",
+    "ownerEmail": "admin@company.com",
+    "title": "Untitled document",
+    "emoji": "✍️",
+    "isFavorite": false,
+    "folderName": "General",
+    "documentTheme": "classic",
+    "requireSignature": true,
+    "signatures": [],
+    "trackChangesEnabled": false,
+    "trackedChanges": [],
+    "selectionComments": [],
+    "blocks": [
+      {
+        "id": "dwb-1776856740725-iztl8l",
+        "type": "paragraph",
+        "html": "<p>Start typing...</p>",
+        "text": "Start typing..."
+      }
+    ],
+    "html": "<div><p>Start typing...</p></div>",
+    "plainText": "Start typing...",
+    "wordCount": 2,
+    "readTimeMinutes": 1,
+    "shareMode": "private",
+    "sharedAccess": [],
+    "accessGroups": [],
+    "createdAt": "2026-04-22T11:18:58.939Z",
+    "updatedAt": "2026-04-22T11:19:00.725Z",
+    "versions": [
+      {
+        "id": "dwv-1776856740725-cnv06d",
+        "title": "Untitled document",
+        "html": "<div><p></p></div>",
+        "plainText": "",
+        "createdAt": "2026-04-22T11:19:00.725Z",
+        "source": "manual"
+      }
+    ]
+  },
+  {
+    "id": "dwd-1776854959112-z07xkg",
+    "ownerUserId": "1",
+    "ownerEmail": "admin@company.com",
+    "title": "Untitled document",
+    "emoji": "✍️",
+    "isFavorite": false,
+    "folderName": "General",
+    "documentTheme": "classic",
+    "requireSignature": true,
+    "signatures": [],
+    "trackChangesEnabled": false,
+    "trackedChanges": [],
+    "selectionComments": [],
+    "blocks": [
+      {
+        "id": "dwb-1776854959512-90v8qi",
+        "type": "paragraph",
+        "html": "<p><br></p>",
+        "text": ""
+      }
+    ],
+    "html": "<div><p><br></p></div>",
+    "plainText": "",
+    "wordCount": 0,
+    "readTimeMinutes": 1,
+    "shareMode": "private",
+    "sharedAccess": [],
+    "accessGroups": [],
+    "createdAt": "2026-04-22T10:49:19.112Z",
+    "updatedAt": "2026-04-22T10:49:35.102Z",
+    "versions": [
+      {
+        "id": "dwv-1776854975102-pwqw8a",
+        "title": "Untitled document",
+        "html": "<div><p>Start typing...</p></div>",
+        "plainText": "Start typing...",
+        "createdAt": "2026-04-22T10:49:35.102Z",
+        "source": "autosave"
+      },
+      {
+        "id": "dwv-1776854959512-etmwvo",
+        "title": "Untitled document",
+        "html": "<div><p></p></div>",
+        "plainText": "",
+        "createdAt": "2026-04-22T10:49:19.512Z",
+        "source": "manual"
+      }
+    ]
+  },
+  {
+    "id": "dwd-1776852933929-all48d",
+    "ownerUserId": "1",
+    "ownerEmail": "admin@company.com",
+    "title": "Untitled document",
+    "emoji": "✍️",
+    "isFavorite": false,
+    "folderName": "General",
+    "documentTheme": "classic",
+    "requireSignature": true,
+    "signatures": [],
+    "trackChangesEnabled": false,
+    "trackedChanges": [],
+    "selectionComments": [],
+    "blocks": [
+      {
+        "id": "dwb-1776852935254-b8o710",
+        "type": "paragraph",
+        "html": "<p>Start typing...testtttt</p>",
+        "text": "Start typing...testtttt"
+      }
+    ],
+    "html": "<div><p>Start typing...testtttt</p></div>",
+    "plainText": "Start typing...testtttt",
+    "wordCount": 2,
+    "readTimeMinutes": 1,
+    "shareMode": "private",
+    "sharedAccess": [],
+    "accessGroups": [],
+    "createdAt": "2026-04-22T10:15:33.929Z",
+    "updatedAt": "2026-04-22T10:15:50.433Z",
+    "versions": [
+      {
+        "id": "dwv-1776852950433-meufta",
+        "title": "Untitled document",
+        "html": "<div><p>Start typing...</p></div>",
+        "plainText": "Start typing...",
+        "createdAt": "2026-04-22T10:15:50.433Z",
+        "source": "autosave"
+      },
+      {
+        "id": "dwv-1776852935254-k8ofo3",
+        "title": "Untitled document",
+        "html": "<div><p></p></div>",
+        "plainText": "",
+        "createdAt": "2026-04-22T10:15:35.254Z",
+        "source": "manual"
+      }
+    ]
+  },
+  {
+    "id": "dwd-1776252225172-de27hj",
+    "ownerUserId": "1",
+    "ownerEmail": "admin@company.com",
+    "title": "Untitled document",
+    "emoji": "✍️",
+    "isFavorite": false,
+    "folderName": "General",
+    "summary": "Docai drafted this document from chat.",
+    "documentTheme": "classic",
+    "headerHtml": "corescemt yech<div>asdas</div><div>GST</div>",
+    "watermarkText": "corescent",
+    "requireSignature": true,
+    "signatures": [],
+    "trackChangesEnabled": false,
+    "trackedChanges": [],
+    "selectionComments": [],
+    "blocks": [
+      {
+        "id": "block_1776690146473_jep55x",
+        "type": "heading-1",
+        "html": "GST Invoice",
+        "text": "GST Invoice"
+      },
+      {
+        "id": "block_1776690146473_ie7hsr",
+        "type": "paragraph",
+        "html": "<p>Invoice Number: [Insert Invoice Number]<br/>Date: [Insert Date]<br/>Billing Information:<br/>Bill To: [Insert Customer Name]<br/>Address: [Insert Customer Address]<br/>GSTIN: [Insert Customer GSTIN]<br/>State: [Insert Customer State]<br/>State Code: [Insert Customer State Code]</p>",
+        "text": "Invoice Number: [Insert Invoice Number]\nDate: [Insert Date]\nBilling Information:\nBill To: [Insert Customer Name]\nAddress: [Insert Customer Address]\nGSTIN: [Insert Customer GSTIN]\nState: [Insert Customer State]\nState Code: [Insert Customer State Code]"
+      },
+      {
+        "id": "block_1776690146473_n8t9uq",
+        "type": "paragraph",
+        "html": "<p>Shipping Information:<br/>Ship To: [Insert Customer Name]<br/>Address: [Insert Customer Address]</p>",
+        "text": "Shipping Information:\nShip To: [Insert Customer Name]\nAddress: [Insert Customer Address]"
+      },
+      {
+        "id": "block_1776690146473_jju2bl",
+        "type": "paragraph",
+        "html": "<p>Invoice Details:<br/>Description of Goods/Services: [Insert Description]<br/>HSN/SAC Code: [Insert HSN/SAC Code]<br/>Quantity: [Insert Quantity]<br/>Rate: [Insert Rate]<br/>Amount: [Insert Amount]<br/>Discount: [Insert Discount]<br/>Taxable Amount: [Insert Taxable Amount]</p>",
+        "text": "Invoice Details:\nDescription of Goods/Services: [Insert Description]\nHSN/SAC Code: [Insert HSN/SAC Code]\nQuantity: [Insert Quantity]\nRate: [Insert Rate]\nAmount: [Insert Amount]\nDiscount: [Insert Discount]\nTaxable Amount: [Insert Taxable Amount]"
+      },
+      {
+        "id": "block_1776690146473_tc7bnj",
+        "type": "paragraph",
+        "html": "<p>GST Details:<br/>CGST: [Insert CGST Amount]<br/>SGST: [Insert SGST Amount]<br/>IGST: [Insert IGST Amount]<br/>Total GST: [Insert Total GST Amount]</p>",
+        "text": "GST Details:\nCGST: [Insert CGST Amount]\nSGST: [Insert SGST Amount]\nIGST: [Insert IGST Amount]\nTotal GST: [Insert Total GST Amount]"
+      },
+      {
+        "id": "block_1776690146473_qnuk4a",
+        "type": "paragraph",
+        "html": "<p>Subtotal: [Insert Subtotal]<br/>Total: [Insert Total]</p>",
+        "text": "Subtotal: [Insert Subtotal]\nTotal: [Insert Total]"
+      },
+      {
+        "id": "block_1776690146473_p5019p",
+        "type": "paragraph",
+        "html": "<p>Payment Terms:<br/>Payment Method: [Insert Payment Method]<br/>Payment Due Date: [Insert Payment Due Date]</p>",
+        "text": "Payment Terms:\nPayment Method: [Insert Payment Method]\nPayment Due Date: [Insert Payment Due Date]"
+      },
+      {
+        "id": "block_1776690146473_i30a36",
+        "type": "paragraph",
+        "html": "<p>Certification:<br/>This is to certify that the above invoice is genuine and the goods/services have been supplied as per the terms and conditions of the contract.</p>",
+        "text": "Certification:\nThis is to certify that the above invoice is genuine and the goods/services have been supplied as per the terms and conditions of the contract."
+      },
+      {
+        "id": "block_1776690146473_d6y7xp",
+        "type": "paragraph",
+        "html": "<p>Authorized Signature: [Insert Authorized Signature]<br/>Name: [Insert Name]<br/>Designation: [Insert Designation]</p>",
+        "text": "Authorized Signature: [Insert Authorized Signature]\nName: [Insert Name]\nDesignation: [Insert Designation]"
+      },
+      {
+        "id": "block_1776690146473_iiwyf7",
+        "type": "paragraph",
+        "html": "<p>Note: This is a sample GST invoice. Please ensure that you comply with the GST laws and regulations in your state and country.</p>",
+        "text": "Note: This is a sample GST invoice. Please ensure that you comply with the GST laws and regulations in your state and country."
+      }
+    ],
+    "html": "<h1>GST Invoice</h1>\n<div><p>Invoice Number: [Insert Invoice Number]<br/>Date: [Insert Date]<br/>Billing Information:<br/>Bill To: [Insert Customer Name]<br/>Address: [Insert Customer Address]<br/>GSTIN: [Insert Customer GSTIN]<br/>State: [Insert Customer State]<br/>State Code: [Insert Customer State Code]</p></div>\n<div><p>Shipping Information:<br/>Ship To: [Insert Customer Name]<br/>Address: [Insert Customer Address]</p></div>\n<div><p>Invoice Details:<br/>Description of Goods/Services: [Insert Description]<br/>HSN/SAC Code: [Insert HSN/SAC Code]<br/>Quantity: [Insert Quantity]<br/>Rate: [Insert Rate]<br/>Amount: [Insert Amount]<br/>Discount: [Insert Discount]<br/>Taxable Amount: [Insert Taxable Amount]</p></div>\n<div><p>GST Details:<br/>CGST: [Insert CGST Amount]<br/>SGST: [Insert SGST Amount]<br/>IGST: [Insert IGST Amount]<br/>Total GST: [Insert Total GST Amount]</p></div>\n<div><p>Subtotal: [Insert Subtotal]<br/>Total: [Insert Total]</p></div>\n<div><p>Payment Terms:<br/>Payment Method: [Insert Payment Method]<br/>Payment Due Date: [Insert Payment Due Date]</p></div>\n<div><p>Certification:<br/>This is to certify that the above invoice is genuine and the goods/services have been supplied as per the terms and conditions of the contract.</p></div>\n<div><p>Authorized Signature: [Insert Authorized Signature]<br/>Name: [Insert Name]<br/>Designation: [Insert Designation]</p></div>\n<div><p>Note: This is a sample GST invoice. Please ensure that you comply with the GST laws and regulations in your state and country.</p></div>",
+    "plainText": "GST Invoice\n\n Invoice Number: [Insert Invoice Number]\nDate: [Insert Date]\nBilling Information:\nBill To: [Insert Customer Name]\nAddress: [Insert Customer Address]\nGSTIN: [Insert Customer GSTIN]\nState: [Insert Customer State]\nState Code: [Insert Customer State Code]\n\n Shipping Information:\nShip To: [Insert Customer Name]\nAddress: [Insert Customer Address]\n\n Invoice Details:\nDescription of Goods/Services: [Insert Description]\nHSN/SAC Code: [Insert HSN/SAC Code]\nQuantity: [Insert Quantity]\nRate: [Insert Rate]\nAmount: [Insert Amount]\nDiscount: [Insert Discount]\nTaxable Amount: [Insert Taxable Amount]\n\n GST Details:\nCGST: [Insert CGST Amount]\nSGST: [Insert SGST Amount]\nIGST: [Insert IGST Amount]\nTotal GST: [Insert Total GST Amount]\n\n Subtotal: [Insert Subtotal]\nTotal: [Insert Total]\n\n Payment Terms:\nPayment Method: [Insert Payment Method]\nPayment Due Date: [Insert Payment Due Date]\n\n Certification:\nThis is to certify that the above invoice is genuine and the goods/services have been supplied as per the terms and conditions of the contract.\n\n Authorized Signature: [Insert Authorized Signature]\nName: [Insert Name]\nDesignation: [Insert Designation]\n\n Note: This is a sample GST invoice. Please ensure that you comply with the GST laws and regulations in your state and country.",
+    "wordCount": 175,
+    "readTimeMinutes": 1,
+    "lastAiAction": "generate",
+    "shareMode": "private",
+    "sharedAccess": [],
+    "accessGroups": [],
+    "createdAt": "2026-04-15T11:23:45.172Z",
+    "updatedAt": "2026-04-20T13:03:43.805Z",
+    "versions": [
+      {
+        "id": "dwv-1776690151515-m0uw89",
+        "title": "Untitled document",
+        "html": "<h1>My dearest,</h1>\n<div><p>As I sit down to write this letter to you, I am filled with emotions and thoughts that I have been longing to express. From the moment I met you, I knew that you were someone special, and every day since then has only reaffirmed that feeling. Your kind heart, your beautiful smile, and your infectious laugh have all captivated me, and I am forever changed by the love we share.</p></div>\n<div><p>You are the sunshine that brightens up my day and the stars that light up my night. Your touch ignites a fire within me, and your love is the safe haven where I can always find peace. You are my best friend, my partner, and my soulmate, and I am grateful for every moment we spend together.</p></div>\n<div><p>I love the way you make me laugh, the way you always know how to make me feel better when I'm down, and the way you support me in everything I do. I love our late-night conversations, our silly jokes, and our deep, meaningful talks. I love the way we can be silly and goofy together, and the way we can be serious and introspective together.</p></div>\n<div><p>As I look back on our time together, I am reminded of all the reasons why I fell in love with you. Your kindness, your empathy, and your generosity inspire me to be a better person, and your love gives me the strength and courage to face any challenge that comes our way.</p></div>\n<div><p>I promise to always be there for you, to support you, to listen to you, and to love you with all my heart and soul. I promise to be your rock, your safe haven, and your partner in every sense of the word. I promise to love you for who you are, and for who you help me to be.</p></div>\n<div><p>Forever and always, my love, I will cherish, honor, and adore you. I will love you until the end of time, and beyond.</p></div>\n<div><p>Yours always,<br/>[Your Name]</p></div>",
+        "plainText": "My dearest,\n\n As I sit down to write this letter to you, I am filled with emotions and thoughts that I have been longing to express. From the moment I met you, I knew that you were someone special, and every day since then has only reaffirmed that feeling. Your kind heart, your beautiful smile, and your infectious laugh have all captivated me, and I am forever changed by the love we share.\n\n You are the sunshine that brightens up my day and the stars that light up my night. Your touch ignites a fire within me, and your love is the safe haven where I can always find peace. You are my best friend, my partner, and my soulmate, and I am grateful for every moment we spend together.\n\n I love the way you make me laugh, the way you always know how to make me feel better when I'm down, and the way you support me in everything I do. I love our late-night conversations, our silly jokes, and our deep, meaningful talks. I love the way we can be silly and goofy together, and the way we can be serious and introspective together.\n\n As I look back on our time together, I am reminded of all the reasons why I fell in love with you. Your kindness, your empathy, and your generosity inspire me to be a better person, and your love gives me the strength and courage to face any challenge that comes our way.\n\n I promise to always be there for you, to support you, to listen to you, and to love you with all my heart and soul. I promise to be your rock, your safe haven, and your partner in every sense of the word. I promise to love you for who you are, and for who you help me to be.\n\n Forever and always, my love, I will cherish, honor, and adore you. I will love you until the end of time, and beyond.\n\n Yours always,\n[Your Name]",
+        "createdAt": "2026-04-20T13:02:31.515Z",
+        "source": "autosave"
+      },
+      {
+        "id": "dwv-1776690045375-jnf4if",
+        "title": "Untitled document",
+        "html": "<h1>Dear <span style=\"font-size: 25pt;\"><span style=\"font-size: 26pt;\"><span style=\"font-size: 27pt;\"><span style=\"font-size: 28pt;\"><span style=\"font-size: 29pt;\"><span style=\"font-size: 30pt;\"><span style=\"font-size: 31pt;\"><span style=\"font-size: 32pt;\"><span style=\"font-size: 33pt;\"><span style=\"font-size: 34pt;\"><span style=\"font-size: 35pt;\"><span style=\"font-size: 36pt; font-weight: normal; font-style: italic; text-decoration-line: underline;\">Virat Kohli,</span></span></span></span></span></span></span></span></span></span></span></span></h1>\n<div><p><span style=\"font-style: italic; font-weight: bold;\">I am writing to express my deepest admiration for your incredible achievements in the world of cricket. As a huge fan, I have been following your career for many years, and I must say that your dedication, passion, and perseverance have been a constant source of inspiration for me.</span></p></div>\n<div><p>Your impressive record speaks for itself, with numerous centuries, half-centuries, and match-winning performances that have left fans and critics alike in awe. Your ability to perform under pressure and lead your team to victory is truly remarkable, and your commitment to the sport is evident in every aspect of your game.</p></div>\n<div><p>As a role model, you have shown the world what it means to be a true champion, both on and off the field. Your humility, sportsmanship, and kindness towards your teammates, opponents, and fans are qualities that make you a beloved figure in the cricketing community.</p></div>\n<div><p>As you continue to inspire and motivate a new generation of cricketers, I wish you all the best for your future endeavors, both on and off the field. I hope that you will continue to break records, win matches, and bring joy to the millions of fans who look up to you as a hero.</p></div>\n<div><p>Once again, thank you for being an inspiration to us all, and I look forward to watching you continue to dominate the cricketing world for many years to come.</p></div>\n<div><p>Sincerely,<br/>[Your Name]</p></div>",
+        "plainText": "Dear Virat Kohli, \n\n I am writing to express my deepest admiration for your incredible achievements in the world of cricket. As a huge fan, I have been following your career for many years, and I must say that your dedication, passion, and perseverance have been a constant source of inspiration for me. \n\n Your impressive record speaks for itself, with numerous centuries, half-centuries, and match-winning performances that have left fans and critics alike in awe. Your ability to perform under pressure and lead your team to victory is truly remarkable, and your commitment to the sport is evident in every aspect of your game.\n\n As a role model, you have shown the world what it means to be a true champion, both on and off the field. Your humility, sportsmanship, and kindness towards your teammates, opponents, and fans are qualities that make you a beloved figure in the cricketing community.\n\n As you continue to inspire and motivate a new generation of cricketers, I wish you all the best for your future endeavors, both on and off the field. I hope that you will continue to break records, win matches, and bring joy to the millions of fans who look up to you as a hero.\n\n Once again, thank you for being an inspiration to us all, and I look forward to watching you continue to dominate the cricketing world for many years to come.\n\n Sincerely,\n[Your Name]",
+        "createdAt": "2026-04-20T13:00:45.375Z",
+        "source": "autosave"
+      },
+      {
+        "id": "dwv-1776664058254-ysvzr6",
+        "title": "Untitled document",
+        "html": "<h1>Dear <span style=\"font-size: 25pt;\"><span style=\"font-size: 26pt;\"><span style=\"font-size: 27pt;\"><span style=\"font-size: 28pt;\"><span style=\"font-size: 29pt;\"><span style=\"font-size: 30pt;\"><span style=\"font-size: 31pt;\"><span style=\"font-size: 32pt;\"><span style=\"font-size: 33pt;\"><span style=\"font-size: 34pt;\"><span style=\"font-size: 35pt;\"><span style=\"font-size: 36pt; font-weight: normal; font-style: italic; text-decoration-line: underline;\">Virat Kohli,</span></span></span></span></span></span></span></span></span></span></span></span></h1>\n<div><p>I am writing to express my deepest admiration for your incredible achievements in the world of cricket. As a huge fan, I have been following your career for many years, and I must say that your dedication, passion, and perseverance have been a constant source of inspiration for me.</p></div>\n<div><p>Your impressive record speaks for itself, with numerous centuries, half-centuries, and match-winning performances that have left fans and critics alike in awe. Your ability to perform under pressure and lead your team to victory is truly remarkable, and your commitment to the sport is evident in every aspect of your game.</p></div>\n<div><p>As a role model, you have shown the world what it means to be a true champion, both on and off the field. Your humility, sportsmanship, and kindness towards your teammates, opponents, and fans are qualities that make you a beloved figure in the cricketing community.</p></div>\n<div><p>As you continue to inspire and motivate a new generation of cricketers, I wish you all the best for your future endeavors, both on and off the field. I hope that you will continue to break records, win matches, and bring joy to the millions of fans who look up to you as a hero.</p></div>\n<div><p>Once again, thank you for being an inspiration to us all, and I look forward to watching you continue to dominate the cricketing world for many years to come.</p></div>\n<div><p>Sincerely,<br/>[Your Name]</p></div>",
+        "plainText": "Dear Virat Kohli, \n\n I am writing to express my deepest admiration for your incredible achievements in the world of cricket. As a huge fan, I have been following your career for many years, and I must say that your dedication, passion, and perseverance have been a constant source of inspiration for me.\n\n Your impressive record speaks for itself, with numerous centuries, half-centuries, and match-winning performances that have left fans and critics alike in awe. Your ability to perform under pressure and lead your team to victory is truly remarkable, and your commitment to the sport is evident in every aspect of your game.\n\n As a role model, you have shown the world what it means to be a true champion, both on and off the field. Your humility, sportsmanship, and kindness towards your teammates, opponents, and fans are qualities that make you a beloved figure in the cricketing community.\n\n As you continue to inspire and motivate a new generation of cricketers, I wish you all the best for your future endeavors, both on and off the field. I hope that you will continue to break records, win matches, and bring joy to the millions of fans who look up to you as a hero.\n\n Once again, thank you for being an inspiration to us all, and I look forward to watching you continue to dominate the cricketing world for many years to come.\n\n Sincerely,\n[Your Name]",
+        "createdAt": "2026-04-20T05:47:38.254Z",
+        "source": "autosave"
+      },
+      {
+        "id": "dwv-1776522815907-ax6h3u",
+        "title": "Untitled document",
+        "html": "<h1>Dear <span style=\"font-size: 25pt;\"><span style=\"font-size: 26pt;\"><span style=\"font-size: 27pt;\"><span style=\"font-size: 28pt;\"><span style=\"font-size: 29pt;\"><span style=\"font-size: 30pt;\"><span style=\"font-size: 31pt;\"><span style=\"font-size: 32pt;\"><span style=\"font-size: 33pt;\"><span style=\"font-size: 34pt;\"><span style=\"font-size: 35pt;\"><span style=\"font-size: 36pt; font-weight: normal; font-style: italic; text-decoration-line: underline;\">Virat Kohli,</span></span></span></span></span></span></span></span></span></span></span></span></h1>\n<div><p>I am writing to express my deepest admiration for your incredible achievements in the world of cricket. As a huge fan, I have been following your career for many years, and I must say that your dedication, passion, and perseverance have been a constant source of inspiration for me.</p></div>\n<div><p>Your impressive record speaks for itself, with numerous centuries, half-centuries, and match-winning performances that have left fans and critics alike in awe. Your ability to perform under pressure and lead your team to victory is truly remarkable, and your commitment to the sport is evident in every aspect of your game.</p></div>\n<div><p>As a role model, you have shown the world what it means to be a true champion, both on and off the field. Your humility, sportsmanship, and kindness towards your teammates, opponents, and fans are qualities that make you a beloved figure in the cricketing community.</p></div>\n<div><p>I would like I would like to take this opportunity to thank you for the countless hoursess hours of entertainment and excitement that you have provided to cricket fans around the world. Your passion for the game is infectious, and your love for the sport is something that resonates deeply with fans of all ages.</p></div>\n<div><p>As you continue to inspire and motivate a new generation of cricketers, I wish you all the best for your future endeavors, both on and off the field. I hope that you will continue to break records, win matches, and bring joy to the millions of fans who look up to you as a hero.</p></div>\n<div><p>Once again, thank you for being an inspiration to us all, and I look forward to watching you continue to dominate the cricketing world for many years to come.</p></div>\n<div><p>Sincerely,<br/>[Your Name]</p></div>",
+        "plainText": "Dear Virat Kohli, \n\n I am writing to express my deepest admiration for your incredible achievements in the world of cricket. As a huge fan, I have been following your career for many years, and I must say that your dedication, passion, and perseverance have been a constant source of inspiration for me.\n\n Your impressive record speaks for itself, with numerous centuries, half-centuries, and match-winning performances that have left fans and critics alike in awe. Your ability to perform under pressure and lead your team to victory is truly remarkable, and your commitment to the sport is evident in every aspect of your game.\n\n As a role model, you have shown the world what it means to be a true champion, both on and off the field. Your humility, sportsmanship, and kindness towards your teammates, opponents, and fans are qualities that make you a beloved figure in the cricketing community.\n\n I would like I would like to take this opportunity to thank you for the countless hoursess hours of entertainment and excitement that you have provided to cricket fans around the world. Your passion for the game is infectious, and your love for the sport is something that resonates deeply with fans of all ages.\n\n As you continue to inspire and motivate a new generation of cricketers, I wish you all the best for your future endeavors, both on and off the field. I hope that you will continue to break records, win matches, and bring joy to the millions of fans who look up to you as a hero.\n\n Once again, thank you for being an inspiration to us all, and I look forward to watching you continue to dominate the cricketing world for many years to come.\n\n Sincerely,\n[Your Name]",
+        "createdAt": "2026-04-18T14:33:35.906Z",
+        "source": "autosave"
+      },
+      {
+        "id": "dwv-1776522804187-6nli2k",
+        "title": "Untitled document",
+        "html": "<h1>Dear <span style=\"font-size: 25pt;\"><span style=\"font-size: 26pt;\"><span style=\"font-size: 27pt;\"><span style=\"font-size: 28pt;\"><span style=\"font-size: 29pt;\"><span style=\"font-size: 30pt;\"><span style=\"font-size: 31pt;\"><span style=\"font-size: 32pt;\"><span style=\"font-size: 33pt;\"><span style=\"font-size: 34pt;\"><span style=\"font-size: 35pt;\"><span style=\"font-size: 36pt; font-weight: normal; font-style: italic; text-decoration-line: underline;\">Virat Kohli,</span></span></span></span></span></span></span></span></span></span></span></span></h1>\n<div><p>I am writing to express my deepest admiration for your incredible achievements in the world of cricket. As a huge fan, I have been following your career for many years, and I must say that your dedication, passion, and perseverance have been a constant source of inspiration for me.</p></div>\n<div><p>Your impressive record speaks for itself, with numerous centuries, half-centuries, and match-winning performances that have left fans and critics alike in awe. Your ability to perform under pressure and lead your team to victory is truly remarkable, and your commitment to the sport is evident in every aspect of your game.</p></div>\n<div><p>As a role model, you have shown the world what it means to be a true champion, both on and off the field. Your humility, sportsmanship, and kindness towards your teammates, opponents, and fans are qualities that make you a beloved figure in the cricketing community.</p></div>\n<div><p>I would like to take this opportunity to thank you for the countless hours of entertainment and excitement that you have provided to cricket fans around the world. Your passion for the game is infectious, and your love for the sport is something that resonates deeply with fans of all ages.</p></div>\n<div><p>As you continue to inspire and motivate a new generation of cricketers, I wish you all the best for your future endeavors, both on and off the field. I hope that you will continue to break records, win matches, and bring joy to the millions of fans who look up to you as a hero.</p></div>\n<div><p>Once again, thank you for being an inspiration to us all, and I look forward to watching you continue to dominate the cricketing world for many years to come.</p></div>\n<div><p>Sincerely,<br/>[Your Name]</p></div>",
+        "plainText": "Dear Virat Kohli, \n\n I am writing to express my deepest admiration for your incredible achievements in the world of cricket. As a huge fan, I have been following your career for many years, and I must say that your dedication, passion, and perseverance have been a constant source of inspiration for me.\n\n Your impressive record speaks for itself, with numerous centuries, half-centuries, and match-winning performances that have left fans and critics alike in awe. Your ability to perform under pressure and lead your team to victory is truly remarkable, and your commitment to the sport is evident in every aspect of your game.\n\n As a role model, you have shown the world what it means to be a true champion, both on and off the field. Your humility, sportsmanship, and kindness towards your teammates, opponents, and fans are qualities that make you a beloved figure in the cricketing community.\n\n I would like to take this opportunity to thank you for the countless hours of entertainment and excitement that you have provided to cricket fans around the world. Your passion for the game is infectious, and your love for the sport is something that resonates deeply with fans of all ages.\n\n As you continue to inspire and motivate a new generation of cricketers, I wish you all the best for your future endeavors, both on and off the field. I hope that you will continue to break records, win matches, and bring joy to the millions of fans who look up to you as a hero.\n\n Once again, thank you for being an inspiration to us all, and I look forward to watching you continue to dominate the cricketing world for many years to come.\n\n Sincerely,\n[Your Name]",
+        "createdAt": "2026-04-18T14:33:24.187Z",
+        "source": "autosave"
+      },
+      {
+        "id": "dwv-1776514058795-u5wvjw",
+        "title": "Untitled document",
+        "html": "<h1>Dear Virat Kohli,</h1>\n<div><p>I am writing to express my deepest admiration for your incredible achievements in the world of cricket. As a huge fan, I have been following your career for many years, and I must say that your dedication, passion, and perseverance have been a constant source of inspiration for me.</p></div>\n<div><p>Your impressive record speaks for itself, with numerous centuries, half-centuries, and match-winning performances that have left fans and critics alike in awe. Your ability to perform under pressure and lead your team to victory is truly remarkable, and your commitment to the sport is evident in every aspect of your game.</p></div>\n<div><p>As a role model, you have shown the world what it means to be a true champion, both on and off the field. Your humility, sportsmanship, and kindness towards your teammates, opponents, and fans are qualities that make you a beloved figure in the cricketing community.</p></div>\n<div><p>I would like to take this opportunity to thank you for the countless hours of entertainment and excitement that you have provided to cricket fans around the world. Your passion for the game is infectious, and your love for the sport is something that resonates deeply with fans of all ages.</p></div>\n<div><p>As you continue to inspire and motivate a new generation of cricketers, I wish you all the best for your future endeavors, both on and off the field. I hope that you will continue to break records, win matches, and bring joy to the millions of fans who look up to you as a hero.</p></div>\n<div><p>Once again, thank you for being an inspiration to us all, and I look forward to watching you continue to dominate the cricketing world for many years to come.</p></div>\n<div><p>Sincerely,<br/>[Your Name]</p></div>",
+        "plainText": "Dear Virat Kohli,\n\n I am writing to express my deepest admiration for your incredible achievements in the world of cricket. As a huge fan, I have been following your career for many years, and I must say that your dedication, passion, and perseverance have been a constant source of inspiration for me.\n\n Your impressive record speaks for itself, with numerous centuries, half-centuries, and match-winning performances that have left fans and critics alike in awe. Your ability to perform under pressure and lead your team to victory is truly remarkable, and your commitment to the sport is evident in every aspect of your game.\n\n As a role model, you have shown the world what it means to be a true champion, both on and off the field. Your humility, sportsmanship, and kindness towards your teammates, opponents, and fans are qualities that make you a beloved figure in the cricketing community.\n\n I would like to take this opportunity to thank you for the countless hours of entertainment and excitement that you have provided to cricket fans around the world. Your passion for the game is infectious, and your love for the sport is something that resonates deeply with fans of all ages.\n\n As you continue to inspire and motivate a new generation of cricketers, I wish you all the best for your future endeavors, both on and off the field. I hope that you will continue to break records, win matches, and bring joy to the millions of fans who look up to you as a hero.\n\n Once again, thank you for being an inspiration to us all, and I look forward to watching you continue to dominate the cricketing world for many years to come.\n\n Sincerely,\n[Your Name]",
+        "createdAt": "2026-04-18T12:07:38.795Z",
+        "source": "autosave"
+      },
+      {
+        "id": "dwv-1776317686921-olzlpr",
+        "title": "Untitled document",
+        "html": "<div>asdbakjhdkjhakhaKHskhdks<p></p></div>",
+        "plainText": "asdbakjhdkjhakhaKHskhdks",
+        "createdAt": "2026-04-16T05:34:46.921Z",
+        "source": "autosave"
+      },
+      {
+        "id": "dwv-1776252236641-1uc4xa",
+        "title": "Untitled document",
+        "html": "<div><p></p></div>",
+        "plainText": "",
+        "createdAt": "2026-04-15T11:23:56.641Z",
+        "source": "autosave"
+      }
+    ]
+  }
+]

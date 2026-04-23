@@ -10,3 +10,8 @@ data/mail-settings.json
 data/signature-settings.json
 data/automation-settings.json
 data/collaboration-settings.json
+.vercel
+data/auth-settings.json
+data/custom/
+.devtools/node
+.env

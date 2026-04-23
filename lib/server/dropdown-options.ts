@@ -1,4 +1,4 @@
-import { dropdownOptionsPath, readJsonFile, writeJsonFile } from '@/lib/server/storage';
+import { getDropdownOptionsFromRepository, saveDropdownOptionsToRepository } from '@/lib/server/repositories';
 
 export type DropdownOptionMap = Record<string, string[]>;
 
@@ -14,11 +14,11 @@ function normalizeOptions(options: DropdownOptionMap) {
 }
 
 export async function getDropdownOptions() {
-  return normalizeOptions(await readJsonFile<DropdownOptionMap>(dropdownOptionsPath, {}));
+  return normalizeOptions(await getDropdownOptionsFromRepository());
 }
 
 export async function saveDropdownOptions(options: DropdownOptionMap) {
-  await writeJsonFile(dropdownOptionsPath, normalizeOptions(options));
+  await saveDropdownOptionsToRepository(normalizeOptions(options));
 }
 
 export async function addDropdownOption(fieldKey: string, option: string) {

@@ -1,8 +1,8 @@
 import { ContactRequest } from '@/types/document';
-import { contactRequestsPath, readJsonFile, writeJsonFile } from '@/lib/server/storage';
+import { addContactRequestToRepository, getContactRequestsFromRepository } from '@/lib/server/repositories';
 
 export async function getContactRequests() {
-  const requests = await readJsonFile<ContactRequest[]>(contactRequestsPath, []);
+  const requests = await getContactRequestsFromRepository();
   return [...requests].sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime());
 }
 
@@ -14,7 +14,6 @@ export async function addContactRequest(payload: Omit<ContactRequest, 'id' | 'cr
     ...payload,
   };
 
-  requests.unshift(next);
-  await writeJsonFile(contactRequestsPath, requests);
+  await addContactRequestToRepository(next);
   return next;
 }

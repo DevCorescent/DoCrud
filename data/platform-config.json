@@ -1,0 +1,114 @@
+{
+  "workflows": [
+    {
+      "id": "wf-hr-onboarding",
+      "name": "HR Onboarding Approval",
+      "department": "HR",
+      "isActive": true,
+      "steps": [
+        {
+          "id": "wf-hr-onboarding-step-1",
+          "label": "HR Review",
+          "ownerRole": "hr",
+          "slaHours": 12
+        },
+        {
+          "id": "wf-hr-onboarding-step-2",
+          "label": "Legal Validation",
+          "ownerRole": "legal",
+          "slaHours": 24
+        },
+        {
+          "id": "wf-hr-onboarding-step-3",
+          "label": "Admin Signoff",
+          "ownerRole": "admin",
+          "slaHours": 8
+        }
+      ]
+    }
+  ],
+  "clauses": [
+    {
+      "id": "clause-confidentiality",
+      "title": "Confidentiality",
+      "category": "Legal",
+      "body": "Confidential information must not be disclosed to any unauthorized party.",
+      "tags": [
+        "legal",
+        "nda",
+        "compliance"
+      ]
+    }
+  ],
+  "integrations": [
+    {
+      "id": "integration-webhook-audit",
+      "name": "Audit Webhook",
+      "type": "webhook",
+      "endpoint": "https://example.com/webhooks/audit",
+      "status": "paused"
+    }
+  ],
+  "organizations": [
+    {
+      "id": "org-corescent",
+      "name": "Corescent Technologies",
+      "domain": "company.com",
+      "brandColor": "#ea580c",
+      "logoUrl": "/docrud-logo.png"
+    }
+  ],
+  "expiryRules": [
+    {
+      "id": "expiry-30-day-warning",
+      "name": "30 Day Renewal Reminder",
+      "daysBefore": 30,
+      "actionLabel": "Send renewal reminder"
+    }
+  ],
+  "folderLibrary": [
+    "Contracts",
+    "HR Records",
+    "Client Agreements",
+    "Policies"
+  ],
+  "featureControls": {
+    "dashboard": true,
+    "document_summary": true,
+    "generate_documents": true,
+    "history": true,
+    "client_portal": false,
+    "tutorials": true,
+    "doxpert": true,
+    "analytics": true,
+    "file_manager": true,
+    "roles_permissions": true,
+    "approvals": true,
+    "versions": true,
+    "clauses": false,
+    "audit": false,
+    "bulk_ops": true,
+    "renewals": true,
+    "integrations": false,
+    "organizations": true,
+    "ai_copilot": true,
+    "api_docs": false,
+    "branding": true,
+    "team_workspace": true,
+    "deal_room": true,
+    "hiring_desk": false,
+    "docrudians": false,
+    "virtual_id": false,
+    "e_certificates": false,
+    "editable_sheet_shares": true,
+    "document_encrypter": false,
+    "visualizer": true,
+    "docsheet": true,
+    "support": true,
+    "internal_mailbox": false,
+    "qr_drop": true,
+    "offline_locker": false,
+    "workspace": true,
+    "admin_panel": true
+  }
+}
