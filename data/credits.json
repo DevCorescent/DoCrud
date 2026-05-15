@@ -1,0 +1,350 @@
+{
+  "users": {
+    "1": {
+      "balance": 61,
+      "totalEarned": 61,
+      "totalSpent": 0,
+      "streak": {
+        "current": 2,
+        "longest": 2,
+        "lastPostDate": "2026-05-15",
+        "streakStartDate": "2026-05-14"
+      },
+      "milestones": [
+        "first_publish",
+        "publish_10"
+      ],
+      "verified": false,
+      "transactions": [
+        {
+          "id": "18cd063f-b733-4003-b351-b7fc2f5cac65",
+          "type": "earn",
+          "amount": 5,
+          "reason": "daily_post",
+          "description": "Daily post reward",
+          "createdAt": "2026-05-14T16:40:37.061Z"
+        },
+        {
+          "id": "0ce42bb6-e69a-43cc-abc7-c51d1d0e16c4",
+          "type": "earn",
+          "amount": 10,
+          "reason": "first_publish",
+          "description": "Milestone: First Publish",
+          "createdAt": "2026-05-14T16:40:37.236Z"
+        },
+        {
+          "id": "cb64b354-8c63-4edb-b80d-05fd605e0fa9",
+          "type": "earn",
+          "amount": 5,
+          "reason": "daily_post",
+          "description": "Daily post reward",
+          "createdAt": "2026-05-15T11:44:55.701Z"
+        },
+        {
+          "id": "ebe8ce12-7116-470f-8417-a748750811b4",
+          "type": "earn",
+          "amount": 40,
+          "reason": "publish_10",
+          "description": "Milestone: Content Creator",
+          "createdAt": "2026-05-15T12:47:45.924Z"
+        },
+        {
+          "id": "2913ff98-be9d-42ad-83b4-de801802389c",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"portfolio\" received a like",
+          "createdAt": "2026-05-15T12:59:30.063Z"
+        }
+      ],
+      "dailyEarnLog": {
+        "2026-05-14": [
+          "daily_post",
+          "first_publish"
+        ],
+        "2026-05-15": [
+          "daily_post",
+          "publish_10",
+          "post_like"
+        ]
+      }
+    },
+    "verified-001": {
+      "balance": 420,
+      "totalEarned": 520,
+      "totalSpent": 100,
+      "streak": {
+        "current": 24,
+        "longest": 24,
+        "lastPostDate": "2026-05-12",
+        "streakStartDate": "2026-04-19"
+      },
+      "milestones": [
+        "first_step",
+        "profile_complete",
+        "first_publish",
+        "streak_7",
+        "streak_10",
+        "followers_10",
+        "followers_100"
+      ],
+      "verified": true,
+      "transactions": [],
+      "dailyEarnLog": {}
+    },
+    "verified-002": {
+      "balance": 310,
+      "totalEarned": 410,
+      "totalSpent": 100,
+      "streak": {
+        "current": 18,
+        "longest": 22,
+        "lastPostDate": "2026-05-12",
+        "streakStartDate": "2026-04-25"
+      },
+      "milestones": [
+        "first_step",
+        "profile_complete",
+        "first_publish",
+        "streak_7",
+        "streak_10",
+        "followers_10"
+      ],
+      "verified": true,
+      "transactions": [],
+      "dailyEarnLog": {}
+    },
+    "verified-003": {
+      "balance": 255,
+      "totalEarned": 330,
+      "totalSpent": 75,
+      "streak": {
+        "current": 12,
+        "longest": 15,
+        "lastPostDate": "2026-05-12",
+        "streakStartDate": "2026-05-01"
+      },
+      "milestones": [
+        "first_step",
+        "profile_complete",
+        "first_publish",
+        "streak_7",
+        "streak_10"
+      ],
+      "verified": true,
+      "transactions": [],
+      "dailyEarnLog": {}
+    },
+    "individual-1778580489243": {
+      "balance": 0,
+      "totalEarned": 0,
+      "totalSpent": 0,
+      "streak": {
+        "current": 0,
+        "longest": 0,
+        "lastPostDate": null,
+        "streakStartDate": null
+      },
+      "milestones": [],
+      "verified": false,
+      "transactions": [],
+      "dailyEarnLog": {}
+    },
+    "individual-1778589478735": {
+      "balance": 0,
+      "totalEarned": 0,
+      "totalSpent": 0,
+      "streak": {
+        "current": 0,
+        "longest": 0,
+        "lastPostDate": null,
+        "streakStartDate": null
+      },
+      "milestones": [],
+      "verified": false,
+      "transactions": [],
+      "dailyEarnLog": {}
+    },
+    "individual-1778593995438": {
+      "balance": 0,
+      "totalEarned": 0,
+      "totalSpent": 0,
+      "streak": {
+        "current": 0,
+        "longest": 0,
+        "lastPostDate": null,
+        "streakStartDate": null
+      },
+      "milestones": [],
+      "verified": false,
+      "transactions": [],
+      "dailyEarnLog": {}
+    },
+    "individual-1778601331383": {
+      "balance": 0,
+      "totalEarned": 0,
+      "totalSpent": 0,
+      "streak": {
+        "current": 0,
+        "longest": 0,
+        "lastPostDate": null,
+        "streakStartDate": null
+      },
+      "milestones": [],
+      "verified": false,
+      "transactions": [],
+      "dailyEarnLog": {}
+    },
+    "individual-1778629652079": {
+      "balance": 0,
+      "totalEarned": 0,
+      "totalSpent": 0,
+      "streak": {
+        "current": 0,
+        "longest": 0,
+        "lastPostDate": null,
+        "streakStartDate": null
+      },
+      "milestones": [],
+      "verified": false,
+      "transactions": [],
+      "dailyEarnLog": {}
+    },
+    "individual-1778630558021": {
+      "balance": 0,
+      "totalEarned": 0,
+      "totalSpent": 0,
+      "streak": {
+        "current": 0,
+        "longest": 0,
+        "lastPostDate": null,
+        "streakStartDate": null
+      },
+      "milestones": [],
+      "verified": false,
+      "transactions": [],
+      "dailyEarnLog": {}
+    },
+    "individual-1778744127141": {
+      "balance": 0,
+      "totalEarned": 0,
+      "totalSpent": 0,
+      "streak": {
+        "current": 0,
+        "longest": 0,
+        "lastPostDate": null,
+        "streakStartDate": null
+      },
+      "milestones": [],
+      "verified": false,
+      "transactions": [],
+      "dailyEarnLog": {}
+    },
+    "individual-1778758592812": {
+      "balance": 0,
+      "totalEarned": 0,
+      "totalSpent": 0,
+      "streak": {
+        "current": 0,
+        "longest": 0,
+        "lastPostDate": null,
+        "streakStartDate": null
+      },
+      "milestones": [],
+      "verified": false,
+      "transactions": [],
+      "dailyEarnLog": {}
+    },
+    "user-1778759617203": {
+      "balance": 0,
+      "totalEarned": 0,
+      "totalSpent": 0,
+      "streak": {
+        "current": 0,
+        "longest": 0,
+        "lastPostDate": null,
+        "streakStartDate": null
+      },
+      "milestones": [],
+      "verified": false,
+      "transactions": [],
+      "dailyEarnLog": {}
+    },
+    "individual-1778758936957": {
+      "balance": 58,
+      "totalEarned": 58,
+      "totalSpent": 0,
+      "streak": {
+        "current": 1,
+        "longest": 1,
+        "lastPostDate": "2026-05-15",
+        "streakStartDate": "2026-05-15"
+      },
+      "milestones": [
+        "first_publish",
+        "publish_10"
+      ],
+      "verified": false,
+      "transactions": [
+        {
+          "id": "d93ebedc-e98a-420d-8082-4a78855bca69",
+          "type": "earn",
+          "amount": 5,
+          "reason": "daily_post",
+          "description": "Daily post reward",
+          "createdAt": "2026-05-15T10:17:52.569Z"
+        },
+        {
+          "id": "e0ded2e9-b63a-423d-a06e-81b65dd9abe0",
+          "type": "earn",
+          "amount": 10,
+          "reason": "first_publish",
+          "description": "Milestone: First Publish",
+          "createdAt": "2026-05-15T10:17:52.920Z"
+        },
+        {
+          "id": "3fc50c1d-3045-4cd5-a8e2-812209edf56c",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"Launching Soon\" received a like",
+          "createdAt": "2026-05-15T10:52:06.760Z"
+        },
+        {
+          "id": "0328be2e-a350-4ae3-99b2-02ebf190254f",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"iphone 17 pro max - 1 TB\" received a like",
+          "createdAt": "2026-05-15T17:45:27.049Z"
+        },
+        {
+          "id": "4dd28d84-c4c6-49ca-9628-6d223ac308aa",
+          "type": "earn",
+          "amount": 40,
+          "reason": "publish_10",
+          "description": "Milestone: Content Creator",
+          "createdAt": "2026-05-15T17:56:03.238Z"
+        },
+        {
+          "id": "2deaa42f-da38-433c-bbfb-63e5ea5ad409",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"testing video\" received a like",
+          "createdAt": "2026-05-15T18:14:48.579Z"
+        }
+      ],
+      "dailyEarnLog": {
+        "2026-05-15": [
+          "daily_post",
+          "first_publish",
+          "post_like",
+          "post_like",
+          "publish_10",
+          "post_like"
+        ]
+      }
+    }
+  }
+}

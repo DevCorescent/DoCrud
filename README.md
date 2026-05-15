@@ -15,6 +15,7 @@ A comprehensive, enterprise-grade document generation platform for private limit
 - **Role-Based Access Control**: Admin, HR, Legal, and User roles with granular permissions
 - **Custom Template Editor**: Create and edit templates with drag-and-drop field positioning
 - **Dynamic Fields**: Add, remove, and reorder form fields with multiple input types
+- **Secure PDF eSign Links**: Upload a PDF, place signature boxes per page, and collect a single recipient signature that gets stamped into all requested boxes
 - **Admin Panel**: Complete user and template management interface
 - **Modern UI/UX**: Responsive design with dark mode support and smooth animations
 
@@ -118,6 +119,15 @@ A comprehensive, enterprise-grade document generation platform for private limit
 3. Fill in template details (name, description, category)
 4. Add fields with different types (text, textarea, select, date, etc.)
 5. Write HTML template with `{{fieldName}}` placeholders
+
+### Secure PDF eSign links (signature boxes)
+
+1. Workspace → Generate → eSign → Upload a PDF
+2. In the Security step, enable Recipient signature and choose **Place boxes**
+3. Drag on any rendered PDF page to add one or more signature boxes
+4. Create the secure link and share it — the recipient signs once and their signature is stamped into every box
+
+Note: This flow currently supports a single recipient signer per link. Multi-signer routing can be added on top of the `signerKey` field in `RecipientSignatureBoxPlacement`.
 6. Use the preview feature to test your template
 7. Save and assign to appropriate user roles
 

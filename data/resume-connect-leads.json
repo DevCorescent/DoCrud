@@ -1,0 +1,156 @@
+[
+  {
+    "id": "0a6bdca4-45ad-4f77-9808-a8c9807abc08",
+    "buyerUserId": "user-1777880069884",
+    "resumeId": "029f8d1f-8498-4a91-ae6f-93a9babd34db",
+    "resumeSlug": "yashwardhan-ai-engineer-9b0c4919",
+    "candidate": {
+      "displayName": "Yashwardhan",
+      "headline": "AI Engineer",
+      "location": "Indore, India",
+      "category": "Engineering",
+      "skills": [
+        "Python",
+        "JavaScript/TypeScript",
+        "C++",
+        "Java",
+        "Go",
+        "PyTorch",
+        "TensorFlow",
+        "scikit-learn",
+        "OpenCV",
+        "CNNs",
+        "Random Forest",
+        "YOLO",
+        "OpenAI API",
+        "Groq API",
+        "Prompt Engineering",
+        "RAG",
+        "React",
+        "Next.js",
+        "Node.js",
+        "Express",
+        "REST",
+        "GraphQL",
+        "Web-Sockets",
+        "Firebase"
+      ],
+      "tags": [],
+      "summary": "AI Engineer building production-grade systems combining LLMs, machine learning, and backend infrastructure."
+    },
+    "contact": {
+      "email": "admin@company.com",
+      "phone": "+91 95897 08682"
+    },
+    "status": "new",
+    "notes": [],
+    "connectCount": 1,
+    "createdAt": "2026-05-04T07:39:44.271Z",
+    "updatedAt": "2026-05-04T07:39:44.271Z"
+  },
+  {
+    "id": "90d45bab-73b5-4a54-bcc7-50565f68aa31",
+    "buyerUserId": "user-1777718477893",
+    "resumeId": "029f8d1f-8498-4a91-ae6f-93a9babd34db",
+    "resumeSlug": "yashwardhan-ai-engineer-9b0c4919",
+    "candidate": {
+      "displayName": "Yashwardhan",
+      "headline": "AI Engineer",
+      "location": "Indore, India",
+      "category": "Engineering",
+      "skills": [
+        "Python",
+        "JavaScript/TypeScript",
+        "C++",
+        "Java",
+        "Go",
+        "PyTorch",
+        "TensorFlow",
+        "scikit-learn",
+        "OpenCV",
+        "CNNs",
+        "Random Forest",
+        "YOLO",
+        "OpenAI API",
+        "Groq API",
+        "Prompt Engineering",
+        "RAG",
+        "React",
+        "Next.js",
+        "Node.js",
+        "Express",
+        "REST",
+        "GraphQL",
+        "Web-Sockets",
+        "Firebase"
+      ],
+      "tags": [],
+      "summary": "AI Engineer building production-grade systems combining LLMs, machine learning, and backend infrastructure."
+    },
+    "contact": {
+      "email": "admin@company.com",
+      "phone": "+91 95897 08682"
+    },
+    "status": "new",
+    "notes": [],
+    "connectCount": 1,
+    "createdAt": "2026-05-02T10:49:32.651Z",
+    "updatedAt": "2026-05-02T10:49:32.651Z"
+  },
+  {
+    "id": "fa2da9aa-fa57-472a-a357-a95a26aee4a0",
+    "buyerUserId": "1",
+    "resumeId": "029f8d1f-8498-4a91-ae6f-93a9babd34db",
+    "resumeSlug": "yashwardhan-ai-engineer-9b0c4919",
+    "candidate": {
+      "displayName": "Yashwardhan",
+      "headline": "AI Engineer",
+      "location": "Indore, India",
+      "category": "Engineering",
+      "skills": [
+        "Python",
+        "JavaScript/TypeScript",
+        "C++",
+        "Java",
+        "Go",
+        "PyTorch",
+        "TensorFlow",
+        "scikit-learn",
+        "OpenCV",
+        "CNNs",
+        "Random Forest",
+        "YOLO",
+        "OpenAI API",
+        "Groq API",
+        "Prompt Engineering",
+        "RAG",
+        "React",
+        "Next.js",
+        "Node.js",
+        "Express",
+        "REST",
+        "GraphQL",
+        "Web-Sockets",
+        "Firebase"
+      ],
+      "tags": [],
+      "summary": "AI Engineer building production-grade systems combining LLMs, machine learning, and backend infrastructure."
+    },
+    "contact": {
+      "email": "admin@company.com",
+      "phone": "+91 95897 08682"
+    },
+    "status": "new",
+    "notes": [
+      {
+        "id": "d311b66f-a6e0-4fe2-b36b-7523e6d7aeab",
+        "body": "klkl",
+        "createdAt": "2026-04-27T20:36:23.955Z",
+        "createdByUserId": "1"
+      }
+    ],
+    "connectCount": 1,
+    "createdAt": "2026-04-26T06:25:15.752Z",
+    "updatedAt": "2026-04-27T20:36:23.955Z"
+  }
+]

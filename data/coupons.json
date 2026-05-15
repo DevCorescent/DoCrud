@@ -1,0 +1,24 @@
+[
+  {
+    "id": "0cbbc13b-6b03-46a5-bee0-1656af401d46",
+    "code": "FIRST100",
+    "percentOff": 80,
+    "active": true,
+    "maxRedemptions": 100,
+    "redeemedCount": 0,
+    "validFrom": "2026-05-04T09:38:22.220Z",
+    "createdAt": "2026-05-04T09:38:22.220Z",
+    "updatedAt": "2026-05-04T09:38:22.220Z"
+  },
+  {
+    "id": "bffc904b-3219-48bd-aba4-13b7fb1b35ac",
+    "code": "TEST50",
+    "percentOff": 50,
+    "active": true,
+    "maxRedemptions": 1,
+    "redeemedCount": 1,
+    "validFrom": "2026-05-04T06:09:06.024Z",
+    "createdAt": "2026-05-04T06:09:06.024Z",
+    "updatedAt": "2026-05-04T09:38:27.556Z"
+  }
+]

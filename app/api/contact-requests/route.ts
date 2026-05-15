@@ -25,7 +25,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const payload = await request.json() as {
-      requestType?: 'contact' | 'demo' | 'pricing';
+      requestType?: 'contact' | 'demo' | 'pricing' | 'wishlist';
       name?: string;
       email?: string;
       organization?: string;
@@ -34,9 +34,11 @@ export async function POST(request: NextRequest) {
       preferredDate?: string;
       teamSize?: string;
       useCase?: string;
+      searchedFor?: string;
+      sourcePath?: string;
     };
 
-    if (!payload.name?.trim() || !payload.email?.trim() || !payload.organization?.trim() || !payload.message?.trim()) {
+    if (!payload.name?.trim() || !payload.email?.trim() || !payload.message?.trim()) {
       return NextResponse.json({ error: 'Name, email, organization, and message are required' }, { status: 400 });
     }
 
@@ -44,12 +46,14 @@ export async function POST(request: NextRequest) {
       requestType: payload.requestType || 'contact',
       name: payload.name.trim(),
       email: payload.email.trim().toLowerCase(),
-      organization: payload.organization.trim(),
+      organization: payload.organization?.trim() || 'Public Portal',
       phone: payload.phone?.trim(),
       message: payload.message.trim(),
       preferredDate: payload.preferredDate?.trim(),
       teamSize: payload.teamSize?.trim(),
       useCase: payload.useCase?.trim(),
+      searchedFor: payload.searchedFor?.trim(),
+      sourcePath: payload.sourcePath?.trim(),
     });
 
     return NextResponse.json(saved, { status: 201 });

@@ -11,6 +11,7 @@ function isAdmin(session: Awaited<ReturnType<typeof getAuthSession>>) {
 
 function isAllowedTheme(value: unknown): value is ThemeSettings['activeTheme'] {
   return value === 'ember'
+    || value === 'sapphire'
     || value === 'slate'
     || value === 'ocean'
     || value === 'forest'
@@ -38,7 +39,7 @@ export async function PUT(request: NextRequest) {
     const payload = await request.json() as Partial<ThemeSettings>;
     const current = await getThemeSettings();
     const next: ThemeSettings = {
-      activeTheme: isAllowedTheme(payload.activeTheme) ? payload.activeTheme : 'ember',
+      activeTheme: isAllowedTheme(payload.activeTheme) ? payload.activeTheme : 'sapphire',
       softwareName: payload.softwareName?.trim() || current.softwareName,
       accentLabel: payload.accentLabel?.trim() || current.accentLabel,
     };

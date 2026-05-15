@@ -25,7 +25,7 @@ const emptySettings: BusinessSettings = {
   supportEmail: '',
   supportPhone: '',
   accentColor: '#2719FF',
-  watermarkLabel: 'docrud trial workspace',
+  watermarkLabel: 'docrud workspace',
   businessDescription: '',
   updatedAt: '',
   letterheadMode: 'default',
@@ -163,20 +163,20 @@ export default function BusinessSettingsCenter() {
 
       <FeatureGuide
         title="Business Settings Guide"
-        purpose="Use this space to finish workspace setup, align the platform to your industry, and maintain your own reusable business templates and signatures."
+        purpose="Use this space to shape docrud around how your business actually works, so your team sees your branding, your templates, your signature authorities, and your preferred operating setup from day one."
         whyItMatters={[
-          'It lets each client account shape the software around its operating model instead of using a generic workspace.',
-          'It keeps branding, starter packs, and day-to-day templates inside one governed client-facing control center.',
+          'It helps your team feel like they are working inside your business system, not a generic software shell.',
+          'It reduces repeated setup work by keeping branding, standard templates, and signature assets ready for everyday use.',
         ]}
         tutorial={[
-          'Update your business profile first so your organization has the correct display name, support contacts, and watermark label.',
-          'Upload your existing letterhead image or paste your letterhead HTML block so it becomes the default header across future document generation.',
-          'Create your own signatures for business-authorized signatories so your document generation flow uses company-owned signoff assets.',
-          'Build your own document formats and templates from the template editor using custom fields and HTML placeholders.',
+          'Start with your business profile so the workspace shows the right company name, support contacts, watermark, and operating model.',
+          'Add your letterhead or branded header once so future documents already feel client-ready without manual formatting every time.',
+          'Save the signatures of authorized approvers so your team can issue documents faster without hunting for sign-off assets.',
+          'Create the templates your team repeats most often so daily work becomes faster, more consistent, and easier to delegate.',
         ]}
         examples={[
-          'Example: a consulting company creates a branded service proposal template and a founder signature for client-ready contract generation.',
-          'Example: an HR agency adds its own onboarding template pack with company-specific clauses and field structure.',
+          'Example: a consulting firm sets up a branded proposal template, company watermark, and founder signature so every client-facing document is immediately presentation-ready.',
+          'Example: an HR company creates its own onboarding document pack so recruiters can issue consistent offer, joining, and policy documents without rework.',
         ]}
       />
 

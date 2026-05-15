@@ -1,0 +1,1270 @@
+[
+  {
+    "id": "dwd-1778775924446-9uexy4",
+    "ownerUserId": "1",
+    "ownerEmail": "admin@company.com",
+    "title": "Untitled document",
+    "emoji": "✍️",
+    "isFavorite": false,
+    "folderName": "General",
+    "summary": "Docai drafted this document from chat.",
+    "documentTheme": "classic",
+    "requireSignature": true,
+    "signatures": [],
+    "trackChangesEnabled": false,
+    "trackedChanges": [],
+    "selectionComments": [],
+    "blocks": [
+      {
+        "id": "block_1778776046359_szpnwq",
+        "type": "heading-1",
+        "html": "AGREEMENT FOR PARTNERSHIP BETWEEN [YOUR COMPANY NAME] AND VITHUB",
+        "text": "AGREEMENT FOR PARTNERSHIP BETWEEN [YOUR COMPANY NAME] AND VITHUB"
+      },
+      {
+        "id": "block_1778776046359_atoyy2",
+        "type": "paragraph",
+        "html": "<p>This Agreement for Partnership (\"Agreement\") is entered into on [DATE] (\"Effective Date\") by and between [YOUR COMPANY NAME], a [STATE/COUNTRY] corporation with its principal place of business at [ADDRESS] (\"Your Company\"), and Vithub, a [STATE/COUNTRY] corporation with its principal place of business at [VITHUB ADDRESS] (\"Vithub\").</p>",
+        "text": "This Agreement for Partnership (\"Agreement\") is entered into on [DATE] (\"Effective Date\") by and between [YOUR COMPANY NAME], a [STATE/COUNTRY] corporation with its principal place of business at [ADDRESS] (\"Your Company\"), and Vithub, a [STATE/COUNTRY] corporation with its principal place of business at [VITHUB ADDRESS] (\"Vithub\")."
+      },
+      {
+        "id": "block_1778776046359_zfyn8n",
+        "type": "paragraph",
+        "html": "<p>RECITALS</p>",
+        "text": "RECITALS"
+      },
+      {
+        "id": "block_1778776046359_8vz08b",
+        "type": "paragraph",
+        "html": "<p>WHEREAS, Your Company and Vithub desire to establish a partnership to [BRIEFLY DESCRIBE THE PURPOSE OF THE PARTNERSHIP];<br/>WHEREAS, the parties wish to outline the terms and conditions of their partnership in this Agreement;</p>",
+        "text": "WHEREAS, Your Company and Vithub desire to establish a partnership to [BRIEFLY DESCRIBE THE PURPOSE OF THE PARTNERSHIP];\nWHEREAS, the parties wish to outline the terms and conditions of their partnership in this Agreement;"
+      },
+      {
+        "id": "block_1778776046359_hf7bgh",
+        "type": "paragraph",
+        "html": "<p>NOW, THEREFORE, in consideration of the mutual covenants and promises contained herein, the parties agree as follows:</p>",
+        "text": "NOW, THEREFORE, in consideration of the mutual covenants and promises contained herein, the parties agree as follows:"
+      },
+      {
+        "id": "block_1778776046359_qr8x3s",
+        "type": "paragraph",
+        "html": "<p>ARTICLE 1: DEFINITIONS</p>",
+        "text": "ARTICLE 1: DEFINITIONS"
+      },
+      {
+        "id": "block_1778776046359_4edkff",
+        "type": "paragraph",
+        "html": "<p>For the purposes of this Agreement, the following definitions shall apply:</p>",
+        "text": "For the purposes of this Agreement, the following definitions shall apply:"
+      },
+      {
+        "id": "block_1778776046359_7e3flf",
+        "type": "paragraph",
+        "html": "<p>* \"Partnership\" means the partnership established between Your Company and Vithub pursuant to this Agreement.<br/>* \"Partners\" means Your Company and Vithub collectively.<br/>* \"Partner\" means either Your Company or Vithub individually.</p>",
+        "text": "* \"Partnership\" means the partnership established between Your Company and Vithub pursuant to this Agreement.\n* \"Partners\" means Your Company and Vithub collectively.\n* \"Partner\" means either Your Company or Vithub individually."
+      },
+      {
+        "id": "block_1778776046359_1c904q",
+        "type": "paragraph",
+        "html": "<p>ARTICLE 2: PURPOSE AND SCOPE OF PARTNERSHIP</p>",
+        "text": "ARTICLE 2: PURPOSE AND SCOPE OF PARTNERSHIP"
+      },
+      {
+        "id": "block_1778776046359_tfta76",
+        "type": "paragraph",
+        "html": "<p>The purpose of the Partnership is to [DETAILED DESCRIPTION OF THE PURPOSE OF THE PARTNERSHIP]. The scope of the Partnership shall include [LIST THE SPECIFIC AREAS OF COOPERATION].</p>",
+        "text": "The purpose of the Partnership is to [DETAILED DESCRIPTION OF THE PURPOSE OF THE PARTNERSHIP]. The scope of the Partnership shall include [LIST THE SPECIFIC AREAS OF COOPERATION]."
+      },
+      {
+        "id": "block_1778776046359_qmax43",
+        "type": "paragraph",
+        "html": "<p>ARTICLE 3: RESPONSIBILITIES OF THE PARTNERS</p>",
+        "text": "ARTICLE 3: RESPONSIBILITIES OF THE PARTNERS"
+      },
+      {
+        "id": "block_1778776046359_cjbz0e",
+        "type": "paragraph",
+        "html": "<p>3.1 Your Company shall:<br/>\t* [LIST THE SPECIFIC RESPONSIBILITIES OF YOUR COMPANY]<br/>3.2 Vithub shall:<br/>\t* [LIST THE SPECIFIC RESPONSIBILITIES OF VITHUB]</p>",
+        "text": "3.1 Your Company shall:\n\t* [LIST THE SPECIFIC RESPONSIBILITIES OF YOUR COMPANY]\n3.2 Vithub shall:\n\t* [LIST THE SPECIFIC RESPONSIBILITIES OF VITHUB]"
+      },
+      {
+        "id": "block_1778776046359_pk1n9w",
+        "type": "paragraph",
+        "html": "<p>ARTICLE 4: TERM AND TERMINATION</p>",
+        "text": "ARTICLE 4: TERM AND TERMINATION"
+      },
+      {
+        "id": "block_1778776046359_litgf5",
+        "type": "paragraph",
+        "html": "<p>4.1 The term of this Agreement shall commence on the Effective Date and continue for a period of [LENGTH OF TIME].<br/>4.2 Either party may terminate this Agreement upon [NUMBER] days' written notice to the other party.<br/>4.3 Upon termination, the parties shall [DESCRIPTION OF THE OBLIGATIONS AFTER TERMINATION].</p>",
+        "text": "4.1 The term of this Agreement shall commence on the Effective Date and continue for a period of [LENGTH OF TIME].\n4.2 Either party may terminate this Agreement upon [NUMBER] days' written notice to the other party.\n4.3 Upon termination, the parties shall [DESCRIPTION OF THE OBLIGATIONS AFTER TERMINATION]."
+      },
+      {
+        "id": "block_1778776046359_bii9u9",
+        "type": "paragraph",
+        "html": "<p>ARTICLE 5: CONFIDENTIALITY</p>",
+        "text": "ARTICLE 5: CONFIDENTIALITY"
+      },
+      {
+        "id": "block_1778776046359_13syuh",
+        "type": "paragraph",
+        "html": "<p>The parties agree to maintain the confidentiality of all information and materials exchanged between them in connection with this Agreement.</p>",
+        "text": "The parties agree to maintain the confidentiality of all information and materials exchanged between them in connection with this Agreement."
+      },
+      {
+        "id": "block_1778776046360_vljy69",
+        "type": "paragraph",
+        "html": "<p>ARTICLE 6: INTELLECTUAL PROPERTY</p>",
+        "text": "ARTICLE 6: INTELLECTUAL PROPERTY"
+      },
+      {
+        "id": "block_1778776046360_cxsio0",
+        "type": "paragraph",
+        "html": "<p>6.1 Your Company and Vithub shall retain all rights to their respective intellectual property.<br/>6.2 The parties agree not to use each other's intellectual property without prior written consent.</p>",
+        "text": "6.1 Your Company and Vithub shall retain all rights to their respective intellectual property.\n6.2 The parties agree not to use each other's intellectual property without prior written consent."
+      },
+      {
+        "id": "block_1778776046360_7oe1sm",
+        "type": "paragraph",
+        "html": "<p>ARTICLE 7: DISPUTE RESOLUTION</p>",
+        "text": "ARTICLE 7: DISPUTE RESOLUTION"
+      },
+      {
+        "id": "block_1778776046360_l0qxav",
+        "type": "paragraph",
+        "html": "<p>Any disputes arising out of or in connection with this Agreement shall be resolved through [DESCRIPTION OF THE DISPUTE RESOLUTION PROCESS].</p>",
+        "text": "Any disputes arising out of or in connection with this Agreement shall be resolved through [DESCRIPTION OF THE DISPUTE RESOLUTION PROCESS]."
+      },
+      {
+        "id": "block_1778776046360_7oavu2",
+        "type": "paragraph",
+        "html": "<p>ARTICLE 8: GOVERNING LAW</p>",
+        "text": "ARTICLE 8: GOVERNING LAW"
+      },
+      {
+        "id": "block_1778776046360_n1i1ic",
+        "type": "paragraph",
+        "html": "<p>This Agreement shall be governed by and construed in accordance with the laws of [STATE/COUNTRY].</p>",
+        "text": "This Agreement shall be governed by and construed in accordance with the laws of [STATE/COUNTRY]."
+      },
+      {
+        "id": "block_1778776046360_x7gixz",
+        "type": "paragraph",
+        "html": "<p>By signing below, the parties acknowledge that they have read, understand, and agree to be bound by the terms and conditions of this Agreement.</p>",
+        "text": "By signing below, the parties acknowledge that they have read, understand, and agree to be bound by the terms and conditions of this Agreement."
+      },
+      {
+        "id": "block_1778776046360_x9rscf",
+        "type": "paragraph",
+        "html": "<p>YOUR COMPANY:</p>",
+        "text": "YOUR COMPANY:"
+      },
+      {
+        "id": "block_1778776046360_00nod0",
+        "type": "paragraph",
+        "html": "<p>Signature: _____________________________<br/>Name: __________________________________<br/>Title: __________________________________<br/>Date: __________________________________</p>",
+        "text": "Signature: _____________________________\nName: __________________________________\nTitle: __________________________________\nDate: __________________________________"
+      },
+      {
+        "id": "block_1778776046360_fg25jd",
+        "type": "paragraph",
+        "html": "<p>VITHUB:</p>",
+        "text": "VITHUB:"
+      },
+      {
+        "id": "block_1778776046360_bdroll",
+        "type": "paragraph",
+        "html": "<p>Signature: _____________________________<br/>Name: __________________________________<br/>Title: __________________________________<br/>Date: __________________________________</p>",
+        "text": "Signature: _____________________________\nName: __________________________________\nTitle: __________________________________\nDate: __________________________________"
+      }
+    ],
+    "html": "<h1>AGREEMENT FOR PARTNERSHIP BETWEEN [YOUR COMPANY NAME] AND VITHUB</h1>\n<div><p>This Agreement for Partnership (\"Agreement\") is entered into on [DATE] (\"Effective Date\") by and between [YOUR COMPANY NAME], a [STATE/COUNTRY] corporation with its principal place of business at [ADDRESS] (\"Your Company\"), and Vithub, a [STATE/COUNTRY] corporation with its principal place of business at [VITHUB ADDRESS] (\"Vithub\").</p></div>\n<div><p>RECITALS</p></div>\n<div><p>WHEREAS, Your Company and Vithub desire to establish a partnership to [BRIEFLY DESCRIBE THE PURPOSE OF THE PARTNERSHIP];<br/>WHEREAS, the parties wish to outline the terms and conditions of their partnership in this Agreement;</p></div>\n<div><p>NOW, THEREFORE, in consideration of the mutual covenants and promises contained herein, the parties agree as follows:</p></div>\n<div><p>ARTICLE 1: DEFINITIONS</p></div>\n<div><p>For the purposes of this Agreement, the following definitions shall apply:</p></div>\n<div><p>* \"Partnership\" means the partnership established between Your Company and Vithub pursuant to this Agreement.<br/>* \"Partners\" means Your Company and Vithub collectively.<br/>* \"Partner\" means either Your Company or Vithub individually.</p></div>\n<div><p>ARTICLE 2: PURPOSE AND SCOPE OF PARTNERSHIP</p></div>\n<div><p>The purpose of the Partnership is to [DETAILED DESCRIPTION OF THE PURPOSE OF THE PARTNERSHIP]. The scope of the Partnership shall include [LIST THE SPECIFIC AREAS OF COOPERATION].</p></div>\n<div><p>ARTICLE 3: RESPONSIBILITIES OF THE PARTNERS</p></div>\n<div><p>3.1 Your Company shall:<br/>\t* [LIST THE SPECIFIC RESPONSIBILITIES OF YOUR COMPANY]<br/>3.2 Vithub shall:<br/>\t* [LIST THE SPECIFIC RESPONSIBILITIES OF VITHUB]</p></div>\n<div><p>ARTICLE 4: TERM AND TERMINATION</p></div>\n<div><p>4.1 The term of this Agreement shall commence on the Effective Date and continue for a period of [LENGTH OF TIME].<br/>4.2 Either party may terminate this Agreement upon [NUMBER] days' written notice to the other party.<br/>4.3 Upon termination, the parties shall [DESCRIPTION OF THE OBLIGATIONS AFTER TERMINATION].</p></div>\n<div><p>ARTICLE 5: CONFIDENTIALITY</p></div>\n<div><p>The parties agree to maintain the confidentiality of all information and materials exchanged between them in connection with this Agreement.</p></div>\n<div><p>ARTICLE 6: INTELLECTUAL PROPERTY</p></div>\n<div><p>6.1 Your Company and Vithub shall retain all rights to their respective intellectual property.<br/>6.2 The parties agree not to use each other's intellectual property without prior written consent.</p></div>\n<div><p>ARTICLE 7: DISPUTE RESOLUTION</p></div>\n<div><p>Any disputes arising out of or in connection with this Agreement shall be resolved through [DESCRIPTION OF THE DISPUTE RESOLUTION PROCESS].</p></div>\n<div><p>ARTICLE 8: GOVERNING LAW</p></div>\n<div><p>This Agreement shall be governed by and construed in accordance with the laws of [STATE/COUNTRY].</p></div>\n<div><p>By signing below, the parties acknowledge that they have read, understand, and agree to be bound by the terms and conditions of this Agreement.</p></div>\n<div><p>YOUR COMPANY:</p></div>\n<div><p>Signature: _____________________________<br/>Name: __________________________________<br/>Title: __________________________________<br/>Date: __________________________________</p></div>\n<div><p>VITHUB:</p></div>\n<div><p>Signature: _____________________________<br/>Name: __________________________________<br/>Title: __________________________________<br/>Date: __________________________________</p></div>",
+    "plainText": "AGREEMENT FOR PARTNERSHIP BETWEEN [YOUR COMPANY NAME] AND VITHUB\n\n This Agreement for Partnership (\"Agreement\") is entered into on [DATE] (\"Effective Date\") by and between [YOUR COMPANY NAME], a [STATE/COUNTRY] corporation with its principal place of business at [ADDRESS] (\"Your Company\"), and Vithub, a [STATE/COUNTRY] corporation with its principal place of business at [VITHUB ADDRESS] (\"Vithub\").\n\n RECITALS\n\n WHEREAS, Your Company and Vithub desire to establish a partnership to [BRIEFLY DESCRIBE THE PURPOSE OF THE PARTNERSHIP];\nWHEREAS, the parties wish to outline the terms and conditions of their partnership in this Agreement;\n\n NOW, THEREFORE, in consideration of the mutual covenants and promises contained herein, the parties agree as follows:\n\n ARTICLE 1: DEFINITIONS\n\n For the purposes of this Agreement, the following definitions shall apply:\n\n * \"Partnership\" means the partnership established between Your Company and Vithub pursuant to this Agreement.\n* \"Partners\" means Your Company and Vithub collectively.\n* \"Partner\" means either Your Company or Vithub individually.\n\n ARTICLE 2: PURPOSE AND SCOPE OF PARTNERSHIP\n\n The purpose of the Partnership is to [DETAILED DESCRIPTION OF THE PURPOSE OF THE PARTNERSHIP]. The scope of the Partnership shall include [LIST THE SPECIFIC AREAS OF COOPERATION].\n\n ARTICLE 3: RESPONSIBILITIES OF THE PARTNERS\n\n 3.1 Your Company shall:\n\t* [LIST THE SPECIFIC RESPONSIBILITIES OF YOUR COMPANY]\n3.2 Vithub shall:\n\t* [LIST THE SPECIFIC RESPONSIBILITIES OF VITHUB]\n\n ARTICLE 4: TERM AND TERMINATION\n\n 4.1 The term of this Agreement shall commence on the Effective Date and continue for a period of [LENGTH OF TIME].\n4.2 Either party may terminate this Agreement upon [NUMBER] days' written notice to the other party.\n4.3 Upon termination, the parties shall [DESCRIPTION OF THE OBLIGATIONS AFTER TERMINATION].\n\n ARTICLE 5: CONFIDENTIALITY\n\n The parties agree to maintain the confidentiality of all information and materials exchanged between them in connection with this Agreement.\n\n ARTICLE 6: INTELLECTUAL PROPERTY\n\n 6.1 Your Company and Vithub shall retain all rights to their respective intellectual property.\n6.2 The parties agree not to use each other's intellectual property without prior written consent.\n\n ARTICLE 7: DISPUTE RESOLUTION\n\n Any disputes arising out of or in connection with this Agreement shall be resolved through [DESCRIPTION OF THE DISPUTE RESOLUTION PROCESS].\n\n ARTICLE 8: GOVERNING LAW\n\n This Agreement shall be governed by and construed in accordance with the laws of [STATE/COUNTRY].\n\n By signing below, the parties acknowledge that they have read, understand, and agree to be bound by the terms and conditions of this Agreement.\n\n YOUR COMPANY:\n\n Signature: _____________________________\nName: __________________________________\nTitle: __________________________________\nDate: __________________________________\n\n VITHUB:\n\n Signature: _____________________________\nName: __________________________________\nTitle: __________________________________\nDate: __________________________________",
+    "wordCount": 413,
+    "readTimeMinutes": 2,
+    "lastAiAction": "generate",
+    "shareMode": "private",
+    "sharedAccess": [],
+    "accessGroups": [],
+    "createdAt": "2026-05-14T16:25:24.445Z",
+    "updatedAt": "2026-05-14T16:27:33.075Z",
+    "versions": [
+      {
+        "id": "dwv-1778776053075-3tyf2a",
+        "title": "Untitled document",
+        "html": "<div><p>Start typing...</p></div>",
+        "plainText": "Start typing...",
+        "createdAt": "2026-05-14T16:27:33.075Z",
+        "source": "autosave"
+      },
+      {
+        "id": "dwv-1778775937299-ayt0fq",
+        "title": "Untitled document",
+        "html": "<div><p></p></div>",
+        "plainText": "",
+        "createdAt": "2026-05-14T16:25:37.291Z",
+        "source": "manual"
+      }
+    ]
+  },
+  {
+    "id": "dwd-1778744581252-qoaldx",
+    "ownerUserId": "individual-1778744127141",
+    "ownerEmail": "ramesh@yopmail.com",
+    "title": "Untitled document",
+    "emoji": "✍️",
+    "isFavorite": false,
+    "folderName": "General",
+    "documentTheme": "classic",
+    "requireSignature": false,
+    "signatures": [],
+    "trackChangesEnabled": false,
+    "trackedChanges": [],
+    "selectionComments": [],
+    "blocks": [
+      {
+        "id": "dwb-1778744581249-lxb6fp",
+        "type": "paragraph",
+        "html": "asd<p></p>",
+        "text": "asd"
+      }
+    ],
+    "html": "<div>asd<p></p></div>",
+    "plainText": "asd",
+    "wordCount": 1,
+    "readTimeMinutes": 1,
+    "shareMode": "private",
+    "sharedAccess": [],
+    "accessGroups": [],
+    "createdAt": "2026-05-14T07:43:01.252Z",
+    "updatedAt": "2026-05-14T09:45:54.307Z",
+    "versions": [
+      {
+        "id": "dwv-1778751954307-g39i1l",
+        "title": "Untitled document",
+        "html": "<div><p></p></div>",
+        "plainText": "",
+        "createdAt": "2026-05-14T09:45:54.307Z",
+        "source": "autosave"
+      }
+    ]
+  },
+  {
+    "id": "dwd-1778744581176-cuhu5b",
+    "ownerUserId": "individual-1778744127141",
+    "ownerEmail": "ramesh@yopmail.com",
+    "title": "Untitled document",
+    "emoji": "✍️",
+    "isFavorite": false,
+    "folderName": "General",
+    "documentTheme": "classic",
+    "requireSignature": false,
+    "signatures": [],
+    "trackChangesEnabled": false,
+    "trackedChanges": [],
+    "selectionComments": [],
+    "blocks": [
+      {
+        "id": "dwb-1778744581173-n381d6",
+        "type": "paragraph",
+        "html": "<p></p>",
+        "text": ""
+      }
+    ],
+    "html": "<div><p></p></div>",
+    "plainText": "",
+    "wordCount": 0,
+    "readTimeMinutes": 1,
+    "shareMode": "private",
+    "sharedAccess": [],
+    "accessGroups": [],
+    "createdAt": "2026-05-14T07:43:01.176Z",
+    "updatedAt": "2026-05-14T07:43:01.176Z",
+    "versions": []
+  },
+  {
+    "id": "dwd-1778706269175-jitpfo",
+    "ownerUserId": "1",
+    "ownerEmail": "admin@company.com",
+    "title": "Untitled document",
+    "emoji": "✍️",
+    "isFavorite": false,
+    "folderName": "General",
+    "documentTheme": "classic",
+    "requireSignature": true,
+    "signatures": [],
+    "trackChangesEnabled": false,
+    "trackedChanges": [],
+    "selectionComments": [],
+    "blocks": [
+      {
+        "id": "dwb-1778706281644-1ujatw",
+        "type": "paragraph",
+        "html": "<p>Start typing...</p>",
+        "text": "Start typing..."
+      }
+    ],
+    "html": "<div><p>Start typing...</p></div>",
+    "plainText": "Start typing...",
+    "wordCount": 2,
+    "readTimeMinutes": 1,
+    "shareMode": "private",
+    "sharedAccess": [],
+    "accessGroups": [],
+    "createdAt": "2026-05-13T21:04:29.174Z",
+    "updatedAt": "2026-05-13T21:04:41.644Z",
+    "versions": [
+      {
+        "id": "dwv-1778706281644-fyleog",
+        "title": "Untitled document",
+        "html": "<div><p></p></div>",
+        "plainText": "",
+        "createdAt": "2026-05-13T21:04:41.644Z",
+        "source": "manual"
+      }
+    ]
+  },
+  {
+    "id": "dwd-1778605466596-uu568w",
+    "ownerUserId": "individual-1778601331383",
+    "ownerEmail": "shashank@corescent.in",
+    "title": "proposal_VSY",
+    "emoji": "📁",
+    "isFavorite": false,
+    "folderName": "Corescent",
+    "summary": "Docai drafted this document from chat.",
+    "documentTheme": "classic",
+    "requireSignature": false,
+    "signatures": [],
+    "trackChangesEnabled": false,
+    "trackedChanges": [],
+    "selectionComments": [],
+    "blocks": [
+      {
+        "id": "block_1778608809230_60vufb",
+        "type": "paragraph",
+        "html": "<p>Mahendra Singh Dhoni, commonly known as MS Dhoni, is one of the most successful and revered cricketers in the history of the sport. Born on July 7, 1981, in Ranchi, Jharkhand, India, Dhoni rose to prominence with his exceptional wicket-keeping skills and powerful batting. His impressive career has been marked by numerous records, accolades, and a legacy that continues to inspire aspiring cricketers worldwide.</p>",
+        "text": "Mahendra Singh Dhoni, commonly known as MS Dhoni, is one of the most successful and revered cricketers in the history of the sport. Born on July 7, 1981, in Ranchi, Jharkhand, India, Dhoni rose to prominence with his exceptional wicket-keeping skills and powerful batting. His impressive career has been marked by numerous records, accolades, and a legacy that continues to inspire aspiring cricketers worldwide."
+      },
+      {
+        "id": "block_1778608809230_hfuao6",
+        "type": "paragraph",
+        "html": "<p>Dhoni's journey in cricket began at a young age, and he quickly made a name for himself in the domestic circuit. His impressive performances in the Ranji Trophy and other domestic tournaments caught the attention of the national selectors, and he made his international debut in 2004. Since then, Dhoni has been an integral part of the Indian cricket team, playing a crucial role in the team's success in various formats of the game.</p>",
+        "text": "Dhoni's journey in cricket began at a young age, and he quickly made a name for himself in the domestic circuit. His impressive performances in the Ranji Trophy and other domestic tournaments caught the attention of the national selectors, and he made his international debut in 2004. Since then, Dhoni has been an integral part of the Indian cricket team, playing a crucial role in the team's success in various formats of the game."
+      },
+      {
+        "id": "block_1778608809230_3473uj",
+        "type": "paragraph",
+        "html": "<p>One of Dhoni's most significant contributions to Indian cricket has been his leadership. He took over as the captain of the Indian team in 2007 and led the team to numerous victories, including the 2007 ICC World Twenty20 and the 2011 ICC Cricket World Cup. Under his captaincy, India became the number one team in the ICC Test rankings and won several bilateral series. Dhoni's leadership style, which emphasizes teamwork, strategy, and adaptability, has been widely praised by his peers and critics alike.</p>",
+        "text": "One of Dhoni's most significant contributions to Indian cricket has been his leadership. He took over as the captain of the Indian team in 2007 and led the team to numerous victories, including the 2007 ICC World Twenty20 and the 2011 ICC Cricket World Cup. Under his captaincy, India became the number one team in the ICC Test rankings and won several bilateral series. Dhoni's leadership style, which emphasizes teamwork, strategy, and adaptability, has been widely praised by his peers and critics alike."
+      },
+      {
+        "id": "block_1778608809230_s8e5k2",
+        "type": "paragraph",
+        "html": "<p>Dhoni's on-field accomplishments are equally impressive. He is known for his exceptional wicket-keeping skills, which have earned him a reputation as one of the best wicket-keepers in the world. His batting skills are equally impressive, and he has scored numerous centuries and half-centuries in international cricket. Dhoni's ability to finish matches with his powerful hitting has made him a fan favorite, and his iconic helicopter shot has become a signature move.</p>",
+        "text": "Dhoni's on-field accomplishments are equally impressive. He is known for his exceptional wicket-keeping skills, which have earned him a reputation as one of the best wicket-keepers in the world. His batting skills are equally impressive, and he has scored numerous centuries and half-centuries in international cricket. Dhoni's ability to finish matches with his powerful hitting has made him a fan favorite, and his iconic helicopter shot has become a signature move."
+      },
+      {
+        "id": "block_1778608809230_hklxki",
+        "type": "paragraph",
+        "html": "<p>Off the field, Dhoni is known for his humility, simplicity, and down-to-earth nature. He is widely respected for his philanthropic work, particularly in the field of education and healthcare. Dhoni has been involved in several charitable initiatives, including the establishment of a cricket academy in Ranchi, which provides training and support to young cricketers from underprivileged backgrounds.</p>",
+        "text": "Off the field, Dhoni is known for his humility, simplicity, and down-to-earth nature. He is widely respected for his philanthropic work, particularly in the field of education and healthcare. Dhoni has been involved in several charitable initiatives, including the establishment of a cricket academy in Ranchi, which provides training and support to young cricketers from underprivileged backgrounds."
+      },
+      {
+        "id": "block_1778608809230_ib7bm5",
+        "type": "paragraph",
+        "html": "<p>In conclusion, MS Dhoni is a cricketing legend who has left an indelible mark on the sport. His impressive career, leadership skills, and philanthropic work have made him a role model for millions of fans around the world. As he continues to play and inspire a new generation of cricketers, Dhoni's legacy will undoubtedly endure for years to come. His contributions to Indian cricket have been immense, and he will always be remembered as one of the greatest cricketers to have ever played the game.</p>",
+        "text": "In conclusion, MS Dhoni is a cricketing legend who has left an indelible mark on the sport. His impressive career, leadership skills, and philanthropic work have made him a role model for millions of fans around the world. As he continues to play and inspire a new generation of cricketers, Dhoni's legacy will undoubtedly endure for years to come. His contributions to Indian cricket have been immense, and he will always be remembered as one of the greatest cricketers to have ever played the game."
+      }
+    ],
+    "html": "<div><p>Mahendra Singh Dhoni, commonly known as MS Dhoni, is one of the most successful and revered cricketers in the history of the sport. Born on July 7, 1981, in Ranchi, Jharkhand, India, Dhoni rose to prominence with his exceptional wicket-keeping skills and powerful batting. His impressive career has been marked by numerous records, accolades, and a legacy that continues to inspire aspiring cricketers worldwide.</p></div>\n<div><p>Dhoni's journey in cricket began at a young age, and he quickly made a name for himself in the domestic circuit. His impressive performances in the Ranji Trophy and other domestic tournaments caught the attention of the national selectors, and he made his international debut in 2004. Since then, Dhoni has been an integral part of the Indian cricket team, playing a crucial role in the team's success in various formats of the game.</p></div>\n<div><p>One of Dhoni's most significant contributions to Indian cricket has been his leadership. He took over as the captain of the Indian team in 2007 and led the team to numerous victories, including the 2007 ICC World Twenty20 and the 2011 ICC Cricket World Cup. Under his captaincy, India became the number one team in the ICC Test rankings and won several bilateral series. Dhoni's leadership style, which emphasizes teamwork, strategy, and adaptability, has been widely praised by his peers and critics alike.</p></div>\n<div><p>Dhoni's on-field accomplishments are equally impressive. He is known for his exceptional wicket-keeping skills, which have earned him a reputation as one of the best wicket-keepers in the world. His batting skills are equally impressive, and he has scored numerous centuries and half-centuries in international cricket. Dhoni's ability to finish matches with his powerful hitting has made him a fan favorite, and his iconic helicopter shot has become a signature move.</p></div>\n<div><p>Off the field, Dhoni is known for his humility, simplicity, and down-to-earth nature. He is widely respected for his philanthropic work, particularly in the field of education and healthcare. Dhoni has been involved in several charitable initiatives, including the establishment of a cricket academy in Ranchi, which provides training and support to young cricketers from underprivileged backgrounds.</p></div>\n<div><p>In conclusion, MS Dhoni is a cricketing legend who has left an indelible mark on the sport. His impressive career, leadership skills, and philanthropic work have made him a role model for millions of fans around the world. As he continues to play and inspire a new generation of cricketers, Dhoni's legacy will undoubtedly endure for years to come. His contributions to Indian cricket have been immense, and he will always be remembered as one of the greatest cricketers to have ever played the game.</p></div>",
+    "plainText": "Mahendra Singh Dhoni, commonly known as MS Dhoni, is one of the most successful and revered cricketers in the history of the sport. Born on July 7, 1981, in Ranchi, Jharkhand, India, Dhoni rose to prominence with his exceptional wicket-keeping skills and powerful batting. His impressive career has been marked by numerous records, accolades, and a legacy that continues to inspire aspiring cricketers worldwide.\n\n Dhoni's journey in cricket began at a young age, and he quickly made a name for himself in the domestic circuit. His impressive performances in the Ranji Trophy and other domestic tournaments caught the attention of the national selectors, and he made his international debut in 2004. Since then, Dhoni has been an integral part of the Indian cricket team, playing a crucial role in the team's success in various formats of the game.\n\n One of Dhoni's most significant contributions to Indian cricket has been his leadership. He took over as the captain of the Indian team in 2007 and led the team to numerous victories, including the 2007 ICC World Twenty20 and the 2011 ICC Cricket World Cup. Under his captaincy, India became the number one team in the ICC Test rankings and won several bilateral series. Dhoni's leadership style, which emphasizes teamwork, strategy, and adaptability, has been widely praised by his peers and critics alike.\n\n Dhoni's on-field accomplishments are equally impressive. He is known for his exceptional wicket-keeping skills, which have earned him a reputation as one of the best wicket-keepers in the world. His batting skills are equally impressive, and he has scored numerous centuries and half-centuries in international cricket. Dhoni's ability to finish matches with his powerful hitting has made him a fan favorite, and his iconic helicopter shot has become a signature move.\n\n Off the field, Dhoni is known for his humility, simplicity, and down-to-earth nature. He is widely respected for his philanthropic work, particularly in the field of education and healthcare. Dhoni has been involved in several charitable initiatives, including the establishment of a cricket academy in Ranchi, which provides training and support to young cricketers from underprivileged backgrounds.\n\n In conclusion, MS Dhoni is a cricketing legend who has left an indelible mark on the sport. His impressive career, leadership skills, and philanthropic work have made him a role model for millions of fans around the world. As he continues to play and inspire a new generation of cricketers, Dhoni's legacy will undoubtedly endure for years to come. His contributions to Indian cricket have been immense, and he will always be remembered as one of the greatest cricketers to have ever played the game.",
+    "wordCount": 434,
+    "readTimeMinutes": 2,
+    "lastAiAction": "generate",
+    "shareMode": "private",
+    "sharedAccess": [],
+    "accessGroups": [],
+    "createdAt": "2026-05-12T17:04:26.596Z",
+    "updatedAt": "2026-05-12T18:00:14.648Z",
+    "versions": [
+      {
+        "id": "dwv-1778608814648-a6zr98",
+        "title": "proposal_VSY",
+        "html": "<div><p></p></div>",
+        "plainText": "",
+        "createdAt": "2026-05-12T18:00:14.648Z",
+        "source": "autosave"
+      },
+      {
+        "id": "dwv-1778605481225-kcey02",
+        "title": "Untitled document",
+        "html": "<div><p></p></div>",
+        "plainText": "",
+        "createdAt": "2026-05-12T17:04:41.225Z",
+        "source": "autosave"
+      }
+    ]
+  },
+  {
+    "id": "dwd-1778602188911-prnc4g",
+    "ownerUserId": "individual-1778601331383",
+    "ownerEmail": "shashank@corescent.in",
+    "title": "Untitled document",
+    "emoji": "✍️",
+    "isFavorite": false,
+    "folderName": "General",
+    "summary": "Docai drafted this document from chat.",
+    "documentTheme": "classic",
+    "requireSignature": false,
+    "signatures": [],
+    "trackChangesEnabled": false,
+    "trackedChanges": [],
+    "selectionComments": [],
+    "blocks": [
+      {
+        "id": "block_1778604314562_nxs3ne",
+        "type": "paragraph",
+        "html": "<p>Mahendra Singh Dhoni, commonly known as MS Dhoni, is a former Indian international cricketer who is widely regarded as one of the greatest wicket-keeper batsmen and captains in the history of the sport. Born on July 7, 1981, in Ranchi, Bihar (now Jharkhand), India, Dhoni's life is a testament to his hard work, dedication, and passion for cricket.</p>",
+        "text": "Mahendra Singh Dhoni, commonly known as MS Dhoni, is a former Indian international cricketer who is widely regarded as one of the greatest wicket-keeper batsmen and captains in the history of the sport. Born on July 7, 1981, in Ranchi, Bihar (now Jharkhand), India, Dhoni's life is a testament to his hard work, dedication, and passion for cricket."
+      },
+      {
+        "id": "block_1778604314562_8hn5qd",
+        "type": "paragraph",
+        "html": "<p>Dhoni was born to Pan Singh and Devaki Devi, with a sister named Jayanti and a brother named Narendra. His dad worked at MECON limited, a company that made machinery for the steel industry. The family lived in a modest house in Ranchi's Shyamali colony, where his parents encouraged his love for sports from a young age.</p>",
+        "text": "Dhoni was born to Pan Singh and Devaki Devi, with a sister named Jayanti and a brother named Narendra. His dad worked at MECON limited, a company that made machinery for the steel industry. The family lived in a modest house in Ranchi's Shyamali colony, where his parents encouraged his love for sports from a young age."
+      },
+      {
+        "id": "block_1778604314562_ofeott",
+        "type": "paragraph",
+        "html": "<p>Dhoni attended the DAV Jawahar Vidya Mandir school in Shyamali, where he excelled in cricket, football, and badminton. He was an average student but was always passionate about sports, and his parents supported his interests. Dhoni's talent and dedication earned him a spot in the school's cricket team, and he soon became a key player.</p>",
+        "text": "Dhoni attended the DAV Jawahar Vidya Mandir school in Shyamali, where he excelled in cricket, football, and badminton. He was an average student but was always passionate about sports, and his parents supported his interests. Dhoni's talent and dedication earned him a spot in the school's cricket team, and he soon became a key player."
+      },
+      {
+        "id": "block_1778604314562_0jakmn",
+        "type": "paragraph",
+        "html": "<p>Career<br/>Dhoni's cricket career began in 1998 when he played for the Central Coal Fields Limited (CCL) team in the Vinoo Mankad Trophy Under-16 championship. He impressed the selectors with his wicket-keeping skills and batting ability, and soon he was selected to play for the Bihar Under-19 team. Dhoni's performance in the Under-19 team earned him a spot in the East Zone squad for the Deodhar Trophy, and he eventually made his first-class debut for Bihar in 1999-2000.</p>",
+        "text": "Career\nDhoni's cricket career began in 1998 when he played for the Central Coal Fields Limited (CCL) team in the Vinoo Mankad Trophy Under-16 championship. He impressed the selectors with his wicket-keeping skills and batting ability, and soon he was selected to play for the Bihar Under-19 team. Dhoni's performance in the Under-19 team earned him a spot in the East Zone squad for the Deodhar Trophy, and he eventually made his first-class debut for Bihar in 1999-2000."
+      },
+      {
+        "id": "block_1778604314562_c80akl",
+        "type": "paragraph",
+        "html": "<p>Dhoni's breakthrough came in 2004 when he was selected to play for the Indian national team. He made his One Day International (ODI) debut against Bangladesh on December 23, 2004, and his Test debut against Sri Lanka on December 2, 2005. Dhoni's impressive performance in the 2005-06 season earned him a spot in the Indian team for the 2007 ICC Cricket World Cup.</p>",
+        "text": "Dhoni's breakthrough came in 2004 when he was selected to play for the Indian national team. He made his One Day International (ODI) debut against Bangladesh on December 23, 2004, and his Test debut against Sri Lanka on December 2, 2005. Dhoni's impressive performance in the 2005-06 season earned him a spot in the Indian team for the 2007 ICC Cricket World Cup."
+      },
+      {
+        "id": "block_1778604314562_v84ruu",
+        "type": "paragraph",
+        "html": "<p>Under Dhoni's captaincy, the Indian team won several major tournaments, including the 2007 ICC World Twenty20, the 2011 ICC Cricket World Cup, and the 2013 ICC Champions Trophy. Dhoni is also the only captain to have won all three ICC trophies. He announced his retirement from Test cricket in 2014 but continued to play ODIs and Twenty20 Internationals (T20Is) until his retirement from international cricket in 2020.</p>",
+        "text": "Under Dhoni's captaincy, the Indian team won several major tournaments, including the 2007 ICC World Twenty20, the 2011 ICC Cricket World Cup, and the 2013 ICC Champions Trophy. Dhoni is also the only captain to have won all three ICC trophies. He announced his retirement from Test cricket in 2014 but continued to play ODIs and Twenty20 Internationals (T20Is) until his retirement from international cricket in 2020."
+      },
+      {
+        "id": "block_1778604314562_mhdd02",
+        "type": "paragraph",
+        "html": "<p>Awards and Achievements<br/>Dhoni has received numerous awards and accolades throughout his career. Some of his notable awards include:</p>",
+        "text": "Awards and Achievements\nDhoni has received numerous awards and accolades throughout his career. Some of his notable awards include:"
+      },
+      {
+        "id": "block_1778604314562_okhn3k",
+        "type": "paragraph",
+        "html": "<p>* ICC ODI Player of the Year (2008, 2009)<br/>* ICC World ODI XI (2006, 2008, 2009, 2010, 2011, 2012, 2013, 2014)<br/>* ICC World Test XI (2009, 2010, 2011, 2013)<br/>* Padma Bhushan (2018)<br/>* Padma Shri (2009)<br/>* Major Dhyan Chand Khel Ratna (2007)</p>",
+        "text": "* ICC ODI Player of the Year (2008, 2009)\n* ICC World ODI XI (2006, 2008, 2009, 2010, 2011, 2012, 2013, 2014)\n* ICC World Test XI (2009, 2010, 2011, 2013)\n* Padma Bhushan (2018)\n* Padma Shri (2009)\n* Major Dhyan Chand Khel Ratna (2007)"
+      },
+      {
+        "id": "block_1778604314562_bu93b8",
+        "type": "paragraph",
+        "html": "<p>Personal Life<br/>Dhoni married Sakshi Singh Rawat in 2010, and they have a daughter, Ziva, born in 2015. Dhoni is known for his calm and composed demeanor on and off the field, and he is widely respected for his leadership and sportsmanship. He is also a successful entrepreneur and has invested in several businesses, including a chain of gyms, a production company, and a sports management company.</p>",
+        "text": "Personal Life\nDhoni married Sakshi Singh Rawat in 2010, and they have a daughter, Ziva, born in 2015. Dhoni is known for his calm and composed demeanor on and off the field, and he is widely respected for his leadership and sportsmanship. He is also a successful entrepreneur and has invested in several businesses, including a chain of gyms, a production company, and a sports management company."
+      },
+      {
+        "id": "block_1778604314562_lzshkd",
+        "type": "paragraph",
+        "html": "<p>Philanthropy<br/>Dhoni is involved in several charitable initiatives, including the MS Dhoni Charitable Foundation, which supports education, healthcare, and sports development programs for underprivileged children. He has also supported several other charitable causes, including the Indian Army's welfare fund and the Chennai-based NGO, the Akshaya Trust.</p>",
+        "text": "Philanthropy\nDhoni is involved in several charitable initiatives, including the MS Dhoni Charitable Foundation, which supports education, healthcare, and sports development programs for underprivileged children. He has also supported several other charitable causes, including the Indian Army's welfare fund and the Chennai-based NGO, the Akshaya Trust."
+      },
+      {
+        "id": "block_1778604314562_fw4u19",
+        "type": "paragraph",
+        "html": "<p>Legacy<br/>MS Dhoni's legacy extends beyond his on-field achievements. He has inspired a generation of cricketers and sports enthusiasts with his dedication, hard work, and passion for the sport. Dhoni's leadership and sportsmanship have set a high standard for cricketers, and his philanthropic efforts have made a positive impact on the lives of many people. As a cricketer, entrepreneur, and philanthropist, MS Dhoni is a true icon and a role model for millions of people around the world.</p>",
+        "text": "Legacy\nMS Dhoni's legacy extends beyond his on-field achievements. He has inspired a generation of cricketers and sports enthusiasts with his dedication, hard work, and passion for the sport. Dhoni's leadership and sportsmanship have set a high standard for cricketers, and his philanthropic efforts have made a positive impact on the lives of many people. As a cricketer, entrepreneur, and philanthropist, MS Dhoni is a true icon and a role model for millions of people around the world."
+      }
+    ],
+    "html": "<div><p>Mahendra Singh Dhoni, commonly known as MS Dhoni, is a former Indian international cricketer who is widely regarded as one of the greatest wicket-keeper batsmen and captains in the history of the sport. Born on July 7, 1981, in Ranchi, Bihar (now Jharkhand), India, Dhoni's life is a testament to his hard work, dedication, and passion for cricket.</p></div>\n<div><p>Dhoni was born to Pan Singh and Devaki Devi, with a sister named Jayanti and a brother named Narendra. His dad worked at MECON limited, a company that made machinery for the steel industry. The family lived in a modest house in Ranchi's Shyamali colony, where his parents encouraged his love for sports from a young age.</p></div>\n<div><p>Dhoni attended the DAV Jawahar Vidya Mandir school in Shyamali, where he excelled in cricket, football, and badminton. He was an average student but was always passionate about sports, and his parents supported his interests. Dhoni's talent and dedication earned him a spot in the school's cricket team, and he soon became a key player.</p></div>\n<div><p>Career<br/>Dhoni's cricket career began in 1998 when he played for the Central Coal Fields Limited (CCL) team in the Vinoo Mankad Trophy Under-16 championship. He impressed the selectors with his wicket-keeping skills and batting ability, and soon he was selected to play for the Bihar Under-19 team. Dhoni's performance in the Under-19 team earned him a spot in the East Zone squad for the Deodhar Trophy, and he eventually made his first-class debut for Bihar in 1999-2000.</p></div>\n<div><p>Dhoni's breakthrough came in 2004 when he was selected to play for the Indian national team. He made his One Day International (ODI) debut against Bangladesh on December 23, 2004, and his Test debut against Sri Lanka on December 2, 2005. Dhoni's impressive performance in the 2005-06 season earned him a spot in the Indian team for the 2007 ICC Cricket World Cup.</p></div>\n<div><p>Under Dhoni's captaincy, the Indian team won several major tournaments, including the 2007 ICC World Twenty20, the 2011 ICC Cricket World Cup, and the 2013 ICC Champions Trophy. Dhoni is also the only captain to have won all three ICC trophies. He announced his retirement from Test cricket in 2014 but continued to play ODIs and Twenty20 Internationals (T20Is) until his retirement from international cricket in 2020.</p></div>\n<div><p>Awards and Achievements<br/>Dhoni has received numerous awards and accolades throughout his career. Some of his notable awards include:</p></div>\n<div><p>* ICC ODI Player of the Year (2008, 2009)<br/>* ICC World ODI XI (2006, 2008, 2009, 2010, 2011, 2012, 2013, 2014)<br/>* ICC World Test XI (2009, 2010, 2011, 2013)<br/>* Padma Bhushan (2018)<br/>* Padma Shri (2009)<br/>* Major Dhyan Chand Khel Ratna (2007)</p></div>\n<div><p>Personal Life<br/>Dhoni married Sakshi Singh Rawat in 2010, and they have a daughter, Ziva, born in 2015. Dhoni is known for his calm and composed demeanor on and off the field, and he is widely respected for his leadership and sportsmanship. He is also a successful entrepreneur and has invested in several businesses, including a chain of gyms, a production company, and a sports management company.</p></div>\n<div><p>Philanthropy<br/>Dhoni is involved in several charitable initiatives, including the MS Dhoni Charitable Foundation, which supports education, healthcare, and sports development programs for underprivileged children. He has also supported several other charitable causes, including the Indian Army's welfare fund and the Chennai-based NGO, the Akshaya Trust.</p></div>\n<div><p>Legacy<br/>MS Dhoni's legacy extends beyond his on-field achievements. He has inspired a generation of cricketers and sports enthusiasts with his dedication, hard work, and passion for the sport. Dhoni's leadership and sportsmanship have set a high standard for cricketers, and his philanthropic efforts have made a positive impact on the lives of many people. As a cricketer, entrepreneur, and philanthropist, MS Dhoni is a true icon and a role model for millions of people around the world.</p></div>",
+    "plainText": "Mahendra Singh Dhoni, commonly known as MS Dhoni, is a former Indian international cricketer who is widely regarded as one of the greatest wicket-keeper batsmen and captains in the history of the sport. Born on July 7, 1981, in Ranchi, Bihar (now Jharkhand), India, Dhoni's life is a testament to his hard work, dedication, and passion for cricket.\n\n Dhoni was born to Pan Singh and Devaki Devi, with a sister named Jayanti and a brother named Narendra. His dad worked at MECON limited, a company that made machinery for the steel industry. The family lived in a modest house in Ranchi's Shyamali colony, where his parents encouraged his love for sports from a young age.\n\n Dhoni attended the DAV Jawahar Vidya Mandir school in Shyamali, where he excelled in cricket, football, and badminton. He was an average student but was always passionate about sports, and his parents supported his interests. Dhoni's talent and dedication earned him a spot in the school's cricket team, and he soon became a key player.\n\n Career\nDhoni's cricket career began in 1998 when he played for the Central Coal Fields Limited (CCL) team in the Vinoo Mankad Trophy Under-16 championship. He impressed the selectors with his wicket-keeping skills and batting ability, and soon he was selected to play for the Bihar Under-19 team. Dhoni's performance in the Under-19 team earned him a spot in the East Zone squad for the Deodhar Trophy, and he eventually made his first-class debut for Bihar in 1999-2000.\n\n Dhoni's breakthrough came in 2004 when he was selected to play for the Indian national team. He made his One Day International (ODI) debut against Bangladesh on December 23, 2004, and his Test debut against Sri Lanka on December 2, 2005. Dhoni's impressive performance in the 2005-06 season earned him a spot in the Indian team for the 2007 ICC Cricket World Cup.\n\n Under Dhoni's captaincy, the Indian team won several major tournaments, including the 2007 ICC World Twenty20, the 2011 ICC Cricket World Cup, and the 2013 ICC Champions Trophy. Dhoni is also the only captain to have won all three ICC trophies. He announced his retirement from Test cricket in 2014 but continued to play ODIs and Twenty20 Internationals (T20Is) until his retirement from international cricket in 2020.\n\n Awards and Achievements\nDhoni has received numerous awards and accolades throughout his career. Some of his notable awards include:\n\n * ICC ODI Player of the Year (2008, 2009)\n* ICC World ODI XI (2006, 2008, 2009, 2010, 2011, 2012, 2013, 2014)\n* ICC World Test XI (2009, 2010, 2011, 2013)\n* Padma Bhushan (2018)\n* Padma Shri (2009)\n* Major Dhyan Chand Khel Ratna (2007)\n\n Personal Life\nDhoni married Sakshi Singh Rawat in 2010, and they have a daughter, Ziva, born in 2015. Dhoni is known for his calm and composed demeanor on and off the field, and he is widely respected for his leadership and sportsmanship. He is also a successful entrepreneur and has invested in several businesses, including a chain of gyms, a production company, and a sports management company.\n\n Philanthropy\nDhoni is involved in several charitable initiatives, including the MS Dhoni Charitable Foundation, which supports education, healthcare, and sports development programs for underprivileged children. He has also supported several other charitable causes, including the Indian Army's welfare fund and the Chennai-based NGO, the Akshaya Trust.\n\n Legacy\nMS Dhoni's legacy extends beyond his on-field achievements. He has inspired a generation of cricketers and sports enthusiasts with his dedication, hard work, and passion for the sport. Dhoni's leadership and sportsmanship have set a high standard for cricketers, and his philanthropic efforts have made a positive impact on the lives of many people. As a cricketer, entrepreneur, and philanthropist, MS Dhoni is a true icon and a role model for millions of people around the world.",
+    "wordCount": 634,
+    "readTimeMinutes": 3,
+    "lastAiAction": "generate",
+    "shareMode": "private",
+    "sharedAccess": [],
+    "accessGroups": [],
+    "createdAt": "2026-05-12T16:09:48.911Z",
+    "updatedAt": "2026-05-12T16:50:51.203Z",
+    "versions": [
+      {
+        "id": "dwv-1778604651204-jnb72a",
+        "title": "Untitled document",
+        "html": "<div><p>Mahendra Singh Dhoni, commonly known as MS Dhoni, is a former Indian international cricketer who is widely regarded as one of the greatest wicket-keeper batsmen and captains in the history of the sport. Born on July 7, 1981, in Ranchi, Bihar (now Jharkhand), India, Dhoni's life is a testament to his hard work, dedication, and passion for cricket.</p></div>\n<div><p>Early Life and Education<br/>Dhoni was born to Pan Singh and Devaki Devi, and he has a sister, Jayanti, and a brother, Narendra. His father worked as a pump operator at the MECON limited, a public sector undertaking that manufactures machinery and equipment for the steel industry. Dhoni's family lived in a modest house in the Shyamali colony of Ranchi, and his parents encouraged his interest in sports from an early age.</p></div>\n<div><p>Dhoni attended the DAV Jawahar Vidya Mandir school in Shyamali, where he excelled in cricket, football, and badminton. He was an average student but was always passionate about sports, and his parents supported his interests. Dhoni's talent and dedication earned him a spot in the school's cricket team, and he soon became a key player.</p></div>\n<div><p>Career<br/>Dhoni's cricket career began in 1998 when he played for the Central Coal Fields Limited (CCL) team in the Vinoo Mankad Trophy Under-16 championship. He impressed the selectors with his wicket-keeping skills and batting ability, and soon he was selected to play for the Bihar Under-19 team. Dhoni's performance in the Under-19 team earned him a spot in the East Zone squad for the Deodhar Trophy, and he eventually made his first-class debut for Bihar in 1999-2000.</p></div>\n<div><p>Dhoni's breakthrough came in 2004 when he was selected to play for the Indian national team. He made his One Day International (ODI) debut against Bangladesh on December 23, 2004, and his Test debut against Sri Lanka on December 2, 2005. Dhoni's impressive performance in the 2005-06 season earned him a spot in the Indian team for the 2007 ICC Cricket World Cup.</p></div>\n<div><p>Under Dhoni's captaincy, the Indian team won several major tournaments, including the 2007 ICC World Twenty20, the 2011 ICC Cricket World Cup, and the 2013 ICC Champions Trophy. Dhoni is also the only captain to have won all three ICC trophies. He announced his retirement from Test cricket in 2014 but continued to play ODIs and Twenty20 Internationals (T20Is) until his retirement from international cricket in 2020.</p></div>\n<div><p>Awards and Achievements<br/>Dhoni has received numerous awards and accolades throughout his career. Some of his notable awards include:</p></div>\n<div><p>* ICC ODI Player of the Year (2008, 2009)<br/>* ICC World ODI XI (2006, 2008, 2009, 2010, 2011, 2012, 2013, 2014)<br/>* ICC World Test XI (2009, 2010, 2011, 2013)<br/>* Padma Bhushan (2018)<br/>* Padma Shri (2009)<br/>* Major Dhyan Chand Khel Ratna (2007)</p></div>\n<div><p>Personal Life<br/>Dhoni married Sakshi Singh Rawat in 2010, and they have a daughter, Ziva, born in 2015. Dhoni is known for his calm and composed demeanor on and off the field, and he is widely respected for his leadership and sportsmanship. He is also a successful entrepreneur and has invested in several businesses, including a chain of gyms, a production company, and a sports management company.</p></div>\n<div><p>Philanthropy<br/>Dhoni is involved in several charitable initiatives, including the MS Dhoni Charitable Foundation, which supports education, healthcare, and sports development programs for underprivileged children. He has also supported several other charitable causes, including the Indian Army's welfare fund and the Chennai-based NGO, the Akshaya Trust.</p></div>\n<div><p>Legacy<br/>MS Dhoni's legacy extends beyond his on-field achievements. He has inspired a generation of cricketers and sports enthusiasts with his dedication, hard work, and passion for the sport. Dhoni's leadership and sportsmanship have set a high standard for cricketers, and his philanthropic efforts have made a positive impact on the lives of many people. As a cricketer, entrepreneur, and philanthropist, MS Dhoni is a true icon and a role model for millions of people around the world.</p></div>",
+        "plainText": "Mahendra Singh Dhoni, commonly known as MS Dhoni, is a former Indian international cricketer who is widely regarded as one of the greatest wicket-keeper batsmen and captains in the history of the sport. Born on July 7, 1981, in Ranchi, Bihar (now Jharkhand), India, Dhoni's life is a testament to his hard work, dedication, and passion for cricket.\n\n Early Life and Education\nDhoni was born to Pan Singh and Devaki Devi, and he has a sister, Jayanti, and a brother, Narendra. His father worked as a pump operator at the MECON limited, a public sector undertaking that manufactures machinery and equipment for the steel industry. Dhoni's family lived in a modest house in the Shyamali colony of Ranchi, and his parents encouraged his interest in sports from an early age.\n\n Dhoni attended the DAV Jawahar Vidya Mandir school in Shyamali, where he excelled in cricket, football, and badminton. He was an average student but was always passionate about sports, and his parents supported his interests. Dhoni's talent and dedication earned him a spot in the school's cricket team, and he soon became a key player.\n\n Career\nDhoni's cricket career began in 1998 when he played for the Central Coal Fields Limited (CCL) team in the Vinoo Mankad Trophy Under-16 championship. He impressed the selectors with his wicket-keeping skills and batting ability, and soon he was selected to play for the Bihar Under-19 team. Dhoni's performance in the Under-19 team earned him a spot in the East Zone squad for the Deodhar Trophy, and he eventually made his first-class debut for Bihar in 1999-2000.\n\n Dhoni's breakthrough came in 2004 when he was selected to play for the Indian national team. He made his One Day International (ODI) debut against Bangladesh on December 23, 2004, and his Test debut against Sri Lanka on December 2, 2005. Dhoni's impressive performance in the 2005-06 season earned him a spot in the Indian team for the 2007 ICC Cricket World Cup.\n\n Under Dhoni's captaincy, the Indian team won several major tournaments, including the 2007 ICC World Twenty20, the 2011 ICC Cricket World Cup, and the 2013 ICC Champions Trophy. Dhoni is also the only captain to have won all three ICC trophies. He announced his retirement from Test cricket in 2014 but continued to play ODIs and Twenty20 Internationals (T20Is) until his retirement from international cricket in 2020.\n\n Awards and Achievements\nDhoni has received numerous awards and accolades throughout his career. Some of his notable awards include:\n\n * ICC ODI Player of the Year (2008, 2009)\n* ICC World ODI XI (2006, 2008, 2009, 2010, 2011, 2012, 2013, 2014)\n* ICC World Test XI (2009, 2010, 2011, 2013)\n* Padma Bhushan (2018)\n* Padma Shri (2009)\n* Major Dhyan Chand Khel Ratna (2007)\n\n Personal Life\nDhoni married Sakshi Singh Rawat in 2010, and they have a daughter, Ziva, born in 2015. Dhoni is known for his calm and composed demeanor on and off the field, and he is widely respected for his leadership and sportsmanship. He is also a successful entrepreneur and has invested in several businesses, including a chain of gyms, a production company, and a sports management company.\n\n Philanthropy\nDhoni is involved in several charitable initiatives, including the MS Dhoni Charitable Foundation, which supports education, healthcare, and sports development programs for underprivileged children. He has also supported several other charitable causes, including the Indian Army's welfare fund and the Chennai-based NGO, the Akshaya Trust.\n\n Legacy\nMS Dhoni's legacy extends beyond his on-field achievements. He has inspired a generation of cricketers and sports enthusiasts with his dedication, hard work, and passion for the sport. Dhoni's leadership and sportsmanship have set a high standard for cricketers, and his philanthropic efforts have made a positive impact on the lives of many people. As a cricketer, entrepreneur, and philanthropist, MS Dhoni is a true icon and a role model for millions of people around the world.",
+        "createdAt": "2026-05-12T16:50:51.203Z",
+        "source": "autosave"
+      },
+      {
+        "id": "dwv-1778604320017-ex2ovb",
+        "title": "Untitled document",
+        "html": "<div>https://img.freepik.com/free-vector/colorful-letter-s-with-black-background_483537-4543.jpg?semt=ais_hybrid&amp;w=740&amp;q=80</div>",
+        "plainText": "https://img.freepik.com/free-vector/colorful-letter-s-with-black-background_483537-4543.jpg?semt=ais_hybrid&amp;w=740&amp;q=80",
+        "createdAt": "2026-05-12T16:45:20.016Z",
+        "source": "autosave"
+      },
+      {
+        "id": "dwv-1778603423923-cqigmy",
+        "title": "Untitled document",
+        "html": "<div>hey<p></p></div>",
+        "plainText": "hey",
+        "createdAt": "2026-05-12T16:30:23.923Z",
+        "source": "autosave"
+      },
+      {
+        "id": "dwv-1778603391755-5n7ikr",
+        "title": "Untitled document",
+        "html": "<div><p></p></div>",
+        "plainText": "",
+        "createdAt": "2026-05-12T16:29:51.755Z",
+        "source": "autosave"
+      }
+    ]
+  },
+  {
+    "id": "dwd-1778602188899-b3puy0",
+    "ownerUserId": "individual-1778601331383",
+    "ownerEmail": "shashank@corescent.in",
+    "title": "Untitled document",
+    "emoji": "✍️",
+    "isFavorite": false,
+    "folderName": "General",
+    "documentTheme": "classic",
+    "requireSignature": false,
+    "signatures": [],
+    "trackChangesEnabled": false,
+    "trackedChanges": [],
+    "selectionComments": [],
+    "blocks": [
+      {
+        "id": "dwb-1778602188898-f47ynj",
+        "type": "paragraph",
+        "html": "<p></p>",
+        "text": ""
+      }
+    ],
+    "html": "<div><p></p></div>",
+    "plainText": "",
+    "wordCount": 0,
+    "readTimeMinutes": 1,
+    "shareMode": "private",
+    "sharedAccess": [],
+    "accessGroups": [],
+    "createdAt": "2026-05-12T16:09:48.899Z",
+    "updatedAt": "2026-05-12T16:09:48.899Z",
+    "versions": []
+  },
+  {
+    "id": "dwd-1778601015310-6posqm",
+    "ownerUserId": "individual-1778593995438",
+    "ownerEmail": "ab8107116@gmail.com",
+    "title": "Untitled document",
+    "emoji": "✍️",
+    "isFavorite": false,
+    "folderName": "General",
+    "documentTheme": "classic",
+    "requireSignature": false,
+    "signatures": [],
+    "trackChangesEnabled": false,
+    "trackedChanges": [],
+    "selectionComments": [],
+    "blocks": [
+      {
+        "id": "dwb-1778601015308-g57odl",
+        "type": "paragraph",
+        "html": "Hello<span style=\"font-weight: bold;\"></span><p></p>",
+        "text": "Hello"
+      }
+    ],
+    "html": "<div>Hello<span style=\"font-weight: bold;\"></span><p></p></div>",
+    "plainText": "Hello",
+    "wordCount": 1,
+    "readTimeMinutes": 1,
+    "shareMode": "private",
+    "sharedAccess": [],
+    "accessGroups": [],
+    "createdAt": "2026-05-12T15:50:15.310Z",
+    "updatedAt": "2026-05-12T15:52:54.476Z",
+    "versions": [
+      {
+        "id": "dwv-1778601174476-2daoq8",
+        "title": "Untitled document",
+        "html": "<div>hey<p></p></div>",
+        "plainText": "hey",
+        "createdAt": "2026-05-12T15:52:54.476Z",
+        "source": "autosave"
+      },
+      {
+        "id": "dwv-1778601065263-sdkt6c",
+        "title": "Untitled document",
+        "html": "<div><p></p></div>",
+        "plainText": "",
+        "createdAt": "2026-05-12T15:51:05.263Z",
+        "source": "autosave"
+      }
+    ]
+  },
+  {
+    "id": "dwd-1778601015293-3soa53",
+    "ownerUserId": "individual-1778593995438",
+    "ownerEmail": "ab8107116@gmail.com",
+    "title": "Untitled document",
+    "emoji": "✍️",
+    "isFavorite": false,
+    "folderName": "General",
+    "documentTheme": "classic",
+    "requireSignature": false,
+    "signatures": [],
+    "trackChangesEnabled": false,
+    "trackedChanges": [],
+    "selectionComments": [],
+    "blocks": [
+      {
+        "id": "dwb-1778601015289-ewtzqi",
+        "type": "paragraph",
+        "html": "<p></p>",
+        "text": ""
+      }
+    ],
+    "html": "<div><p></p></div>",
+    "plainText": "",
+    "wordCount": 0,
+    "readTimeMinutes": 1,
+    "shareMode": "private",
+    "sharedAccess": [],
+    "accessGroups": [],
+    "createdAt": "2026-05-12T15:50:15.293Z",
+    "updatedAt": "2026-05-12T15:50:15.293Z",
+    "versions": []
+  },
+  {
+    "id": "dwd-1778477837626-vlb8no",
+    "ownerUserId": "1",
+    "ownerEmail": "admin@company.com",
+    "title": "corporates_roster_final-(6)-employee-transport-data",
+    "emoji": "✍️",
+    "isFavorite": false,
+    "folderName": "General",
+    "summary": "Docai drafted this document from chat.",
+    "documentTheme": "classic",
+    "watermarkText": "corescent",
+    "requireSignature": true,
+    "signatures": [],
+    "trackChangesEnabled": false,
+    "trackedChanges": [],
+    "selectionComments": [],
+    "blocks": [
+      {
+        "id": "block_1778698801367_d66ecs",
+        "type": "heading-1",
+        "html": "[Company Logo]",
+        "text": "[Company Logo]"
+      },
+      {
+        "id": "block_1778698801367_py3b0n",
+        "type": "paragraph",
+        "html": "<p>[Company Name]<br/>[Address]<br/>[City, State, ZIP]<br/>[Date]</p>",
+        "text": "[Company Name]\n[Address]\n[City, State, ZIP]\n[Date]"
+      },
+      {
+        "id": "block_1778698801367_jctqfn",
+        "type": "paragraph",
+        "html": "<p>Prathmesh<br/>[Address]<br/>[City, State, ZIP]</p>",
+        "text": "Prathmesh\n[Address]\n[City, State, ZIP]"
+      },
+      {
+        "id": "block_1778698801367_y1oixo",
+        "type": "paragraph",
+        "html": "<p>Dear Prathmesh,</p>",
+        "text": "Dear Prathmesh,"
+      },
+      {
+        "id": "block_1778698801367_f6fyy2",
+        "type": "paragraph",
+        "html": "<p>We are pleased to offer you the position of [Position] at [Company Name], as discussed during your interview on [Interview Date]. We believe your skills and experience make you an ideal fit for our team, and we are excited about the prospect of having you on board.</p>",
+        "text": "We are pleased to offer you the position of [Position] at [Company Name], as discussed during your interview on [Interview Date]. We believe your skills and experience make you an ideal fit for our team, and we are excited about the prospect of having you on board."
+      },
+      {
+        "id": "block_1778698801367_o6meko",
+        "type": "paragraph",
+        "html": "<p>Below are the details of the offer:</p>",
+        "text": "Below are the details of the offer:"
+      },
+      {
+        "id": "block_1778698801367_9ofgb7",
+        "type": "paragraph",
+        "html": "<p>* Job Title: [Position]<br/>* Department: [Department]<br/>* Reporting Manager: [Reporting Manager's Name]<br/>* Date of Joining: [Date of Joining]<br/>* Salary: [Salary] per annum, payable in [number] installments per month<br/>* Benefits:<br/>\t+ Medical Insurance: [Details of medical insurance]<br/>\t+ Leave Policy: [Details of leave policy]<br/>\t+ Other benefits: [Details of other benefits]</p>",
+        "text": "* Job Title: [Position]\n* Department: [Department]\n* Reporting Manager: [Reporting Manager's Name]\n* Date of Joining: [Date of Joining]\n* Salary: [Salary] per annum, payable in [number] installments per month\n* Benefits:\n\t+ Medical Insurance: [Details of medical insurance]\n\t+ Leave Policy: [Details of leave policy]\n\t+ Other benefits: [Details of other benefits]"
+      },
+      {
+        "id": "block_1778698801367_5qz00v",
+        "type": "paragraph",
+        "html": "<p>You will be entitled to all benefits and privileges as per the company's policies, which will be shared with you during the onboarding process. You will also be subject to the company's rules, regulations, and code of conduct.</p>",
+        "text": "You will be entitled to all benefits and privileges as per the company's policies, which will be shared with you during the onboarding process. You will also be subject to the company's rules, regulations, and code of conduct."
+      },
+      {
+        "id": "block_1778698801367_o32e2j",
+        "type": "paragraph",
+        "html": "<p>To confirm your acceptance of this offer, please sign and return one copy of this letter to us by [Deadline]. We also require a copy of your identification proof and address proof for our records.</p>",
+        "text": "To confirm your acceptance of this offer, please sign and return one copy of this letter to us by [Deadline]. We also require a copy of your identification proof and address proof for our records."
+      },
+      {
+        "id": "block_1778698801367_cwhjtz",
+        "type": "paragraph",
+        "html": "<p>If you have any questions or concerns, please do not hesitate to reach out to us. We look forward to welcoming you to our team.</p>",
+        "text": "If you have any questions or concerns, please do not hesitate to reach out to us. We look forward to welcoming you to our team."
+      },
+      {
+        "id": "block_1778698801367_j0qx3f",
+        "type": "paragraph",
+        "html": "<p>Sincerely,</p>",
+        "text": "Sincerely,"
+      },
+      {
+        "id": "block_1778698801367_uurv6p",
+        "type": "paragraph",
+        "html": "<p>[Your Name]<br/>[Your Designation]<br/>[Company Name]</p>",
+        "text": "[Your Name]\n[Your Designation]\n[Company Name]"
+      },
+      {
+        "id": "block_1778698801367_lal4f3",
+        "type": "paragraph",
+        "html": "<p>Acceptance:</p>",
+        "text": "Acceptance:"
+      },
+      {
+        "id": "block_1778698801367_zv34ri",
+        "type": "paragraph",
+        "html": "<p>I, Prathmesh, accept the offer of employment with [Company Name] as outlined above. I understand that this offer is contingent upon my ability to provide documentation of my eligibility to work in [Country/State]. I confirm that the information provided by me during the hiring process is true and accurate.</p>",
+        "text": "I, Prathmesh, accept the offer of employment with [Company Name] as outlined above. I understand that this offer is contingent upon my ability to provide documentation of my eligibility to work in [Country/State]. I confirm that the information provided by me during the hiring process is true and accurate."
+      },
+      {
+        "id": "block_1778698801367_i2vj6n",
+        "type": "paragraph",
+        "html": "<p>Signature: ________________________________<br/>Date: ___________________________________</p>",
+        "text": "Signature: ________________________________\nDate: ___________________________________"
+      },
+      {
+        "id": "block_1778698801367_xpszd7",
+        "type": "paragraph",
+        "html": "<p>Please return a signed copy of this letter to [Company Name] by [Deadline] to confirm your acceptance of this offer.</p>",
+        "text": "Please return a signed copy of this letter to [Company Name] by [Deadline] to confirm your acceptance of this offer."
+      }
+    ],
+    "html": "<h1>[Company Logo]</h1>\n<div><p>[Company Name]<br/>[Address]<br/>[City, State, ZIP]<br/>[Date]</p></div>\n<div><p>Prathmesh<br/>[Address]<br/>[City, State, ZIP]</p></div>\n<div><p>Dear Prathmesh,</p></div>\n<div><p>We are pleased to offer you the position of [Position] at [Company Name], as discussed during your interview on [Interview Date]. We believe your skills and experience make you an ideal fit for our team, and we are excited about the prospect of having you on board.</p></div>\n<div><p>Below are the details of the offer:</p></div>\n<div><p>* Job Title: [Position]<br/>* Department: [Department]<br/>* Reporting Manager: [Reporting Manager's Name]<br/>* Date of Joining: [Date of Joining]<br/>* Salary: [Salary] per annum, payable in [number] installments per month<br/>* Benefits:<br/>\t+ Medical Insurance: [Details of medical insurance]<br/>\t+ Leave Policy: [Details of leave policy]<br/>\t+ Other benefits: [Details of other benefits]</p></div>\n<div><p>You will be entitled to all benefits and privileges as per the company's policies, which will be shared with you during the onboarding process. You will also be subject to the company's rules, regulations, and code of conduct.</p></div>\n<div><p>To confirm your acceptance of this offer, please sign and return one copy of this letter to us by [Deadline]. We also require a copy of your identification proof and address proof for our records.</p></div>\n<div><p>If you have any questions or concerns, please do not hesitate to reach out to us. We look forward to welcoming you to our team.</p></div>\n<div><p>Sincerely,</p></div>\n<div><p>[Your Name]<br/>[Your Designation]<br/>[Company Name]</p></div>\n<div><p>Acceptance:</p></div>\n<div><p>I, Prathmesh, accept the offer of employment with [Company Name] as outlined above. I understand that this offer is contingent upon my ability to provide documentation of my eligibility to work in [Country/State]. I confirm that the information provided by me during the hiring process is true and accurate.</p></div>\n<div><p>Signature: ________________________________<br/>Date: ___________________________________</p></div>\n<div><p>Please return a signed copy of this letter to [Company Name] by [Deadline] to confirm your acceptance of this offer.</p></div>",
+    "plainText": "[Company Logo]\n\n [Company Name]\n[Address]\n[City, State, ZIP]\n[Date]\n\n Prathmesh\n[Address]\n[City, State, ZIP]\n\n Dear Prathmesh,\n\n We are pleased to offer you the position of [Position] at [Company Name], as discussed during your interview on [Interview Date]. We believe your skills and experience make you an ideal fit for our team, and we are excited about the prospect of having you on board.\n\n Below are the details of the offer:\n\n * Job Title: [Position]\n* Department: [Department]\n* Reporting Manager: [Reporting Manager's Name]\n* Date of Joining: [Date of Joining]\n* Salary: [Salary] per annum, payable in [number] installments per month\n* Benefits:\n\t+ Medical Insurance: [Details of medical insurance]\n\t+ Leave Policy: [Details of leave policy]\n\t+ Other benefits: [Details of other benefits]\n\n You will be entitled to all benefits and privileges as per the company's policies, which will be shared with you during the onboarding process. You will also be subject to the company's rules, regulations, and code of conduct.\n\n To confirm your acceptance of this offer, please sign and return one copy of this letter to us by [Deadline]. We also require a copy of your identification proof and address proof for our records.\n\n If you have any questions or concerns, please do not hesitate to reach out to us. We look forward to welcoming you to our team.\n\n Sincerely,\n\n [Your Name]\n[Your Designation]\n[Company Name]\n\n Acceptance:\n\n I, Prathmesh, accept the offer of employment with [Company Name] as outlined above. I understand that this offer is contingent upon my ability to provide documentation of my eligibility to work in [Country/State]. I confirm that the information provided by me during the hiring process is true and accurate.\n\n Signature: ________________________________\nDate: ___________________________________\n\n Please return a signed copy of this letter to [Company Name] by [Deadline] to confirm your acceptance of this offer.",
+    "wordCount": 303,
+    "readTimeMinutes": 2,
+    "lastAiAction": "generate",
+    "shareMode": "private",
+    "sharedAccess": [],
+    "accessGroups": [],
+    "createdAt": "2026-05-11T05:37:17.625Z",
+    "updatedAt": "2026-05-13T19:00:25.690Z",
+    "versions": [
+      {
+        "id": "dwv-1778698806479-9j7kog",
+        "title": "corporates_roster_final-(6)-employee-transport-data",
+        "html": "<div><div class=\"docword-export-page-flow\"><div class=\"docword-export-body\"><p><br></p></div></div></div>",
+        "plainText": "",
+        "createdAt": "2026-05-13T19:00:06.479Z",
+        "source": "autosave"
+      },
+      {
+        "id": "dwv-1778698781743-k7wzs4",
+        "title": "corporates_roster_final-(6)-employee-transport-data",
+        "html": "<div class=\"docword-export-page-flow\"><div class=\"docword-export-body\"><p>S No.,R.No,Emp Id,Process,IDU,Address,Area,Contact No,Email,Location,Cab Type,Date,Time,Shift,Trip Type<br/>1,101,1001,17201,IBU-GJ-01,&quot;Kalol GIDC, Gandhinagar&quot;,Kalol,9824001001,ayush1@gmail.com,Kalol,Sedan,08/01/2026,17:00,08:00-17:00,Pickup<br/>2,102,1002,17202,IBU-GJ-02,&quot;11, Western Glory, Gota, Ahmedabad, Gujarat, India&quot;,Ahmedabad,9824001002,riya2@gmail.com,Ahmedabad,SUV,07/01/2026,18:00,09:00-17:00,Drop<br/>3,103,1003,17203,IBU-GJ-03,&quot;Shri Ganesh Party Plot (Shri Om Party Plot, Tragad Rd, opposite Shubh Enclave, Chandkheda, Ahmedabad&quot;,Ahmedabad,9824001003,kunal3@gmail.com,Ahmedabad,Sedan,06/01/2026,10:01,10:00-19:00,Pickup<br/>4,104,1004,17204,IBU-GJ-04,Vadodara Bus Station,Vadodara,9824001004,neha4@gmail.com,Vadodara,SUV,08/02/2026,10:04,09:00-18:00,Pickup<br/>5,105,1005,17205,IBU-GJ-05,&quot;Waghodia Road, Vadodara&quot;,Vadodara,9824001005,rohan5@gmail.com,Vadodara,XUV,06/01/2026,17:00,09:00-17:00,Pickup<br/>6,106,1006,17206,IBU-GJ-06,&quot;CR Patil Rd,Dindoli, Surat, Gujarat 394210&quot;,Surat,9824001006,pooja6@gmail.com,Surat,Sedan,06/01/2026,18:00,10:00-18:00,Drop<br/>7,107,1007,17207,IBU-GJ-07,&quot;Udhna GIDC, Surat&quot;,Surat,9824001007,amit7@gmail.com,Surat,SUV,06/01/2026,10:01,09:00-17:00,Drop<br/>8,108,1008,17208,IBU-GJ-08,Chandkheda Gam BRTS Stop,Ahmedabad,9824001008,sneha8@gmail.com,Ahmedabad,Sedan,06/01/2026,10:04,09:30-18:30,Drop<br/>9,109,1009,17209,IBU-GJ-09,&quot;GH 4 Circle, Sector 16, Gandhinagar, Gujarat 382016&quot;,Gandhinagar,9824001009,hardik9@gmail.com,Gandhinagar,SUV,06/01/2026,17:00,09:00-18:00,Pickup<br/>10,110,1010,17210,IBU-GJ-10,&quot;Dhirubhai Ambani University, Gandhinagar&quot;,Gandhinagar,9824001010,bhavya10@gmail.com,Gandhinagar,Sedan,07/01/2026,18:00,10:00-19:00,Pickup<br/>11,111,1011,17211,IBU-GJ-11,Gokul Hospital Rajkot,Rajkot,9824001011,jayesh11@gmail.com,Rajkot,SUV,06/01/2026,10:01,09:00-17:00,Drop<br/>12,112,1012,17212,IBU-GJ-12,&quot;Rajkot-Bhavnagar Highway, Gadhaka Rd, Tramba, Gujarat 360020&quot;,Rajkot,9824001012,komal12@gmail.com,Rajkot,Sedan,13/12/2026,10:04,09:00-18:00,Pickup<br/>13,113,1013,17213,IBU-GJ-13,&quot;satyanarayan ice cream, Station Rd, Nadiad, Gujarat 387001&quot;,Nadiad,9824001013,yash13@gmail.com,Nadiad,XUV,08/11/2026,17:00,10:00-19:00,Drop<br/>14,114,1014,17214,IBU-GJ-14,&quot;Bakrol - Vadtal Rd, Vallabh Vidyanagar, Bakrol, Gujarat 388315&quot;,Anand,9824001014,divya14@gmail.com,Anand,Sedan,06/01/2026,18:00,09:00-18:00,Pickup<br/>15,115,1015,17215,IBU-GJ-15,&quot;1, opp. Railway Yard, Vaishali Society, Chikuwadi, Chickoo Wadi, Ankleshwar, Gujarat 393001&quot;,Bharuch,9824001015,sagar15@gmail.com,Bharuch,SUV,06/01/2026,10:01,09:00-17:00,Drop<br/>16,116,1016,17216,IBU-GJ-16,&quot;Char Rasta, Phase 2, GIDC, Vapi, Gujarat 396195Char Rasta, Phase 2, GIDC, Vapi, Gujarat 396195&quot;,Vapi,9824001016,nisha16@gmail.com,Vapi,Sedan,,10:04,10:00-19:00,Pickup<br/>17,117,1017,17217,IBU-GJ-17,&quot;Pardi, Valsad&quot;,Valsad,9824001017,parth17@gmail.com,Valsad,SUV,06/01/2026,17:00,09:00-18:00,Drop<br/>18,118,1018,17218,IBU-GJ-18,&quot;Palanpur, Banaskantha&quot;,Palanpur,9824001018,mitali18@gmail.com,Palanpur,Sedan,17/11/2027,18:00,09:00-17:00,Pickup<br/>19,119,1019,17219,IBU-GJ-19,&quot;Madhapar, Bhuj (Kutch)&quot;,Bhuj,9824001019,nirav19@gmail.com,Bhuj,XUV,06/01/2026,10:01,10:00-18:00,Drop<br/>20,120,1020,17220,IBU-GJ-20,&quot;Digjam Circle, Jamnagar&quot;,Jamnagar,9824001020,kavita20@gmail.com,Jamnagar,Sedan,06/01/2026,10:04,09:00-18:00,Pickup<br/>21,101,1001,17201,IBU-GJ-01,&quot;Kalol GIDC, Gandhinagar&quot;,Kalol,9824001001,ayush1@gmail.com,Kalol,Sedan,09/01/2026,17:00,08:00-17:00,Drop<br/>22,101,1001,17201,IBU-GJ-01,&quot;Kalol GIDC, Gandhinagar&quot;,Kalol,9824001001,ayush1@gmail.com,Kalol,Sedan,08/01/2026,18:00,08:00-17:00,Pickup<br/>23,101,1001,17201,IBU-GJ-01,AHemdaabad,Kalol,9824001001,ayush1@gmail.com,Kalol,Sedan,08/01/2027,10:01,09:00-17:00,Pickup<br/>24,101,1001,17201,IBU-GJ-01,Patan,Kalol,9824001001,ayush1@gmail.com,Kalol,Sedan,08/01/2026,10:04,08:00-17:00,Drop<br/>1,101,1001,17201,IBU-GJ-01,Patan,Kalol,9824001001,ayush1@gmail.com,Kalol,Sedan,08/01/2026,17:00,08:00-17:00,Pickup<br/>25,101,1001,17201,IBU-GJ-01,Patan unjha,Kalol,9824001001,ayush1@gmail.com,Kalol,Sedan,08/01/2026,18:00,08:00-17:00,Drop</p></div></div>",
+        "plainText": "S No.,R.No,Emp Id,Process,IDU,Address,Area,Contact No,Email,Location,Cab Type,Date,Time,Shift,Trip Type1,101,1001,17201,IBU-GJ-01,\"Kalol GIDC, Gandhinagar\",Kalol,9824001001,ayush1@gmail.com,Kalol,Sedan,08/01/2026,17:00,08:00-17:00,Pickup2,102,1002,17202,IBU-GJ-02,\"11, Western Glory, Gota, Ahmedabad, Gujarat, India\",Ahmedabad,9824001002,riya2@gmail.com,Ahmedabad,SUV,07/01/2026,18:00,09:00-17:00,Drop3,103,1003,17203,IBU-GJ-03,\"Shri Ganesh Party Plot (Shri Om Party Plot, Tragad Rd, opposite Shubh Enclave, Chandkheda, Ahmedabad\",Ahmedabad,9824001003,kunal3@gmail.com,Ahmedabad,Sedan,06/01/2026,10:01,10:00-19:00,Pickup4,104,1004,17204,IBU-GJ-04,Vadodara Bus Station,Vadodara,9824001004,neha4@gmail.com,Vadodara,SUV,08/02/2026,10:04,09:00-18:00,Pickup5,105,1005,17205,IBU-GJ-05,\"Waghodia Road, Vadodara\",Vadodara,9824001005,rohan5@gmail.com,Vadodara,XUV,06/01/2026,17:00,09:00-17:00,Pickup6,106,1006,17206,IBU-GJ-06,\"CR Patil Rd,Dindoli, Surat, Gujarat 394210\",Surat,9824001006,pooja6@gmail.com,Surat,Sedan,06/01/2026,18:00,10:00-18:00,Drop7,107,1007,17207,IBU-GJ-07,\"Udhna GIDC, Surat\",Surat,9824001007,amit7@gmail.com,Surat,SUV,06/01/2026,10:01,09:00-17:00,Drop8,108,1008,17208,IBU-GJ-08,Chandkheda Gam BRTS Stop,Ahmedabad,9824001008,sneha8@gmail.com,Ahmedabad,Sedan,06/01/2026,10:04,09:30-18:30,Drop9,109,1009,17209,IBU-GJ-09,\"GH 4 Circle, Sector 16, Gandhinagar, Gujarat 382016\",Gandhinagar,9824001009,hardik9@gmail.com,Gandhinagar,SUV,06/01/2026,17:00,09:00-18:00,Pickup10,110,1010,17210,IBU-GJ-10,\"Dhirubhai Ambani University, Gandhinagar\",Gandhinagar,9824001010,bhavya10@gmail.com,Gandhinagar,Sedan,07/01/2026,18:00,10:00-19:00,Pickup11,111,1011,17211,IBU-GJ-11,Gokul Hospital Rajkot,Rajkot,9824001011,jayesh11@gmail.com,Rajkot,SUV,06/01/2026,10:01,09:00-17:00,Drop12,112,1012,17212,IBU-GJ-12,\"Rajkot-Bhavnagar Highway, Gadhaka Rd, Tramba, Gujarat 360020\",Rajkot,9824001012,komal12@gmail.com,Rajkot,Sedan,13/12/2026,10:04,09:00-18:00,Pickup13,113,1013,17213,IBU-GJ-13,\"satyanarayan ice cream, Station Rd, Nadiad, Gujarat 387001\",Nadiad,9824001013,yash13@gmail.com,Nadiad,XUV,08/11/2026,17:00,10:00-19:00,Drop14,114,1014,17214,IBU-GJ-14,\"Bakrol - Vadtal Rd, Vallabh Vidyanagar, Bakrol, Gujarat 388315\",Anand,9824001014,divya14@gmail.com,Anand,Sedan,06/01/2026,18:00,09:00-18:00,Pickup15,115,1015,17215,IBU-GJ-15,\"1, opp. Railway Yard, Vaishali Society, Chikuwadi, Chickoo Wadi, Ankleshwar, Gujarat 393001\",Bharuch,9824001015,sagar15@gmail.com,Bharuch,SUV,06/01/2026,10:01,09:00-17:00,Drop16,116,1016,17216,IBU-GJ-16,\"Char Rasta, Phase 2, GIDC, Vapi, Gujarat 396195Char Rasta, Phase 2, GIDC, Vapi, Gujarat 396195\",Vapi,9824001016,nisha16@gmail.com,Vapi,Sedan,,10:04,10:00-19:00,Pickup17,117,1017,17217,IBU-GJ-17,\"Pardi, Valsad\",Valsad,9824001017,parth17@gmail.com,Valsad,SUV,06/01/2026,17:00,09:00-18:00,Drop18,118,1018,17218,IBU-GJ-18,\"Palanpur, Banaskantha\",Palanpur,9824001018,mitali18@gmail.com,Palanpur,Sedan,17/11/2027,18:00,09:00-17:00,Pickup19,119,1019,17219,IBU-GJ-19,\"Madhapar, Bhuj (Kutch)\",Bhuj,9824001019,nirav19@gmail.com,Bhuj,XUV,06/01/2026,10:01,10:00-18:00,Drop20,120,1020,17220,IBU-GJ-20,\"Digjam Circle, Jamnagar\",Jamnagar,9824001020,kavita20@gmail.com,Jamnagar,Sedan,06/01/2026,10:04,09:00-18:00,Pickup21,101,1001,17201,IBU-GJ-01,\"Kalol GIDC, Gandhinagar\",Kalol,9824001001,ayush1@gmail.com,Kalol,Sedan,09/01/2026,17:00,08:00-17:00,Drop22,101,1001,17201,IBU-GJ-01,\"Kalol GIDC, Gandhinagar\",Kalol,9824001001,ayush1@gmail.com,Kalol,Sedan,08/01/2026,18:00,08:00-17:00,Pickup23,101,1001,17201,IBU-GJ-01,AHemdaabad,Kalol,9824001001,ayush1@gmail.com,Kalol,Sedan,08/01/2027,10:01,09:00-17:00,Pickup24,101,1001,17201,IBU-GJ-01,Patan,Kalol,9824001001,ayush1@gmail.com,Kalol,Sedan,08/01/2026,10:04,08:00-17:00,Drop1,101,1001,17201,IBU-GJ-01,Patan,Kalol,9824001001,ayush1@gmail.com,Kalol,Sedan,08/01/2026,17:00,08:00-17:00,Pickup25,101,1001,17201,IBU-GJ-01,Patan unjha,Kalol,9824001001,ayush1@gmail.com,Kalol,Sedan,08/01/2026,18:00,08:00-17:00,Drop",
+        "createdAt": "2026-05-13T18:59:41.742Z",
+        "source": "autosave"
+      },
+      {
+        "id": "dwv-1778477840210-gnxzq7",
+        "title": "corporates_roster_final-(6)-employee-transport-data",
+        "html": "<div><p></p></div>",
+        "plainText": "",
+        "createdAt": "2026-05-11T05:37:20.208Z",
+        "source": "manual"
+      }
+    ]
+  },
+  {
+    "id": "dwd-1778400349061-03v045",
+    "guestId": "docword_guest_0rvdl0sqao",
+    "title": "Untitled document",
+    "emoji": "✍️",
+    "isFavorite": false,
+    "folderName": "General",
+    "documentTheme": "classic",
+    "requireSignature": false,
+    "signatures": [],
+    "trackChangesEnabled": false,
+    "trackedChanges": [],
+    "selectionComments": [],
+    "blocks": [
+      {
+        "id": "dwb-1778400349059-d0cyxj",
+        "type": "paragraph",
+        "html": "<p></p>",
+        "text": ""
+      }
+    ],
+    "html": "<div><p></p></div>",
+    "plainText": "",
+    "wordCount": 0,
+    "readTimeMinutes": 1,
+    "shareMode": "private",
+    "sharedAccess": [],
+    "accessGroups": [],
+    "createdAt": "2026-05-10T08:05:49.061Z",
+    "updatedAt": "2026-05-10T08:05:49.061Z",
+    "versions": []
+  },
+  {
+    "id": "dwd-1778398462430-6dldrt",
+    "guestId": "docword_guest_fiqwpuel0s",
+    "title": "Untitled document",
+    "emoji": "✍️",
+    "isFavorite": false,
+    "folderName": "General",
+    "documentTheme": "classic",
+    "requireSignature": false,
+    "signatures": [],
+    "trackChangesEnabled": false,
+    "trackedChanges": [],
+    "selectionComments": [],
+    "blocks": [
+      {
+        "id": "dwb-1778398462429-fqp8n8",
+        "type": "paragraph",
+        "html": "<p></p>",
+        "text": ""
+      }
+    ],
+    "html": "<div><p></p></div>",
+    "plainText": "",
+    "wordCount": 0,
+    "readTimeMinutes": 1,
+    "shareMode": "private",
+    "sharedAccess": [],
+    "accessGroups": [],
+    "createdAt": "2026-05-10T07:34:22.430Z",
+    "updatedAt": "2026-05-10T07:34:22.430Z",
+    "versions": []
+  },
+  {
+    "id": "dwd-1777891374744-qqmn4j",
+    "ownerUserId": "1",
+    "ownerEmail": "admin@company.com",
+    "title": "Untitled document",
+    "emoji": "✍️",
+    "isFavorite": false,
+    "folderName": "General",
+    "documentTheme": "classic",
+    "requireSignature": true,
+    "signatures": [],
+    "trackChangesEnabled": false,
+    "trackedChanges": [],
+    "selectionComments": [],
+    "blocks": [
+      {
+        "id": "dwb-1777891379785-kt5g9v",
+        "type": "paragraph",
+        "html": "<p>Start typing...</p>",
+        "text": "Start typing..."
+      }
+    ],
+    "html": "<div><p>Start typing...</p></div>",
+    "plainText": "Start typing...",
+    "wordCount": 2,
+    "readTimeMinutes": 1,
+    "shareMode": "private",
+    "sharedAccess": [],
+    "accessGroups": [],
+    "createdAt": "2026-05-04T10:42:54.743Z",
+    "updatedAt": "2026-05-04T10:42:59.785Z",
+    "versions": [
+      {
+        "id": "dwv-1777891379785-xv3jex",
+        "title": "Untitled document",
+        "html": "<div><p></p></div>",
+        "plainText": "",
+        "createdAt": "2026-05-04T10:42:59.785Z",
+        "source": "manual"
+      }
+    ]
+  },
+  {
+    "id": "dwd-1777722558168-ipnf63",
+    "ownerUserId": "user-1777720469458",
+    "ownerEmail": "kush.726@gmail.com",
+    "title": "Untitled document",
+    "emoji": "✍️",
+    "isFavorite": false,
+    "folderName": "General",
+    "documentTheme": "classic",
+    "requireSignature": false,
+    "signatures": [],
+    "trackChangesEnabled": false,
+    "trackedChanges": [],
+    "selectionComments": [],
+    "blocks": [
+      {
+        "id": "dwb-1777722558166-2fz05w",
+        "type": "paragraph",
+        "html": "<p></p>",
+        "text": ""
+      }
+    ],
+    "html": "<div><p></p></div>",
+    "plainText": "",
+    "wordCount": 0,
+    "readTimeMinutes": 1,
+    "shareMode": "private",
+    "sharedAccess": [],
+    "accessGroups": [],
+    "createdAt": "2026-05-02T11:49:18.168Z",
+    "updatedAt": "2026-05-02T11:49:18.168Z",
+    "versions": []
+  },
+  {
+    "id": "dwd-1777722558121-yg1her",
+    "ownerUserId": "user-1777720469458",
+    "ownerEmail": "kush.726@gmail.com",
+    "title": "Untitled document",
+    "emoji": "✍️",
+    "isFavorite": false,
+    "folderName": "General",
+    "documentTheme": "classic",
+    "requireSignature": false,
+    "signatures": [],
+    "trackChangesEnabled": false,
+    "trackedChanges": [],
+    "selectionComments": [],
+    "blocks": [
+      {
+        "id": "dwb-1777722558119-82vgb8",
+        "type": "paragraph",
+        "html": "<p></p>",
+        "text": ""
+      }
+    ],
+    "html": "<div><p></p></div>",
+    "plainText": "",
+    "wordCount": 0,
+    "readTimeMinutes": 1,
+    "shareMode": "private",
+    "sharedAccess": [],
+    "accessGroups": [],
+    "createdAt": "2026-05-02T11:49:18.121Z",
+    "updatedAt": "2026-05-02T11:49:18.121Z",
+    "versions": []
+  },
+  {
+    "id": "dwd-1777548679956-jzyui6",
+    "guestId": "docword_guest_lonz5z4q8t",
+    "title": "Untitled document",
+    "emoji": "✍️",
+    "isFavorite": false,
+    "folderName": "General",
+    "summary": "Docai drafted this document from chat.",
+    "documentTheme": "classic",
+    "requireSignature": false,
+    "signatures": [],
+    "trackChangesEnabled": false,
+    "trackedChanges": [],
+    "selectionComments": [],
+    "blocks": [
+      {
+        "id": "block_1777548708471_ojn6o6",
+        "type": "heading-1",
+        "html": "AGREEMENT BETWEEN [COMPANY A] AND [COMPANY B]",
+        "text": "AGREEMENT BETWEEN [COMPANY A] AND [COMPANY B]"
+      },
+      {
+        "id": "block_1777548708471_zh1pkx",
+        "type": "paragraph",
+        "html": "<p>RECITALS</p>",
+        "text": "RECITALS"
+      },
+      {
+        "id": "block_1777548708471_dctcbh",
+        "type": "paragraph",
+        "html": "<p>WHEREAS, Company A and Company B wish to establish a business relationship whereby Company A will provide [DESCRIPTION OF SERVICES/PRODUCTS] to Company B; and</p>",
+        "text": "WHEREAS, Company A and Company B wish to establish a business relationship whereby Company A will provide [DESCRIPTION OF SERVICES/PRODUCTS] to Company B; and"
+      },
+      {
+        "id": "block_1777548708471_3c6rl5",
+        "type": "paragraph",
+        "html": "<p>This Agreement (\"Agreement\") is entered into on [DATE] (\"Effective Date\") by and between [COMPANY A], a [STATE/COUNTRY] corporation with its principal place of business at [ADDRESS] (\"Company A\"), and [COMPANY B], a [STATE/COUNTRY] corporation with its principal place of business at [ADDRESS] (\"Company B\").</p>",
+        "text": "This Agreement (\"Agreement\") is entered into on [DATE] (\"Effective Date\") by and between [COMPANY A], a [STATE/COUNTRY] corporation with its principal place of business at [ADDRESS] (\"Company A\"), and [COMPANY B], a [STATE/COUNTRY] corporation with its principal place of business at [ADDRESS] (\"Company B\")."
+      },
+      {
+        "id": "block_1777548708471_604l0h",
+        "type": "paragraph",
+        "html": "<p>WHEREAS, the parties wish to set forth the terms and conditions of their relationship in this Agreement.</p>",
+        "text": "WHEREAS, the parties wish to set forth the terms and conditions of their relationship in this Agreement."
+      },
+      {
+        "id": "block_1777548708471_xwiv63",
+        "type": "paragraph",
+        "html": "<p>ARTICLE 1: DEFINITIONS</p>",
+        "text": "ARTICLE 1: DEFINITIONS"
+      },
+      {
+        "id": "block_1777548708471_cvmb6f",
+        "type": "paragraph",
+        "html": "<p>For the purposes of this Agreement, the following definitions shall apply:</p>",
+        "text": "For the purposes of this Agreement, the following definitions shall apply:"
+      },
+      {
+        "id": "block_1777548708471_uur9j4",
+        "type": "paragraph",
+        "html": "<p>* \"Services\" means the [DESCRIPTION OF SERVICES] to be provided by Company A to Company B.<br/>* \"Products\" means the [DESCRIPTION OF PRODUCTS] to be provided by Company A to Company B.<br/>* \"Confidential Information\" means any and all information, whether written or oral, that is disclosed by one party to the other party, including but not limited to trade secrets, business strategies, and technical data.</p>",
+        "text": "* \"Services\" means the [DESCRIPTION OF SERVICES] to be provided by Company A to Company B.\n* \"Products\" means the [DESCRIPTION OF PRODUCTS] to be provided by Company A to Company B.\n* \"Confidential Information\" means any and all information, whether written or oral, that is disclosed by one party to the other party, including but not limited to trade secrets, business strategies, and technical data."
+      },
+      {
+        "id": "block_1777548708471_9h7p02",
+        "type": "paragraph",
+        "html": "<p>ARTICLE 2: TERM AND TERMINATION</p>",
+        "text": "ARTICLE 2: TERM AND TERMINATION"
+      },
+      {
+        "id": "block_1777548708471_d7pmcm",
+        "type": "paragraph",
+        "html": "<p>The term of this Agreement shall commence on the Effective Date and shall continue for a period of [LENGTH OF TERM] months/years. Upon expiration of the initial term, this Agreement shall automatically renew for successive [LENGTH OF RENEWAL TERM] month/year periods unless either party gives written notice of termination to the other party at least [NUMBER] days prior to the end of the then-current term.</p>",
+        "text": "The term of this Agreement shall commence on the Effective Date and shall continue for a period of [LENGTH OF TERM] months/years. Upon expiration of the initial term, this Agreement shall automatically renew for successive [LENGTH OF RENEWAL TERM] month/year periods unless either party gives written notice of termination to the other party at least [NUMBER] days prior to the end of the then-current term."
+      },
+      {
+        "id": "block_1777548708471_7o1z50",
+        "type": "paragraph",
+        "html": "<p>Either party may terminate this Agreement upon [NUMBER] days' written notice to the other party in the event of a material breach of this Agreement by the other party that remains uncured for [NUMBER] days.</p>",
+        "text": "Either party may terminate this Agreement upon [NUMBER] days' written notice to the other party in the event of a material breach of this Agreement by the other party that remains uncured for [NUMBER] days."
+      },
+      {
+        "id": "block_1777548708471_3tbsdv",
+        "type": "paragraph",
+        "html": "<p>ARTICLE 3: OBLIGATIONS OF COMPANY A</p>",
+        "text": "ARTICLE 3: OBLIGATIONS OF COMPANY A"
+      },
+      {
+        "id": "block_1777548708471_276bkm",
+        "type": "paragraph",
+        "html": "<p>Company A shall:</p>",
+        "text": "Company A shall:"
+      },
+      {
+        "id": "block_1777548708471_ypvf69",
+        "type": "paragraph",
+        "html": "<p>* Provide the Services and/or Products to Company B in accordance with the terms and conditions of this Agreement.<br/>* Ensure that all Services and/or Products provided to Company B are of high quality and meet the standards of Company B.<br/>* Maintain the confidentiality of all Confidential Information disclosed by Company B.</p>",
+        "text": "* Provide the Services and/or Products to Company B in accordance with the terms and conditions of this Agreement.\n* Ensure that all Services and/or Products provided to Company B are of high quality and meet the standards of Company B.\n* Maintain the confidentiality of all Confidential Information disclosed by Company B."
+      },
+      {
+        "id": "block_1777548708471_b9ujp8",
+        "type": "paragraph",
+        "html": "<p>ARTICLE 4: OBLIGATIONS OF COMPANY B</p>",
+        "text": "ARTICLE 4: OBLIGATIONS OF COMPANY B"
+      },
+      {
+        "id": "block_1777548708471_46n6rn",
+        "type": "paragraph",
+        "html": "<p>Company B shall:</p>",
+        "text": "Company B shall:"
+      },
+      {
+        "id": "block_1777548708471_gbc8nt",
+        "type": "paragraph",
+        "html": "<p>* Pay Company A the fees and expenses set forth in Article 5 below.<br/>* Provide Company A with all necessary information and assistance required to perform the Services and/or provide the Products.<br/>* Maintain the confidentiality of all Confidential Information disclosed by Company A.</p>",
+        "text": "* Pay Company A the fees and expenses set forth in Article 5 below.\n* Provide Company A with all necessary information and assistance required to perform the Services and/or provide the Products.\n* Maintain the confidentiality of all Confidential Information disclosed by Company A."
+      },
+      {
+        "id": "block_1777548708471_s7rf25",
+        "type": "paragraph",
+        "html": "<p>ARTICLE 5: FEES AND EXPENSES</p>",
+        "text": "ARTICLE 5: FEES AND EXPENSES"
+      },
+      {
+        "id": "block_1777548708471_puhtk3",
+        "type": "paragraph",
+        "html": "<p>Company B shall pay Company A the following fees and expenses:</p>",
+        "text": "Company B shall pay Company A the following fees and expenses:"
+      },
+      {
+        "id": "block_1777548708471_qs8o7y",
+        "type": "paragraph",
+        "html": "<p>* A monthly fee of $[AMOUNT] for the Services and/or Products provided by Company A.<br/>* Reimbursement of all reasonable expenses incurred by Company A in connection with the provision of the Services and/or Products.</p>",
+        "text": "* A monthly fee of $[AMOUNT] for the Services and/or Products provided by Company A.\n* Reimbursement of all reasonable expenses incurred by Company A in connection with the provision of the Services and/or Products."
+      },
+      {
+        "id": "block_1777548708471_d24m4p",
+        "type": "paragraph",
+        "html": "<p>ARTICLE 6: INTELLECTUAL PROPERTY</p>",
+        "text": "ARTICLE 6: INTELLECTUAL PROPERTY"
+      },
+      {
+        "id": "block_1777548708471_uofl4l",
+        "type": "paragraph",
+        "html": "<p>Company A retains all right, title, and interest in and to the Services and/or Products, including all intellectual property rights thereto. Company B shall not acquire any rights or interests in the Services and/or Products, except as expressly set forth in this Agreement.</p>",
+        "text": "Company A retains all right, title, and interest in and to the Services and/or Products, including all intellectual property rights thereto. Company B shall not acquire any rights or interests in the Services and/or Products, except as expressly set forth in this Agreement."
+      },
+      {
+        "id": "block_1777548708471_l2jjpr",
+        "type": "paragraph",
+        "html": "<p>ARTICLE 7: CONFIDENTIALITY</p>",
+        "text": "ARTICLE 7: CONFIDENTIALITY"
+      },
+      {
+        "id": "block_1777548708471_wp7j88",
+        "type": "paragraph",
+        "html": "<p>The parties agree to maintain the confidentiality of all Confidential Information disclosed by the other party. Neither party shall disclose any Confidential Information to any third party without the prior written consent of the other party.</p>",
+        "text": "The parties agree to maintain the confidentiality of all Confidential Information disclosed by the other party. Neither party shall disclose any Confidential Information to any third party without the prior written consent of the other party."
+      },
+      {
+        "id": "block_1777548708471_83ehl0",
+        "type": "paragraph",
+        "html": "<p>ARTICLE 8: REPRESENTATIONS AND WARRANTIES</p>",
+        "text": "ARTICLE 8: REPRESENTATIONS AND WARRANTIES"
+      },
+      {
+        "id": "block_1777548708471_uh4sah",
+        "type": "paragraph",
+        "html": "<p>Each party represents and warrants to the other that:</p>",
+        "text": "Each party represents and warrants to the other that:"
+      },
+      {
+        "id": "block_1777548708471_spg4du",
+        "type": "paragraph",
+        "html": "<p>* It has the right to enter into this Agreement and to perform its obligations hereunder.<br/>* It shall comply with all applicable laws and regulations in the performance of its obligations under this Agreement.</p>",
+        "text": "* It has the right to enter into this Agreement and to perform its obligations hereunder.\n* It shall comply with all applicable laws and regulations in the performance of its obligations under this Agreement."
+      },
+      {
+        "id": "block_1777548708471_pvi6uz",
+        "type": "paragraph",
+        "html": "<p>ARTICLE 9: LIMITATION OF LIABILITY</p>",
+        "text": "ARTICLE 9: LIMITATION OF LIABILITY"
+      },
+      {
+        "id": "block_1777548708471_2kudjm",
+        "type": "paragraph",
+        "html": "<p>In no event shall either party be liable to the other for any indirect, special, punitive, or consequential damages, including but not limited to loss of profits, revenue, or data, arising out of or related to this Agreement.</p>",
+        "text": "In no event shall either party be liable to the other for any indirect, special, punitive, or consequential damages, including but not limited to loss of profits, revenue, or data, arising out of or related to this Agreement."
+      },
+      {
+        "id": "block_1777548708471_3m062x",
+        "type": "paragraph",
+        "html": "<p>ARTICLE 10: GOVERNING LAW</p>",
+        "text": "ARTICLE 10: GOVERNING LAW"
+      },
+      {
+        "id": "block_1777548708471_t161ls",
+        "type": "paragraph",
+        "html": "<p>This Agreement shall be governed by and construed in accordance with the laws of [STATE/COUNTRY]. Any disputes arising out of or related to this Agreement shall be resolved through [DISPUTE RESOLUTION PROCESS].</p>",
+        "text": "This Agreement shall be governed by and construed in accordance with the laws of [STATE/COUNTRY]. Any disputes arising out of or related to this Agreement shall be resolved through [DISPUTE RESOLUTION PROCESS]."
+      },
+      {
+        "id": "block_1777548708471_m0fmpt",
+        "type": "paragraph",
+        "html": "<p>By signing below, the parties acknowledge that they have read, understand, and agree to be bound by the terms and conditions of this Agreement.</p>",
+        "text": "By signing below, the parties acknowledge that they have read, understand, and agree to be bound by the terms and conditions of this Agreement."
+      },
+      {
+        "id": "block_1777548708471_l77jjs",
+        "type": "paragraph",
+        "html": "<p>COMPANY A:</p>",
+        "text": "COMPANY A:"
+      },
+      {
+        "id": "block_1777548708471_ym3xvc",
+        "type": "paragraph",
+        "html": "<p>Signature: _____________________________<br/>Name: __________________________________<br/>Title: __________________________________<br/>Date: __________________________________</p>",
+        "text": "Signature: _____________________________\nName: __________________________________\nTitle: __________________________________\nDate: __________________________________"
+      },
+      {
+        "id": "block_1777548708471_svwqry",
+        "type": "paragraph",
+        "html": "<p>COMPANY B:</p>",
+        "text": "COMPANY B:"
+      },
+      {
+        "id": "block_1777548708471_5x1399",
+        "type": "paragraph",
+        "html": "<p>Signature: _____________________________<br/>Name: __________________________________<br/>Title: __________________________________<br/>Date: __________________________________</p>",
+        "text": "Signature: _____________________________\nName: __________________________________\nTitle: __________________________________\nDate: __________________________________"
+      }
+    ],
+    "html": "<h1>AGREEMENT BETWEEN [COMPANY A] AND [COMPANY B]</h1>\n<div><p>RECITALS</p></div>\n<div><p>WHEREAS, Company A and Company B wish to establish a business relationship whereby Company A will provide [DESCRIPTION OF SERVICES/PRODUCTS] to Company B; and</p></div>\n<div><p>This Agreement (\"Agreement\") is entered into on [DATE] (\"Effective Date\") by and between [COMPANY A], a [STATE/COUNTRY] corporation with its principal place of business at [ADDRESS] (\"Company A\"), and [COMPANY B], a [STATE/COUNTRY] corporation with its principal place of business at [ADDRESS] (\"Company B\").</p></div>\n<div><p>WHEREAS, the parties wish to set forth the terms and conditions of their relationship in this Agreement.</p></div>\n<div><p>ARTICLE 1: DEFINITIONS</p></div>\n<div><p>For the purposes of this Agreement, the following definitions shall apply:</p></div>\n<div><p>* \"Services\" means the [DESCRIPTION OF SERVICES] to be provided by Company A to Company B.<br/>* \"Products\" means the [DESCRIPTION OF PRODUCTS] to be provided by Company A to Company B.<br/>* \"Confidential Information\" means any and all information, whether written or oral, that is disclosed by one party to the other party, including but not limited to trade secrets, business strategies, and technical data.</p></div>\n<div><p>ARTICLE 2: TERM AND TERMINATION</p></div>\n<div><p>The term of this Agreement shall commence on the Effective Date and shall continue for a period of [LENGTH OF TERM] months/years. Upon expiration of the initial term, this Agreement shall automatically renew for successive [LENGTH OF RENEWAL TERM] month/year periods unless either party gives written notice of termination to the other party at least [NUMBER] days prior to the end of the then-current term.</p></div>\n<div><p>Either party may terminate this Agreement upon [NUMBER] days' written notice to the other party in the event of a material breach of this Agreement by the other party that remains uncured for [NUMBER] days.</p></div>\n<div><p>ARTICLE 3: OBLIGATIONS OF COMPANY A</p></div>\n<div><p>Company A shall:</p></div>\n<div><p>* Provide the Services and/or Products to Company B in accordance with the terms and conditions of this Agreement.<br/>* Ensure that all Services and/or Products provided to Company B are of high quality and meet the standards of Company B.<br/>* Maintain the confidentiality of all Confidential Information disclosed by Company B.</p></div>\n<div><p>ARTICLE 4: OBLIGATIONS OF COMPANY B</p></div>\n<div><p>Company B shall:</p></div>\n<div><p>* Pay Company A the fees and expenses set forth in Article 5 below.<br/>* Provide Company A with all necessary information and assistance required to perform the Services and/or provide the Products.<br/>* Maintain the confidentiality of all Confidential Information disclosed by Company A.</p></div>\n<div><p>ARTICLE 5: FEES AND EXPENSES</p></div>\n<div><p>Company B shall pay Company A the following fees and expenses:</p></div>\n<div><p>* A monthly fee of $[AMOUNT] for the Services and/or Products provided by Company A.<br/>* Reimbursement of all reasonable expenses incurred by Company A in connection with the provision of the Services and/or Products.</p></div>\n<div><p>ARTICLE 6: INTELLECTUAL PROPERTY</p></div>\n<div><p>Company A retains all right, title, and interest in and to the Services and/or Products, including all intellectual property rights thereto. Company B shall not acquire any rights or interests in the Services and/or Products, except as expressly set forth in this Agreement.</p></div>\n<div><p>ARTICLE 7: CONFIDENTIALITY</p></div>\n<div><p>The parties agree to maintain the confidentiality of all Confidential Information disclosed by the other party. Neither party shall disclose any Confidential Information to any third party without the prior written consent of the other party.</p></div>\n<div><p>ARTICLE 8: REPRESENTATIONS AND WARRANTIES</p></div>\n<div><p>Each party represents and warrants to the other that:</p></div>\n<div><p>* It has the right to enter into this Agreement and to perform its obligations hereunder.<br/>* It shall comply with all applicable laws and regulations in the performance of its obligations under this Agreement.</p></div>\n<div><p>ARTICLE 9: LIMITATION OF LIABILITY</p></div>\n<div><p>In no event shall either party be liable to the other for any indirect, special, punitive, or consequential damages, including but not limited to loss of profits, revenue, or data, arising out of or related to this Agreement.</p></div>\n<div><p>ARTICLE 10: GOVERNING LAW</p></div>\n<div><p>This Agreement shall be governed by and construed in accordance with the laws of [STATE/COUNTRY]. Any disputes arising out of or related to this Agreement shall be resolved through [DISPUTE RESOLUTION PROCESS].</p></div>\n<div><p>By signing below, the parties acknowledge that they have read, understand, and agree to be bound by the terms and conditions of this Agreement.</p></div>\n<div><p>COMPANY A:</p></div>\n<div><p>Signature: _____________________________<br/>Name: __________________________________<br/>Title: __________________________________<br/>Date: __________________________________</p></div>\n<div><p>COMPANY B:</p></div>\n<div><p>Signature: _____________________________<br/>Name: __________________________________<br/>Title: __________________________________<br/>Date: __________________________________</p></div>",
+    "plainText": "AGREEMENT BETWEEN [COMPANY A] AND [COMPANY B]\n\n RECITALS\n\n WHEREAS, Company A and Company B wish to establish a business relationship whereby Company A will provide [DESCRIPTION OF SERVICES/PRODUCTS] to Company B; and\n\n This Agreement (\"Agreement\") is entered into on [DATE] (\"Effective Date\") by and between [COMPANY A], a [STATE/COUNTRY] corporation with its principal place of business at [ADDRESS] (\"Company A\"), and [COMPANY B], a [STATE/COUNTRY] corporation with its principal place of business at [ADDRESS] (\"Company B\").\n\n WHEREAS, the parties wish to set forth the terms and conditions of their relationship in this Agreement.\n\n ARTICLE 1: DEFINITIONS\n\n For the purposes of this Agreement, the following definitions shall apply:\n\n * \"Services\" means the [DESCRIPTION OF SERVICES] to be provided by Company A to Company B.\n* \"Products\" means the [DESCRIPTION OF PRODUCTS] to be provided by Company A to Company B.\n* \"Confidential Information\" means any and all information, whether written or oral, that is disclosed by one party to the other party, including but not limited to trade secrets, business strategies, and technical data.\n\n ARTICLE 2: TERM AND TERMINATION\n\n The term of this Agreement shall commence on the Effective Date and shall continue for a period of [LENGTH OF TERM] months/years. Upon expiration of the initial term, this Agreement shall automatically renew for successive [LENGTH OF RENEWAL TERM] month/year periods unless either party gives written notice of termination to the other party at least [NUMBER] days prior to the end of the then-current term.\n\n Either party may terminate this Agreement upon [NUMBER] days' written notice to the other party in the event of a material breach of this Agreement by the other party that remains uncured for [NUMBER] days.\n\n ARTICLE 3: OBLIGATIONS OF COMPANY A\n\n Company A shall:\n\n * Provide the Services and/or Products to Company B in accordance with the terms and conditions of this Agreement.\n* Ensure that all Services and/or Products provided to Company B are of high quality and meet the standards of Company B.\n* Maintain the confidentiality of all Confidential Information disclosed by Company B.\n\n ARTICLE 4: OBLIGATIONS OF COMPANY B\n\n Company B shall:\n\n * Pay Company A the fees and expenses set forth in Article 5 below.\n* Provide Company A with all necessary information and assistance required to perform the Services and/or provide the Products.\n* Maintain the confidentiality of all Confidential Information disclosed by Company A.\n\n ARTICLE 5: FEES AND EXPENSES\n\n Company B shall pay Company A the following fees and expenses:\n\n * A monthly fee of $[AMOUNT] for the Services and/or Products provided by Company A.\n* Reimbursement of all reasonable expenses incurred by Company A in connection with the provision of the Services and/or Products.\n\n ARTICLE 6: INTELLECTUAL PROPERTY\n\n Company A retains all right, title, and interest in and to the Services and/or Products, including all intellectual property rights thereto. Company B shall not acquire any rights or interests in the Services and/or Products, except as expressly set forth in this Agreement.\n\n ARTICLE 7: CONFIDENTIALITY\n\n The parties agree to maintain the confidentiality of all Confidential Information disclosed by the other party. Neither party shall disclose any Confidential Information to any third party without the prior written consent of the other party.\n\n ARTICLE 8: REPRESENTATIONS AND WARRANTIES\n\n Each party represents and warrants to the other that:\n\n * It has the right to enter into this Agreement and to perform its obligations hereunder.\n* It shall comply with all applicable laws and regulations in the performance of its obligations under this Agreement.\n\n ARTICLE 9: LIMITATION OF LIABILITY\n\n In no event shall either party be liable to the other for any indirect, special, punitive, or consequential damages, including but not limited to loss of profits, revenue, or data, arising out of or related to this Agreement.\n\n ARTICLE 10: GOVERNING LAW\n\n This Agreement shall be governed by and construed in accordance with the laws of [STATE/COUNTRY]. Any disputes arising out of or related to this Agreement shall be resolved through [DISPUTE RESOLUTION PROCESS].\n\n By signing below, the parties acknowledge that they have read, understand, and agree to be bound by the terms and conditions of this Agreement.\n\n COMPANY A:\n\n Signature: _____________________________\nName: __________________________________\nTitle: __________________________________\nDate: __________________________________\n\n COMPANY B:\n\n Signature: _____________________________\nName: __________________________________\nTitle: __________________________________\nDate: __________________________________",
+    "wordCount": 703,
+    "readTimeMinutes": 4,
+    "lastAiAction": "generate",
+    "shareMode": "private",
+    "sharedAccess": [],
+    "accessGroups": [],
+    "createdAt": "2026-04-30T11:31:19.956Z",
+    "updatedAt": "2026-04-30T11:32:21.337Z",
+    "versions": [
+      {
+        "id": "dwv-1777548741337-ln5jvw",
+        "title": "Untitled document",
+        "html": "<h1>AGREEMENT BETWEEN [COMPANY A] AND [COMPANY B]</h1>\n<div><p>This Agreement (\"Agreement\") is entered into on [DATE] (\"Effective Date\") by and between [COMPANY A], a [STATE/COUNTRY] corporation with its principal place of business at [ADDRESS] (\"Company A\"), and [COMPANY B], a [STATE/COUNTRY] corporation with its principal place of business at [ADDRESS] (\"Company B\").</p></div>\n<div><p>RECITALS</p></div>\n<div><p>WHEREAS, Company A and Company B wish to establish a business relationship whereby Company A will provide [DESCRIPTION OF SERVICES/PRODUCTS] to Company B; and</p></div>\n<div><p>WHEREAS, the parties wish to set forth the terms and conditions of their relationship in this Agreement.</p></div>\n<div><p>ARTICLE 1: DEFINITIONS</p></div>\n<div><p>For the purposes of this Agreement, the following definitions shall apply:</p></div>\n<div><p>* \"Services\" means the [DESCRIPTION OF SERVICES] to be provided by Company A to Company B.<br/>* \"Products\" means the [DESCRIPTION OF PRODUCTS] to be provided by Company A to Company B.<br/>* \"Confidential Information\" means any and all information, whether written or oral, that is disclosed by one party to the other party, including but not limited to trade secrets, business strategies, and technical data.</p></div>\n<div><p>ARTICLE 2: TERM AND TERMINATION</p></div>\n<div><p>The term of this Agreement shall commence on the Effective Date and shall continue for a period of [LENGTH OF TERM] months/years. Upon expiration of the initial term, this Agreement shall automatically renew for successive [LENGTH OF RENEWAL TERM] month/year periods unless either party gives written notice of termination to the other party at least [NUMBER] days prior to the end of the then-current term.</p></div>\n<div><p>Either party may terminate this Agreement upon [NUMBER] days' written notice to the other party in the event of a material breach of this Agreement by the other party that remains uncured for [NUMBER] days.</p></div>\n<div><p>ARTICLE 3: OBLIGATIONS OF COMPANY A</p></div>\n<div><p>Company A shall:</p></div>\n<div><p>* Provide the Services and/or Products to Company B in accordance with the terms and conditions of this Agreement.<br/>* Ensure that all Services and/or Products provided to Company B are of high quality and meet the standards of Company B.<br/>* Maintain the confidentiality of all Confidential Information disclosed by Company B.</p></div>\n<div><p>ARTICLE 4: OBLIGATIONS OF COMPANY B</p></div>\n<div><p>Company B shall:</p></div>\n<div><p>* Pay Company A the fees and expenses set forth in Article 5 below.<br/>* Provide Company A with all necessary information and assistance required to perform the Services and/or provide the Products.<br/>* Maintain the confidentiality of all Confidential Information disclosed by Company A.</p></div>\n<div><p>ARTICLE 5: FEES AND EXPENSES</p></div>\n<div><p>Company B shall pay Company A the following fees and expenses:</p></div>\n<div><p>* A monthly fee of $[AMOUNT] for the Services and/or Products provided by Company A.<br/>* Reimbursement of all reasonable expenses incurred by Company A in connection with the provision of the Services and/or Products.</p></div>\n<div><p>ARTICLE 6: INTELLECTUAL PROPERTY</p></div>\n<div><p>Company A retains all right, title, and interest in and to the Services and/or Products, including all intellectual property rights thereto. Company B shall not acquire any rights or interests in the Services and/or Products, except as expressly set forth in this Agreement.</p></div>\n<div><p>ARTICLE 7: CONFIDENTIALITY</p></div>\n<div><p>The parties agree to maintain the confidentiality of all Confidential Information disclosed by the other party. Neither party shall disclose any Confidential Information to any third party without the prior written consent of the other party.</p></div>\n<div><p>ARTICLE 8: REPRESENTATIONS AND WARRANTIES</p></div>\n<div><p>Each party represents and warrants to the other that:</p></div>\n<div><p>* It has the right to enter into this Agreement and to perform its obligations hereunder.<br/>* It shall comply with all applicable laws and regulations in the performance of its obligations under this Agreement.</p></div>\n<div><p>ARTICLE 9: LIMITATION OF LIABILITY</p></div>\n<div><p>In no event shall either party be liable to the other for any indirect, special, punitive, or consequential damages, including but not limited to loss of profits, revenue, or data, arising out of or related to this Agreement.</p></div>\n<div><p>ARTICLE 10: GOVERNING LAW</p></div>\n<div><p>This Agreement shall be governed by and construed in accordance with the laws of [STATE/COUNTRY]. Any disputes arising out of or related to this Agreement shall be resolved through [DISPUTE RESOLUTION PROCESS].</p></div>\n<div><p>By signing below, the parties acknowledge that they have read, understand, and agree to be bound by the terms and conditions of this Agreement.</p></div>\n<div><p>COMPANY A:</p></div>\n<div><p>Signature: _____________________________<br/>Name: __________________________________<br/>Title: __________________________________<br/>Date: __________________________________</p></div>\n<div><p>COMPANY B:</p></div>\n<div><p>Signature: _____________________________<br/>Name: __________________________________<br/>Title: __________________________________<br/>Date: __________________________________</p></div>",
+        "plainText": "AGREEMENT BETWEEN [COMPANY A] AND [COMPANY B]\n\n This Agreement (\"Agreement\") is entered into on [DATE] (\"Effective Date\") by and between [COMPANY A], a [STATE/COUNTRY] corporation with its principal place of business at [ADDRESS] (\"Company A\"), and [COMPANY B], a [STATE/COUNTRY] corporation with its principal place of business at [ADDRESS] (\"Company B\").\n\n RECITALS\n\n WHEREAS, Company A and Company B wish to establish a business relationship whereby Company A will provide [DESCRIPTION OF SERVICES/PRODUCTS] to Company B; and\n\n WHEREAS, the parties wish to set forth the terms and conditions of their relationship in this Agreement.\n\n ARTICLE 1: DEFINITIONS\n\n For the purposes of this Agreement, the following definitions shall apply:\n\n * \"Services\" means the [DESCRIPTION OF SERVICES] to be provided by Company A to Company B.\n* \"Products\" means the [DESCRIPTION OF PRODUCTS] to be provided by Company A to Company B.\n* \"Confidential Information\" means any and all information, whether written or oral, that is disclosed by one party to the other party, including but not limited to trade secrets, business strategies, and technical data.\n\n ARTICLE 2: TERM AND TERMINATION\n\n The term of this Agreement shall commence on the Effective Date and shall continue for a period of [LENGTH OF TERM] months/years. Upon expiration of the initial term, this Agreement shall automatically renew for successive [LENGTH OF RENEWAL TERM] month/year periods unless either party gives written notice of termination to the other party at least [NUMBER] days prior to the end of the then-current term.\n\n Either party may terminate this Agreement upon [NUMBER] days' written notice to the other party in the event of a material breach of this Agreement by the other party that remains uncured for [NUMBER] days.\n\n ARTICLE 3: OBLIGATIONS OF COMPANY A\n\n Company A shall:\n\n * Provide the Services and/or Products to Company B in accordance with the terms and conditions of this Agreement.\n* Ensure that all Services and/or Products provided to Company B are of high quality and meet the standards of Company B.\n* Maintain the confidentiality of all Confidential Information disclosed by Company B.\n\n ARTICLE 4: OBLIGATIONS OF COMPANY B\n\n Company B shall:\n\n * Pay Company A the fees and expenses set forth in Article 5 below.\n* Provide Company A with all necessary information and assistance required to perform the Services and/or provide the Products.\n* Maintain the confidentiality of all Confidential Information disclosed by Company A.\n\n ARTICLE 5: FEES AND EXPENSES\n\n Company B shall pay Company A the following fees and expenses:\n\n * A monthly fee of $[AMOUNT] for the Services and/or Products provided by Company A.\n* Reimbursement of all reasonable expenses incurred by Company A in connection with the provision of the Services and/or Products.\n\n ARTICLE 6: INTELLECTUAL PROPERTY\n\n Company A retains all right, title, and interest in and to the Services and/or Products, including all intellectual property rights thereto. Company B shall not acquire any rights or interests in the Services and/or Products, except as expressly set forth in this Agreement.\n\n ARTICLE 7: CONFIDENTIALITY\n\n The parties agree to maintain the confidentiality of all Confidential Information disclosed by the other party. Neither party shall disclose any Confidential Information to any third party without the prior written consent of the other party.\n\n ARTICLE 8: REPRESENTATIONS AND WARRANTIES\n\n Each party represents and warrants to the other that:\n\n * It has the right to enter into this Agreement and to perform its obligations hereunder.\n* It shall comply with all applicable laws and regulations in the performance of its obligations under this Agreement.\n\n ARTICLE 9: LIMITATION OF LIABILITY\n\n In no event shall either party be liable to the other for any indirect, special, punitive, or consequential damages, including but not limited to loss of profits, revenue, or data, arising out of or related to this Agreement.\n\n ARTICLE 10: GOVERNING LAW\n\n This Agreement shall be governed by and construed in accordance with the laws of [STATE/COUNTRY]. Any disputes arising out of or related to this Agreement shall be resolved through [DISPUTE RESOLUTION PROCESS].\n\n By signing below, the parties acknowledge that they have read, understand, and agree to be bound by the terms and conditions of this Agreement.\n\n COMPANY A:\n\n Signature: _____________________________\nName: __________________________________\nTitle: __________________________________\nDate: __________________________________\n\n COMPANY B:\n\n Signature: _____________________________\nName: __________________________________\nTitle: __________________________________\nDate: __________________________________",
+        "createdAt": "2026-04-30T11:32:21.337Z",
+        "source": "autosave"
+      },
+      {
+        "id": "dwv-1777548714137-0zko6w",
+        "title": "Untitled document",
+        "html": "<div><p></p></div>",
+        "plainText": "",
+        "createdAt": "2026-04-30T11:31:54.137Z",
+        "source": "autosave"
+      }
+    ]
+  },
+  {
+    "id": "dwd-1777322143740-4rcwfx",
+    "ownerUserId": "1",
+    "ownerEmail": "admin@company.com",
+    "title": "Untitled document",
+    "emoji": "✍️",
+    "isFavorite": false,
+    "folderName": "General",
+    "documentTheme": "classic",
+    "requireSignature": false,
+    "signatures": [],
+    "trackChangesEnabled": false,
+    "trackedChanges": [],
+    "selectionComments": [],
+    "blocks": [
+      {
+        "id": "dwb-1777322143739-ue7uhw",
+        "type": "paragraph",
+        "html": "<p></p>",
+        "text": ""
+      }
+    ],
+    "html": "<div><p></p></div>",
+    "plainText": "",
+    "wordCount": 0,
+    "readTimeMinutes": 1,
+    "shareMode": "private",
+    "sharedAccess": [],
+    "accessGroups": [],
+    "createdAt": "2026-04-27T20:35:43.739Z",
+    "updatedAt": "2026-04-27T20:35:43.739Z",
+    "versions": []
+  }
+]

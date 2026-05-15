@@ -24,9 +24,20 @@ export async function updateSession(request: NextRequest) {
     return response;
   }
 
+  if (process.env.SUPABASE_MIDDLEWARE_DISABLED === 'true') {
+    return response;
+  }
+
   const { supabaseUrl, supabaseKey } = config;
 
+  const timeoutMs = Number(process.env.SUPABASE_MIDDLEWARE_TIMEOUT_MS)
+    || (process.env.NODE_ENV === 'development' ? 800 : 2000);
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
   const supabase = createServerClient(supabaseUrl, supabaseKey, {
+    global: { fetch: (url, init) => fetch(url, { ...init, signal: controller.signal }) },
     cookies: {
       getAll() {
         return request.cookies.getAll();
@@ -44,7 +55,9 @@ export async function updateSession(request: NextRequest) {
   try {
     await supabase.auth.getUser();
   } catch {
-    return response;
+    // Timeout, network error, or abort — continue without auth
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   return response;

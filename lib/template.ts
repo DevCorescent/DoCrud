@@ -2,7 +2,7 @@ import { DocumentTemplate, RecipientSignatureRecord, SignatureRecord } from '@/t
 import { DEFAULT_DOCUMENT_DESIGN_PRESET, type DocumentDesignPreset, isDocumentDesignPreset } from '@/lib/document-designs';
 import { formatSignatureLocation } from '@/lib/location';
 
-const BRAND_LOGO_SRC = '/corescent-logo.png';
+const BRAND_LOGO_SRC = '/docrud-logo.png';
 
 function generateDocumentNumber(referenceNumber?: string) {
   if (referenceNumber) {
@@ -76,6 +76,19 @@ function buildFallbackBody(template: DocumentTemplate, data: Record<string, stri
 function injectValues(html: string, template: DocumentTemplate, data: Record<string, string>) {
   let output = html;
 
+  // Optional conditional blocks (used by Template Studio no-code builder):
+  // <!--DOCIF field:present--> ... <!--DOCENDIF-->
+  // <!--DOCIF field:value--> ... <!--DOCENDIF-->
+  // This is intentionally simple and non-nesting to keep templates deterministic.
+  output = output.replace(/<!--DOCIF\s+([a-zA-Z0-9_]+)\s*:\s*([^>]+?)\s*-->([\s\S]*?)<!--DOCENDIF-->/g, (_m, fieldName: string, rawRule: string, inner: string) => {
+    const rule = String(rawRule || '').trim();
+    const value = String((data as any)?.[fieldName] ?? '').trim();
+    if (rule.toLowerCase() === 'present') {
+      return value ? inner : '';
+    }
+    return value === rule ? inner : '';
+  });
+
   template.fields.forEach((field) => {
     const safeValue = field.type === 'textarea'
       ? sanitizeRichText(data[field.name] || '')
@@ -143,10 +156,10 @@ function buildDocumentHeader(
       <div class="meta meta-${designPreset}">
         <div class="meta-row meta-row-page"><span class="meta-page-chip">${pageCounter}</span></div>
         <div class="meta-row"><span class="meta-label">Platform:</span> <span class="meta-value">docrud secure document cloud</span></div>
-        <div class="meta-row"><span class="meta-value">sample.workspace@docrud.app</span></div>
+        <div class="meta-row"><span class="meta-value">sample.workspace@docrud.com</span></div>
         <div class="meta-row"><span class="meta-value">Tenant-safe preview and export flow</span></div>
         <div class="meta-row"><span class="meta-value">Audit-ready metadata and approvals</span></div>
-        <div class="meta-row website-row"><span class="meta-value">www.docrud.app</span></div>
+        <div class="meta-row website-row"><span class="meta-value">www.docrud.com</span></div>
       </div>
     </section>
   `;
@@ -167,18 +180,46 @@ export function renderDocumentTemplate(
     letterheadHtml?: string;
     brandLogoSrc?: string;
     designPreset?: DocumentDesignPreset;
+    renderMode?: 'platform' | 'plain';
+    pageSize?: 'A4' | 'Letter' | 'Legal';
+    pageWidthMm?: number;
+    pageHeightMm?: number;
+    pageMarginMm?: number;
+    pageNumbersEnabled?: boolean;
+    pageBackgroundCss?: string;
   }
 ) {
   const brandLogoSrc = options?.brandLogoSrc || BRAND_LOGO_SRC;
   const designPreset = isDocumentDesignPreset(options?.designPreset) ? options.designPreset : DEFAULT_DOCUMENT_DESIGN_PRESET;
+  const wantsPlain = options?.renderMode === 'plain';
   const rawBody = template.template && template.template.trim() !== '...' && template.template.trim().length > 20
     ? injectValues(template.template, template, data)
-    : buildFallbackBody(template, data);
+    : (wantsPlain ? '' : buildFallbackBody(template, data));
+
+  if (template.category === 'Forms' || template.formAppearance) {
+    return `
+      <!DOCTYPE html>
+      <html lang="en">
+        <head>
+          <meta charset="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <style>
+            body {
+              margin: 0;
+              background: #f8fafc;
+            }
+          </style>
+        </head>
+        <body>
+          ${rawBody}
+        </body>
+      </html>
+    `;
+  }
 
   const generatedAt = options?.generatedAt ? new Date(options.generatedAt).toLocaleString() : new Date().toLocaleString();
   const pageCounter = template.id === 'contractual-agreement' ? 'Page 1 of 3' : 'Page 1 of 1';
   const documentNumber = generateDocumentNumber(options?.referenceNumber);
-  const headerMarkup = buildDocumentHeader(designPreset, brandLogoSrc, pageCounter);
 
   const signatureMarkup = options?.signature?.signatureDataUrl
     ? `
@@ -197,22 +238,158 @@ export function renderDocumentTemplate(
   const recipientSignatureMarkup = options?.recipientSignature?.signatureDataUrl
     ? `
       <section class="signature-block recipient-signature">
-        <div>
+        <div class="signature-grid">
+          <div>
           <p class="signature-label">Recipient Signature</p>
           <img class="signature-image" src="${options.recipientSignature.signatureDataUrl}" alt="Recipient signature" />
           <p class="signature-name">${escapeHtml(options.recipientSignature.signerName)}</p>
           <p class="signature-meta">Captured ${escapeHtml(options.recipientSignature.signedAt || '')}</p>
           <p class="signature-meta">IP Address: ${escapeHtml(options.recipientSignature.signedIp || 'unknown')}</p>
+          ${options.recipientSignature.aadhaarVerifiedAt ? `
+            <p class="signature-meta">Aadhaar verified: ${escapeHtml(options.recipientSignature.aadhaarMaskedId || 'verified identity')} on ${escapeHtml(options.recipientSignature.aadhaarVerifiedAt)}</p>
+            <p class="signature-meta">Verification ref: ${escapeHtml(options.recipientSignature.aadhaarReferenceId || 'not available')} via ${escapeHtml(options.recipientSignature.aadhaarProviderLabel || 'configured gateway')}</p>
+          ` : ''}
           <p class="signature-meta">Signing Location: ${escapeHtml(formatSignatureLocation({
             label: options.recipientSignature.signedLocationLabel,
             latitude: options.recipientSignature.signedLatitude,
             longitude: options.recipientSignature.signedLongitude,
             accuracyMeters: options.recipientSignature.signedAccuracyMeters,
           }))}</p>
+          </div>
+          ${options.recipientSignature.signerPhotoDataUrl ? `
+            <div class="signature-proof-card">
+              <p class="signature-label">Live Signer Photo</p>
+              <img class="signature-proof-image" src="${options.recipientSignature.signerPhotoDataUrl}" alt="Live signer verification capture" />
+              <p class="signature-meta">Captured ${escapeHtml(options.recipientSignature.signerPhotoCapturedAt || '')}</p>
+              <p class="signature-meta">Capture IP: ${escapeHtml(options.recipientSignature.signerPhotoCapturedIp || 'unknown')}</p>
+              <p class="signature-meta">Method: ${escapeHtml(options.recipientSignature.signerPhotoCaptureMethod === 'live_camera' ? 'Live camera capture' : 'Captured evidence')}</p>
+            </div>
+          ` : ''}
         </div>
       </section>
     `
     : '';
+
+  if (wantsPlain) {
+    const size = options?.pageSize || 'A4';
+    const watermarkLabel = String(options?.watermarkLabel || '').trim();
+    const page = (() => {
+      if (Number.isFinite(options?.pageWidthMm) && Number.isFinite(options?.pageHeightMm)) {
+        return {
+          w: Math.max(120, Number(options?.pageWidthMm)),
+          h: Math.max(120, Number(options?.pageHeightMm)),
+        };
+      }
+      if (size === 'Letter') return { w: 215.9, h: 279.4 };
+      if (size === 'Legal') return { w: 215.9, h: 355.6 };
+      return { w: 210, h: 297 };
+    })();
+    const marginMm = Number.isFinite(options?.pageMarginMm) ? Math.max(0, Number(options?.pageMarginMm)) : 16;
+    const pageNumbersEnabled = Boolean(options?.pageNumbersEnabled);
+    const sanitizePageBackgroundCss = (value: unknown) => {
+      const v = String(value ?? '').trim();
+      if (!v) return '';
+      if (/^#[0-9a-fA-F]{3,8}$/.test(v)) return v;
+      if (/^(rgb|rgba)\(/i.test(v)) return v;
+      if (/^(linear-gradient|radial-gradient)\(/i.test(v)) return v;
+      // allow shorthand that includes an embedded data URL image
+      if (/url\(\s*['"]?data:image\//i.test(v)) return v;
+      return '';
+    };
+    const pageBackgroundCss = sanitizePageBackgroundCss(options?.pageBackgroundCss) || '#ffffff';
+
+    const watermarkSvg = watermarkLabel
+      ? (() => {
+          const safe = escapeHtml(watermarkLabel).toUpperCase();
+          const svg = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="420" height="320">
+              <defs>
+                <style>
+                  .wm{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-weight:800;letter-spacing:.32em;fill:rgba(15,23,42,.14)}
+                </style>
+              </defs>
+              <g transform="translate(210 160) rotate(-24)">
+                <text class="wm" text-anchor="middle" font-size="34">${safe}</text>
+              </g>
+            </svg>
+          `.trim();
+          return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+        })()
+      : '';
+
+    return `
+      <!DOCTYPE html>
+      <html lang="en">
+        <head>
+          <meta charset="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <style>
+            * { box-sizing: border-box; }
+            @page {
+              size: ${page.w}mm ${page.h}mm;
+              margin: ${marginMm}mm;
+            }
+            body {
+              margin: 0;
+              background: transparent;
+              color: #0b1220;
+            }
+            .page {
+              position: relative;
+              width: ${page.w}mm;
+              margin: 0 auto;
+              padding: ${marginMm}mm;
+              background: ${pageBackgroundCss};
+              /* Important: do not clip content, otherwise PDF pagination and long templates get cut. */
+              overflow: visible;
+              border: none;
+              box-shadow: none;
+            }
+            ${watermarkLabel ? `
+              .page::before{
+                content:"";
+                position:absolute;
+                inset:-20mm;
+                pointer-events:none;
+                user-select:none;
+                background-image:url("${watermarkSvg}");
+                background-repeat:repeat;
+                background-size:420px 320px;
+                opacity:0.14;
+                z-index:0;
+              }
+              .page > * { position: relative; z-index: 1; }
+            ` : ''}
+            .page-number {
+              position: fixed;
+              bottom: 10mm;
+              right: 10mm;
+              font-family: ui-sans-serif, system-ui;
+              font-size: 10px;
+              color: rgba(15, 23, 42, 0.55);
+            }
+            .page-number::after {
+              content: "Page " counter(page) " of " counter(pages);
+            }
+            @media print {
+              body { background: #fff; }
+              .page { margin: 0; box-shadow: none; border: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="page">
+            ${rawBody}
+            ${signatureMarkup}
+            ${recipientSignatureMarkup}
+          </div>
+          ${pageNumbersEnabled ? '<div class="page-number"></div>' : ''}
+        </body>
+      </html>
+    `;
+  }
+
+  const headerMarkup = buildDocumentHeader(designPreset, brandLogoSrc, pageCounter);
 
   const poweredFooter = `
     <footer class="powered-footer">
@@ -229,7 +406,7 @@ export function renderDocumentTemplate(
         <span class="powered-footer-line">For workspace setup, platform enablement, and premium rollout support, contact the docrud team.</span>
         <span class="powered-footer-line">docrud maintains platform controls and security boundaries, while each client tenant is expected to maintain its own confidentiality and compliance standards throughout the document lifecycle.</span>
       </div>
-      <a class="powered-footer-button" href="https://www.docrud.app/contact" target="_blank" rel="noreferrer">Contact docrud</a>
+      <a class="powered-footer-button" href="https://www.docrud.com/contact" target="_blank" rel="noreferrer">Contact docrud</a>
     </footer>
   `;
 
@@ -271,8 +448,8 @@ export function renderDocumentTemplate(
             font-weight: 900;
             letter-spacing: 0.18em;
             text-transform: lowercase;
-            color: rgba(15, 23, 42, 0.06);
-            opacity: 0.08;
+            color: rgba(15, 23, 42, 0.1);
+            opacity: 0.14;
           }
           .watermark-text {
             position: absolute;
@@ -281,7 +458,7 @@ export function renderDocumentTemplate(
             font-weight: 700;
             letter-spacing: 0.28em;
             text-transform: uppercase;
-            color: rgba(15, 23, 42, 0.08);
+            color: rgba(15, 23, 42, 0.14);
             text-align: center;
             line-height: 1.25;
           }
@@ -765,6 +942,13 @@ export function renderDocumentTemplate(
           .recipient-signature {
             margin-top: 24px;
           }
+          .signature-grid {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 24px;
+            flex-wrap: wrap;
+          }
           .signature-label {
             text-transform: uppercase;
             letter-spacing: 0.14em;
@@ -778,6 +962,23 @@ export function renderDocumentTemplate(
             max-height: 96px;
             object-fit: contain;
             margin-bottom: 10px;
+          }
+          .signature-proof-card {
+            min-width: 200px;
+            max-width: 240px;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            background: rgba(248, 250, 252, 0.95);
+            border-radius: 18px;
+            padding: 14px;
+          }
+          .signature-proof-image {
+            display: block;
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            border-radius: 14px;
+            margin-bottom: 10px;
+            background: #e2e8f0;
           }
           .signature-name {
             font-weight: 700;

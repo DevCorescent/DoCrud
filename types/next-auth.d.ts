@@ -13,6 +13,9 @@ declare module 'next-auth' {
       organizationName?: string | null;
       subscription?: SaasSubscription;
       planFeatures?: string[];
+      accountType?: 'business' | 'individual';
+      workspaceAccessMode?: 'standard' | 'board_room_only';
+      boardRoomIds?: string[];
     };
   }
 
@@ -26,6 +29,9 @@ declare module 'next-auth' {
     organizationName?: string | null;
     subscription?: SaasSubscription;
     planFeatures?: string[];
+    accountType?: 'business' | 'individual';
+    workspaceAccessMode?: 'standard' | 'board_room_only';
+    boardRoomIds?: string[];
   }
 }
 
@@ -37,5 +43,8 @@ declare module 'next-auth/jwt' {
     organizationName?: string | null;
     subscription?: SaasSubscription;
     planFeatures?: string[];
+    accountType?: 'business' | 'individual';
+    workspaceAccessMode?: 'standard' | 'board_room_only';
+    boardRoomIds?: string[];
   }
 }

@@ -1,0 +1,29 @@
+{
+  "events": [
+    {
+      "id": "audit-mp538ds8-9exemn",
+      "createdAt": "2026-05-14T06:08:49.352Z",
+      "actorUserId": "super-admin",
+      "actorEmail": "kushagra@corescent.in",
+      "targetUserId": "3",
+      "targetEmail": "legal@company.com",
+      "action": "disable",
+      "reason": "Super admin action"
+    },
+    {
+      "id": "audit-mor1jibv-b7f6le",
+      "createdAt": "2026-05-04T10:12:42.763Z",
+      "actorUserId": "1",
+      "actorEmail": "admin@company.com",
+      "actorRole": "admin",
+      "targetUserId": "user-1777885344583",
+      "targetEmail": "corescenttech@gmail.com",
+      "action": "send_email",
+      "reason": "Subject: New Offer",
+      "metadata": {
+        "outboxId": "mail-mor1jgvy-iqwnzn",
+        "skipped": "false"
+      }
+    }
+  ]
+}

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { getAuthSession } from '@/lib/server/auth';
+import { appendEmailOutboxEvent, createOutboundEmailId } from '@/lib/server/email-outbox';
 import { isValidEmail } from '@/lib/server/security';
 import { getMailSettings } from '@/lib/server/settings';
+import { buildEmailChrome, escapeHtmlLite } from '@/lib/server/email-chrome';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -44,7 +46,29 @@ export async function POST(request: NextRequest) {
         to: testRecipient,
         subject: 'Corescent Technologies SMTP Test',
         text: 'This is a successful SMTP connectivity test from the Corescent document platform.',
+        html: buildEmailChrome({
+          origin: request.nextUrl.origin,
+          subject: 'Corescent Technologies SMTP Test',
+          bodyHtml: `<div style="font-size:14px; color:#0f172a;">${escapeHtmlLite('This is a successful SMTP connectivity test from the Corescent document platform.')}</div>`,
+        }),
       });
+    }
+
+    try {
+      const id = createOutboundEmailId('test');
+      await appendEmailOutboxEvent({
+        id,
+        createdAt: new Date().toISOString(),
+        status: 'tested',
+        type: 'test',
+        to: testRecipient || '(verify only)',
+        subject: testRecipient ? 'SMTP Test Email' : 'SMTP Verify',
+        sentAt: new Date().toISOString(),
+        sentBy: session.user.email || 'admin',
+        tracking: { opens: 0, clicks: 0 },
+      });
+    } catch {
+      // ignore logging errors
     }
 
     return NextResponse.json({ message: testRecipient ? 'SMTP test mail sent successfully' : 'SMTP connection verified successfully' });

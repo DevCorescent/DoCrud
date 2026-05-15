@@ -1,0 +1,47 @@
+[
+  {
+    "id": "d65fe6ae-e4d7-4086-b48c-40b8e3c476d9",
+    "itemId": "tplmkt-d03c6699-8c2e-46be-b386-a6809d50ade2",
+    "sellerUserId": "1",
+    "sellerEmail": "admin@company.com",
+    "buyerUserId": "user-1777875225147",
+    "purchaseId": "792037c9-75ea-43e0-81a1-c4f298522882",
+    "currency": "INR",
+    "grossAmountInPaise": 1000,
+    "commissionRate": 0.25,
+    "commissionAmountInPaise": 250,
+    "sellerNetAmountInPaise": 750,
+    "status": "pending",
+    "createdAt": "2026-05-04T06:16:00.944Z"
+  },
+  {
+    "id": "5861201f-af41-45aa-94e1-6fb9a9fe0fc4",
+    "itemId": "tplmkt-d03c6699-8c2e-46be-b386-a6809d50ade2",
+    "sellerUserId": "1",
+    "sellerEmail": "admin@company.com",
+    "buyerUserId": "user-1777718477893",
+    "purchaseId": "aae83125-a1f4-4b70-8a2d-3d54ee620a56",
+    "currency": "INR",
+    "grossAmountInPaise": 1000,
+    "commissionRate": 0.25,
+    "commissionAmountInPaise": 250,
+    "sellerNetAmountInPaise": 750,
+    "status": "pending",
+    "createdAt": "2026-05-02T10:47:18.873Z"
+  },
+  {
+    "id": "8a3c7bdb-c305-4f77-950d-d4cecef75f23",
+    "itemId": "tplmkt-d03c6699-8c2e-46be-b386-a6809d50ade2",
+    "sellerUserId": "1",
+    "sellerEmail": "admin@company.com",
+    "buyerUserId": "1",
+    "purchaseId": "a0c21117-5ba4-4c5f-840e-f4310819aebf",
+    "currency": "INR",
+    "grossAmountInPaise": 1000,
+    "commissionRate": 0.25,
+    "commissionAmountInPaise": 250,
+    "sellerNetAmountInPaise": 750,
+    "status": "pending",
+    "createdAt": "2026-04-30T09:33:58.475Z"
+  }
+]

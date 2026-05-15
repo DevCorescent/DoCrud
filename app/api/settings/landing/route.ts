@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/server/auth';
 import { defaultLandingSettings, getLandingSettings, saveLandingSettings } from '@/lib/server/settings';
-import { HomepageSectionToggles, LandingAudienceCard, LandingFeatureCard, LandingHeroBanner, LandingPricingPlan, LandingScreenshotCard, LandingSettings, LandingSoftwareModule, LandingStat } from '@/types/document';
+import { HomepageSectionToggles, LandingAudienceCard, LandingFeatureCard, LandingGettingStartedStep, LandingHeroBanner, LandingPricingPlan, LandingScreenshotCard, LandingSettings, LandingSoftwareModule, LandingStat } from '@/types/document';
 
 export const dynamic = 'force-dynamic';
 
@@ -72,6 +72,14 @@ function normalizeAudienceCard(card: Partial<LandingAudienceCard>, fallbackIndex
   };
 }
 
+function normalizeGettingStartedStep(step: Partial<LandingGettingStartedStep>, fallbackIndex: number): LandingGettingStartedStep {
+  return {
+    id: step.id?.trim() || `getting-started-${fallbackIndex + 1}`,
+    title: step.title?.trim() || `Step ${fallbackIndex + 1}`,
+    description: step.description?.trim() || 'Describe what the buyer should do at this step.',
+  };
+}
+
 function normalizeSectionToggles(toggles: Partial<HomepageSectionToggles> | undefined, current: HomepageSectionToggles): HomepageSectionToggles {
   return {
     hero: typeof toggles?.hero === 'boolean' ? toggles.hero : current.hero,
@@ -112,11 +120,16 @@ export async function PUT(request: NextRequest) {
       secondaryCtaLabel: payload.secondaryCtaLabel?.trim() || current.secondaryCtaLabel,
       secondaryCtaHref: payload.secondaryCtaHref?.trim() || current.secondaryCtaHref,
       socialProofLabel: payload.socialProofLabel?.trim() || current.socialProofLabel,
+      gettingStartedTitle: payload.gettingStartedTitle?.trim() || current.gettingStartedTitle,
+      gettingStartedSubtitle: payload.gettingStartedSubtitle?.trim() || current.gettingStartedSubtitle,
       audienceSectionTitle: payload.audienceSectionTitle?.trim() || current.audienceSectionTitle,
       audienceSectionSubtitle: payload.audienceSectionSubtitle?.trim() || current.audienceSectionSubtitle,
       socialProofItems: Array.isArray(payload.socialProofItems)
         ? payload.socialProofItems.map((item) => String(item).trim()).filter(Boolean)
         : current.socialProofItems,
+      gettingStartedSteps: Array.isArray(payload.gettingStartedSteps) && payload.gettingStartedSteps.length
+        ? payload.gettingStartedSteps.map((step, index) => normalizeGettingStartedStep(step, index))
+        : current.gettingStartedSteps,
       featureSectionTitle: payload.featureSectionTitle?.trim() || current.featureSectionTitle,
       softwareModulesTitle: payload.softwareModulesTitle?.trim() || current.softwareModulesTitle,
       softwareModulesSubtitle: payload.softwareModulesSubtitle?.trim() || current.softwareModulesSubtitle,

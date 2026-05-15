@@ -1,7 +1,8 @@
 import { DocumentAccessEvent, DocumentHistory, EmailLogEntry } from '@/types/document';
 import { DEFAULT_DOCUMENT_DESIGN_PRESET, isDocumentDesignPreset } from '@/lib/document-designs';
+import { normalizeDocSheetWorkbook } from '@/lib/docsheet';
 import { defaultBackgroundVerificationDocuments, deriveOnboardingProgress, deriveOnboardingStage, isOnboardingTemplate } from '@/lib/server/onboarding';
-import { historyFilePath, readJsonFile, writeJsonFile } from '@/lib/server/storage';
+import { getHistoryEntriesFromRepository, saveHistoryEntriesToRepository } from '@/lib/server/repositories';
 
 type HistoryInput = Partial<DocumentHistory> & {
   documentType?: string;
@@ -25,6 +26,7 @@ export function generateSharePassword() {
 export function normalizeHistoryEntry(entry: HistoryInput): DocumentHistory {
   const generatedAt = entry.generatedAt || new Date().toISOString();
   const shareId = entry.shareId || `doc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const shareRequiresPassword = entry.shareRequiresPassword !== false;
   const onboardingRequired = entry.onboardingRequired ?? isOnboardingTemplate(entry.templateId || entry.documentType, entry.category);
   const backgroundVerificationRequired = entry.backgroundVerificationRequired ?? onboardingRequired;
   const normalizedSubmittedDocuments = Array.isArray(entry.submittedDocuments) ? entry.submittedDocuments.map((document) => ({
@@ -57,11 +59,50 @@ export function normalizeHistoryEntry(entry: HistoryInput): DocumentHistory {
     repliedBy: question.repliedBy ? String(question.repliedBy) : undefined,
     status: question.status === 'resolved' ? ('resolved' as const) : ('open' as const),
   })) : [];
+
+  const normalizeRecipientSignaturePlacements = (raw: any): DocumentHistory['recipientSignaturePlacements'] => {
+    if (!raw || typeof raw !== 'object') return undefined;
+    if (raw.mode === 'boxes') {
+      const boxes = Array.isArray(raw.boxes) ? raw.boxes : [];
+      const normalizedBoxes = boxes
+        .filter((b: any) => b && typeof b === 'object')
+        .map((b: any, idx: number) => ({
+          id: String(b.id || `sigbox-${Date.now()}-${idx}`),
+          page: Math.max(1, Math.floor(Number(b.page) || 1)),
+          xPct: Math.min(1, Math.max(0, Number(b.xPct) || 0)),
+          yPct: Math.min(1, Math.max(0, Number(b.yPct) || 0)),
+          widthPct: Math.min(1, Math.max(0, Number(b.widthPct) || 0)),
+          heightPct: Math.min(1, Math.max(0, Number(b.heightPct) || 0)),
+          label: b.label ? String(b.label).slice(0, 64) : undefined,
+          signerKey: b.signerKey ? String(b.signerKey).slice(0, 64) : undefined,
+          required: b.required === false ? false : true,
+          pdfX: Number.isFinite(Number(b.pdfX)) ? Number(b.pdfX) : undefined,
+          pdfY: Number.isFinite(Number(b.pdfY)) ? Number(b.pdfY) : undefined,
+          pdfW: Number.isFinite(Number(b.pdfW)) ? Number(b.pdfW) : undefined,
+          pdfH: Number.isFinite(Number(b.pdfH)) ? Number(b.pdfH) : undefined,
+        }))
+        .filter((b: any) => b.widthPct > 0 && b.heightPct > 0);
+      return normalizedBoxes.length ? { mode: 'boxes', version: 1, boxes: normalizedBoxes } : undefined;
+    }
+    if (raw.mode === 'last' || raw.mode === 'all' || raw.mode === 'pages') {
+      const pages = Array.isArray(raw.pages) ? raw.pages.map((p: any) => Math.max(1, Math.floor(Number(p) || 0))).filter(Boolean) : undefined;
+      const position = raw.position;
+      return {
+        mode: raw.mode,
+        pages: raw.mode === 'pages' ? (pages && pages.length ? pages : undefined) : undefined,
+        position: position,
+        sizePct: typeof raw.sizePct === 'number' ? raw.sizePct : undefined,
+        marginPct: typeof raw.marginPct === 'number' ? raw.marginPct : undefined,
+      } as any;
+    }
+    return undefined;
+  };
   return {
     id: entry.id || Date.now().toString(),
     shareId,
     shareUrl: entry.shareUrl || `/documents/${shareId}`,
     referenceNumber: entry.referenceNumber || generateReferenceNumber(entry.templateName || entry.documentType || 'Document', generatedAt),
+    documentSourceType: entry.documentSourceType === 'uploaded_pdf' ? 'uploaded_pdf' : 'generated',
     templateId: entry.templateId || entry.documentType || 'unknown-template',
     templateName: entry.templateName || entry.documentType || 'Untitled Document',
     category: entry.category || 'General',
@@ -70,6 +111,11 @@ export function normalizeHistoryEntry(entry: HistoryInput): DocumentHistory {
     generatedAt,
     previewHtml: entry.previewHtml,
     pdfUrl: entry.pdfUrl,
+    uploadedPdfFileName: entry.uploadedPdfFileName ? String(entry.uploadedPdfFileName) : undefined,
+    uploadedPdfMimeType: entry.uploadedPdfMimeType ? String(entry.uploadedPdfMimeType) : undefined,
+    uploadedPdfDataUrl: entry.uploadedPdfDataUrl ? String(entry.uploadedPdfDataUrl) : undefined,
+    signedPdfFileName: entry.signedPdfFileName ? String(entry.signedPdfFileName) : undefined,
+    signedPdfDataUrl: entry.signedPdfDataUrl ? String(entry.signedPdfDataUrl) : undefined,
     emailSent: Boolean(entry.emailSent),
     emailTo: entry.emailTo,
     emailSubject: entry.emailSubject,
@@ -83,7 +129,8 @@ export function normalizeHistoryEntry(entry: HistoryInput): DocumentHistory {
     signatureRole: entry.signatureRole,
     signatureSignedAt: entry.signatureSignedAt,
     signatureSignedIp: entry.signatureSignedIp,
-    sharePassword: entry.sharePassword || generateSharePassword(),
+    sharePassword: shareRequiresPassword ? (entry.sharePassword || generateSharePassword()) : undefined,
+    shareRequiresPassword,
     shareAccessPolicy: entry.shareAccessPolicy === 'expiring' || entry.shareAccessPolicy === 'one_time' ? entry.shareAccessPolicy : 'standard',
     shareExpiresAt: entry.shareExpiresAt ? String(entry.shareExpiresAt) : undefined,
     maxAccessCount: typeof entry.maxAccessCount === 'number' ? entry.maxAccessCount : undefined,
@@ -99,6 +146,7 @@ export function normalizeHistoryEntry(entry: HistoryInput): DocumentHistory {
     documentsVerificationNotes: entry.documentsVerificationNotes,
     recipientSignatureRequired: entry.recipientSignatureRequired ?? true,
     recipientAccess: entry.recipientAccess || 'comment',
+    recipientSignaturePlacements: normalizeRecipientSignaturePlacements((entry as any).recipientSignaturePlacements),
     dataCollectionEnabled: Boolean(entry.dataCollectionEnabled),
     dataCollectionStatus: entry.dataCollectionEnabled
       ? (entry.dataCollectionStatus === 'submitted' || entry.dataCollectionStatus === 'changes_requested' || entry.dataCollectionStatus === 'reviewed' || entry.dataCollectionStatus === 'finalized' ? entry.dataCollectionStatus : 'sent')
@@ -106,6 +154,16 @@ export function normalizeHistoryEntry(entry: HistoryInput): DocumentHistory {
     dataCollectionInstructions: entry.dataCollectionInstructions ? String(entry.dataCollectionInstructions) : undefined,
     dataCollectionSubmittedAt: entry.dataCollectionSubmittedAt ? String(entry.dataCollectionSubmittedAt) : undefined,
     dataCollectionSubmittedBy: entry.dataCollectionSubmittedBy ? String(entry.dataCollectionSubmittedBy) : undefined,
+    dataCollectionSubmissions: Array.isArray(entry.dataCollectionSubmissions)
+      ? entry.dataCollectionSubmissions.map((submission, index) => ({
+          id: String(submission.id || `submission-${Date.now()}-${index}`),
+          submittedAt: String(submission.submittedAt || new Date().toISOString()),
+          submittedBy: String(submission.submittedBy || 'Recipient'),
+          data: submission.data && typeof submission.data === 'object'
+            ? Object.fromEntries(Object.entries(submission.data).map(([key, value]) => [key, String(value ?? '')]))
+            : {},
+        }))
+      : [],
     dataCollectionReviewNotes: entry.dataCollectionReviewNotes ? String(entry.dataCollectionReviewNotes) : undefined,
     dataCollectionReviewedAt: entry.dataCollectionReviewedAt ? String(entry.dataCollectionReviewedAt) : undefined,
     dataCollectionReviewedBy: entry.dataCollectionReviewedBy ? String(entry.dataCollectionReviewedBy) : undefined,
@@ -114,6 +172,24 @@ export function normalizeHistoryEntry(entry: HistoryInput): DocumentHistory {
     recipientSignatureSource: entry.recipientSignatureSource === 'uploaded' ? 'uploaded' : entry.recipientSignatureSource === 'drawn' ? 'drawn' : undefined,
     recipientSignedAt: entry.recipientSignedAt,
     recipientSignedIp: entry.recipientSignedIp,
+    recipientPhotoDataUrl: entry.recipientPhotoDataUrl ? String(entry.recipientPhotoDataUrl) : undefined,
+    recipientPhotoCapturedAt: entry.recipientPhotoCapturedAt ? String(entry.recipientPhotoCapturedAt) : undefined,
+    recipientPhotoCapturedIp: entry.recipientPhotoCapturedIp ? String(entry.recipientPhotoCapturedIp) : undefined,
+    recipientPhotoCaptureMethod: entry.recipientPhotoCaptureMethod === 'live_camera' ? 'live_camera' : undefined,
+    recipientAadhaarVerificationRequired: entry.recipientAadhaarVerificationRequired ?? undefined,
+    recipientAadhaarVerifiedAt: entry.recipientAadhaarVerifiedAt ? String(entry.recipientAadhaarVerifiedAt) : undefined,
+    recipientAadhaarVerifiedIp: entry.recipientAadhaarVerifiedIp ? String(entry.recipientAadhaarVerifiedIp) : undefined,
+    recipientAadhaarReferenceId: entry.recipientAadhaarReferenceId ? String(entry.recipientAadhaarReferenceId) : undefined,
+    recipientAadhaarMaskedId: entry.recipientAadhaarMaskedId ? String(entry.recipientAadhaarMaskedId) : undefined,
+    recipientAadhaarVerificationMode: entry.recipientAadhaarVerificationMode === 'otp' ? 'otp' : undefined,
+    recipientAadhaarProviderLabel: entry.recipientAadhaarProviderLabel ? String(entry.recipientAadhaarProviderLabel) : undefined,
+    pendingRecipientPhotoDataUrl: entry.pendingRecipientPhotoDataUrl ? String(entry.pendingRecipientPhotoDataUrl) : undefined,
+    pendingRecipientPhotoCapturedAt: entry.pendingRecipientPhotoCapturedAt ? String(entry.pendingRecipientPhotoCapturedAt) : undefined,
+    pendingRecipientPhotoCapturedIp: entry.pendingRecipientPhotoCapturedIp ? String(entry.pendingRecipientPhotoCapturedIp) : undefined,
+    pendingRecipientPhotoCaptureToken: entry.pendingRecipientPhotoCaptureToken ? String(entry.pendingRecipientPhotoCaptureToken) : undefined,
+    pendingRecipientAadhaarTransactionId: entry.pendingRecipientAadhaarTransactionId ? String(entry.pendingRecipientAadhaarTransactionId) : undefined,
+    pendingRecipientAadhaarMaskedId: entry.pendingRecipientAadhaarMaskedId ? String(entry.pendingRecipientAadhaarMaskedId) : undefined,
+    pendingRecipientAadhaarRequestedAt: entry.pendingRecipientAadhaarRequestedAt ? String(entry.pendingRecipientAadhaarRequestedAt) : undefined,
     recipientSignedLocationLabel: entry.recipientSignedLocationLabel,
     recipientSignedLatitude: typeof entry.recipientSignedLatitude === 'number' ? entry.recipientSignedLatitude : undefined,
     recipientSignedLongitude: typeof entry.recipientSignedLongitude === 'number' ? entry.recipientSignedLongitude : undefined,
@@ -144,6 +220,140 @@ export function normalizeHistoryEntry(entry: HistoryInput): DocumentHistory {
       deviceLabel: event.deviceLabel ? String(event.deviceLabel) : undefined,
       actorName: event.actorName ? String(event.actorName) : undefined,
     })) : [],
+    recipientSignerEmail: entry.recipientSignerEmail ? String(entry.recipientSignerEmail).toLowerCase() : undefined,
+    recipientSigners: Array.isArray(entry.recipientSigners)
+      ? entry.recipientSigners
+          .filter((item) => item && typeof item === 'object')
+          .map((item: any, index: number) => ({
+            signerKey: String(item.signerKey || `signer-${index + 1}`).slice(0, 64),
+            signerName: String(item.signerName || 'Signer').slice(0, 96),
+            signerEmail: item.signerEmail ? String(item.signerEmail).toLowerCase() : undefined,
+            signingStatus: item.signingStatus === 'signed' ? 'signed' as const : 'pending' as const,
+            signedAt: item.signedAt ? String(item.signedAt) : undefined,
+            signedIp: item.signedIp ? String(item.signedIp) : undefined,
+            signedLocationLabel: item.signedLocationLabel ? String(item.signedLocationLabel) : undefined,
+            signedLatitude: typeof item.signedLatitude === 'number' ? item.signedLatitude : undefined,
+            signedLongitude: typeof item.signedLongitude === 'number' ? item.signedLongitude : undefined,
+            signedAccuracyMeters: typeof item.signedAccuracyMeters === 'number' ? item.signedAccuracyMeters : undefined,
+            authenticationMethods: Array.isArray(item.authenticationMethods) ? item.authenticationMethods.map(String).slice(0, 20) : undefined,
+            photoDataUrl: item.photoDataUrl ? String(item.photoDataUrl) : undefined,
+            photoCapturedAt: item.photoCapturedAt ? String(item.photoCapturedAt) : undefined,
+            photoCapturedIp: item.photoCapturedIp ? String(item.photoCapturedIp) : undefined,
+            photoCaptureMethod: item.photoCaptureMethod === 'live_camera' ? 'live_camera' as const : undefined,
+            consentedAt: item.consentedAt ? String(item.consentedAt) : undefined,
+            consentText: item.consentText ? String(item.consentText).slice(0, 2400) : undefined,
+            signatureSource: item.signatureSource === 'uploaded' ? 'uploaded' as const : item.signatureSource === 'drawn' ? 'drawn' as const : undefined,
+            signatureDataUrl: item.signatureDataUrl ? String(item.signatureDataUrl) : undefined,
+            signatureBoxSummary: item.signatureBoxSummary && typeof item.signatureBoxSummary === 'object'
+              ? {
+                  totalBoxes: Math.max(0, Number((item.signatureBoxSummary as any).totalBoxes || 0)),
+                  requiredBoxes: Math.max(0, Number((item.signatureBoxSummary as any).requiredBoxes || 0)),
+                  completedBoxes: Math.max(0, Number((item.signatureBoxSummary as any).completedBoxes || 0)),
+                  missingRequiredBoxIds: Array.isArray((item.signatureBoxSummary as any).missingRequiredBoxIds)
+                    ? (item.signatureBoxSummary as any).missingRequiredBoxIds.map(String).slice(0, 200)
+                    : undefined,
+                }
+              : undefined,
+          }))
+      : [],
+    recipientSignatureBoxesById: entry.recipientSignatureBoxesById && typeof entry.recipientSignatureBoxesById === 'object'
+      ? Object.fromEntries(Object.entries(entry.recipientSignatureBoxesById as Record<string, any>).slice(0, 500).map(([k, v]) => [String(k).slice(0, 96), String(v || '')]))
+      : undefined,
+    pendingRecipientEvidenceBySignerKey: entry.pendingRecipientEvidenceBySignerKey && typeof entry.pendingRecipientEvidenceBySignerKey === 'object'
+      ? Object.fromEntries(
+          Object.entries(entry.pendingRecipientEvidenceBySignerKey as Record<string, any>)
+            .slice(0, 50)
+            .map(([signerKey, raw]) => [
+              String(signerKey).slice(0, 64),
+              {
+                photoDataUrl: String(raw?.photoDataUrl || ''),
+                capturedAt: String(raw?.capturedAt || new Date().toISOString()),
+                capturedIp: String(raw?.capturedIp || 'unknown'),
+                captureToken: String(raw?.captureToken || `photo-${Date.now()}`),
+              },
+            ]),
+        )
+      : undefined,
+    recipientSignerConfigsByKey: entry.recipientSignerConfigsByKey && typeof entry.recipientSignerConfigsByKey === 'object'
+      ? Object.fromEntries(
+          Object.entries(entry.recipientSignerConfigsByKey as Record<string, any>)
+            .slice(0, 50)
+            .map(([signerKey, raw]) => [
+              String(signerKey).slice(0, 64),
+              {
+                cameraCaptureEnabled: raw?.cameraCaptureEnabled === false ? false : true,
+                signatureDrawEnabled: raw?.signatureDrawEnabled === false ? false : true,
+                signatureUploadEnabled: raw?.signatureUploadEnabled === false ? false : true,
+                signatureTypedEnabled: raw?.signatureTypedEnabled === true ? true : false,
+                initialsEnabled: raw?.initialsEnabled === true ? true : false,
+                emailOtpEnabled: raw?.emailOtpEnabled === true ? true : false,
+                consentRequired: raw?.consentRequired === false ? false : true,
+                captureIpDeviceLocationEnabled: raw?.captureIpDeviceLocationEnabled === false ? false : true,
+              },
+            ]),
+        )
+      : undefined,
+    recipientSigningMode: entry.recipientSigningMode === 'sequential' ? 'sequential' : entry.recipientSigningMode === 'parallel' ? 'parallel' : undefined,
+    recipientSignerDirectory: entry.recipientSignerDirectory && typeof entry.recipientSignerDirectory === 'object'
+      ? Object.fromEntries(
+          Object.entries(entry.recipientSignerDirectory as Record<string, any>)
+            .slice(0, 50)
+            .map(([signerKey, raw]) => [
+              String(signerKey).slice(0, 64),
+              {
+                signerKey: String(raw?.signerKey || signerKey).slice(0, 64),
+                signerName: String(raw?.signerName || 'Signer').slice(0, 96),
+                signerEmail: raw?.signerEmail ? String(raw.signerEmail).toLowerCase() : undefined,
+                signerRole: raw?.signerRole ? String(raw.signerRole).slice(0, 64) : undefined,
+                signingOrder: typeof raw?.signingOrder === 'number' ? Math.max(1, Math.floor(raw.signingOrder)) : undefined,
+              },
+            ]),
+        )
+      : undefined,
+    recipientSignerInvitesByKey: entry.recipientSignerInvitesByKey && typeof entry.recipientSignerInvitesByKey === 'object'
+      ? Object.fromEntries(
+          Object.entries(entry.recipientSignerInvitesByKey as Record<string, any>)
+            .slice(0, 50)
+            .map(([signerKey, raw]) => [
+              String(signerKey).slice(0, 64),
+              {
+                token: String(raw?.token || '').slice(0, 256),
+                createdAt: String(raw?.createdAt || new Date().toISOString()),
+                expiresAt: String(raw?.expiresAt || new Date().toISOString()),
+                sentAt: raw?.sentAt ? String(raw.sentAt) : undefined,
+                lastSentAt: raw?.lastSentAt ? String(raw.lastSentAt) : undefined,
+                sendCount: Math.max(0, Number(raw?.sendCount || 0)),
+                lastReminderAt: raw?.lastReminderAt ? String(raw.lastReminderAt) : undefined,
+                reminderCount: Math.max(0, Number(raw?.reminderCount || 0)),
+              },
+            ]),
+        )
+      : undefined,
+    recipientReminderHistory: Array.isArray(entry.recipientReminderHistory)
+      ? entry.recipientReminderHistory
+          .slice(0, 200)
+          .map((raw: any, index: number) => ({
+            id: String(raw?.id || `rem-${Date.now()}-${index}`),
+            sentAt: String(raw?.sentAt || new Date().toISOString()),
+            sentBy: String(raw?.sentBy || entry.generatedBy || 'system'),
+            signerKey: raw?.signerKey ? String(raw.signerKey).slice(0, 64) : undefined,
+            toEmail: String(raw?.toEmail || '').toLowerCase(),
+            status: raw?.status === 'sent' ? 'sent' as const : raw?.status === 'failed' ? 'failed' as const : 'queued' as const,
+            error: raw?.error ? String(raw.error).slice(0, 400) : undefined,
+          }))
+      : [],
+    recipientSignatureBoxSummary: entry.recipientSignatureBoxSummary && typeof entry.recipientSignatureBoxSummary === 'object'
+      ? {
+          totalBoxes: Math.max(0, Number((entry.recipientSignatureBoxSummary as any).totalBoxes || 0)),
+          requiredBoxes: Math.max(0, Number((entry.recipientSignatureBoxSummary as any).requiredBoxes || 0)),
+          completedBoxes: Math.max(0, Number((entry.recipientSignatureBoxSummary as any).completedBoxes || 0)),
+          missingRequiredBoxIds: Array.isArray((entry.recipientSignatureBoxSummary as any).missingRequiredBoxIds)
+            ? (entry.recipientSignatureBoxSummary as any).missingRequiredBoxIds.map(String).slice(0, 200)
+            : undefined,
+        }
+      : undefined,
+    recipientConsentedAt: entry.recipientConsentedAt ? String(entry.recipientConsentedAt) : undefined,
+    recipientConsentText: entry.recipientConsentText ? String(entry.recipientConsentText).slice(0, 2400) : undefined,
     editorState: entry.editorState && typeof entry.editorState === 'object'
       ? {
           title: entry.editorState.title ? String(entry.editorState.title) : undefined,
@@ -163,6 +373,8 @@ export function normalizeHistoryEntry(entry: HistoryInput): DocumentHistory {
           layoutPreset: entry.editorState.layoutPreset === 'executive' || entry.editorState.layoutPreset === 'legal' || entry.editorState.layoutPreset === 'hr' || entry.editorState.layoutPreset === 'client-ready' ? entry.editorState.layoutPreset : 'formal',
           designPreset: isDocumentDesignPreset(entry.editorState.designPreset) ? entry.editorState.designPreset : DEFAULT_DOCUMENT_DESIGN_PRESET,
           watermarkLabel: entry.editorState.watermarkLabel ? String(entry.editorState.watermarkLabel) : undefined,
+          signatureCertificateBrandingEnabled: entry.editorState.signatureCertificateBrandingEnabled === false ? false : true,
+          signatureReceiptCompletionPageEnabled: entry.editorState.signatureReceiptCompletionPageEnabled === false ? false : true,
           letterheadMode: entry.editorState.letterheadMode === 'image' || entry.editorState.letterheadMode === 'html' ? entry.editorState.letterheadMode : 'default',
           letterheadImageDataUrl: entry.editorState.letterheadImageDataUrl ? String(entry.editorState.letterheadImageDataUrl) : undefined,
           letterheadHtml: entry.editorState.letterheadHtml ? String(entry.editorState.letterheadHtml) : undefined,
@@ -176,6 +388,8 @@ export function normalizeHistoryEntry(entry: HistoryInput): DocumentHistory {
           clauseLibrary: [],
           layoutPreset: 'formal',
           designPreset: DEFAULT_DOCUMENT_DESIGN_PRESET,
+          signatureCertificateBrandingEnabled: true,
+          signatureReceiptCompletionPageEnabled: true,
           letterheadMode: 'default',
         },
     managedFiles: Array.isArray(entry.managedFiles) ? entry.managedFiles.map((file) => ({
@@ -236,6 +450,7 @@ export function normalizeHistoryEntry(entry: HistoryInput): DocumentHistory {
       onboardingCredentials,
       recipientSignedAt: entry.recipientSignedAt,
     }),
+    docsheetWorkbook: entry.docsheetWorkbook ? normalizeDocSheetWorkbook(entry.docsheetWorkbook) : undefined,
   };
 }
 
@@ -249,6 +464,8 @@ function normalizeEventType(value: unknown): DocumentAccessEvent['eventType'] {
     case 'sign':
     case 'upload':
     case 'verify':
+    case 'camera_capture':
+    case 'email':
       return value;
     default:
       return 'open';
@@ -263,12 +480,12 @@ export function createAccessEvent(input: Omit<DocumentAccessEvent, 'id'>): Docum
 }
 
 export async function getHistoryEntries() {
-  const history = await readJsonFile<HistoryInput[]>(historyFilePath, []);
+  const history = await getHistoryEntriesFromRepository();
   return history.map(normalizeHistoryEntry);
 }
 
 export async function saveHistoryEntries(entries: DocumentHistory[]) {
-  await writeJsonFile(historyFilePath, entries);
+  await saveHistoryEntriesToRepository(entries);
 }
 
 export async function appendHistoryEntry(entry: HistoryInput) {
@@ -290,6 +507,16 @@ export async function updateHistoryEntry(id: string, updater: (entry: DocumentHi
   entries[index] = normalizeHistoryEntry(updater(entries[index]));
   await saveHistoryEntries(entries);
   return entries[index];
+}
+
+export async function deleteHistoryEntry(id: string) {
+  const entries = await getHistoryEntries();
+  const nextEntries = entries.filter((entry) => entry.id !== id);
+  if (nextEntries.length === entries.length) {
+    return false;
+  }
+  await saveHistoryEntries(nextEntries);
+  return true;
 }
 
 export function createEmailLogEntry(input: Omit<EmailLogEntry, 'id'>): EmailLogEntry {

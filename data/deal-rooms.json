@@ -1,0 +1,183 @@
+[
+  {
+    "id": "room-1775081807864-u1iejw",
+    "organizationId": "1",
+    "organizationName": "Admin User",
+    "roomType": "partnership",
+    "title": "testing",
+    "summary": "testing",
+    "counterpartyName": "kushagra",
+    "targetCloseDate": "2026-06-14",
+    "stage": "draft",
+    "ownerUserId": "1",
+    "ownerName": "Admin User",
+    "shareToken": "81807864u1iejw",
+    "joinPassword": "BR-TPAC28",
+    "shareUrl": "/board-room/81807864u1iejw",
+    "createdAt": "2026-04-01T22:16:47.864Z",
+    "updatedAt": "2026-04-01T23:03:17.786Z",
+    "participants": [
+      {
+        "id": "brp-1775083930025-1t80h6",
+        "userId": "board-user-1775083929998-c80z3g",
+        "name": "kushagra",
+        "email": "kushagra@testing.boardroom.docrud",
+        "roleType": "external",
+        "accessLevel": "editor",
+        "addedAt": "2026-04-01T22:52:10.025Z",
+        "inviteStatus": "active",
+        "source": "creator_created"
+      },
+      {
+        "id": "drp-1775081858679",
+        "userId": "member-1775043783479-74dcd9",
+        "name": "ayush",
+        "email": "ayush@admin-user.internal.docrud",
+        "roleType": "internal",
+        "accessLevel": "editor",
+        "addedAt": "2026-04-01T22:17:38.679Z",
+        "inviteStatus": "active",
+        "source": "workspace"
+      },
+      {
+        "id": "drp-1775081807864-s2ckaw",
+        "userId": "1",
+        "name": "Admin User",
+        "email": "admin@company.com",
+        "roleType": "owner",
+        "accessLevel": "approver",
+        "addedAt": "2026-04-01T22:16:47.864Z",
+        "inviteStatus": "active",
+        "source": "workspace"
+      }
+    ],
+    "accessRequests": [],
+    "linkedAssets": [],
+    "signDocuments": [],
+    "tasks": [],
+    "messages": [
+      {
+        "id": "brm-1775084597786",
+        "body": "it is going good",
+        "authorId": "1",
+        "authorName": "Admin User",
+        "authorRoleType": "owner",
+        "visibility": "all_participants",
+        "createdAt": "2026-04-01T23:03:17.786Z"
+      },
+      {
+        "id": "brm-1775084579556",
+        "body": "hey what is the update",
+        "authorId": "board-user-1775083929998-c80z3g",
+        "authorName": "kushagra",
+        "authorRoleType": "external",
+        "visibility": "all_participants",
+        "createdAt": "2026-04-01T23:02:59.556Z"
+      }
+    ],
+    "notes": [
+      {
+        "id": "brn-1775084252264",
+        "body": "kjlj",
+        "authorId": "1",
+        "authorName": "Admin User",
+        "createdAt": "2026-04-01T22:57:32.264Z"
+      },
+      {
+        "id": "brn-1775084251280",
+        "body": "kjlj",
+        "authorId": "1",
+        "authorName": "Admin User",
+        "createdAt": "2026-04-01T22:57:31.280Z"
+      },
+      {
+        "id": "brn-1775084248286",
+        "body": "kjlj",
+        "authorId": "1",
+        "authorName": "Admin User",
+        "createdAt": "2026-04-01T22:57:28.286Z"
+      },
+      {
+        "id": "brn-1775084213526",
+        "body": "hey",
+        "authorId": "board-user-1775083929998-c80z3g",
+        "authorName": "kushagra",
+        "createdAt": "2026-04-01T22:56:53.526Z"
+      }
+    ],
+    "activity": [
+      {
+        "id": "bra-1775084597786",
+        "type": "message_added",
+        "message": "Admin User posted a board room message.",
+        "actorId": "1",
+        "actorName": "Admin User",
+        "createdAt": "2026-04-01T23:03:17.786Z"
+      },
+      {
+        "id": "bra-1775084579556",
+        "type": "message_added",
+        "message": "kushagra posted a board room message.",
+        "actorId": "board-user-1775083929998-c80z3g",
+        "actorName": "kushagra",
+        "createdAt": "2026-04-01T23:02:59.556Z"
+      },
+      {
+        "id": "bra-1775084252264",
+        "type": "note_added",
+        "message": "Admin User added a board room update.",
+        "actorId": "1",
+        "actorName": "Admin User",
+        "createdAt": "2026-04-01T22:57:32.264Z"
+      },
+      {
+        "id": "bra-1775084251280",
+        "type": "note_added",
+        "message": "Admin User added a board room update.",
+        "actorId": "1",
+        "actorName": "Admin User",
+        "createdAt": "2026-04-01T22:57:31.280Z"
+      },
+      {
+        "id": "bra-1775084248286",
+        "type": "note_added",
+        "message": "Admin User added a board room update.",
+        "actorId": "1",
+        "actorName": "Admin User",
+        "createdAt": "2026-04-01T22:57:28.286Z"
+      },
+      {
+        "id": "bra-1775084213526",
+        "type": "note_added",
+        "message": "kushagra added a board room update.",
+        "actorId": "board-user-1775083929998-c80z3g",
+        "actorName": "kushagra",
+        "createdAt": "2026-04-01T22:56:53.526Z"
+      },
+      {
+        "id": "bra-1775083930025-zyrt4v",
+        "type": "participant_added",
+        "message": "Admin User created a board-room-only user for kushagra.",
+        "actorId": "1",
+        "actorName": "Admin User",
+        "createdAt": "2026-04-01T22:52:10.025Z"
+      },
+      {
+        "id": "dra-1775081858679",
+        "type": "participant_added",
+        "message": "Admin User added ayush to the room.",
+        "actorId": "1",
+        "actorName": "Admin User",
+        "createdAt": "2026-04-01T22:17:38.679Z"
+      },
+      {
+        "id": "dra-1775081807864-fukdso",
+        "type": "created",
+        "message": "Admin User created the deal room.",
+        "actorId": "1",
+        "actorName": "Admin User",
+        "createdAt": "2026-04-01T22:16:47.864Z"
+      }
+    ]
+  }
+]

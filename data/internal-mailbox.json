@@ -1,0 +1,98 @@
+[
+  {
+    "id": "mail-thread-1775054784748-2dvr93",
+    "organizationId": "1",
+    "subject": "asd",
+    "participants": [
+      {
+        "id": "member-1775043783479-74dcd9",
+        "name": "ayush",
+        "email": "ayush@admin-user.internal.docrud"
+      },
+      {
+        "id": "1",
+        "name": "Admin User",
+        "email": "admin@company.com"
+      }
+    ],
+    "messages": [
+      {
+        "id": "mail-message-1775054784748-3o6k14",
+        "threadId": "mail-thread-1775054784748-2dvr93",
+        "organizationId": "1",
+        "senderId": "member-1775043783479-74dcd9",
+        "senderName": "ayush",
+        "senderEmail": "ayush@admin-user.internal.docrud",
+        "recipientIds": [
+          "1"
+        ],
+        "recipientEmails": [
+          "admin@company.com"
+        ],
+        "subject": "asd",
+        "body": "asd",
+        "status": "sent",
+        "createdAt": "2026-04-01T14:46:24.748Z",
+        "updatedAt": "2026-04-01T14:46:24.748Z",
+        "readBy": [
+          "ayush@admin-user.internal.docrud"
+        ]
+      },
+      {
+        "id": "mail-message-1775054946469-agu67b",
+        "threadId": "mail-thread-1775054784748-2dvr93",
+        "organizationId": "1",
+        "senderId": "member-1775043783479-74dcd9",
+        "senderName": "ayush",
+        "senderEmail": "ayush@admin-user.internal.docrud",
+        "recipientIds": [
+          "1"
+        ],
+        "recipientEmails": [
+          "admin@company.com"
+        ],
+        "subject": "asd",
+        "body": "hey",
+        "status": "sent",
+        "createdAt": "2026-04-01T14:49:06.469Z",
+        "updatedAt": "2026-04-01T14:49:06.469Z",
+        "readBy": [
+          "ayush@admin-user.internal.docrud"
+        ]
+      },
+      {
+        "id": "mail-message-1775055027226-lfc661",
+        "threadId": "mail-thread-1775054784748-2dvr93",
+        "organizationId": "1",
+        "senderId": "1",
+        "senderName": "Admin User",
+        "senderEmail": "admin@company.com",
+        "recipientIds": [
+          "member-1775043783479-74dcd9"
+        ],
+        "recipientEmails": [
+          "ayush@admin-user.internal.docrud"
+        ],
+        "subject": "asd",
+        "body": "hey wssup",
+        "status": "read",
+        "createdAt": "2026-04-01T14:50:27.226Z",
+        "updatedAt": "2026-04-13T15:27:13.268Z",
+        "readBy": [
+          "admin@company.com",
+          "ayush@admin-user.internal.docrud"
+        ]
+      }
+    ],
+    "createdAt": "2026-04-01T14:46:24.748Z",
+    "updatedAt": "2026-04-13T15:27:13.268Z",
+    "lastMessagePreview": "hey wssup",
+    "overallStatus": "read",
+    "latestAiActionItems": [
+      "ayush initiated the conversation with 'asd'",
+      "ayush sent a greeting",
+      "Admin User responded with a greeting and asked about the status"
+    ],
+    "latestAiSummary": "Summary of the conversation: The conversation started with 'asd' from ayush, followed by a greeting from ayush. Admin User responded with a greeting and asked 'hey wssup'."
+  }
+]

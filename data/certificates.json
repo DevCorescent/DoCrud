@@ -1,0 +1,129 @@
+[
+  {
+    "id": "cert-1775564740713-7rmorl",
+    "ownerUserId": "1",
+    "ownerEmail": "admin@company.com",
+    "ownerName": "Admin User",
+    "name": "New certificate issue",
+    "recipientName": "Recipient",
+    "credentialId": "DOC-64740713",
+    "issueDate": "2026-04-07",
+    "certificateTitle": "Certificate of Completion",
+    "subtitle": "Recognizing successful completion",
+    "issuerName": "Admin User",
+    "signatoryName": "Admin User",
+    "signatoryRole": "Authorized Signatory",
+    "logoUrls": [],
+    "signatureImageUrls": [],
+    "accentColor": "#f97316",
+    "textColor": "#111827",
+    "layout": "spotlight",
+    "includeDocrudWatermark": true,
+    "status": "published",
+    "slug": "certificate-of-completion-recipient-2",
+    "qrUrl": "https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=0&data=https%3A%2F%2Fwww.docrud.com%2Fcertificate%2Fcertificate-of-completion-recipient-2",
+    "createdAt": "2026-04-07T12:25:40.713Z",
+    "updatedAt": "2026-04-09T08:47:54.960Z",
+    "analytics": {
+      "openCount": 3,
+      "downloadCount": 0,
+      "verifyCount": 3,
+      "uniqueVisitors": 1,
+      "lastOpenedAt": "2026-04-09T08:47:46.107Z",
+      "lastVerifiedAt": "2026-04-09T08:47:54.960Z"
+    },
+    "events": [
+      {
+        "id": "cert-event-1775724474960-okopss",
+        "type": "verify",
+        "createdAt": "2026-04-09T08:47:54.960Z",
+        "source": "direct",
+        "visitorKey": "::1:Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36"
+      },
+      {
+        "id": "cert-event-1775724466107-a0dpac",
+        "type": "open",
+        "createdAt": "2026-04-09T08:47:46.107Z",
+        "source": "direct",
+        "visitorKey": "::1:Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36"
+      },
+      {
+        "id": "cert-event-1775624849805-k1qgk0",
+        "type": "verify",
+        "createdAt": "2026-04-08T05:07:29.805Z",
+        "source": "direct",
+        "visitorKey": "::1:Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36"
+      },
+      {
+        "id": "cert-event-1775624846521-yho5qa",
+        "type": "open",
+        "createdAt": "2026-04-08T05:07:26.521Z",
+        "source": "direct",
+        "visitorKey": "::1:Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36"
+      },
+      {
+        "id": "cert-event-1775564748625-6qov7r",
+        "type": "verify",
+        "createdAt": "2026-04-07T12:25:48.625Z",
+        "source": "direct",
+        "visitorKey": "::1:Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36"
+      },
+      {
+        "id": "cert-event-1775564747018-3y9pmc",
+        "type": "open",
+        "createdAt": "2026-04-07T12:25:47.018Z",
+        "source": "direct",
+        "visitorKey": "::1:Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36"
+      }
+    ]
+  },
+  {
+    "id": "cert-1775564623908-5awfwq",
+    "ownerUserId": "1",
+    "ownerEmail": "admin@company.com",
+    "ownerName": "Admin User",
+    "name": "New certificate issue",
+    "recipientName": "Recipient",
+    "credentialId": "DOC-64623908",
+    "issueDate": "2026-04-07",
+    "certificateTitle": "Certificate of Completion",
+    "subtitle": "Recognizing successful completion",
+    "issuerName": "Admin User",
+    "signatoryName": "Admin User",
+    "signatoryRole": "Authorized Signatory",
+    "logoUrls": [],
+    "signatureImageUrls": [],
+    "accentColor": "#595959",
+    "textColor": "#111827",
+    "layout": "spotlight",
+    "includeDocrudWatermark": true,
+    "status": "published",
+    "slug": "certificate-of-completion-recipient",
+    "qrUrl": "https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=0&data=https%3A%2F%2Fwww.docrud.com%2Fcertificate%2Fcertificate-of-completion-recipient",
+    "createdAt": "2026-04-07T12:23:43.908Z",
+    "updatedAt": "2026-04-07T12:23:49.492Z",
+    "analytics": {
+      "openCount": 1,
+      "downloadCount": 0,
+      "verifyCount": 0,
+      "uniqueVisitors": 1,
+      "lastOpenedAt": "2026-04-07T12:23:49.492Z"
+    },
+    "events": [
+      {
+        "id": "cert-event-1775564629492-hma689",
+        "type": "open",
+        "createdAt": "2026-04-07T12:23:49.492Z",
+        "source": "direct",
+        "visitorKey": "::1:Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36"
+      }
+    ]
+  }
+]

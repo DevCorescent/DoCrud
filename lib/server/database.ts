@@ -1,4 +1,5 @@
 import dns from 'node:dns';
+import { promises as fs } from 'fs';
 import path from 'path';
 import { Pool } from 'pg';
 
@@ -6,8 +7,6 @@ declare global {
   // eslint-disable-next-line no-var
   var __docrudPgPool: Pool | undefined;
 }
-
-const APP_STATE_TABLE = 'app_state';
 
 dns.setDefaultResultOrder('ipv4first');
 
@@ -101,25 +100,21 @@ export function getDbPool() {
   return global.__docrudPgPool;
 }
 
-let tableReadyPromise: Promise<void> | null = null;
+let schemaReadyPromise: Promise<void> | null = null;
 
-async function ensureAppStateTable() {
+async function ensureDatabaseSchema() {
   const pool = getDbPool();
   if (!pool) {
     return;
   }
 
-  if (!tableReadyPromise) {
-    tableReadyPromise = pool.query(`
-      CREATE TABLE IF NOT EXISTS ${APP_STATE_TABLE} (
-        key TEXT PRIMARY KEY,
-        value JSONB NOT NULL,
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      )
-    `).then(() => undefined);
+  if (!schemaReadyPromise) {
+    schemaReadyPromise = fs.readFile(path.join(process.cwd(), 'db', 'schema.sql'), 'utf8')
+      .then((sql) => pool.query(sql))
+      .then(() => undefined);
   }
 
-  await tableReadyPromise;
+  await schemaReadyPromise;
 }
 
 export function getAppStateKey(filePath: string) {
@@ -133,8 +128,8 @@ export async function readAppState<T>(key: string): Promise<T | null> {
     return null;
   }
 
-  await ensureAppStateTable();
-  const result = await pool.query<{ value: T }>(`SELECT value FROM ${APP_STATE_TABLE} WHERE key = $1 LIMIT 1`, [key]);
+  await ensureDatabaseSchema();
+  const result = await pool.query<{ value: T }>('SELECT value FROM app_state WHERE key = $1 LIMIT 1', [key]);
   return result.rows[0]?.value ?? null;
 }
 
@@ -144,10 +139,10 @@ export async function writeAppState<T>(key: string, value: T) {
     throw new Error('Database is not configured');
   }
 
-  await ensureAppStateTable();
+  await ensureDatabaseSchema();
   await pool.query(
     `
-      INSERT INTO ${APP_STATE_TABLE} (key, value, updated_at)
+      INSERT INTO app_state (key, value, updated_at)
       VALUES ($1, $2::jsonb, NOW())
       ON CONFLICT (key)
       DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()

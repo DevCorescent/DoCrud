@@ -1,0 +1,19 @@
+[
+  {
+    "id": "gig-bid-1777875837663",
+    "gigId": "gig-1777875611825",
+    "gigSlug": "ui-ux-design-for-web-app-product",
+    "gigTitle": "UI/UX Design for Web/App Product",
+    "ownerUserId": "user-1777875225147",
+    "bidderUserId": "1",
+    "bidderName": "Admin User",
+    "bidderEmail": "admin@company.com",
+    "amountInRupees": 2500,
+    "currency": "INR",
+    "timelineLabel": "1 week",
+    "note": "i would like to complete this on time",
+    "status": "accepted",
+    "createdAt": "2026-05-04T06:23:57.663Z",
+    "updatedAt": "2026-05-04T06:25:43.643Z"
+  }
+]

@@ -3,9 +3,8 @@ import { documentTemplates } from '@/data/templates';
 import { getAuthSession, getStoredUsers } from '@/lib/server/auth';
 import { getDropdownOptions } from '@/lib/server/dropdown-options';
 import { getHistoryEntries } from '@/lib/server/history';
+import { getCustomTemplatesFromRepository } from '@/lib/server/repositories';
 import { getRoleProfiles } from '@/lib/server/roles';
-import { customTemplatesPath, readJsonFile } from '@/lib/server/storage';
-import { DocumentTemplate } from '@/types/document';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,7 +46,7 @@ export async function GET() {
 
     const [history, customTemplates, users, roles, dropdownOptions] = await Promise.all([
       getHistoryEntries(),
-      readJsonFile<DocumentTemplate[]>(customTemplatesPath, []),
+      getCustomTemplatesFromRepository(),
       getStoredUsers(),
       getRoleProfiles(),
       getDropdownOptions(),

@@ -11,6 +11,52 @@ interface SignaturePadProps {
 export default function SignaturePad({ value, onChange }: SignaturePadProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const drawingRef = useRef(false);
+  const lastEmittedRef = useRef<string>('');
+
+  const exportTrimmedPng = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return '';
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return '';
+
+    const { width, height } = canvas;
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const data = imageData.data;
+
+    let minX = width;
+    let minY = height;
+    let maxX = -1;
+    let maxY = -1;
+
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const idx = (y * width + x) * 4;
+        const alpha = data[idx + 3];
+        if (alpha > 0) {
+          if (x < minX) minX = x;
+          if (y < minY) minY = y;
+          if (x > maxX) maxX = x;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+
+    if (maxX < 0 || maxY < 0) return '';
+
+    const pad = Math.max(6, Math.round(Math.min(width, height) * 0.02));
+    const cropX = Math.max(0, minX - pad);
+    const cropY = Math.max(0, minY - pad);
+    const cropW = Math.min(width - cropX, (maxX - minX + 1) + pad * 2);
+    const cropH = Math.min(height - cropY, (maxY - minY + 1) + pad * 2);
+
+    const out = document.createElement('canvas');
+    out.width = cropW;
+    out.height = cropH;
+    const outCtx = out.getContext('2d');
+    if (!outCtx) return canvas.toDataURL('image/png');
+    outCtx.drawImage(canvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+    return out.toDataURL('image/png');
+  };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -22,8 +68,15 @@ export default function SignaturePad({ value, onChange }: SignaturePadProps) {
     context.lineWidth = 2.2;
     context.lineCap = 'round';
     context.strokeStyle = '#0f172a';
-    context.fillStyle = '#ffffff';
-    context.fillRect(0, 0, canvas.width, canvas.height);
+    // Keep the canvas pixels transparent for premium stamps (no background).
+    // The visible white background comes from CSS only.
+    if (drawingRef.current) return;
+
+    // If the incoming value is the same trimmed image we just emitted, do not clear/redraw.
+    // Clearing here would make the signature "disappear" right after drawing.
+    if (value && value === lastEmittedRef.current) return;
+
+    context.clearRect(0, 0, canvas.width, canvas.height);
 
     if (value) {
       const image = new Image();
@@ -67,7 +120,11 @@ export default function SignaturePad({ value, onChange }: SignaturePadProps) {
     const canvas = canvasRef.current;
     if (!drawingRef.current || !canvas) return;
     drawingRef.current = false;
-    onChange(canvas.toDataURL('image/png'));
+    // Do not replace the visible canvas with the trimmed export (that feels like "zooming").
+    // Only send the trimmed PNG upstream for PDF stamping.
+    const next = exportTrimmedPng() || canvas.toDataURL('image/png');
+    lastEmittedRef.current = next;
+    onChange(next);
   };
 
   const clear = () => {
@@ -75,8 +132,7 @@ export default function SignaturePad({ value, onChange }: SignaturePadProps) {
     const context = canvas?.getContext('2d');
     if (!canvas || !context) return;
     context.clearRect(0, 0, canvas.width, canvas.height);
-    context.fillStyle = '#ffffff';
-    context.fillRect(0, 0, canvas.width, canvas.height);
+    lastEmittedRef.current = '';
     onChange('');
   };
 

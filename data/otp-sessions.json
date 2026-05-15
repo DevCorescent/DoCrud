@@ -1,0 +1,18 @@
+{
+  "sessions": [
+    {
+      "id": "dxXFLwNYgFDxlkf3lh5AI7jV",
+      "purpose": "document_signing",
+      "email": "harshsihag14@gmail.com",
+      "historyId": "1778775956136",
+      "signerKey": "signer_1",
+      "otpHash": "12770ce80c56f0c37e4a7e874a056db5c7c43da5d613976b17512e771a16d395",
+      "otpSalt": "eff00fb647bab376523eae95032834a2",
+      "createdAt": "2026-05-14T16:28:40.882Z",
+      "lastSentAt": "2026-05-14T16:28:40.882Z",
+      "expiresAt": "2026-05-14T16:38:40.882Z",
+      "attempts": 1,
+      "verifiedAt": "2026-05-14T16:29:23.995Z"
+    }
+  ]
+}

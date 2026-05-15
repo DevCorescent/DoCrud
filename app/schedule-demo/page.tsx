@@ -2,7 +2,16 @@ import { CheckCircle2 } from 'lucide-react';
 import PublicSiteChrome from '@/components/PublicSiteChrome';
 import InquiryForm from '@/components/InquiryForm';
 import { Card, CardContent } from '@/components/ui/card';
+import { buildPageMetadata } from '@/lib/seo';
 import { getLandingSettings, getThemeSettings } from '@/lib/server/settings';
+
+export const metadata = buildPageMetadata({
+  title: 'Schedule a Demo | Docrud',
+  description:
+    'Request a Docrud demo to see document workflows, forms, AI review, secure file sharing, and business operations in action.',
+  path: '/schedule-demo',
+  keywords: ['schedule demo', 'docrud demo', 'product walkthrough'],
+});
 
 export default async function ScheduleDemoPage() {
   const [settings, themeSettings] = await Promise.all([getLandingSettings(), getThemeSettings()]);

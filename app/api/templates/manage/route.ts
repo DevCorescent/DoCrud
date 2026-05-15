@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/server/auth';
-import { customTemplatesPath, readJsonFile, writeJsonFile } from '@/lib/server/storage';
+import { getCustomTemplatesFromRepository, saveCustomTemplatesToRepository } from '@/lib/server/repositories';
 import { DocumentField, DocumentTemplate } from '@/types/document';
 
 export const dynamic = 'force-dynamic';
 
 async function getCustomTemplates(): Promise<DocumentTemplate[]> {
-  return readJsonFile<DocumentTemplate[]>(customTemplatesPath, []);
+  return getCustomTemplatesFromRepository();
 }
 
 async function saveCustomTemplates(templates: DocumentTemplate[]): Promise<void> {
-  await writeJsonFile(customTemplatesPath, templates);
+  await saveCustomTemplatesToRepository(templates);
 }
 
 function isAdmin(session: Awaited<ReturnType<typeof getAuthSession>>) {
@@ -18,7 +18,7 @@ function isAdmin(session: Awaited<ReturnType<typeof getAuthSession>>) {
 }
 
 function canManageTemplates(session: Awaited<ReturnType<typeof getAuthSession>>) {
-  return session?.user?.role === 'admin' || session?.user?.role === 'client';
+  return Boolean(session?.user?.id);
 }
 
 function isValidField(field: DocumentField) {
@@ -89,9 +89,12 @@ export async function PUT(request: NextRequest) {
     if (templateIndex === -1) {
       return NextResponse.json({ error: 'Template not found' }, { status: 404 });
     }
-    if (session?.user?.role === 'client' && customTemplates[templateIndex].organizationId !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const existing = customTemplates[templateIndex];
+    const requesterEmail = session?.user?.email?.trim().toLowerCase() || '';
+    const ownerEmail = (existing.createdBy || '').trim().toLowerCase();
+    const isOwner = Boolean(requesterEmail && ownerEmail && requesterEmail === ownerEmail);
+    const isAllowed = session?.user?.role === 'admin' || isOwner;
+    if (!isAllowed) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     customTemplates[templateIndex] = {
       ...customTemplates[templateIndex],
@@ -128,9 +131,11 @@ export async function DELETE(request: NextRequest) {
     if (!targetTemplate) {
       return NextResponse.json({ error: 'Template not found' }, { status: 404 });
     }
-    if (session?.user?.role === 'client' && targetTemplate.organizationId !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const requesterEmail = session?.user?.email?.trim().toLowerCase() || '';
+    const ownerEmail = (targetTemplate.createdBy || '').trim().toLowerCase();
+    const isOwner = Boolean(requesterEmail && ownerEmail && requesterEmail === ownerEmail);
+    const isAllowed = session?.user?.role === 'admin' || isOwner;
+    if (!isAllowed) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const filteredTemplates = customTemplates.filter(t => t.id !== id);
 
     await saveCustomTemplates(filteredTemplates);

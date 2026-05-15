@@ -1,0 +1,22 @@
+{
+  "redemptions": [],
+  "invites": [
+    {
+      "id": "ca45d43f-2c74-451e-8ae8-da841672ed5f",
+      "referrerUserId": "individual-1778758936957",
+      "inviteeEmail": "kushagra123@yopmail.com",
+      "sentAt": "2026-05-14T11:51:14.036Z"
+    }
+  ],
+  "activations": [
+    {
+      "id": "7c8af808-d9e2-4e23-a000-4d685b7304c2",
+      "referrerUserId": "individual-1778758936957",
+      "refereeUserId": "user-1778759617203",
+      "refereeEmail": "ana@yopmail.com",
+      "referralCode": "C51DD83E67",
+      "activatedAt": "2026-05-14T11:53:37.303Z",
+      "bonusGrantedAt": "2026-05-14T11:53:37.303Z"
+    }
+  ]
+}

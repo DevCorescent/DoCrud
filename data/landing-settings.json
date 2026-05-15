@@ -1,62 +1,81 @@
 {
-  "heroBadge": "B2B Business Document Software",
-  "heroTitle": "The sleekest way to run document operations across teams, approvals, and clients",
-  "heroSubtitle": "docrud brings together document generation, approval routing, client collaboration, file governance, and premium white-label workflows in one polished control layer.",
+  "heroBadge": "Document Automation Suite",
+  "heroTitle": "Create, approve, track, and deliver business documents from one clean workspace",
+  "heroSubtitle": "docrud helps teams generate polished documents, route approvals, manage files, collect signatures, and monitor every step without workflow clutter.",
   "primaryCtaLabel": "Book a Demo",
   "primaryCtaHref": "#contact-us",
   "secondaryCtaLabel": "Open Login",
   "secondaryCtaHref": "/login",
-  "socialProofLabel": "Built for founders, HR leaders, legal teams, and client-facing operations",
+  "socialProofLabel": "Built for operations, HR, legal, finance, and client-facing teams",
   "socialProofItems": [
     "Approvals",
-    "Client Portals",
+    "Secure Sharing",
     "Audit Trails",
-    "Custom Workflows"
+    "AI Review"
   ],
-  "audienceSectionTitle": "Who can use docrud?",
-  "audienceSectionSubtitle": "docrud is built for businesses that want cleaner document execution, stronger governance, and a more premium experience for both teams and clients.",
-  "featureSectionTitle": "What makes docrud premium",
-  "softwareModulesTitle": "Everything your teams need in one document operating system",
-  "softwareModulesSubtitle": "Each capability is built to work together so super admins, internal teams, and clients all move through the same clean lifecycle.",
-  "pricingSectionTitle": "One-time purchase plans",
-  "pricingSectionSubtitle": "All plans include customization support, implementation guidance, and a rollout structure tailored to your organization.",
-  "pricingPageTitle": "Choose the one-time purchase model that fits your rollout",
-  "pricingPageSubtitle": "From focused team deployments to organization-wide digital operations, every plan supports custom workflows, branding, and guided implementation.",
-  "contactEmail": "sales@corescent.com",
+  "gettingStartedTitle": "How to start with docrud",
+  "gettingStartedSubtitle": "Launch fast with templates, controls, and a workflow that scales only when your team is ready.",
+  "gettingStartedSteps": [
+    {
+      "id": "getting-started-1",
+      "title": "Create your workspace",
+      "description": "Set up your company profile, admin access, and plan based on your expected document load."
+    },
+    {
+      "id": "getting-started-2",
+      "title": "Set templates and controls",
+      "description": "Upload signatures, define approvals, and prepare the templates your team uses most."
+    },
+    {
+      "id": "getting-started-3",
+      "title": "Run live workflows",
+      "description": "Generate, review, share, and track documents once the process is proven inside your team."
+    }
+  ],
+  "audienceSectionTitle": "Who uses docrud?",
+  "audienceSectionSubtitle": "docrud fits teams that need faster document turnaround, stronger controls, and a more professional delivery experience.",
+  "featureSectionTitle": "Why teams choose docrud",
+  "softwareModulesTitle": "One workspace for the full document lifecycle",
+  "softwareModulesSubtitle": "Generation, review, approvals, sharing, analytics, and AI guidance stay connected so teams move faster with less follow-up.",
+  "pricingSectionTitle": "Plans for growing document operations",
+  "pricingSectionSubtitle": "Start with the essentials, unlock advanced controls as usage grows, and keep pricing tied to real document volume.",
+  "pricingPageTitle": "Choose the plan that matches your team and document load",
+  "pricingPageSubtitle": "Each plan is designed for disciplined rollout, predictable usage, and clean scaling.",
+  "contactEmail": "sales@docrud.app",
   "contactPhone": "+91 98765 43210",
   "contactHeading": "Talk to our team about your rollout",
-  "contactSubtitle": "Share your document workflows, approval complexity, client portal needs, and branding expectations. We will shape the right one-time purchase and customization scope.",
+  "contactSubtitle": "Share your document flow, approval complexity, client requirements, and branding needs. We will map the right setup for your team.",
   "contactPageTitle": "Speak with docrud",
-  "contactPageSubtitle": "Tell us where your document process slows down today. We will help you scope the right setup, customization path, and purchase plan.",
+  "contactPageSubtitle": "Tell us where your document process slows down today. We will help you scope the right setup, controls, and plan.",
   "demoPageTitle": "Schedule a tailored docrud demo",
-  "demoPageSubtitle": "Walk through the platform with your workflows, teams, and approval structure in mind so the demo feels like your future system, not a generic showcase.",
+  "demoPageSubtitle": "See the platform with your workflows, team structure, and approval path in mind so the demo feels directly relevant.",
   "demoBenefits": [
-    "See document ops, approvals, file governance, and client flows together",
-    "Review the exact modules relevant to HR, legal, admin, or leadership teams",
-    "Discuss customization, migration, branding, and rollout planning live"
+    "See generation, approvals, file governance, and sharing in one flow",
+    "Review the modules that matter most to your team",
+    "Discuss rollout, branding, migration, and usage planning live"
   ],
   "screenshotsSectionTitle": "See the software in action",
-  "screenshotsSectionSubtitle": "Real product views help buyers understand the depth of the workspace before they book a call. Showcase the parts of docrud that matter most to your rollout.",
+  "screenshotsSectionSubtitle": "Show buyers the product before they book a call. Highlight the views that matter most to your workflow rollout.",
   "featureHighlights": [
-    "Role-based document generation, review, approval, and audit visibility",
-    "Client-ready portal experience with controlled access and tracked activity",
-    "One-time purchase plans with full customization and white-label rollout support"
+    "Generate documents with structured fields, reusable templates, and governed editing",
+    "Route approvals, signatures, and file requests with full audit visibility",
+    "Use DoXpert AI to score documents, flag risks, and improve responses"
   ],
   "featureCards": [
     {
       "id": "feature-governed",
-      "title": "Calm, governed workflows",
-      "description": "Replace cluttered document handling with elegant approvals, tracked reviews, and neatly structured operations."
+      "title": "Clean workflow control",
+      "description": "Keep generation, review, approval, and delivery structured from start to finish."
     },
     {
       "id": "feature-client",
-      "title": "Premium client experiences",
-      "description": "Give clients a clean portal with role-aware access, shared documents, file requests, and clear workflow visibility."
+      "title": "Client-ready sharing",
+      "description": "Share documents, collect files, and manage recipient actions through a polished portal."
     },
     {
       "id": "feature-custom",
-      "title": "Tailored for your business",
-      "description": "Customize branding, roles, permissions, templates, integrations, and lifecycle flows without rebuilding your entire stack."
+      "title": "Configurable by design",
+      "description": "Adjust branding, roles, approvals, templates, and integrations without rebuilding your stack."
     }
   ],
   "stats": [
@@ -67,57 +86,58 @@
     },
     {
       "id": "stat-2",
-      "value": "100%",
-      "label": "customizable purchase model"
+      "value": "1",
+      "label": "workspace for generation, approvals, and files"
     },
     {
       "id": "stat-3",
-      "value": "1",
-      "label": "workspace for teams and clients"
+      "value": "24/7",
+      "label": "visibility into document status"
     }
   ],
   "softwareModules": [
     {
       "id": "module-doc-ops",
-      "title": "Document Ops and advanced editing",
-      "description": "Create, manage, revise, and govern documents with structured fields, direct content editing, metadata, and workflow-aware controls.",
+      "title": "Document creation and editing",
+      "description": "Generate, edit, revise, and manage documents with structured fields, metadata, and controlled workflows.",
       "capabilities": [
-        "Template-based generation",
-        "Advanced document editing",
+        "Template generation",
+        "Advanced editing",
         "Version snapshots",
-        "Folder and file management"
+        "File and folder management"
       ]
     },
     {
       "id": "module-governance",
       "title": "Roles, permissions, and approvals",
-      "description": "Control who can access what, route documents through approval chains, and keep governance visible across every stage.",
+      "description": "Control access, route approvals, and keep governance visible at every stage.",
       "capabilities": [
         "Role creation",
         "Permission mapping",
         "Approval workflows",
-        "Audit-ready access history"
+        "Audit-ready history"
       ]
     },
     {
       "id": "module-collaboration",
-      "title": "Client portals and collaboration",
-      "description": "Share relevant documents with clients, collect requirements, enable signatures, and track progress inside a clean portal.",
+      "title": "Sharing and collaboration",
+      "description": "Share documents, collect requirements, enable signatures, and track recipient progress in one place.",
       "capabilities": [
-        "Client login",
+        "Secure recipient access",
         "Shared document visibility",
-        "Requirements collection",
+        "File requests",
         "Comments and signatures"
       ]
     },
     {
       "id": "module-ops",
-      "title": "Enterprise operations and intelligence",
-      "description": "Run renewals, analytics, integrations, API connectivity, and guided admin operations from the same control surface.",
+      "title": "Admin, analytics, and AI",
+      "description": "Manage analytics, integrations, APIs, admin controls, and AI-assisted review from the same workspace.",
       "capabilities": [
-        "Renewal rules",
+        "Usage analytics",
+        "DoXpert AI review",
         "Analytics views",
-        "API docs",
+        "API access",
         "Integration controls"
       ]
     }
@@ -126,112 +146,136 @@
     {
       "id": "shot-dashboard",
       "title": "Dashboard overview",
-      "description": "A unified command layer for monitoring activity, workflows, and operational visibility.",
+      "description": "A unified view of activity, pending actions, and workflow performance.",
       "imagePath": "/screenshots/dashboard-overview.png"
     },
     {
       "id": "shot-doc-ops",
-      "title": "Document Ops workspace",
-      "description": "Advanced editing, metadata controls, structured content handling, and enterprise document management.",
+      "title": "Document workspace",
+      "description": "Structured editing, metadata control, and document management in one focused view.",
       "imagePath": "/screenshots/document-ops.png"
     },
     {
       "id": "shot-files",
       "title": "File Manager",
-      "description": "Centralized document repositories, supporting files, and managed content across the workspace.",
+      "description": "Centralized storage for supporting files, shared assets, and managed content.",
       "imagePath": "/screenshots/file-manager.png"
     },
     {
       "id": "shot-roles",
       "title": "Roles and permissions",
-      "description": "Govern access, responsibilities, and workflow authority with admin-grade control.",
+      "description": "Define access, responsibilities, and approval authority with admin-grade control.",
       "imagePath": "/screenshots/roles-permissions.png"
     }
   ],
   "heroBanners": [
     {
       "id": "hero-banner-ops",
-      "eyebrow": "Document operations command center",
-      "title": "Run enterprise document workflows with calmer execution and sharper control.",
-      "description": "Bring generation, approvals, collaboration, and tracked delivery into one polished workspace built for modern teams.",
+      "eyebrow": "Workflow command center",
+      "title": "Run document operations with less follow-up and better control.",
+      "description": "Keep generation, approvals, collaboration, and delivery inside one polished workspace.",
       "imagePath": "/screenshots/document-ops.png"
     },
     {
       "id": "hero-banner-analytics",
-      "eyebrow": "Leadership-grade visibility",
-      "title": "Give operations, legal, and leadership a dashboard that feels premium and useful.",
-      "description": "Surface the right activity, turnaround signals, and bottlenecks without turning the homepage into clutter.",
+      "eyebrow": "Operational visibility",
+      "title": "Give teams a dashboard that shows progress, bottlenecks, and next actions clearly.",
+      "description": "Surface the signals that matter without overwhelming users with noise.",
       "imagePath": "/screenshots/dashboard-overview.png"
     },
     {
       "id": "hero-banner-governance",
-      "eyebrow": "Governance without friction",
-      "title": "Present a cleaner approval system with branded, client-ready document experiences.",
-      "description": "Keep controls strong while making the product feel modern, elegant, and easier to trust on every device.",
+      "eyebrow": "Approvals and governance",
+      "title": "Keep controls strong while making every document experience feel modern and trustworthy.",
+      "description": "Balance admin control, branded delivery, and clean approval journeys across devices.",
       "imagePath": "/screenshots/admin-panel.png"
     }
   ],
   "audienceProfiles": [
     {
-      "id": "audience-legal",
-      "businessType": "Legal and compliance teams",
-      "usage": "Manage contracts, notices, approval flows, and governed review cycles from one structured workspace.",
-      "benefit": "Reduce legal turnaround time while keeping audit trails, accountability, and controlled access intact."
+      "id": "audience-ops",
+      "businessType": "Operations teams",
+      "usage": "Run daily document generation, approvals, file collection, and tracked delivery from one workspace.",
+      "benefit": "Reduce delays, remove follow-up chaos, and keep every document step visible."
     },
     {
       "id": "audience-hr",
-      "businessType": "HR and people operations",
-      "usage": "Run offer letters, onboarding packs, employee forms, and signature workflows with less manual follow-up.",
-      "benefit": "Deliver a smoother employee experience and reduce repetitive coordination work for HR teams."
+      "businessType": "HR and people teams",
+      "usage": "Handle offer letters, onboarding packs, employee forms, and signature workflows with less manual effort.",
+      "benefit": "Deliver a smoother employee experience while reducing repetitive coordination."
     },
     {
-      "id": "audience-client-services",
-      "businessType": "Agencies and client service businesses",
-      "usage": "Share branded documents, collect requirements, route approvals, and coordinate delivery through one client-ready portal.",
-      "benefit": "Present a more premium client experience while keeping every request and document easier to track."
+      "id": "audience-legal",
+      "businessType": "Legal and compliance teams",
+      "usage": "Manage contracts, notices, reviews, and controlled approval cycles from one governed system.",
+      "benefit": "Protect turnaround time while keeping access, evidence, and accountability intact."
     },
     {
       "id": "audience-finance",
       "businessType": "Finance and procurement teams",
-      "usage": "Handle vendor paperwork, approval chains, compliance packs, and renewal workflows with stronger process visibility.",
-      "benefit": "Improve audit readiness and reduce delays caused by fragmented files, email trails, and manual approvals."
+      "usage": "Handle vendor paperwork, approvals, compliance packs, and renewals with stronger process visibility.",
+      "benefit": "Improve audit readiness and reduce delays caused by fragmented files and email trails."
     }
   ],
   "pricingPlans": [
     {
-      "id": "launch",
-      "name": "Launch",
-      "priceLabel": "INR 1,49,000 one-time",
-      "description": "Best for one business unit getting started with document automation.",
+      "id": "free-starter",
+      "name": "Free Starter",
+      "priceLabel": "Free",
+      "description": "A tightly limited trial for teams validating workflow fit before they subscribe.",
       "highlights": [
-        "Up to 10 internal users",
-        "Core workflows and templates",
-        "Branding and role setup",
-        "Go-live assistance"
+        "5 total documents",
+        "Watermarked output",
+        "Core workspace access",
+        "Upgrade after evaluation"
       ]
     },
     {
-      "id": "growth",
-      "name": "Growth",
-      "priceLabel": "INR 3,49,000 one-time",
-      "description": "For growing organizations that need multi-team automation and stronger governance.",
+      "id": "team",
+      "name": "Team",
+      "priceLabel": "₹2,999 / month",
+      "description": "For small teams that need professional document workflows without heavy overhead.",
       "highlights": [
-        "Up to 50 users",
-        "Advanced approval flows",
-        "Client portal and audit center",
-        "Custom integrations and onboarding"
+        "100 documents / month",
+        "Up to 5 internal users",
+        "AI drafting included",
+        "Email support"
       ]
     },
     {
-      "id": "enterprise",
-      "name": "Enterprise Custom",
-      "priceLabel": "Custom one-time pricing",
-      "description": "Built for large organizations needing tailored governance, data structures, and rollout support.",
+      "id": "business",
+      "name": "Business",
+      "priceLabel": "₹8,999 / month",
+      "description": "For growing teams that need approvals, analytics, client sharing, and stronger governance.",
       "highlights": [
-        "Unlimited workflows",
-        "Deep customizations",
-        "White-label experience",
-        "Priority implementation and support"
+        "300 documents / month",
+        "Up to 20 internal users",
+        "DoXpert AI included",
+        "Approvals, audit, client portal"
+      ]
+    },
+    {
+      "id": "scale",
+      "name": "Scale",
+      "priceLabel": "₹18,999 / month",
+      "description": "For high-volume teams that need tighter controls, broader AI usage, and stronger admin support.",
+      "highlights": [
+        "900 documents / month",
+        "Up to 60 internal users",
+        "Branding, analytics, DoXpert",
+        "Advanced admin controls"
+      ]
+    },
+    {
+      "id": "enterprise-custom",
+      "name": "Enterprise",
+      "priceLabel": "Custom commercial plan",
+      "description": "For large organizations with custom security, governance, and commercial requirements.",
+      "highlights": [
+        "Custom volume agreement",
+        "SSO and tailored rollout",
+        "Advanced governance",
+        "Commercial and procurement support"
       ]
     }
   ],

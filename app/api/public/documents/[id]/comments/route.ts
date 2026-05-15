@@ -24,7 +24,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     if (!entry) {
       return NextResponse.json({ error: 'Document not found' }, { status: 404 });
     }
-    if (entry.sharePassword !== payload.password?.trim().toUpperCase()) {
+    if (entry.shareRequiresPassword !== false && entry.sharePassword !== payload.password?.trim().toUpperCase()) {
       return NextResponse.json({ error: 'Valid document password is required' }, { status: 403 });
     }
     if (entry.recipientAccess === 'view') {

@@ -1,0 +1,88 @@
+{
+  "email": "kushagra@corescent.in",
+  "otpSessions": [
+    {
+      "id": "7e65c0df7bf08b4c17b45cde8507915f",
+      "email": "kushagra@corescent.in",
+      "otpHash": "a76753eb138eb0c3ac01954b628759217a68e06fb1b3019cf75ec2acb98909ac",
+      "otpSalt": "5b77b5b434adbffd9008a076a44551e2",
+      "createdAt": "2026-05-15T18:06:11.951Z",
+      "expiresAt": "2026-05-15T18:16:11.951Z",
+      "attempts": 0,
+      "verifiedAt": "2026-05-15T18:06:29.733Z"
+    }
+  ],
+  "activeSessions": [
+    {
+      "token": "1a110f043fe3c34be7e61edf3d47b9c334e9f162cdc56889963c4be12815356a9aa844eb8b1bce0f204c8f8207e27871",
+      "email": "kushagra@corescent.in",
+      "createdAt": "2026-05-15T18:06:29.737Z",
+      "expiresAt": "2026-05-15T22:06:29.737Z",
+      "ip": "::1",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+    }
+  ],
+  "auditLog": [
+    {
+      "id": "cecf039a2f85b1f6",
+      "timestamp": "2026-05-15T18:08:30.982Z",
+      "action": "platform_update_flags",
+      "details": {
+        "data": {
+          "maintenanceMode": false,
+          "maintenanceMessage": "",
+          "newSignupsEnabled": true,
+          "publicGigsEnabled": true,
+          "publicMarketplaceEnabled": true,
+          "publicBlogEnabled": true,
+          "globalBroadcast": {
+            "message": "test",
+            "type": "warning",
+            "createdAt": "2026-05-15T18:08:30.809Z"
+          }
+        }
+      },
+      "ip": "::1"
+    },
+    {
+      "id": "921611327b28d538",
+      "timestamp": "2026-05-15T18:06:29.738Z",
+      "action": "super_admin_login",
+      "details": {
+        "email": "kushagra@corescent.in"
+      },
+      "ip": "::1"
+    },
+    {
+      "id": "2640444d841040e3",
+      "timestamp": "2026-05-14T06:08:49.349Z",
+      "action": "user_disable",
+      "targetType": "user",
+      "targetId": "3",
+      "details": {},
+      "ip": "::1"
+    },
+    {
+      "id": "1b73d1a2e35c8d18",
+      "timestamp": "2026-05-14T06:01:54.537Z",
+      "action": "super_admin_login",
+      "details": {
+        "email": "kushagra@corescent.in"
+      },
+      "ip": "::1"
+    }
+  ],
+  "platformFlags": {
+    "maintenanceMode": false,
+    "maintenanceMessage": "",
+    "newSignupsEnabled": true,
+    "publicGigsEnabled": true,
+    "publicMarketplaceEnabled": true,
+    "publicBlogEnabled": true,
+    "globalBroadcast": {
+      "message": "test",
+      "type": "warning",
+      "createdAt": "2026-05-15T18:08:30.809Z"
+    }
+  }
+}

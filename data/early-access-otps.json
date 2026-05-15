@@ -1,0 +1,14 @@
+{
+  "sessions": [
+    {
+      "id": "eaotp-1778755924109-512826fab50a",
+      "email": "kushagra@corescent.in",
+      "featureId": "crm-email-sequences",
+      "otpHash": "38263a35d7bfd551a704897ec991f19076fff78518e48230c109124ddedcbe4e",
+      "otpSalt": "f71eb3bbb5e1063006337361aa444ae4",
+      "createdAt": "2026-05-14T10:52:04.109Z",
+      "expiresAt": "2026-05-14T11:02:04.109Z",
+      "attempts": 0
+    }
+  ]
+}

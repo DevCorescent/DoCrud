@@ -1,9 +1,14 @@
 import { BusinessSettings, DocumentTemplate } from '@/types/document';
-import { customTemplatesPath, businessSettingsPath, readJsonFile, writeJsonFile } from '@/lib/server/storage';
 import { getIndustryWorkspaceProfile } from '@/lib/industry-presets';
+import {
+  getBusinessSettingsFromRepository,
+  getCustomTemplatesFromRepository,
+  saveBusinessSettingsToRepository,
+  saveCustomTemplatesToRepository,
+} from '@/lib/server/repositories';
 
 export async function getAllBusinessSettings() {
-  return readJsonFile<BusinessSettings[]>(businessSettingsPath, []);
+  return getBusinessSettingsFromRepository();
 }
 
 export async function getBusinessSettings(organizationId?: string, organizationName?: string) {
@@ -29,7 +34,7 @@ export async function getBusinessSettings(organizationId?: string, organizationN
     supportEmail: '',
     supportPhone: '',
     accentColor: '#2719FF',
-    watermarkLabel: 'docrud trial workspace',
+    watermarkLabel: 'docrud workspace',
     letterheadMode: 'default',
     letterheadImageDataUrl: '',
     letterheadHtml: '',
@@ -46,12 +51,7 @@ export async function getBusinessSettings(organizationId?: string, organizationN
 }
 
 export async function saveBusinessSettings(settings: BusinessSettings) {
-  const allSettings = await getAllBusinessSettings();
-  const index = allSettings.findIndex((entry) => entry.organizationId === settings.organizationId);
-  const next = index === -1
-    ? [...allSettings, settings]
-    : allSettings.map((entry, entryIndex) => entryIndex === index ? settings : entry);
-  await writeJsonFile(businessSettingsPath, next);
+  await saveBusinessSettingsToRepository(settings);
   return settings;
 }
 
@@ -72,7 +72,7 @@ export function buildWorkspaceSetupChecklist(input: Partial<BusinessSettings> & 
 }
 
 export async function seedStarterTemplatesForBusiness(settings: BusinessSettings) {
-  const allTemplates = await readJsonFile<DocumentTemplate[]>(customTemplatesPath, []);
+  const allTemplates = await getCustomTemplatesFromRepository();
   const alreadySeeded = allTemplates.some((template) => template.organizationId === settings.organizationId && template.createdBy === 'system');
   if (alreadySeeded) {
     return;
@@ -91,5 +91,5 @@ export async function seedStarterTemplatesForBusiness(settings: BusinessSettings
     organizationName: settings.organizationName,
   }));
 
-  await writeJsonFile(customTemplatesPath, [...allTemplates, ...seededTemplates]);
+  await saveCustomTemplatesToRepository([...allTemplates, ...seededTemplates]);
 }

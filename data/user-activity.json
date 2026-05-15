@@ -1,0 +1,68 @@
+[
+  {
+    "id": "ua-1778832959821-cnrq2a",
+    "userId": "individual-1778758936957",
+    "userEmail": "anshul@yopmail.com",
+    "userName": "anshul sharma",
+    "role": "individual",
+    "accountType": "individual",
+    "organizationName": "Individual Workspace",
+    "createdAt": "2026-05-15T08:15:59.820Z",
+    "eventType": "session_start",
+    "tabId": "dashboard"
+  },
+  {
+    "id": "ua-1778755864068-zi5y8d",
+    "userId": "individual-1778744127141",
+    "userEmail": "ramesh@yopmail.com",
+    "userName": "ramesh chatterjee",
+    "role": "individual",
+    "accountType": "individual",
+    "organizationName": "Individual Workspace",
+    "createdAt": "2026-05-14T10:51:04.066Z",
+    "eventType": "tab_view",
+    "tabId": "dashboard",
+    "featureId": "dashboard"
+  },
+  {
+    "id": "ua-1778755260580-45ezuq",
+    "userId": "individual-1778744127141",
+    "userEmail": "ramesh@yopmail.com",
+    "userName": "ramesh chatterjee",
+    "role": "individual",
+    "accountType": "individual",
+    "organizationName": "Individual Workspace",
+    "createdAt": "2026-05-14T10:41:00.579Z",
+    "eventType": "tab_view",
+    "tabId": "dashboard",
+    "featureId": "dashboard"
+  },
+  {
+    "id": "ua-1778755162253-mdho65",
+    "userId": "individual-1778744127141",
+    "userEmail": "ramesh@yopmail.com",
+    "userName": "ramesh chatterjee",
+    "role": "individual",
+    "accountType": "individual",
+    "organizationName": "Individual Workspace",
+    "createdAt": "2026-05-14T10:39:22.253Z",
+    "eventType": "tab_view",
+    "tabId": "scratchpad",
+    "featureId": "scratchpad"
+  },
+  {
+    "id": "ua-1778754978867-321ia7",
+    "userId": "individual-1778744127141",
+    "userEmail": "ramesh@yopmail.com",
+    "userName": "ramesh chatterjee",
+    "role": "individual",
+    "accountType": "individual",
+    "organizationName": "Individual Workspace",
+    "createdAt": "2026-05-14T10:36:18.863Z",
+    "eventType": "tab_view",
+    "tabId": "early-access",
+    "featureId": "early-access"
+  }
+]Id": "early-access"
+  }
+]
