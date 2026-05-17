@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
 
     try {
       const page = await browser.newPage();
-      await page.setContent(renderEditableDocumentHtml(title, text), { waitUntil: 'networkidle0' });
+      await page.setContent(renderEditableDocumentHtml(title, text), { waitUntil: 'load' });
       const pdfBuffer = await page.pdf({
         format: 'A4',
         printBackground: true,

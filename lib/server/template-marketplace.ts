@@ -87,7 +87,7 @@ async function renderTemplatePreviewImages(params: {
 
   try {
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
+    await page.setContent(html, { waitUntil: 'load' });
 
     // Screenshot each rendered page element instead of PDF->canvas conversion.
     // This avoids native canvas bindings and stays stable in serverless builds.

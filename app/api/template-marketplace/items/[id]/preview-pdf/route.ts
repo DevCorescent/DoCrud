@@ -67,7 +67,7 @@ export async function GET(_request: NextRequest, context: { params: { id: string
 
   try {
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
+    await page.setContent(html, { waitUntil: 'load' });
     const wantsPageNumbers = Boolean(tpl.isCustom && pageNumbersEnabled);
 
     const pdf = await page.pdf({

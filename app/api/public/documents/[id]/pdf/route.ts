@@ -204,7 +204,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     try {
       const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: 'networkidle0' });
+      await page.setContent(html, { waitUntil: 'load' });
       const wantsPageNumbers = Boolean(template.isCustom && pageNumbersEnabled);
       const pdfBuffer = await page.pdf({
         printBackground: true,

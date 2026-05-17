@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
 
     try {
       const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: 'networkidle0' });
+      await page.setContent(html, { waitUntil: 'load' });
       const wantsPageNumbers = Boolean(template.isCustom && pageNumbersEnabled);
       const pdfBase: Parameters<typeof page.pdf>[0] = {
         printBackground: true,

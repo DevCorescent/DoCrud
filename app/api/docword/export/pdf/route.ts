@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
     const page = await browser.newPage();
-    await page.setContent(buildPdfHtml(title, html, watermarkText, documentTheme), { waitUntil: 'networkidle0' });
+    await page.setContent(buildPdfHtml(title, html, watermarkText, documentTheme), { waitUntil: 'load' });
     const pdf = await page.pdf({
       format: 'A4',
       printBackground: exportProfile !== 'compact',
