@@ -19,8 +19,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Strip identity proof from response for privacy
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { identityProofDataUrl, ...safe } = application;
+    const { identityProofDataUrl: _idProof, ...safe } = application;
     return NextResponse.json({ application: safe });
   } catch (err) {
     console.error('[public-face/status]', err);

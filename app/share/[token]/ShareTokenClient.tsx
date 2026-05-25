@@ -27,8 +27,7 @@ import { useCollabSession, avatarInitials } from '@/lib/collabSession';
 
 /* ─── Permission icon map ─────────────────────────────────────────────────── */
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const PERM_ICONS: Record<SharePermission, React.ComponentType<any>> = {
+const PERM_ICONS: Record<SharePermission, React.ComponentType<any>> = { // eslint-disable-line
   read:    Eye,
   comment: MessageSquare,
   edit:    Zap,
@@ -446,7 +445,7 @@ export default function ShareTokenClient({ token }: { token: string }) {
                       Opening Drive…
                     </div>
                     <div style={{ color: '#64748b', fontSize: 12, marginTop: 2 }}>
-                      "{share.itemName}" will appear in your Drive
+                      &quot;{share.itemName}&quot; will appear in your Drive
                     </div>
                   </div>
                 </div>

@@ -378,7 +378,7 @@ export default function GigDetailPage() {
             {/* Deliverables */}
             {gig.deliverables.length > 0 && (
               <section>
-                <h2 className="mb-4 text-[10.5px] font-bold uppercase tracking-[0.22em] text-white/25">What You'll Deliver</h2>
+                <h2 className="mb-4 text-[10.5px] font-bold uppercase tracking-[0.22em] text-white/25">What You&apos;ll Deliver</h2>
                 <div className="space-y-2.5">
                   {gig.deliverables.map((d, i) => (
                     <div key={i} className="flex items-start gap-3 rounded-[14px] border border-white/[0.06] bg-white/[0.03] px-4 py-3.5">

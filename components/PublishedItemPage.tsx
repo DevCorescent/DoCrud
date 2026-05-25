@@ -1093,7 +1093,7 @@ export default function PublishedItemPage({ id }: { id: string }) {
                   >
                     Apply Now <ExternalLink className="h-4 w-4" />
                   </a>
-                  <p className="mt-2 text-[11px] text-white/30">You will be redirected to the employer's application page</p>
+                  <p className="mt-2 text-[11px] text-white/30">You will be redirected to the employer&apos;s application page</p>
                 </div>
               ) : null;
             })()}

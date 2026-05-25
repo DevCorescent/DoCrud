@@ -5867,9 +5867,9 @@ export default function DocWordWorkspace() {
                 <div className="space-y-3">
                   {/* Selected text preview */}
                   <div className={cn('relative rounded-[1.1rem] border px-3.5 py-3 text-sm leading-relaxed', darkMode ? 'border-white/[0.08] bg-white/[0.03] text-slate-300' : 'border-slate-200/80 bg-slate-50/80 text-slate-600')}>
-                    <span className={cn('mr-1 font-semibold', darkMode ? 'text-sky-400' : 'text-sky-500')}>"</span>
+                    <span className={cn('mr-1 font-semibold', darkMode ? 'text-sky-400' : 'text-sky-500')}>&quot;</span>
                     {selectionText.slice(0, 180)}{selectionText.length > 180 ? '...' : ''}
-                    <span className={cn('ml-1 font-semibold', darkMode ? 'text-sky-400' : 'text-sky-500')}>"</span>
+                    <span className={cn('ml-1 font-semibold', darkMode ? 'text-sky-400' : 'text-sky-500')}>&quot;</span>
                   </div>
 
                   {/* Mode pills */}
@@ -5981,9 +5981,9 @@ export default function DocWordWorkspace() {
             </div>
 
             <div className={cn('mt-3 rounded-[1rem] border px-3.5 py-2.5 text-sm leading-relaxed', darkMode ? 'border-white/[0.07] bg-white/[0.03] text-slate-300' : 'border-slate-100 bg-slate-50/80 text-slate-600')}>
-              <span className={cn('font-semibold', darkMode ? 'text-sky-400' : 'text-sky-500')}>"</span>
+              <span className={cn('font-semibold', darkMode ? 'text-sky-400' : 'text-sky-500')}>&quot;</span>
               {selectionText.slice(0, 120)}{selectionText.length > 120 ? '...' : ''}
-              <span className={cn('font-semibold', darkMode ? 'text-sky-400' : 'text-sky-500')}>"</span>
+              <span className={cn('font-semibold', darkMode ? 'text-sky-400' : 'text-sky-500')}>&quot;</span>
             </div>
 
             <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">

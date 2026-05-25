@@ -541,7 +541,7 @@ function ServiceDetailModal({ service, reviews, onClose, onBook }: { service: Se
                           : <span className="text-[10px] font-bold text-amber-400/70">{r.reviewerName.charAt(0).toUpperCase()}</span>}
                       </div>
                       <div>
-                        <p className="text-[12.5px] text-amber-100/75 italic leading-relaxed">"{r.testimonial}"</p>
+                        <p className="text-[12.5px] text-amber-100/75 italic leading-relaxed">&quot;{r.testimonial}&quot;</p>
                         <p className="text-[10px] text-white/30 mt-1">— {r.reviewerName}</p>
                       </div>
                     </div>
@@ -953,7 +953,7 @@ function ServiceCard({ service, reviews, shared, editMode, settings, onView, onB
         {/* Featured testimonial snippet */}
         {topTestimonial && (
           <div className="mb-3 rounded-[10px] border border-amber-500/15 bg-amber-500/[0.05] px-2.5 py-2" onClick={onView}>
-            <p className="text-[10.5px] text-amber-200/60 italic line-clamp-2">"{topTestimonial.testimonial}"</p>
+            <p className="text-[10.5px] text-amber-200/60 italic line-clamp-2">&quot;{topTestimonial.testimonial}&quot;</p>
             <p className="text-[9.5px] text-white/25 mt-0.5">— {topTestimonial.reviewerName}</p>
           </div>
         )}
@@ -1321,7 +1321,7 @@ export default function ServicesPage() {
             <Briefcase className="h-7 w-7 text-white/30" />
           </div>
           <h1 className="text-2xl font-black text-white/70 mb-2">Not found</h1>
-          <p className="text-[13px] text-white/35 mb-6">This profile doesn't exist or has no services.</p>
+          <p className="text-[13px] text-white/35 mb-6">This profile doesn&apos;t exist or has no services.</p>
           <Link href="/" className="inline-flex items-center gap-2 text-[13px] font-semibold text-violet-400 hover:text-violet-300 transition">
             <ArrowLeft className="h-4 w-4" /> Go home
           </Link>
@@ -1353,7 +1353,7 @@ export default function ServicesPage() {
               <span className="text-[10px] font-bold text-white/60">{getInitials(user.name)}</span>
             )}
           </div>
-          <span className="text-[13px] font-semibold text-white/70 truncate">{user.name}'s Services</span>
+          <span className="text-[13px] font-semibold text-white/70 truncate">{user.name}&apos;s Services</span>
         </div>
         <div className="flex items-center gap-2">
           {isOwner && (
@@ -1834,7 +1834,7 @@ export default function ServicesPage() {
                     <p className="text-[12px] font-medium text-white/65 flex items-center gap-1.5">
                       <MessageSquare className="h-3.5 w-3.5 text-blue-400" /> Allow visitors to message you
                     </p>
-                    <p className="text-[10.5px] text-white/30 mt-0.5">Shows a "Message" button on your catalogue page</p>
+                    <p className="text-[10.5px] text-white/30 mt-0.5">Shows a &quot;Message&quot; button on your catalogue page</p>
                   </div>
                   <button
                     type="button"

@@ -341,9 +341,9 @@ function WaitlistModal({ feature, onClose }: { feature: Feature; onClose: () => 
               <div style={{ width: 60, height: 60, borderRadius: 16, background: 'rgba(134,239,172,0.12)', border: '1px solid rgba(134,239,172,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px' }}>
                 <CheckCircle2 className="w-7 h-7" style={{ color: '#86efac' }} />
               </div>
-              <h2 style={{ fontSize: 21, fontWeight: 700, color: '#fafafa', marginBottom: 10 }}>You're on the list! 🎉</h2>
+              <h2 style={{ fontSize: 21, fontWeight: 700, color: '#fafafa', marginBottom: 10 }}>You&apos;re on the list! 🎉</h2>
               <p style={{ fontSize: 13.5, color: 'rgba(255,255,255,0.42)', lineHeight: 1.65, maxWidth: 300, margin: '0 auto 6px' }}>
-                We'll notify <strong style={{ color: '#fafafa' }}>{email}</strong> the moment <strong style={{ color: '#fafafa' }}>{feature.title}</strong> opens for early access.
+                We&apos;ll notify <strong style={{ color: '#fafafa' }}>{email}</strong> the moment <strong style={{ color: '#fafafa' }}>{feature.title}</strong> opens for early access.
               </p>
               <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.28)', margin: '0 auto 24px' }}>Stay tuned — limited spots.</p>
               <button onClick={onClose} style={{ padding: '10px 28px', borderRadius: 11, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: '#fafafa', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Close</button>
@@ -405,7 +405,7 @@ function WishModal({ feature, onClose }: { feature: Feature; onClose: () => void
                 <Heart className="w-6 h-6" style={{ color: '#f472b6' }} />
               </div>
               <h3 style={{ fontSize: 18, fontWeight: 700, color: '#fafafa', marginBottom: 8 }}>Wish received! ✨</h3>
-              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.42)', lineHeight: 1.65 }}>Our product team reviews every wish. You'll hear from us if we need more details.</p>
+              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.42)', lineHeight: 1.65 }}>Our product team reviews every wish. You&apos;ll hear from us if we need more details.</p>
               <button onClick={onClose} style={{ marginTop: 20, padding: '9px 24px', borderRadius: 10, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: '#fafafa', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Close</button>
             </div>
           ) : (

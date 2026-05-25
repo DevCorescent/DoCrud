@@ -148,8 +148,7 @@ interface EditorDef {
   id: string;
   name: string;
   tagline: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  Icon: React.ComponentType<any>;
+  Icon: React.ComponentType<any>; // eslint-disable-line
   color: string;
   /** Kinds this editor is the single best choice for */
   recommended: ViewerKind[];
@@ -1266,9 +1265,9 @@ function MarkdownRenderer({ file }: { file: ViewableFile }) {
     file.blob.text().then((t) => !cancelled && setSrc(t)).catch((e) => !cancelled && setErr(String(e?.message ?? e)));
     return () => { cancelled = true; };
   }, [file]);
+  const html = useMemo(() => renderMarkdown(src ?? ''), [src]);
   if (err) return <ErrorShell msg={err} />;
   if (src == null) return <LoadingShell label="Rendering markdown…" />;
-  const html = useMemo(() => renderMarkdown(src), [src]);
   return (
     <div className="ufv-scroll" style={{ position:'absolute', inset:0, overflow:'auto' }}>
       <div style={{ maxWidth:820, margin:'0 auto', padding:'34px 38px 60px' }}>
@@ -1440,10 +1439,10 @@ function XmlRenderer({ file }: { file: ViewableFile }) {
     file.blob.text().then((t) => !cancelled && setSrc(t)).catch((e) => !cancelled && setErr(String(e?.message ?? e)));
     return () => { cancelled = true; };
   }, [file]);
+  const pretty = useMemo(() => prettyXml(src ?? ''), [src]);
+  const html = useMemo(() => highlightXml(pretty), [pretty]);
   if (err) return <ErrorShell msg={err} />;
   if (src == null) return <LoadingShell label="Loading XML…" />;
-  const pretty = useMemo(() => prettyXml(src), [src]);
-  const html = useMemo(() => highlightXml(pretty), [pretty]);
   return (
     <div className="ufv-scroll" style={{ position:'absolute', inset:0, overflow:'auto', padding:16 }}>
       <pre style={{ margin:0, fontFamily:"ui-monospace, 'SF Mono', Menlo, monospace", fontSize:12.5, lineHeight:1.65, color:'rgba(255,255,255,0.85)', whiteSpace:'pre' }}
@@ -1491,11 +1490,11 @@ function CodeRenderer({ file, lang }: { file: ViewableFile; lang: string }) {
     file.blob.text().then((t) => !cancelled && setSrc(t)).catch((e) => !cancelled && setErr(String(e?.message ?? e)));
     return () => { cancelled = true; };
   }, [file]);
+  const html = useMemo(() => highlightCode(src ?? '', lang), [src, lang]);
   if (err) return <ErrorShell msg={err} />;
   if (src == null) return <LoadingShell label="Reading source…" />;
 
   const lines = src.split(/\r?\n/);
-  const html = useMemo(() => highlightCode(src, lang), [src, lang]);
   const htmlLines = html.split('\n');
 
   return (

@@ -35,14 +35,10 @@ interface Props {
   setShareExpiryDays: (v: string) => void;
   maxAccessCount: string;
   setMaxAccessCount: (v: string) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onOpenLink: (entry: any) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onCopyLink: (entry: any) => Promise<void> | void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onEmail: (entry: any) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onWhatsApp: (entry: any) => void;
+  onOpenLink: (entry: any) => void; // eslint-disable-line
+  onCopyLink: (entry: any) => Promise<void> | void; // eslint-disable-line
+  onEmail: (entry: any) => void; // eslint-disable-line
+  onWhatsApp: (entry: any) => void; // eslint-disable-line
 }
 
 type Tab = 'share' | 'security' | 'track';

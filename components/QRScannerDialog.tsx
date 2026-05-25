@@ -72,8 +72,7 @@ declare const BarcodeDetector: {
 
 /* ─── Permission icon map ────────────────────────────────────────────────── */
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const PERM_ICONS: Record<SharePermission, React.ComponentType<any>> = {
+const PERM_ICONS: Record<SharePermission, React.ComponentType<any>> = { // eslint-disable-line
   read:    Eye,
   comment: MessageSquare,
   edit:    Zap,
@@ -883,7 +882,7 @@ export default function QRScannerDialog({
                       Added to your Drive!
                     </div>
                     <div style={{ color:'#64748b', fontSize:12, marginTop:2 }}>
-                      "{share.itemName}" is now in your Drive
+                      &quot;{share.itemName}&quot; is now in your Drive
                     </div>
                   </div>
                 </div>

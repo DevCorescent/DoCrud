@@ -2134,7 +2134,7 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
                 </div>
                 {emailNotes.trim() && (
                   <div style={{ padding:'8px 12px', borderRadius:9, background:'rgba(255,255,255,.04)', border:'1px solid rgba(255,255,255,.07)', marginBottom:10 }}>
-                    <p style={{ margin:0, fontSize:11, color:'rgba(255,255,255,.50)', fontStyle:'italic', lineHeight:1.5 }}>"{emailNotes.trim()}"</p>
+                    <p style={{ margin:0, fontSize:11, color:'rgba(255,255,255,.50)', fontStyle:'italic', lineHeight:1.5 }}>&quot;{emailNotes.trim()}&quot;</p>
                   </div>
                 )}
                 <div style={{ display:'inline-block', padding:'8px 18px', borderRadius:9, background:'linear-gradient(135deg,#7c3aed,#6d28d9)', fontSize:12, fontWeight:700, color:'#fff' }}>

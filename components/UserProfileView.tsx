@@ -610,7 +610,7 @@ export default function UserProfileView({ userName, userEmail, userId }: UserPro
               <div className="flex flex-col items-center gap-3 rounded-[18px] border border-white/[0.06] bg-white/[0.03] py-16 text-center">
                 <FileText className="h-9 w-9 text-white/15" />
                 <p className="text-[14px] font-semibold text-white/40">Nothing published yet</p>
-                <p className="text-[12px] text-white/25">Use "Publish anything" from the homepage to share your first item.</p>
+                <p className="text-[12px] text-white/25">Use &quot;Publish anything&quot; from the homepage to share your first item.</p>
               </div>
             ) : (
               publishedItems.map((item) => (
@@ -656,7 +656,7 @@ export default function UserProfileView({ userName, userEmail, userId }: UserPro
               <div className="flex flex-col items-center gap-3 rounded-[18px] border border-white/[0.06] bg-white/[0.03] py-16 text-center">
                 <Zap className="h-9 w-9 text-white/15" />
                 <p className="text-[14px] font-semibold text-white/40">No gig listings yet</p>
-                <p className="text-[12px] text-white/25">Use "Publish anything" and select Gig to post your first listing.</p>
+                <p className="text-[12px] text-white/25">Use &quot;Publish anything&quot; and select Gig to post your first listing.</p>
               </div>
             ) : (
               ownGigs.map((gig) => (

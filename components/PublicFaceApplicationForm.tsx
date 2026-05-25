@@ -179,7 +179,7 @@ export default function PublicFaceApplicationForm({ onClose, onSuccess }: Props)
         </div>
         <h3 className="text-[22px] font-black text-white mb-3" style={{ letterSpacing: '-0.02em' }}>Application Submitted!</h3>
         <p className="text-[14px] text-white/50 leading-relaxed max-w-sm">
-          We've received your Public Face application. Check your email for confirmation. Our team will review it within 3–5 business days.
+          We&apos;ve received your Public Face application. Check your email for confirmation. Our team will review it within 3–5 business days.
         </p>
       </div>
     );

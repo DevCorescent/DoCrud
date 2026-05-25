@@ -381,7 +381,7 @@ export default function QRShareDialog({ open, onClose, target, baseUrl }: QRShar
                 <div style={{ padding:'32px 0', textAlign:'center' }}>
                   <QrCode size={32} color="rgba(255,255,255,0.12)" style={{ margin:'0 auto 10px' }} />
                   <p style={{ margin:0, fontSize:13, color:'rgba(255,255,255,0.38)' }}>No active shares yet</p>
-                  <p style={{ margin:'4px 0 0', fontSize:11, color:'rgba(255,255,255,0.24)' }}>Create a QR share using the "New Share" tab</p>
+                  <p style={{ margin:'4px 0 0', fontSize:11, color:'rgba(255,255,255,0.24)' }}>Create a QR share using the &quot;New Share&quot; tab</p>
                 </div>
               ) : existingShares.map(rec => {
                 const color = PERMISSION_COLOR[rec.permission];

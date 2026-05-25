@@ -677,10 +677,6 @@ function FilterPanel({
 function Pagination({ page, totalPages, total, pageSize, onChange }: {
   page: number; totalPages: number; total: number; pageSize: number; onChange: (p: number) => void;
 }) {
-  if (totalPages <= 1) return null;
-  const from = (page - 1) * pageSize + 1;
-  const to = Math.min(page * pageSize, total);
-
   const pages = useMemo(() => {
     const arr: (number | 'ellipsis')[] = [];
     if (totalPages <= 7) {
@@ -694,6 +690,9 @@ function Pagination({ page, totalPages, total, pageSize, onChange }: {
     }
     return arr;
   }, [page, totalPages]);
+  if (totalPages <= 1) return null;
+  const from = (page - 1) * pageSize + 1;
+  const to = Math.min(page * pageSize, total);
 
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 pb-2 border-t border-white/[0.06]">

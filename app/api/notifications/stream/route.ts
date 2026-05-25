@@ -32,8 +32,7 @@ function notifyUser(userId: string) {
 // Keep a reference on the module so other server code can import from a shared
 // helper if needed — in dev this works; in serverless it is a no-op.
 if (typeof globalThis !== 'undefined') {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (globalThis as any).__sseNotifyUser = notifyUser;
+  (globalThis as any).__sseNotifyUser = notifyUser; // eslint-disable-line
 }
 
 export async function GET(req: NextRequest) {

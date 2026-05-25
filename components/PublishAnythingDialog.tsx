@@ -1699,7 +1699,7 @@ function ProductForm({
             <ShoppingBag className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/25" />
             <input className={`${inputCls} pl-9`} type="url" value={f.productShopUrl} onChange={e => set({ productShopUrl: e.target.value })} placeholder="https://yourstore.com/product" />
           </div>
-          <p className="mt-1 text-[11px] text-white/30">Buyers will be redirected here when they click "Shop Now"</p>
+          <p className="mt-1 text-[11px] text-white/30">Buyers will be redirected here when they click &quot;Shop Now&quot;</p>
         </Field>
         <Field label="WhatsApp Contact (optional)">
           <div className="relative">

@@ -715,7 +715,7 @@ export default function PublicGigsPage({
             {mode === 'saved' ? 'Explore more categories' : 'Browse by category'}
           </p>
           <p className="mt-1 truncate text-xs text-white/45">
-            Pick a lane — we'll filter the feed instantly.
+            Pick a lane — we&apos;ll filter the feed instantly.
           </p>
         </div>
         <button

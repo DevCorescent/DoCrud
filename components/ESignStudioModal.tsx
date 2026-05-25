@@ -937,7 +937,7 @@ export default function ESignStudioModal({ open, onClose }: ESignStudioModalProp
                     <p className="mt-1 text-[12.5px] text-white/40">
                       <strong className="text-white/65">Click or drag</strong> on any page to place a signature box.
                       Then assign it to a specific signer using the panel on the right.
-                      Each signer's box will only be accessible after email OTP verification.
+                      Each signer&apos;s box will only be accessible after email OTP verification.
                     </p>
                   </div>
 

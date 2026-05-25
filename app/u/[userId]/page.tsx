@@ -3343,7 +3343,7 @@ export default function UserProfilePage() {
                   {/* Testimonial highlight */}
                   {reviews.find(r => r.testimonial) && !showReviews && (
                     <div className="mb-3 rounded-[12px] border border-amber-500/15 bg-amber-500/[0.06] px-3 py-2.5">
-                      <p className="text-[11px] text-amber-200/70 italic line-clamp-2">"{reviews.find(r => r.testimonial)!.testimonial}"</p>
+                      <p className="text-[11px] text-amber-200/70 italic line-clamp-2">&quot;{reviews.find(r => r.testimonial)!.testimonial}&quot;</p>
                       <p className="text-[10px] text-white/30 mt-1">— {reviews.find(r => r.testimonial)!.reviewerName}</p>
                     </div>
                   )}
@@ -3417,7 +3417,7 @@ export default function UserProfilePage() {
                           <p className="text-[11px] text-white/45 leading-relaxed">{rev.body}</p>
                           {rev.testimonial && (
                             <div className="mt-2 rounded-[10px] border border-amber-500/15 bg-amber-500/[0.06] px-2.5 py-2">
-                              <p className="text-[10.5px] text-amber-200/65 italic">"{rev.testimonial}"</p>
+                              <p className="text-[10.5px] text-amber-200/65 italic">&quot;{rev.testimonial}&quot;</p>
                             </div>
                           )}
                         </div>
@@ -3850,7 +3850,7 @@ export default function UserProfilePage() {
                     <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.07]">
                       <div>
                         <h3 className="font-bold text-white text-[15px]">Book: {bookingTarget.title}</h3>
-                        <p className="text-[11px] text-white/35 mt-0.5">Fill in your details and we'll get back to you</p>
+                        <p className="text-[11px] text-white/35 mt-0.5">Fill in your details and we&apos;ll get back to you</p>
                       </div>
                       <button onClick={() => setBookingServiceId(null)} className="h-8 w-8 rounded-full bg-white/[0.06] flex items-center justify-center hover:bg-white/[0.10] transition-colors">
                         <X className="h-4 w-4 text-white/60" />
@@ -4889,7 +4889,7 @@ export default function UserProfilePage() {
               <div className="px-6 py-5 flex items-center justify-between gap-4">
                 <div>
                   <p className="text-[13px] text-white/65 font-medium">Sign out of Docrud</p>
-                  <p className="text-[11.5px] text-white/30 mt-0.5">You'll be redirected to the login page</p>
+                  <p className="text-[11.5px] text-white/30 mt-0.5">You&apos;ll be redirected to the login page</p>
                 </div>
                 <button
                   onClick={() => void signOut({ callbackUrl: '/onboarding' })}
@@ -4966,7 +4966,7 @@ export default function UserProfilePage() {
                       <span className="text-[12.5px] font-bold text-rose-400">Application Not Approved</span>
                     </div>
                     {pfApplication.adminNote && (
-                      <p className="text-[11.5px] text-white/40 italic leading-relaxed">"{pfApplication.adminNote}"</p>
+                      <p className="text-[11.5px] text-white/40 italic leading-relaxed">&quot;{pfApplication.adminNote}&quot;</p>
                     )}
                     <p className="text-[12px] text-white/35 mb-3">You may strengthen your application and reapply.</p>
                     <button type="button" onClick={() => setShowPFForm(true)}
