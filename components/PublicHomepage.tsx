@@ -7102,7 +7102,7 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
         <aside
           className={[
             'hidden lg:flex shrink-0 flex-col',
-            'border-r border-white/[0.07] bg-[#07080a]/86 backdrop-blur-[80px]',
+            'border-r border-white/[0.07] bg-[#07080a]',
             'shadow-[1px_0_0_rgba(255,255,255,0.055),inset_0_1px_0_rgba(255,255,255,0.04),0_0_60px_rgba(0,0,0,0.6)]',
             'transition-[width] duration-300 ease-in-out',
             sidebarCollapsed ? 'w-[68px]' : 'w-[256px]',
@@ -7131,7 +7131,7 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
           <aside
             className={[
               'absolute inset-y-0 left-0 h-full flex w-[82vw] max-w-[300px] flex-col overflow-hidden',
-              'border-r border-white/[0.08] bg-[#07080a]/90 backdrop-blur-[80px]',
+              'border-r border-white/[0.08] bg-[#07080a]',
               'shadow-[4px_0_80px_rgba(0,0,0,0.9),1px_0_0_rgba(255,255,255,0.06),inset_0_1px_0_rgba(255,255,255,0.04)]',
               'transform-gpu transition-transform duration-300 ease-out will-change-transform',
               mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full',
