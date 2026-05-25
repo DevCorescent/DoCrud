@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/server/auth';
 import { addComment, getFileTransfers } from '@/lib/server/file-transfers';
+import { addSocialEvent } from '@/lib/server/social-events';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,6 +50,21 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       likesCount: (c.likedBy ?? []).length,
       likedByViewer: (c.likedBy ?? []).includes(viewerIdentifier),
     }));
+
+    // Fire social event if the commenter is not the post author
+    if (updated.uploadedByUserId && updated.uploadedByUserId !== userId) {
+      void addSocialEvent({
+        type: 'comment',
+        actorId: userId,
+        actorName: userName,
+        targetUserId: updated.uploadedByUserId,
+        resourceId: updated.id,
+        resourceTitle: updated.title || updated.fileName,
+        excerpt: body.text.trim().slice(0, 120),
+        href: `/published/${updated.shareId || id}`,
+      }).catch(() => {});
+    }
+
     return NextResponse.json({ comments });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Failed' }, { status: 500 });

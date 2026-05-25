@@ -62,47 +62,11 @@ function formatLabel(value: string) {
     .replace(/\b\w/g, (match) => match.toUpperCase());
 }
 
-function getCategoryTone(category: string) {
-  const key = slugify(category || 'general');
-  if (key.includes('design')) {
-    return {
-      pill: 'bg-fuchsia-100/70 text-fuchsia-900 ring-1 ring-fuchsia-200/70',
-      chip: 'bg-fuchsia-50/70 text-fuchsia-800 ring-1 ring-fuchsia-200/60',
-      glow: 'from-fuchsia-500/18 via-pink-500/10 to-transparent',
-    };
-  }
-  if (key.includes('automation')) {
-    return {
-      pill: 'bg-emerald-100/70 text-emerald-900 ring-1 ring-emerald-200/70',
-      chip: 'bg-emerald-50/70 text-emerald-800 ring-1 ring-emerald-200/60',
-      glow: 'from-emerald-500/18 via-teal-500/10 to-transparent',
-    };
-  }
-  if (key.includes('content') || key.includes('writing')) {
-    return {
-      pill: 'bg-amber-100/70 text-amber-950 ring-1 ring-amber-200/70',
-      chip: 'bg-amber-50/70 text-amber-900 ring-1 ring-amber-200/60',
-      glow: 'from-amber-500/18 via-orange-500/10 to-transparent',
-    };
-  }
-  if (key.includes('engineering') || key.includes('dev')) {
-    return {
-      pill: 'bg-sky-100/70 text-sky-950 ring-1 ring-sky-200/70',
-      chip: 'bg-sky-50/70 text-sky-900 ring-1 ring-sky-200/60',
-      glow: 'from-sky-500/18 via-indigo-500/10 to-transparent',
-    };
-  }
-  if (key.includes('security')) {
-    return {
-      pill: 'bg-slate-200/70 text-slate-900 ring-1 ring-slate-300/70',
-      chip: 'bg-slate-100/70 text-slate-800 ring-1 ring-slate-200/70',
-      glow: 'from-slate-500/16 via-slate-400/10 to-transparent',
-    };
-  }
+function getCategoryTone(_category: string) {
   return {
-    pill: 'bg-violet-100/70 text-violet-950 ring-1 ring-violet-200/70',
-    chip: 'bg-violet-50/70 text-violet-900 ring-1 ring-violet-200/60',
-    glow: 'from-violet-500/18 via-sky-500/10 to-transparent',
+    pill: '',
+    chip: '',
+    glow: '',
   };
 }
 
@@ -676,8 +640,6 @@ export default function PublicGigsPage({
       ) : null}
 
       <div className="relative h-[92px] overflow-hidden rounded-[1.15rem] bg-[linear-gradient(135deg,rgba(2,6,23,0.98),rgba(15,23,42,0.92))] shadow-[inset_0_1px_0_rgba(255,255,255,0.10)]">
-        <div className={`pointer-events-none absolute -left-10 -top-8 h-44 w-44 rounded-full bg-gradient-to-br ${glow} opacity-95 blur-2xl`} />
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_22%_26%,rgba(245,158,11,0.18),transparent_55%),radial-gradient(circle_at_78%_68%,rgba(99,102,241,0.18),transparent_60%)]" />
         <div className="relative flex h-full items-center justify-center px-10 text-center">
           <p className="line-clamp-2 text-[13px] font-semibold tracking-[-0.02em] text-white drop-shadow-[0_12px_30px_rgba(0,0,0,0.45)]">
             {title}
@@ -694,8 +656,7 @@ export default function PublicGigsPage({
     const saved = savedGigIdSet.has(gig.id);
 
     return (
-      <article className="group cloud-card-soft relative overflow-hidden rounded-[1.35rem] bg-[linear-gradient(180deg,rgba(255,255,255,0.84),rgba(255,255,255,0.70))] p-3 shadow-[0_10px_32px_rgba(15,23,42,0.055)] backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:bg-white/88 hover:shadow-[0_14px_44px_rgba(15,23,42,0.08)]">
-        <div className={`pointer-events-none absolute -left-12 top-0 h-full w-56 bg-gradient-to-br ${tone.glow} opacity-90 blur-2xl`} />
+      <article className="group relative overflow-hidden rounded-[18px] p-3 transition duration-300 hover:-translate-y-0.5" style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.08)' }}>
         <div className="relative">
           <Link href={`/gigs/${gig.slug}`} className="block">
             <GigThumbnail
@@ -706,21 +667,21 @@ export default function PublicGigsPage({
               saved={saved}
               onToggleSave={() => toggleSavedGig(gig.id)}
             />
-            <p className="mt-2 line-clamp-1 text-xs font-semibold text-slate-600">{gig.organizationName || gig.ownerName}</p>
-            <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-600">{gig.summary}</p>
+            <p className="mt-2 line-clamp-1 text-xs font-semibold text-white/50">{gig.organizationName || gig.ownerName}</p>
+            <p className="mt-2 line-clamp-2 text-xs leading-5 text-white/50">{gig.summary}</p>
           </Link>
 
           <div className="mt-3 flex items-center justify-between gap-2">
-            <span className={`truncate rounded-full px-2.5 py-1 text-[11px] font-semibold ${tone.pill}`}>{gig.category}</span>
-            <span className="truncate rounded-full bg-slate-950/5 px-2.5 py-1 text-[11px] font-semibold text-slate-700">{gig.budgetLabel}</span>
+            <span className="truncate" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.65)', borderRadius: 100, padding: '3px 10px', fontSize: 11, fontWeight: 600 }}>{gig.category}</span>
+            <span className="truncate" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.55)', borderRadius: 100, padding: '3px 10px', fontSize: 11, fontWeight: 600 }}>{gig.budgetLabel}</span>
           </div>
 
-          <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] font-semibold text-slate-500">
-            <span className="inline-flex items-center gap-1 rounded-full bg-white/70 px-2.5 py-1 shadow-sm">
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] font-semibold text-white/45">
+            <span className="inline-flex items-center gap-1 rounded-full bg-white/[0.06] px-2.5 py-1">
               <MapPin className="h-3.5 w-3.5" />
               <span className="capitalize">{String(gig.locationPreference || 'remote')}</span>
             </span>
-            <span className="truncate rounded-full bg-white/70 px-2.5 py-1 shadow-sm">
+            <span className="truncate rounded-full bg-white/[0.06] px-2.5 py-1">
               {formatRelativeTime(gig.updatedAt)}
             </span>
           </div>
@@ -747,20 +708,19 @@ export default function PublicGigsPage({
   };
 
   const CategoriesSection = ({ mode }: { mode: 'explore' | 'saved' }) => (
-    <div className="cloud-card-soft relative overflow-hidden rounded-[1.7rem] p-4 sm:p-5">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_25%,rgba(59,130,246,0.14),transparent_60%),radial-gradient(circle_at_92%_10%,rgba(245,158,11,0.12),transparent_62%),radial-gradient(circle_at_55%_92%,rgba(168,85,247,0.12),transparent_60%)]" />
+    <div className="relative overflow-hidden rounded-[1.7rem] p-4 sm:p-5" style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.07)' }}>
       <div className="relative flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-base font-semibold tracking-[-0.03em] text-slate-950">
+          <p className="text-base font-semibold tracking-[-0.03em] text-white">
             {mode === 'saved' ? 'Explore more categories' : 'Browse by category'}
           </p>
-          <p className="mt-1 truncate text-xs text-slate-500">
-            Pick a lane — we’ll filter the feed instantly.
+          <p className="mt-1 truncate text-xs text-white/45">
+            Pick a lane — we'll filter the feed instantly.
           </p>
         </div>
         <button
           type="button"
-          className="shrink-0 rounded-full bg-white/80 px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm backdrop-blur-2xl hover:bg-white"
+          className="shrink-0 rounded-full bg-white/[0.07] px-3 py-1.5 text-xs font-semibold text-white/65 backdrop-blur-2xl hover:bg-white/[0.10]"
           onClick={() => setFiltersOpen(true)}
         >
           View all
@@ -769,35 +729,33 @@ export default function PublicGigsPage({
       <div className="relative mt-4 grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {availableCategories.slice(0, 10).map((category) => {
           const active = categoryFilters.length === 1 && categoryFilters[0] === category;
-          const tone = getCategoryTone(category);
           return (
             <button
               key={`browse-${mode}-${category}`}
               type="button"
               onClick={() => toggleCategoryChip(category)}
-              className={`group relative overflow-hidden rounded-[1.35rem] border border-white/60 px-3 py-3 text-left shadow-[0_12px_34px_rgba(15,23,42,0.06)] backdrop-blur-2xl transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_44px_rgba(15,23,42,0.08)] ${
-                active ? 'bg-slate-950 text-white border-slate-950' : 'bg-white/70 text-slate-800 hover:bg-white/85'
+              className={`group relative overflow-hidden rounded-[1.35rem] px-3 py-3 text-left backdrop-blur-2xl transition duration-300 hover:-translate-y-0.5 ${
+                active ? 'bg-slate-950 text-white border border-slate-800' : 'bg-white/[0.05] text-white/70 border border-white/[0.08] hover:bg-white/[0.08]'
               }`}
             >
-              <div className={`pointer-events-none absolute -left-10 -top-10 h-40 w-40 rounded-full bg-gradient-to-br ${tone.glow} opacity-90 blur-2xl`} />
               <div className="relative flex items-center gap-3">
-                <span className={`grid h-11 w-11 place-items-center rounded-[1.1rem] shadow-[inset_0_1px_0_rgba(255,255,255,0.80)] ${
-                  active ? 'bg-white/10' : 'bg-[linear-gradient(135deg,rgba(2,6,23,0.04),rgba(2,6,23,0.02))]'
+                <span className={`grid h-11 w-11 place-items-center rounded-[1.1rem] ${
+                  active ? 'bg-white/10' : 'bg-white/[0.06]'
                 }`}
                 >
-                  <span className={`text-sm font-semibold ${active ? 'text-white' : 'text-slate-800'}`}>
+                  <span className={`text-sm font-semibold ${active ? 'text-white' : 'text-white/60'}`}>
                     {category.slice(0, 2).toUpperCase()}
                   </span>
                 </span>
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-semibold">{category}</span>
-                  <span className={`mt-0.5 block truncate text-xs ${active ? 'text-slate-200' : 'text-slate-500'}`}>
+                  <span className={`mt-0.5 block truncate text-xs ${active ? 'text-slate-200' : 'text-white/40'}`}>
                     Browse gigs
                   </span>
                 </span>
               </div>
-              <span className={`pointer-events-none absolute right-3 top-3 rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.18em] shadow-sm ${
-                active ? 'bg-white/10 text-white' : 'bg-white/80 text-slate-700'
+              <span className={`pointer-events-none absolute right-3 top-3 rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.18em] ${
+                active ? 'bg-white/10 text-white' : 'bg-white/[0.06] text-white/50'
               }`}>
                 {active ? 'Selected' : 'Filter'}
               </span>
@@ -812,20 +770,21 @@ export default function PublicGigsPage({
 
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-[radial-gradient(circle_at_20%_10%,rgba(99,102,241,0.12),transparent_55%),radial-gradient(circle_at_85%_0%,rgba(34,211,238,0.10),transparent_52%),linear-gradient(180deg,rgba(245,248,255,1),rgba(255,255,255,1))]">
+      <div className="min-h-screen" style={{ background: '#0D0D0F' }}>
         <div className="mx-auto w-full max-w-6xl px-4 py-6">
-          <div className="h-12 w-40 rounded-2xl bg-white/70 shadow-sm" />
-          <div className="mt-5 h-12 w-full rounded-2xl bg-white/70 shadow-sm" />
+          <div className="h-12 w-40 rounded-2xl bg-white/[0.05] shadow-sm" />
+          <div className="mt-5 h-12 w-full rounded-2xl bg-white/[0.05] shadow-sm" />
           <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {Array.from({ length: 8 }).map((_, idx) => (
               <div
                 key={`gigs-skel-${idx}`}
-                className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_14px_40px_rgba(15,23,42,0.06)]"
+                className="rounded-[22px] p-4"
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
               >
-                <div className="h-4 w-28 rounded bg-slate-100" />
-                <div className="mt-3 h-6 w-48 rounded bg-slate-100" />
-                <div className="mt-3 h-16 w-full rounded bg-slate-100" />
-                <div className="mt-4 h-11 w-full rounded-2xl bg-slate-100" />
+                <div className="h-4 w-28 rounded bg-white/[0.06]" />
+                <div className="mt-3 h-6 w-48 rounded bg-white/[0.06]" />
+                <div className="mt-3 h-16 w-full rounded bg-white/[0.06]" />
+                <div className="mt-4 h-11 w-full rounded-2xl bg-white/[0.06]" />
               </div>
             ))}
           </div>
@@ -835,14 +794,12 @@ export default function PublicGigsPage({
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_20%_10%,rgba(99,102,241,0.18),transparent_55%),radial-gradient(circle_at_85%_0%,rgba(34,211,238,0.16),transparent_52%),radial-gradient(circle_at_70%_80%,rgba(16,185,129,0.14),transparent_55%),linear-gradient(180deg,rgba(245,248,255,1),rgba(255,255,255,1))]">
-      <div className="pointer-events-none absolute -left-24 top-20 h-[28rem] w-[28rem] rounded-full bg-gradient-to-br from-indigo-400/20 via-sky-400/10 to-emerald-400/20 blur-3xl" />
-      <div className="pointer-events-none absolute -right-24 -top-16 h-[30rem] w-[30rem] rounded-full bg-gradient-to-br from-fuchsia-400/16 via-amber-400/10 to-cyan-400/14 blur-3xl" />
+    <div className="relative min-h-screen overflow-hidden" style={{ background: '#0D0D0F' }}>
 
       <div className="relative z-10 mx-auto flex max-w-[1500px] gap-4 px-3 py-4 sm:px-5 lg:px-7 lg:py-6">
         <div className="relative hidden shrink-0 xl:sticky xl:top-6 xl:block xl:max-h-[calc(100vh-3rem)]">
           <aside
-            className={`flex flex-col overflow-hidden rounded-[1.75rem] border border-white/60 bg-white/70 p-3 shadow-[0_16px_44px_rgba(15,23,42,0.06)] backdrop-blur-2xl ${
+            className={`flex flex-col overflow-hidden rounded-[1.75rem] border border-white/[0.08] bg-white/[0.04] p-3 backdrop-blur-xl ${
               sidebarExpanded ? 'w-64' : 'w-20'
             }`}
           >
@@ -863,8 +820,8 @@ export default function PublicGigsPage({
                     <BriefcaseBusiness className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-slate-950">Gigs</p>
-                    <p className="truncate text-xs text-slate-500">Directory</p>
+                    <p className="truncate text-sm font-semibold text-white">Gigs</p>
+                    <p className="truncate text-xs text-white/60">Directory</p>
                   </div>
                 </div>
               ) : (
@@ -876,7 +833,7 @@ export default function PublicGigsPage({
 
             <nav className={`mt-2 min-h-0 flex-1 space-y-2 overflow-y-auto pb-2 ${sidebarExpanded ? 'px-1' : 'px-0'}`}>
               {sidebarExpanded ? (
-                <p className="px-3 pt-2 text-[10px] font-semibold uppercase tracking-[0.26em] text-slate-500">
+                <p className="px-3 pt-2 text-[10px] font-semibold uppercase tracking-[0.26em] text-white/40">
                   Browse
                 </p>
               ) : null}
@@ -886,10 +843,10 @@ export default function PublicGigsPage({
                 onClick={() => setNavMode('explore')}
                 className={`flex w-full items-center rounded-2xl transition ${
                   sidebarExpanded ? 'gap-3 px-3 py-2.5 text-sm font-semibold' : 'justify-center px-0 py-2'
-                } ${navMode === 'explore' ? 'bg-slate-950 text-white shadow-[0_16px_34px_rgba(15,23,42,0.14)]' : 'text-slate-700 hover:bg-white/70'}`}
+                } ${navMode === 'explore' ? 'bg-slate-950 text-white shadow-[0_16px_34px_rgba(15,23,42,0.14)]' : 'text-white/60 hover:bg-white/[0.06]'}`}
               >
-                <div className={`flex h-10 w-10 items-center justify-center rounded-2xl ${navMode === 'explore' ? 'bg-white/10' : 'bg-slate-100 ring-1 ring-white/70'}`}>
-                  <Home className={`h-5 w-5 ${navMode === 'explore' ? 'text-white' : 'text-slate-800'}`} />
+                <div className={`flex h-10 w-10 items-center justify-center rounded-2xl ${navMode === 'explore' ? 'bg-white/10' : 'bg-white/[0.06] ring-1 ring-white/10'}`}>
+                  <Home className={`h-5 w-5 ${navMode === 'explore' ? 'text-white' : 'text-white/60'}`} />
                 </div>
                 {sidebarExpanded ? <span className="truncate">Explore</span> : <span className="sr-only">Explore</span>}
               </button>
@@ -899,10 +856,10 @@ export default function PublicGigsPage({
                 onClick={() => setNavMode('saved')}
                 className={`flex w-full items-center rounded-2xl transition ${
                   sidebarExpanded ? 'gap-3 px-3 py-2.5 text-sm font-semibold' : 'justify-center px-0 py-2'
-                } ${navMode === 'saved' ? 'bg-slate-950 text-white shadow-[0_16px_34px_rgba(15,23,42,0.14)]' : 'text-slate-700 hover:bg-white/70'}`}
+                } ${navMode === 'saved' ? 'bg-slate-950 text-white shadow-[0_16px_34px_rgba(15,23,42,0.14)]' : 'text-white/60 hover:bg-white/[0.06]'}`}
               >
-                <div className={`flex h-10 w-10 items-center justify-center rounded-2xl ${navMode === 'saved' ? 'bg-white/10' : 'bg-slate-100 ring-1 ring-white/70'}`}>
-                  <Star className={`h-5 w-5 ${navMode === 'saved' ? 'text-white' : 'text-slate-800'}`} />
+                <div className={`flex h-10 w-10 items-center justify-center rounded-2xl ${navMode === 'saved' ? 'bg-white/10' : 'bg-white/[0.06] ring-1 ring-white/10'}`}>
+                  <Star className={`h-5 w-5 ${navMode === 'saved' ? 'text-white' : 'text-white/60'}`} />
                 </div>
                 {sidebarExpanded ? <span className="truncate">Saved</span> : <span className="sr-only">Saved</span>}
               </button>
@@ -924,15 +881,15 @@ export default function PublicGigsPage({
               </div>
             </nav>
 
-            <div className={`mt-auto border-t border-slate-200/70 pt-3 ${sidebarExpanded ? 'px-1' : 'px-0'}`}>
-              <div className={`flex items-center rounded-2xl border border-slate-200/70 bg-white/70 p-2 ${sidebarExpanded ? 'gap-3' : 'justify-center'}`}>
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-sm font-semibold text-slate-700">
+            <div className={`mt-auto border-t border-white/[0.08] pt-3 ${sidebarExpanded ? 'px-1' : 'px-0'}`}>
+              <div className={`flex items-center rounded-2xl border border-white/[0.08] bg-white/[0.04] p-2 ${sidebarExpanded ? 'gap-3' : 'justify-center'}`}>
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/[0.08] text-sm font-semibold text-white/70">
                   {((session?.user?.name || session?.user?.email || softwareName || 'D') as string).slice(0, 1).toUpperCase()}
                 </div>
                 {sidebarExpanded ? (
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-slate-950">{session?.user?.name || softwareName}</p>
-                    <p className="truncate text-xs text-slate-500">{session?.user?.email || accentLabel}</p>
+                    <p className="truncate text-sm font-semibold text-white">{session?.user?.name || softwareName}</p>
+                    <p className="truncate text-xs text-white/45">{session?.user?.email || accentLabel}</p>
                   </div>
                 ) : null}
               </div>
@@ -953,7 +910,7 @@ export default function PublicGigsPage({
               >
                 <Menu className="h-5 w-5" />
               </button>
-              <h1 className="text-lg font-semibold tracking-[-0.03em] text-slate-950">Gigs</h1>
+              <h1 className="text-lg font-semibold tracking-[-0.03em] text-white">Gigs</h1>
               <button
                 type="button"
                 onClick={() => router.push(uiAuthenticated ? '/workspace?tab=gigs' : '/login')}
@@ -965,12 +922,10 @@ export default function PublicGigsPage({
             </div>
           </div>
 
-	          <div className="cloud-card-soft sticky top-3 z-30 relative overflow-hidden rounded-[1.7rem] p-4 sm:p-5 lg:static lg:top-auto lg:z-auto">
-	            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(59,130,246,0.22),transparent_55%),radial-gradient(circle_at_85%_15%,rgba(245,158,11,0.16),transparent_52%),radial-gradient(circle_at_65%_92%,rgba(236,72,153,0.14),transparent_58%)] opacity-90" />
-	            <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-[linear-gradient(180deg,rgba(255,255,255,0.38),transparent)]" />
+	          <div className="sticky top-3 z-30 relative overflow-hidden rounded-[1.7rem] p-4 sm:p-5 lg:static lg:top-auto lg:z-auto" style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.07)' }}>
 	            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="relative w-full sm:max-w-[520px]">
-                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
                 <Input
                   value={query}
                   onChange={(event) => {
@@ -978,17 +933,17 @@ export default function PublicGigsPage({
                     if (navMode === 'saved') setNavMode('explore');
                   }}
                   placeholder="Search for gigs, teams or skills..."
-                  className="h-11 w-full rounded-full border-0 bg-white/92 pl-11 text-sm text-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.92),0_18px_48px_rgba(15,23,42,0.08)] backdrop-blur-2xl placeholder:text-slate-500"
+                  className="h-11 w-full rounded-full border-0 bg-white/[0.08] pl-11 text-sm text-white backdrop-blur-2xl placeholder:text-white/35"
                 />
               </div>
               <div className="flex flex-wrap items-center justify-between gap-2 sm:justify-end">
                 <button
                   type="button"
                   onClick={() => setNavMode('explore')}
-                  className={`h-11 rounded-full px-4 text-sm font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.92),0_16px_42px_rgba(15,23,42,0.06)] backdrop-blur-2xl transition ${
+                  className={`h-11 rounded-full px-4 text-sm font-semibold backdrop-blur-2xl transition ${
                     navMode === 'explore'
                       ? 'bg-[linear-gradient(135deg,rgba(2,6,23,0.95),rgba(30,41,59,0.92))] text-white shadow-[0_18px_54px_rgba(15,23,42,0.18)]'
-                      : 'bg-white/88 text-slate-700 hover:bg-white'
+                      : 'bg-white/[0.07] text-white/65 hover:bg-white/[0.10]'
                   }`}
                 >
                   Explore
@@ -996,10 +951,10 @@ export default function PublicGigsPage({
                 <button
                   type="button"
                   onClick={() => setNavMode('saved')}
-                  className={`h-11 rounded-full px-4 text-sm font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.92),0_16px_42px_rgba(15,23,42,0.06)] backdrop-blur-2xl transition ${
+                  className={`h-11 rounded-full px-4 text-sm font-semibold backdrop-blur-2xl transition ${
                     navMode === 'saved'
                       ? 'bg-[linear-gradient(135deg,rgba(2,6,23,0.95),rgba(30,41,59,0.92))] text-white shadow-[0_18px_54px_rgba(15,23,42,0.18)]'
-                      : 'bg-white/88 text-slate-700 hover:bg-white'
+                      : 'bg-white/[0.07] text-white/65 hover:bg-white/[0.10]'
                   }`}
                 >
                   Saved
@@ -1028,7 +983,7 @@ export default function PublicGigsPage({
 	                        setNavMode('explore');
 	                        jumpToFeed();
 	                      }}
-	                      className="h-11 w-full max-w-full rounded-full border-0 bg-white/92 px-4 text-sm font-semibold text-slate-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.92),0_18px_48px_rgba(15,23,42,0.08)] backdrop-blur-2xl outline-none"
+	                      className="h-11 w-full max-w-full rounded-full border-0 bg-white/[0.08] px-4 text-sm font-semibold text-white backdrop-blur-2xl outline-none"
 	                    >
 	                      <option value="">All categories</option>
 	                      {availableCategories.slice(0, 32).map((category) => (
@@ -1037,7 +992,7 @@ export default function PublicGigsPage({
 	                    </select>
 	                    <button
 	                      type="button"
-	                      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/88 text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.92),0_18px_48px_rgba(15,23,42,0.08)] backdrop-blur-2xl"
+	                      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/[0.07] text-white/65 backdrop-blur-2xl"
 	                      onClick={() => setFiltersOpen(true)}
 	                      aria-label="More filters"
 	                    >
@@ -1059,10 +1014,10 @@ export default function PublicGigsPage({
                           setNavMode('explore');
                           jumpToFeed();
                         }}
-                        className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.92),0_14px_34px_rgba(15,23,42,0.06)] backdrop-blur-2xl transition ${
+                        className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold backdrop-blur-2xl transition ${
                           active
                             ? 'bg-[linear-gradient(135deg,rgba(2,6,23,0.95),rgba(30,41,59,0.9))] text-white'
-                            : tone.chip + ' hover:opacity-95'
+                            : 'bg-white/[0.06] text-white/55 border border-white/[0.09] hover:bg-white/[0.10]'
                         }`}
                       >
                         {category}
@@ -1070,17 +1025,17 @@ export default function PublicGigsPage({
 	                    );
 	                  })}
 	                </div>
-	                <h1 className="text-2xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-3xl">
+	                <h1 className="text-2xl font-semibold tracking-[-0.04em] text-white sm:text-3xl">
 	                  Post a gig. Get replies. <span className="hidden sm:inline">Ship the work.</span>
 	                </h1>
-	                <p className="mt-1 text-2xl font-semibold tracking-[-0.04em] text-slate-950 sm:hidden">
+	                <p className="mt-1 text-2xl font-semibold tracking-[-0.04em] text-white sm:hidden">
 	                  Ship the work.
 	                </p>
-                <p className="mt-3 max-w-xl text-sm leading-6 text-slate-600">
+                <p className="mt-3 max-w-xl text-sm leading-6 text-white/50">
                   A cleaner way to hire help for real deliverables. Post in minutes, review applicants, and close the loop inside docrud.
                 </p>
                 <div className="mt-4 flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-semibold text-slate-500">Popular:</span>
+                  <span className="text-xs font-semibold text-white/45">Popular:</span>
                   {popularChips.map((chip) => (
                     <button
                       key={chip}
@@ -1089,7 +1044,7 @@ export default function PublicGigsPage({
                         if (availableCategories.includes(chip)) toggleCategoryChip(chip);
                         else setActiveInterest(chip);
                       }}
-                      className="rounded-full border-0 bg-white/85 px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.92),0_14px_34px_rgba(15,23,42,0.06)] backdrop-blur-2xl hover:bg-white"
+                      className="rounded-full bg-white/[0.06] px-3 py-1.5 text-xs font-semibold text-white/60 border border-white/[0.08] hover:bg-white/[0.10]"
                     >
                       {chip}
                     </button>
@@ -1098,7 +1053,6 @@ export default function PublicGigsPage({
               </div>
 
               <div className="relative overflow-hidden rounded-[1.6rem] bg-[linear-gradient(135deg,rgba(2,6,23,0.92),rgba(30,41,59,0.84))] p-4 text-white shadow-[0_24px_80px_rgba(15,23,42,0.22)]">
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_22%_18%,rgba(59,130,246,0.34),transparent_58%),radial-gradient(circle_at_78%_78%,rgba(245,158,11,0.26),transparent_62%),radial-gradient(circle_at_65%_40%,rgba(236,72,153,0.16),transparent_55%)]" />
                 <div className="relative">
                   <div className="mb-4 overflow-hidden rounded-[1.25rem] bg-white/5 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
                     {/* eslint-disable-next-line @next/next/no-img-element */}

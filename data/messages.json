@@ -1,0 +1,70 @@
+{
+  "conversations": {
+    "conv_cfc2958e1c89d962": {
+      "id": "conv_cfc2958e1c89d962",
+      "participants": [
+        "1",
+        "verified-003"
+      ],
+      "status": "request",
+      "requestFrom": "1",
+      "createdAt": "2026-05-24T08:36:24.429Z",
+      "updatedAt": "2026-05-24T08:36:24.429Z",
+      "unreadCount": {
+        "1": 0,
+        "verified-003": 0
+      }
+    },
+    "conv_d72b57064dda17ef": {
+      "id": "conv_d72b57064dda17ef",
+      "participants": [
+        "1",
+        "individual-1778589478735"
+      ],
+      "status": "request",
+      "requestFrom": "1",
+      "createdAt": "2026-05-25T02:15:55.897Z",
+      "updatedAt": "2026-05-25T02:15:55.900Z",
+      "unreadCount": {
+        "1": 0,
+        "individual-1778589478735": 1
+      },
+      "lastMessage": {
+        "content": "📁 *Q4 Annual Report.pdf* (2.4 MB)\n\nhttps://docrud.in/drive/f1",
+        "senderId": "1",
+        "sentAt": "2026-05-25T02:15:55.900Z",
+        "type": "text"
+      }
+    }
+  },
+  "messages": {
+    "conv_cfc2958e1c89d962": [],
+    "conv_d72b57064dda17ef": [
+      {
+        "id": "msg_a0d7ba9c02a82e89",
+        "conversationId": "conv_d72b57064dda17ef",
+        "senderId": "1",
+        "content": "📁 *Q4 Annual Report.pdf* (2.4 MB)\n\nhttps://docrud.in/drive/f1",
+        "type": "text",
+        "sentAt": "2026-05-25T02:15:55.900Z",
+        "seenBy": [
+          "1"
+        ]
+      }
+    ]
+  },
+  "typingStatus": {
+    "conv_cfc2958e1c89d962": {}
+  },
+  "messageIndex": {},
+  "chatMeta": {
+    "1": {
+      "conv_cfc2958e1c89d962": {
+        "bgColor": "crimson"
+      }
+    }
+  },
+  "autoReply": {},
+  "quickReplies": {},
+  "businessProfiles": {}
+}

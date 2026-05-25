@@ -70,6 +70,14 @@ export const userProfilesPath = path.join(dataDir, 'user-profiles.json');
 export const followsPath = path.join(dataDir, 'follows.json');
 export const upraisedPath = path.join(dataDir, 'upraised.json');
 export const socialEventsPath = path.join(dataDir, 'social-events.json');
+export const messagesPath = path.join(dataDir, 'messages.json');
+export const servicesPath = path.join(dataDir, 'services.json');
+export const serviceBookingsPath = path.join(dataDir, 'service-bookings.json');
+export const serviceReviewsPath = path.join(dataDir, 'service-reviews.json');
+export const serviceAnalyticsPath = path.join(dataDir, 'service-analytics.json');
+export const catalogueSettingsPath = path.join(dataDir, 'catalogue-settings.json');
+export const publicFaceApplicationsPath = path.join(dataDir, 'public-face-applications.json');
+export const publicFaceOtpsPath = path.join(dataDir, 'public-face-otps.json');
 
 export async function ensureDirectory(filePath: string) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });

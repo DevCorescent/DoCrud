@@ -7,6 +7,7 @@ export interface UserProfileData {
   website?: string;
   avatarUrl?: string;
   avatarPosition?: string;
+  bannerUrl?: string;
   coverGradient?: string;
   coverPosition?: string;
   skills?: string[];
@@ -32,6 +33,10 @@ export interface UserProfileData {
   docrudGoPurchasedAt?: string;
   docrudGoReferralGrantedAt?: string;
   docrudGoGrantedFree?: boolean;
+  publicFace?: {
+    category: string;
+    approvedAt: string;
+  };
 }
 
 export interface FollowsData {

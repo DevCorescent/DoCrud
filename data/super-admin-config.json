@@ -2,27 +2,128 @@
   "email": "kushagra@corescent.in",
   "otpSessions": [
     {
-      "id": "7e65c0df7bf08b4c17b45cde8507915f",
+      "id": "9f2a0bfa977f31724c475f0843491023",
       "email": "kushagra@corescent.in",
-      "otpHash": "a76753eb138eb0c3ac01954b628759217a68e06fb1b3019cf75ec2acb98909ac",
-      "otpSalt": "5b77b5b434adbffd9008a076a44551e2",
-      "createdAt": "2026-05-15T18:06:11.951Z",
-      "expiresAt": "2026-05-15T18:16:11.951Z",
+      "otpHash": "5bd91dcb368819617b36716a2dba577468fb9d4c0cb90eca19ef150577a40a99",
+      "otpSalt": "01faf71fa4d9a86e447245570dca3c03",
+      "createdAt": "2026-05-19T14:07:27.594Z",
+      "expiresAt": "2026-05-19T14:17:27.594Z",
       "attempts": 0,
-      "verifiedAt": "2026-05-15T18:06:29.733Z"
+      "verifiedAt": "2026-05-19T14:08:23.857Z"
     }
   ],
   "activeSessions": [
     {
-      "token": "1a110f043fe3c34be7e61edf3d47b9c334e9f162cdc56889963c4be12815356a9aa844eb8b1bce0f204c8f8207e27871",
+      "token": "0d1ade54ad884f6e76f284b6c3f5ccf8d311dd3ac8e9677f036d3c059698ab5f21012932cd7bdfd48ebcc9f5b453e68b",
       "email": "kushagra@corescent.in",
-      "createdAt": "2026-05-15T18:06:29.737Z",
-      "expiresAt": "2026-05-15T22:06:29.737Z",
+      "createdAt": "2026-05-19T14:08:23.857Z",
+      "expiresAt": "2026-05-19T18:08:23.857Z",
       "ip": "::1",
-      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
     }
   ],
   "auditLog": [
+    {
+      "id": "ad3fd0e728a099d8",
+      "timestamp": "2026-05-19T14:08:23.857Z",
+      "action": "super_admin_login",
+      "details": {
+        "email": "kushagra@corescent.in"
+      },
+      "ip": "::1"
+    },
+    {
+      "id": "d6d7c0c9ef703b0f",
+      "timestamp": "2026-05-18T09:29:36.063Z",
+      "action": "super_admin_login",
+      "details": {
+        "email": "kushagra@corescent.in"
+      },
+      "ip": "::1"
+    },
+    {
+      "id": "f773a17796b0dfab",
+      "timestamp": "2026-05-18T09:28:53.106Z",
+      "action": "super_admin_logout",
+      "ip": "::1"
+    },
+    {
+      "id": "c4f54df874070eea",
+      "timestamp": "2026-05-18T09:27:42.585Z",
+      "action": "broadcast_email_sent",
+      "details": {
+        "subject": "test",
+        "audience": "all",
+        "recipientCount": 17
+      },
+      "ip": "::1"
+    },
+    {
+      "id": "3dc3eb4f8c828c24",
+      "timestamp": "2026-05-18T09:27:17.078Z",
+      "action": "settings_update_mail",
+      "details": {
+        "keys": [
+          "host",
+          "port",
+          "secure",
+          "requireAuth",
+          "username",
+          "fromName",
+          "fromEmail",
+          "replyTo"
+        ]
+      },
+      "ip": "::1"
+    },
+    {
+      "id": "5161b9286b948c88",
+      "timestamp": "2026-05-18T09:19:39.135Z",
+      "action": "broadcast_email_sent",
+      "details": {
+        "subject": "test",
+        "audience": "all",
+        "recipientCount": 17
+      },
+      "ip": "::1"
+    },
+    {
+      "id": "85ed3d4edd62c7fd",
+      "timestamp": "2026-05-18T09:12:18.228Z",
+      "action": "super_admin_login",
+      "details": {
+        "email": "kushagra@corescent.in"
+      },
+      "ip": "::1"
+    },
+    {
+      "id": "eef1a8cd7ea2e034",
+      "timestamp": "2026-05-18T08:15:35.795Z",
+      "action": "settings_update_mail",
+      "details": {
+        "keys": [
+          "host",
+          "port",
+          "secure",
+          "requireAuth",
+          "username",
+          "fromName",
+          "fromEmail",
+          "replyTo",
+          "password"
+        ]
+      },
+      "ip": "::1"
+    },
+    {
+      "id": "7c3b1b06eba86dcd",
+      "timestamp": "2026-05-18T08:13:11.702Z",
+      "action": "super_admin_login",
+      "details": {
+        "email": "kushagra@corescent.in"
+      },
+      "ip": "::1"
+    },
     {
       "id": "cecf039a2f85b1f6",
       "timestamp": "2026-05-15T18:08:30.982Z",

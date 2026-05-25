@@ -223,10 +223,13 @@ export default function PublishAnythingDialog({
   open,
   onOpenChange,
   isAuthenticated,
+  initialCategory,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   isAuthenticated: boolean;
+  /** If set, skip the picker step and jump straight to this category's form when the dialog opens. */
+  initialCategory?: CategoryId;
 }) {
   const router = useRouter();
   const [step, setStep] = useState<Step>('pick');
@@ -264,8 +267,6 @@ export default function PublishAnythingDialog({
   // reset on open
   useEffect(() => {
     if (open) {
-      setStep('pick');
-      setCategory(null);
       setError('');
       setSuccessHref(null);
       setFields({ ...blank });
@@ -278,8 +279,16 @@ export default function PublishAnythingDialog({
       setThumbnailFile(null);
       setThumbnailUrlInput('');
       setThumbnailMode('upload');
+      if (initialCategory) {
+        setCategory(initialCategory);
+        setStep('form');
+        setAnimKey(k => k + 1);
+      } else {
+        setStep('pick');
+        setCategory(null);
+      }
     }
-  }, [open]);
+  }, [open, initialCategory]);
 
   const pickCategory = (id: CategoryId) => {
     setCategory(id);

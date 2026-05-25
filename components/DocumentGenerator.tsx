@@ -816,6 +816,10 @@ export default function DocumentGenerator() {
 
   useEffect(() => { setIsMounted(true); }, []);
   useEffect(() => {
+    document.body.style.overflow = sidebarOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [sidebarOpen]);
+  useEffect(() => {
     setHistoryPage(1);
   }, [historyAccessFilter, historyDateFilter, historyEmailFilter, historySearch, historySort, historySourceFilter, historyStatusFilter]);
   const filteredSummaryItems = useMemo(() => {
@@ -4797,7 +4801,7 @@ export default function DocumentGenerator() {
             <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(false)}><X className="h-6 w-6" /></Button>
           </div>
 
-          <nav className="flex-1 min-h-0 overflow-y-auto p-4 space-y-6 pb-8 md:h-auto md:overflow-visible">
+          <nav className="flex-1 min-h-0 overflow-y-auto touch-scroll p-4 space-y-6 pb-8 md:h-auto md:overflow-visible md:overscroll-auto">
             {/* Mobile always uses the full nav with labels. */}
 	            <div className="space-y-6 md:hidden">
 	            <div className="space-y-3">

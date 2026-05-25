@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthSession, getStoredUsers } from '@/lib/server/auth';
-import { createGigBid, updateGigBidStatus } from '@/lib/server/gigs';
+import { createGigBid, updateGigBidStatus, getGigListings } from '@/lib/server/gigs';
 import { getOriginForRequest } from '@/lib/server/request';
 import type { GigBid } from '@/types/document';
 import { canUserAccessFeature, isSubscriptionPeriodExpired } from '@/lib/server/saas';
+import { addSocialEvent } from '@/lib/server/social-events';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,6 +46,25 @@ export async function POST(request: NextRequest) {
       timelineLabel: timelineLabel.trim() || undefined,
       note,
     });
+
+    // Fire social event to notify the gig owner (non-blocking)
+    void (async () => {
+      try {
+        const gigs = await getGigListings();
+        const gig = gigs.find((g) => g.id === gigId);
+        if (gig?.ownerUserId && gig.ownerUserId !== actor.id) {
+          await addSocialEvent({
+            type: 'gig_applied',
+            actorId: actor.id,
+            actorName: actor.name || actor.email,
+            targetUserId: gig.ownerUserId,
+            resourceId: gigId,
+            resourceTitle: gig.title,
+            href: `/workspace?tab=gigs`,
+          });
+        }
+      } catch { /* non-critical */ }
+    })();
 
     return NextResponse.json(bid, { status: 201 });
   } catch (error) {

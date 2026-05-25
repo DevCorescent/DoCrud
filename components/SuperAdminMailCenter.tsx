@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, Loader2, Mail, Send, ShieldCheck, XCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, Info, Loader2, Mail, Send, ShieldCheck, Wifi, XCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -62,17 +62,31 @@ export default function SuperAdminMailCenter() {
   const [error, setError] = useState<string | null>(null);
 
   const [settings, setSettings] = useState<MailSettings>({
-    host: '',
-    port: 587,
-    secure: false,
+    host: 'smtp.titan.email',
+    port: 465,
+    secure: true,
     requireAuth: true,
-    username: '',
+    username: 'support@docrud.com',
     password: '',
-    fromName: 'docrud',
-    fromEmail: '',
+    fromName: 'Docrud Support',
+    fromEmail: 'support@docrud.com',
     replyTo: '',
     testRecipient: '',
   });
+
+  type TestResult = {
+    ok: boolean;
+    stage: 'verify' | 'send' | 'sent';
+    message?: string;
+    error?: string;
+    hint?: string;
+    messageId?: string;
+    config?: Record<string, unknown>;
+    elapsedMs?: number;
+  };
+
+  const [testResult, setTestResult] = useState<TestResult | null>(null);
+  const [testRecipient, setTestRecipient] = useState('');
 
   const [outboxLoading, setOutboxLoading] = useState(false);
   const [outbox, setOutbox] = useState<OutboxEvent[]>([]);
@@ -97,10 +111,10 @@ export default function SuperAdminMailCenter() {
     setError(null);
     setMessage(null);
     try {
-      const res = await fetch('/api/settings/mail', { cache: 'no-store' });
+      const res = await fetch('/api/super-admin/mail/smtp', { cache: 'no-store' });
       const payload = await res.json().catch(() => null);
       if (!res.ok) throw new Error(payload?.error || 'Failed to load mail settings');
-      setSettings(payload as MailSettings);
+      setSettings((prev) => ({ ...prev, ...(payload as MailSettings) }));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load mail settings');
     } finally {
@@ -263,15 +277,15 @@ export default function SuperAdminMailCenter() {
     setError(null);
     setMessage(null);
     try {
-      const res = await fetch('/api/settings/mail', {
+      const res = await fetch('/api/super-admin/mail/smtp', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings),
       });
       const payload = await res.json().catch(() => null);
       if (!res.ok) throw new Error(payload?.error || 'Failed to save SMTP settings');
-      setSettings(payload as MailSettings);
-      setMessage('SMTP settings saved.');
+      setSettings((prev) => ({ ...prev, ...(payload as MailSettings) }));
+      setMessage('SMTP settings saved successfully.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save SMTP settings');
     } finally {
@@ -279,32 +293,32 @@ export default function SuperAdminMailCenter() {
     }
   }, [settings]);
 
-  const verify = useCallback(async (sendTest: boolean) => {
+  const runTest = useCallback(async (sendEmail: boolean) => {
     setVerifying(true);
+    setTestResult(null);
     setError(null);
     setMessage(null);
     try {
-      const res = await fetch('/api/settings/mail/test', {
+      const res = await fetch('/api/super-admin/mail/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ testRecipient: sendTest ? settings.testRecipient : undefined }),
+        body: JSON.stringify(sendEmail ? { recipient: testRecipient } : {}),
       });
       const payload = await res.json().catch(() => null);
-      if (!res.ok) throw new Error(payload?.error || 'SMTP verify failed');
-      setMessage(String(payload?.message || 'SMTP verified.'));
+      setTestResult(payload as TestResult);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'SMTP verify failed');
+      setTestResult({ ok: false, stage: 'verify', error: err instanceof Error ? err.message : 'Request failed' });
     } finally {
       setVerifying(false);
     }
-  }, [settings.testRecipient]);
+  }, [testRecipient]);
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-slate-950">SMTP + Email Tracking</p>
-          <p className="mt-1 text-sm text-slate-600">Configure Hostinger SMTP, send test mails, and track every outgoing notification.</p>
+          <p className="mt-1 text-sm text-slate-600">Configure Titan SMTP, verify connectivity, send test mails, and track every outgoing notification.</p>
         </div>
       </div>
 
@@ -317,101 +331,198 @@ export default function SuperAdminMailCenter() {
         </TabsList>
 
         <TabsContent value="smtp" className="space-y-6">
-          <Card className="border-white/60 bg-white/75 backdrop-blur">
-            <CardHeader>
-              <div className="flex items-center gap-2">
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+            {/* Left: SMTP config */}
+            <Card className="border-white/60 bg-white/75 backdrop-blur">
+              <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Mail className="h-5 w-5 text-sky-600" />
-                  SMTP Settings
+                  SMTP Configuration
                 </CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {loading ? (
-                <div className="flex items-center gap-2 text-sm text-slate-600"><Loader2 className="h-4 w-4 animate-spin" /> Loading…</div>
-              ) : (
-                <>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Host</p>
-                      <Input className="mt-2 h-11 rounded-2xl" value={settings.host} onChange={(e) => setSettings((c) => ({ ...c, host: e.target.value }))} placeholder="smtp.hostinger.com" />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {loading ? (
+                  <div className="flex items-center gap-2 text-sm text-slate-600"><Loader2 className="h-4 w-4 animate-spin" /> Loading…</div>
+                ) : (
+                  <>
+                    {/* Connection info banner */}
+                    <div className="flex items-start gap-2 rounded-2xl border border-sky-200 bg-sky-50/70 px-3 py-3 text-xs text-sky-900">
+                      <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                      <span>Titan Mail SMTP — <strong>smtp.titan.email:465</strong>, SSL/TLS, authentication required.</span>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
+
+                    <div className="grid gap-3 sm:grid-cols-2">
                       <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Port</p>
-                        <Input className="mt-2 h-11 rounded-2xl" type="number" value={settings.port} onChange={(e) => setSettings((c) => ({ ...c, port: Number(e.target.value || 587) }))} />
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Host</p>
+                        <Input className="mt-2 h-11 rounded-2xl" value={settings.host} onChange={(e) => setSettings((c) => ({ ...c, host: e.target.value }))} placeholder="smtp.titan.email" />
                       </div>
-                      <div className="flex items-end">
-                        <label className="inline-flex w-full items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-700 shadow-sm">
-                          <input type="checkbox" checked={settings.secure} onChange={(e) => setSettings((c) => ({ ...c, secure: e.target.checked }))} />
-                          Secure (SSL/TLS)
-                        </label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Port</p>
+                          <Input className="mt-2 h-11 rounded-2xl" type="number" value={settings.port} onChange={(e) => setSettings((c) => ({ ...c, port: Number(e.target.value || 465) }))} />
+                        </div>
+                        <div className="flex items-end">
+                          <label className="inline-flex w-full cursor-pointer items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-700 shadow-sm">
+                            <input type="checkbox" checked={settings.secure} onChange={(e) => setSettings((c) => ({ ...c, secure: e.target.checked }))} />
+                            SSL/TLS
+                          </label>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Username</p>
+                        <Input className="mt-2 h-11 rounded-2xl" value={settings.username} onChange={(e) => setSettings((c) => ({ ...c, username: e.target.value }))} placeholder="support@docrud.com" />
+                        <p className="mt-1 text-xs text-slate-500">Full email address required for Titan.</p>
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Password</p>
+                        <Input type="password" className="mt-2 h-11 rounded-2xl" value={settings.password} onChange={(e) => setSettings((c) => ({ ...c, password: e.target.value }))} placeholder="••••••••" />
+                        <p className="mt-1 text-xs text-slate-500">Masked in the UI after save.</p>
                       </div>
                     </div>
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Username</p>
-                      <Input className="mt-2 h-11 rounded-2xl" value={settings.username} onChange={(e) => setSettings((c) => ({ ...c, username: e.target.value }))} placeholder="docrud@yourdomain.com" />
-                    </div>
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Password</p>
-                      <Input className="mt-2 h-11 rounded-2xl" value={settings.password} onChange={(e) => setSettings((c) => ({ ...c, password: e.target.value }))} placeholder="********" />
-                      <p className="mt-1 text-xs text-slate-500">Stored securely in server settings. UI always masks it after save.</p>
-                    </div>
-                  </div>
 
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">From name</p>
-                      <Input className="mt-2 h-11 rounded-2xl" value={settings.fromName} onChange={(e) => setSettings((c) => ({ ...c, fromName: e.target.value }))} />
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">From name</p>
+                        <Input className="mt-2 h-11 rounded-2xl" value={settings.fromName} onChange={(e) => setSettings((c) => ({ ...c, fromName: e.target.value }))} placeholder="Docrud Support" />
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">From email</p>
+                        <Input className="mt-2 h-11 rounded-2xl" value={settings.fromEmail} onChange={(e) => setSettings((c) => ({ ...c, fromEmail: e.target.value }))} placeholder="support@docrud.com" />
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">From email</p>
-                      <Input className="mt-2 h-11 rounded-2xl" value={settings.fromEmail} onChange={(e) => setSettings((c) => ({ ...c, fromEmail: e.target.value }))} placeholder="docrud@yourdomain.com" />
-                    </div>
-                  </div>
 
-                  <div className="grid gap-3 sm:grid-cols-2">
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Reply-to (optional)</p>
-                      <Input className="mt-2 h-11 rounded-2xl" value={settings.replyTo || ''} onChange={(e) => setSettings((c) => ({ ...c, replyTo: e.target.value }))} />
+                      <Input className="mt-2 h-11 rounded-2xl" value={settings.replyTo || ''} onChange={(e) => setSettings((c) => ({ ...c, replyTo: e.target.value }))} placeholder="replies@docrud.com" />
                     </div>
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Test recipient</p>
-                      <Input className="mt-2 h-11 rounded-2xl" value={settings.testRecipient || ''} onChange={(e) => setSettings((c) => ({ ...c, testRecipient: e.target.value }))} placeholder="you@company.com" />
-                    </div>
-                  </div>
 
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button type="button" className="h-11 rounded-2xl bg-slate-950 px-5 text-white hover:bg-slate-900" disabled={saving || !canSave} onClick={() => void save()}>
-                      {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
-                      Save SMTP
-                    </Button>
-                    <Button type="button" variant="outline" className="h-11 rounded-2xl" disabled={verifying || !canSave} onClick={() => void verify(false)}>
-                      {verifying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
-                      Verify
-                    </Button>
-                    <Button type="button" variant="outline" className="h-11 rounded-2xl" disabled={verifying || !canSave || !settings.testRecipient} onClick={() => void verify(true)}>
-                      {verifying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-                      Send test mail
-                    </Button>
-                  </div>
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                      <Button type="button" className="h-11 rounded-2xl bg-slate-950 px-5 text-white hover:bg-slate-900" disabled={saving || !canSave} onClick={() => void save()}>
+                        {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+                        Save SMTP
+                      </Button>
+                    </div>
 
-                  {message ? (
-                    <div className="flex items-start gap-2 rounded-2xl border border-emerald-200 bg-emerald-50/70 px-3 py-3 text-sm text-emerald-900">
-                      <CheckCircle2 className="mt-0.5 h-4 w-4" />
-                      <p className="min-w-0">{message}</p>
+                    {message ? (
+                      <div className="flex items-start gap-2 rounded-2xl border border-emerald-200 bg-emerald-50/70 px-3 py-3 text-sm text-emerald-900">
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+                        <p className="min-w-0">{message}</p>
+                      </div>
+                    ) : null}
+                    {error ? (
+                      <div className="flex items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50/70 px-3 py-3 text-sm text-rose-900">
+                        <XCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                        <p className="min-w-0">{error}</p>
+                      </div>
+                    ) : null}
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Right: Test email */}
+            <Card className="border-white/60 bg-white/75 backdrop-blur">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Wifi className="h-5 w-5 text-violet-600" />
+                  Test Email
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-slate-600">
+                  Verify SMTP connectivity or send a real test email to confirm end-to-end delivery.
+                </p>
+
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Recipient email</p>
+                  <Input
+                    className="mt-2 h-11 rounded-2xl"
+                    type="email"
+                    value={testRecipient}
+                    onChange={(e) => setTestRecipient(e.target.value)}
+                    placeholder="you@company.com"
+                  />
+                  <p className="mt-1 text-xs text-slate-500">Leave empty to verify connectivity only (no email sent).</p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-11 rounded-2xl"
+                    disabled={verifying || !canSave}
+                    onClick={() => void runTest(false)}
+                  >
+                    {verifying && !testRecipient ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
+                    Verify connection
+                  </Button>
+                  <Button
+                    type="button"
+                    className="h-11 rounded-2xl bg-violet-700 px-5 text-white hover:bg-violet-600"
+                    disabled={verifying || !canSave || !testRecipient.trim()}
+                    onClick={() => void runTest(true)}
+                  >
+                    {verifying && !!testRecipient ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                    Send test email
+                  </Button>
+                </div>
+
+                {/* Test result panel */}
+                {testResult ? (
+                  <div className={`space-y-3 rounded-2xl border px-4 py-4 ${testResult.ok ? 'border-emerald-200 bg-emerald-50/60' : 'border-rose-200 bg-rose-50/60'}`}>
+                    <div className="flex items-center gap-2">
+                      {testResult.ok
+                        ? <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
+                        : <AlertCircle className="h-5 w-5 shrink-0 text-rose-600" />}
+                      <p className={`text-sm font-semibold ${testResult.ok ? 'text-emerald-900' : 'text-rose-900'}`}>
+                        {testResult.ok
+                          ? testResult.stage === 'sent' ? 'Test email sent' : 'Connection verified'
+                          : testResult.stage === 'send' ? 'Send failed' : 'Connection failed'}
+                      </p>
+                      {testResult.elapsedMs !== undefined ? (
+                        <span className="ml-auto flex items-center gap-1 rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-semibold text-slate-600 shadow-sm">
+                          <Clock className="h-3 w-3" />
+                          {testResult.elapsedMs}ms
+                        </span>
+                      ) : null}
                     </div>
-                  ) : null}
-                  {error ? (
-                    <div className="flex items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50/70 px-3 py-3 text-sm text-rose-900">
-                      <XCircle className="mt-0.5 h-4 w-4" />
-                      <p className="min-w-0">{error}</p>
-                    </div>
-                  ) : null}
-                </>
-              )}
-            </CardContent>
-          </Card>
+
+                    {testResult.message ? (
+                      <p className={`text-sm ${testResult.ok ? 'text-emerald-800' : 'text-rose-800'}`}>{testResult.message}</p>
+                    ) : null}
+
+                    {testResult.error ? (
+                      <p className="text-sm text-rose-800">{testResult.error}</p>
+                    ) : null}
+
+                    {testResult.hint ? (
+                      <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50/70 px-3 py-2.5 text-xs text-amber-900">
+                        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                        <p>{testResult.hint}</p>
+                      </div>
+                    ) : null}
+
+                    {testResult.config ? (
+                      <div className="rounded-xl border border-white/80 bg-white/60 px-3 py-2.5">
+                        <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Server config used</p>
+                        <div className="flex flex-wrap gap-2">
+                          {Object.entries(testResult.config).map(([k, v]) => (
+                            <span key={k} className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700">
+                              {k}: {String(v)}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {testResult.messageId ? (
+                      <p className="text-[11px] text-slate-500">Message-ID: <span className="font-mono">{testResult.messageId}</span></p>
+                    ) : null}
+                  </div>
+                ) : null}
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="policies" className="space-y-6">

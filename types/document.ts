@@ -141,6 +141,22 @@ export interface User {
     requiredPolicyIds: string[];
     ipAddress?: string;
   };
+  /** Account deactivation / scheduled deletion */
+  deactivatedAt?: string;           // ISO — when the user deactivated
+  deactivationDeadline?: string;    // ISO — auto-delete after this date (null = no deadline)
+  deactivationWarningEmailSentAt?: string; // ISO — when the 1-week warning was sent
+  pendingDeletion?: boolean;        // true once a deletion has been confirmed via OTP
+  /** Email notification opt-in/out per category. Missing key = default ON (except profile_view/document_viewed). */
+  emailPreferences?: {
+    follows?: boolean;
+    likes?: boolean;
+    comments?: boolean;
+    mentions?: boolean;
+    gig_applied?: boolean;
+    messages?: boolean;
+    billing?: boolean;
+    system?: boolean;
+  };
 }
 
 export type FileTransferAuthMode = 'public' | 'password' | 'email' | 'password_and_email' | 'triple_password';
@@ -2621,6 +2637,70 @@ export interface DocWordSelectionComment {
   selectionText: string;
   comment: string;
   createdAt: string;
+}
+
+/* ─── Public Face ─────────────────────────────────────────────────────── */
+
+export type PublicFaceCategory =
+  | 'actor_actress'
+  | 'singer_musician'
+  | 'athlete_sportsperson'
+  | 'model'
+  | 'content_creator'
+  | 'influencer'
+  | 'politician'
+  | 'entrepreneur_ceo'
+  | 'author_writer'
+  | 'academic_scientist'
+  | 'tv_personality'
+  | 'comedian'
+  | 'social_activist'
+  | 'chef_culinary'
+  | 'fashion_designer'
+  | 'photographer_videographer'
+  | 'game_streamer'
+  | 'journalist'
+  | 'other';
+
+export interface PublicFaceApplication {
+  id: string;
+  userId: string;
+  userEmail: string;
+  userName: string;
+  status: 'pending' | 'under_review' | 'approved' | 'rejected';
+  category: PublicFaceCategory;
+  /** Social presence */
+  instagramHandle?: string;
+  twitterHandle?: string;
+  youtubeChannel?: string;
+  facebookPage?: string;
+  tiktokHandle?: string;
+  websiteUrl?: string;
+  /** Fame proof */
+  totalFollowers?: string;
+  monthlyReach?: string;
+  mediaFeatures?: string;
+  awardsRecognitions?: string;
+  notableProjects?: string;
+  publicStatement: string;
+  /** Identity proof — base64 data URL */
+  identityProofDataUrl?: string;
+  identityProofFileName?: string;
+  identityProofMimeType?: string;
+  /** OTP verification */
+  emailVerified: boolean;
+  otpVerifiedAt?: string;
+  /** Admin */
+  adminNote?: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  submittedAt: string;
+  updatedAt: string;
+}
+
+export interface PublicFaceBadgeInfo {
+  category: PublicFaceCategory;
+  approvedAt: string;
 }
 
 export interface DocWordDocument {

@@ -79,8 +79,8 @@ export async function sendTrackedMail(input: SendTrackedMailInput) {
 
   const transporter = nodemailer.createTransport({
     host: smtp.host,
-    port: Number(smtp.port),
-    secure: smtp.secure,
+    port: Number(smtp.port) || 465,
+    secure: Boolean(smtp.secure),
     auth: smtp.requireAuth ? { user: smtp.username, pass: smtp.password } : undefined,
   });
 

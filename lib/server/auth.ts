@@ -94,8 +94,10 @@ export async function authenticateUser(identifier: string, password: string, pol
   const normalizedEmail = normalizeEmail(identifier);
   const normalizedLoginId = normalizeLoginId(identifier);
   const users = await getStoredUsers();
+
+  // Find matching user — include deactivated accounts so they can log back in
   const user = users.find((entry) =>
-    entry.isActive
+    !entry.pendingDeletion // never let pending-deletion accounts log in
     && (
       entry.email === normalizedEmail
       || (entry.loginId && normalizeLoginId(entry.loginId) === normalizedLoginId)
@@ -107,6 +109,7 @@ export async function authenticateUser(identifier: string, password: string, pol
     return null;
   }
 
+  // Suspended accounts cannot log in
   if (user.safety?.suspendedUntil && new Date(user.safety.suspendedUntil).getTime() > Date.now()) {
     return null;
   }
@@ -123,23 +126,44 @@ export async function authenticateUser(identifier: string, password: string, pol
     return null;
   }
 
+  // ── Auto-reactivate deactivated accounts on successful login ──────
+  const isDeactivated = user.isActive === false;
+  const now = new Date().toISOString();
+
   const updatedUsers = users.map((entry) =>
     entry.id === user.id
       ? {
           ...entry,
-          lastLogin: new Date().toISOString(),
-          subscription: applyRoadmapPromotionToSubscription(entry.subscription, new Date().toISOString()),
+          isActive: true,                           // always re-enable on login
+          // Clear deactivation metadata
+          ...(isDeactivated && {
+            deactivatedAt: undefined,
+            deactivationDeadline: undefined,
+            deactivationWarningEmailSentAt: undefined,
+            pendingDeletion: false,
+          }),
+          lastLogin: now,
+          subscription: applyRoadmapPromotionToSubscription(entry.subscription, now),
           policyAcceptance: buildPolicyAcceptance('login'),
         }
       : entry
   );
   await saveStoredUsers(updatedUsers);
 
+  // Fire reactivation email non-blocking
+  if (isDeactivated) {
+    import('@/lib/server/account-emails')
+      .then(({ sendAccountReactivatedEmail }) =>
+        sendAccountReactivatedEmail({ to: user.email, name: user.name }).catch(() => {}),
+      )
+      .catch(() => {});
+  }
+
   const refreshedUser = updatedUsers.find((entry) => entry.id === user.id) || user;
   const { passwordHash, passwordSalt, ...safeUser } = refreshedUser;
   return {
     ...safeUser,
-    lastLogin: new Date().toISOString(),
+    lastLogin: now,
   };
 }
 

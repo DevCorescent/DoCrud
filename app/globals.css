@@ -7,6 +7,18 @@
   to   { transform: rotate(360deg); }
 }
 
+/* Premium golden ring sweep around logo icon */
+@keyframes goldenRingSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Greeting chip slide-in (greeting text & time transitions) */
+@keyframes greetSlideIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 @keyframes notifSheetUp {
   from { transform: translateY(100%); }
   to   { transform: translateY(0); }
@@ -352,6 +364,19 @@
   35%  { transform: translate(90px,  120px) scale(1.10); }
   75%  { transform: translate(-80px, -70px) scale(0.94); }
 }
+@keyframes splashPulse {
+  0%   { transform: scale(1);   opacity: 0.65; }
+  100% { transform: scale(2.2); opacity: 0;    }
+}
+@keyframes splashMarqueeL {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes splashMarqueeR {
+  0%   { transform: translateX(-50%); }
+  100% { transform: translateX(0); }
+}
+
 /* ── End onboarding animations ─────────────────────────────── */
 
 @keyframes shimmerSlide {
@@ -577,6 +602,11 @@
   body {
     max-width: 100%;
     overflow-x: hidden;
+  }
+
+  /* Prevent white overscroll flash on dark pages (catalogue, services) */
+  html {
+    background-color: #0D0D0F;
   }
 
   * {

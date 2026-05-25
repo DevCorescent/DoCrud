@@ -3,87 +3,80 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
-import crypto from 'crypto';
 import { getAuthSession, getStoredUsers, saveStoredUsers } from '@/lib/server/auth';
 import { readJsonFile, writeJsonFile, userProfilesPath, followsPath } from '@/lib/server/storage';
+import { verifyAccountActionOtp } from '@/lib/server/otp-sessions';
+import { sendAccountDeletedEmail } from '@/lib/server/account-emails';
 
 const CREDITS_FILE = path.join(process.cwd(), 'data', 'credits.json');
 
-function hashPassword(password: string, salt: string): string {
-  return crypto.createHmac('sha512', salt).update(password).digest('hex');
-}
-
-interface CreditsStore {
-  users: Record<string, unknown>;
-}
+interface CreditsStore { users: Record<string, unknown>; }
 
 export async function DELETE(req: NextRequest) {
   const session = await getAuthSession();
-  if (!session?.user?.id) {
+  if (!session?.user?.id || !session.user.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  let body: { confirmPassword?: string };
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  let body: { sessionId?: string; otp?: string };
+  try { body = await req.json(); } catch {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
-  if (!body.confirmPassword) {
-    return NextResponse.json({ error: 'confirmPassword is required' }, { status: 400 });
+  const { sessionId, otp } = body;
+  if (!sessionId || !otp) {
+    return NextResponse.json({ error: 'sessionId and otp are required' }, { status: 400 });
   }
 
   try {
     const users = await getStoredUsers();
-    const user = users.find((u) => u.id === session.user.id);
+    const user  = users.find((u) => u.id === session.user.id);
+    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    // Verify OTP
+    await verifyAccountActionOtp({
+      sessionId,
+      email: user.email,
+      userId: user.id,
+      action: 'delete',
+      otp,
+    });
 
-    // Verify password
-    if (!user.passwordHash || !user.passwordSalt) {
-      return NextResponse.json({ error: 'Cannot verify password for this account' }, { status: 400 });
-    }
+    // Capture email/name before deletion for the goodbye email
+    const { email: userEmail, name: userName } = user;
 
-    const inputHash = hashPassword(body.confirmPassword, user.passwordSalt);
-    if (inputHash !== user.passwordHash) {
-      return NextResponse.json({ error: 'Incorrect password' }, { status: 403 });
-    }
+    // ── Purge all user data ──────────────────────────────────────────
 
-    // Remove from users.json
-    const updatedUsers = users.filter((u) => u.id !== session.user.id);
-    await saveStoredUsers(updatedUsers);
+    // 1. Remove from users.json
+    await saveStoredUsers(users.filter((u) => u.id !== session.user.id));
 
-    // Remove from user-profiles.json
+    // 2. Remove from user-profiles.json
     const profiles = await readJsonFile<Record<string, unknown>>(userProfilesPath, {});
     delete profiles[session.user.id];
     await writeJsonFile(userProfilesPath, profiles);
 
-    // Remove from credits.json
+    // 3. Remove from credits.json
     try {
-      const creditsContent = await fs.readFile(CREDITS_FILE, 'utf8');
-      const creditsStore = JSON.parse(creditsContent) as CreditsStore;
-      delete creditsStore.users[session.user.id];
-      await fs.writeFile(CREDITS_FILE, JSON.stringify(creditsStore, null, 2), 'utf8');
-    } catch {
-      // credits file may not exist — ignore
-    }
+      const raw   = await fs.readFile(CREDITS_FILE, 'utf8');
+      const store = JSON.parse(raw) as CreditsStore;
+      delete store.users[session.user.id];
+      await fs.writeFile(CREDITS_FILE, JSON.stringify(store, null, 2), 'utf8');
+    } catch { /* credits file may not exist */ }
 
-    // Remove from follows.json
+    // 4. Remove from follows.json
     const follows = await readJsonFile<Record<string, string[]>>(followsPath, {});
-    // Remove this user's own follows
     delete follows[session.user.id];
-    // Remove this user from others' follow lists
-    for (const followerId of Object.keys(follows)) {
-      follows[followerId] = follows[followerId].filter((id) => id !== session.user.id);
+    for (const k of Object.keys(follows)) {
+      follows[k] = (follows[k] || []).filter((id) => id !== session.user.id);
     }
     await writeJsonFile(followsPath, follows);
 
+    // Send goodbye email (fire-and-forget)
+    sendAccountDeletedEmail({ to: userEmail, name: userName }).catch(() => {});
+
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error deleting account:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Failed to delete account';
+    return NextResponse.json({ error: msg }, { status: 400 });
   }
 }

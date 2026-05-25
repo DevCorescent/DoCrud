@@ -19,41 +19,45 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     getPublicGigListings(),
   ]);
 
-  const routes = [
-    '',
-    '/forms',
-    '/forms/builder',
-    '/pdf-editor',
-    '/pdf-editor/workspace',
-    '/docword',
-    '/doxpert',
-    '/resume-ats',
-    '/talent',
-    '/visualizer',
-    '/file-directory',
-    '/file-transfers',
-    '/blog',
-    '/gigs',
-    '/document-encrypter',
-    '/daily-tools',
-    '/docrudians',
-    '/pricing',
-    '/support',
-    '/contact',
-    '/schedule-demo',
+  // High-priority platform pages (daily/always fresh)
+  const coreRoutes = [
+    { path: '', freq: 'daily' as const, priority: 1.0 },
+    { path: '/people', freq: 'daily' as const, priority: 0.95 },
+    { path: '/gigs', freq: 'daily' as const, priority: 0.95 },
+    { path: '/blog', freq: 'daily' as const, priority: 0.85 },
+    { path: '/docrudians', freq: 'daily' as const, priority: 0.82 },
   ];
 
-  const staticEntries = routes.map((route, index) => ({
-    url: `${baseUrl}${route}`,
-    lastModified: now,
-    changeFrequency: index === 0 ? 'daily' as const : 'weekly' as const,
-    priority:
-      index === 0
-        ? 1
-        : route === '/pricing' || route === '/forms' || route === '/pdf-editor' || route === '/resume-ats'
-          ? 0.9
-          : 0.7,
-  }));
+  // Product pages (weekly)
+  const productRoutes = [
+    { path: '/pricing', freq: 'weekly' as const, priority: 0.90 },
+    { path: '/forms', freq: 'weekly' as const, priority: 0.88 },
+    { path: '/forms/builder', freq: 'weekly' as const, priority: 0.82 },
+    { path: '/pdf-editor', freq: 'weekly' as const, priority: 0.88 },
+    { path: '/pdf-editor/workspace', freq: 'weekly' as const, priority: 0.78 },
+    { path: '/resume-ats', freq: 'weekly' as const, priority: 0.88 },
+    { path: '/doxpert', freq: 'weekly' as const, priority: 0.85 },
+    { path: '/docword', freq: 'weekly' as const, priority: 0.80 },
+    { path: '/talent', freq: 'weekly' as const, priority: 0.85 },
+    { path: '/file-directory', freq: 'weekly' as const, priority: 0.75 },
+    { path: '/file-transfers', freq: 'weekly' as const, priority: 0.72 },
+    { path: '/visualizer', freq: 'weekly' as const, priority: 0.72 },
+    { path: '/document-encrypter', freq: 'weekly' as const, priority: 0.72 },
+    { path: '/daily-tools', freq: 'weekly' as const, priority: 0.75 },
+  ];
+
+  // Support / info pages (monthly)
+  const infoRoutes = [
+    { path: '/support', freq: 'monthly' as const, priority: 0.65 },
+    { path: '/contact', freq: 'monthly' as const, priority: 0.65 },
+    { path: '/schedule-demo', freq: 'monthly' as const, priority: 0.70 },
+  ];
+
+  const staticEntries = [
+    ...coreRoutes.map((r) => ({ url: `${baseUrl}${r.path}`, lastModified: now, changeFrequency: r.freq, priority: r.priority })),
+    ...productRoutes.map((r) => ({ url: `${baseUrl}${r.path}`, lastModified: now, changeFrequency: r.freq, priority: r.priority })),
+    ...infoRoutes.map((r) => ({ url: `${baseUrl}${r.path}`, lastModified: now, changeFrequency: r.freq, priority: r.priority })),
+  ];
 
   const jobEntries = jobs.map((job) => ({
     url: `${baseUrl}/jobs/${job.id}`,

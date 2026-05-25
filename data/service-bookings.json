@@ -1,0 +1,35 @@
+[
+  {
+    "serviceId": "svc_1779121636470_lthpt5",
+    "serviceTitle": "Website Development - E commerce",
+    "serviceUserId": "individual-1779109829969",
+    "clientId": "1",
+    "clientName": "kushagra",
+    "clientEmail": "kushagra@corescent.in",
+    "clientMessage": "test",
+    "packageName": "",
+    "price": 15999,
+    "currency": "INR",
+    "status": "completed",
+    "scheduledDate": "2026-05-18",
+    "id": "bkg_1779121688593_ckvl5p",
+    "createdAt": "2026-05-18T16:28:08.593Z",
+    "updatedAt": "2026-05-18T16:44:13.719Z"
+  },
+  {
+    "serviceId": "svc_1779121636470_lthpt5",
+    "serviceTitle": "Website Development - E commerce",
+    "serviceUserId": "individual-1779109829969",
+    "clientId": "1",
+    "clientName": "kush",
+    "clientEmail": "kush.726@gmail.com",
+    "clientPhone": "9351359088",
+    "clientMessage": "[ENQUIRY] i need service",
+    "price": 15999,
+    "currency": "INR",
+    "status": "pending",
+    "id": "bkg_1779123917238_ec47wm",
+    "createdAt": "2026-05-18T17:05:17.238Z",
+    "updatedAt": "2026-05-18T17:05:17.238Z"
+  }
+]

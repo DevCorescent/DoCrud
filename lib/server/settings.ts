@@ -5,14 +5,14 @@ import { getDbPool } from '@/lib/server/database';
 import { getSettingsValueFromRepository, saveSettingsValueToRepository } from '@/lib/server/repositories';
 
 export const defaultMailSettings: MailSettings = {
-  host: '',
-  port: 587,
-  secure: false,
+  host: 'smtp.titan.email',
+  port: 465,
+  secure: true,
   requireAuth: true,
-  username: '',
-  password: '',
-  fromName: 'docrud',
-  fromEmail: '',
+  username: 'support@docrud.com',
+  password: 'Docrud@2026',
+  fromName: 'Docrud Support',
+  fromEmail: 'support@docrud.com',
   replyTo: '',
   testRecipient: '',
 };
@@ -278,7 +278,14 @@ export async function getMailSettings() {
   const settings = getDbPool()
     ? await getSettingsValueFromRepository<Partial<MailSettings>>('mail', 'smtp', defaultMailSettings)
     : await readJsonFile<Partial<MailSettings>>(mailSettingsPath, defaultMailSettings);
-  return { ...defaultMailSettings, ...settings };
+  const merged = { ...defaultMailSettings, ...settings };
+  // Coerce types — stored values may be strings from old form submissions
+  return {
+    ...merged,
+    port: Number(merged.port) || defaultMailSettings.port,
+    secure: merged.secure === true || String(merged.secure) === 'true',
+    requireAuth: merged.requireAuth === true || String(merged.requireAuth) === 'true',
+  };
 }
 
 export async function getAuthSettings() {

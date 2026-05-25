@@ -2,7 +2,9 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
-import { AlignCenter, AlignLeft, AlignRight, BarChart3, Bold, BrainCircuit, Clock, Copy, Download, Eye, FileSpreadsheet, Italic, KeyRound, LineChart, Link2, Loader2, Mail, PencilLine, PieChart, Plus, Redo2, RefreshCw, Rows3, Save, Sheet, SlidersHorizontal, Trash2, Underline, Undo2, Upload } from 'lucide-react';
+import { AlignCenter, AlignLeft, AlignRight, BarChart3, Bold, BrainCircuit, Clock, Copy, Download, Eye, FileSpreadsheet, Italic, KeyRound, LineChart, Link2, Loader2, Mail, MessageCircle, Moon, PencilLine, PieChart, Plus, Redo2, RefreshCw, Rows3, Save, Search, Sheet, SlidersHorizontal, Sun, Trash2, Underline, Undo2, Upload, Users, X } from 'lucide-react';
+import { useCollabEngine } from '@/lib/collabEngine';
+import CollabBar from '@/components/CollabBar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -39,6 +41,8 @@ interface DocSheetCenterProps {
   onHistoryRefresh: () => Promise<void>;
   layout?: 'module' | 'page';
   initialHistoryId?: string;
+  /** File passed via Drive handoff — auto-imported on first render */
+  initialFile?: File;
 }
 
 type DocSheetStudioPanel = 'none' | 'file' | 'share' | 'export' | 'insights' | 'ai' | 'smart' | 'history' | 'formatting' | 'comments';
@@ -237,7 +241,7 @@ function DocSheetThumbnail({ workbook }: { workbook: DocSheetWorkbook | undefine
   const sheet = workbook?.sheets?.[0];
   if (!sheet) {
     return (
-      <div className="flex h-[92px] items-center justify-center rounded-2xl border border-slate-200 bg-white text-xs text-slate-500">
+      <div style={{ display: 'flex', height: 92, alignItems: 'center', justifyContent: 'center', borderRadius: 12, border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.03)', fontSize: 10, color: 'rgba(255,255,255,0.25)' }}>
         No preview
       </div>
     );
@@ -246,30 +250,30 @@ function DocSheetThumbnail({ workbook }: { workbook: DocSheetWorkbook | undefine
   const columns = sheet.columns.slice(0, 4);
   const rows = sheet.rows.slice(0, 3);
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-      <div className="grid" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))` }}>
+    <div style={{ overflow: 'hidden', borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)', background: '#0e0f11' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))` }}>
         {columns.map((column, idx) => (
-          <div key={column.id} className="border-b border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-semibold text-slate-600">
+          <div key={column.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.04)', padding: '3px 6px', fontSize: 9, fontWeight: 600, color: 'rgba(255,255,255,0.40)', letterSpacing: '0.04em' }}>
             {getDocSheetColumnLetter(idx)}
           </div>
         ))}
         {rows.map((row) =>
           columns.map((column) => (
-            <div key={`${row.id}-${column.id}`} className="border-b border-slate-100 px-2 py-1 text-[10px] text-slate-700">
+            <div key={`${row.id}-${column.id}`} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '3px 6px', fontSize: 9, color: 'rgba(255,255,255,0.52)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {String(row.values[column.id] ?? '').slice(0, 14)}
             </div>
           )),
         )}
       </div>
-      <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-2 py-1 text-[10px] text-slate-500">
-        <span className="truncate">{sheet.name}</span>
-        <span>{sheet.rows.length}x{sheet.columns.length}</span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.03)', padding: '3px 6px', fontSize: 9, color: 'rgba(255,255,255,0.28)' }}>
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sheet.name}</span>
+        <span style={{ flexShrink: 0, marginLeft: 4 }}>{sheet.rows.length}×{sheet.columns.length}</span>
       </div>
     </div>
   );
 }
 
-export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'module', initialHistoryId }: DocSheetCenterProps) {
+export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'module', initialHistoryId, initialFile }: DocSheetCenterProps) {
   const savedWorkbooks = useMemo(
     () => history.filter((entry) => entry.templateId === 'docsheet-workbook'),
     [history],
@@ -346,12 +350,43 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
   const lastChangeAtRef = useRef<number>(0);
   const saveStartedAtRef = useRef<number>(0);
   const [isDirty, setIsDirty] = useState(false);
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [aiFloatOpen, setAiFloatOpen] = useState(false);
+  const [menuAnchorPos, setMenuAnchorPos] = useState<{ top: number; left: number } | null>(null);
+  const [collabOpen, setCollabOpen] = useState(false);
+
+  /* ── Real-time Collaboration ── */
+  const collabToken  = savedHistoryId || workbook.id;
+  const collabEngine = useCollabEngine(collabToken, 'Collaborator');
 
   useEffect(() => {
     if (!activeSheetId && workbook.sheets[0]) {
       setActiveSheetId(workbook.sheets[0].id);
     }
   }, [activeSheetId, workbook.sheets]);
+
+  /* ── Drive handoff: auto-import file passed from Universal File Viewer ── */
+  const driveHandoffRef = useRef(false);
+  useEffect(() => {
+    if (!initialFile) return;
+    if (driveHandoffRef.current) return;
+    driveHandoffRef.current = true;
+    (async () => {
+      try {
+        setImporting(true);
+        const imported = await parseSpreadsheetFileToWorkbook(initialFile);
+        setWorkbook(imported);
+        setActiveSheetId(imported.sheets[0]?.id || '');
+        setStatusMessage(`"${initialFile.name}" opened from Drive. You can edit, re-chart, and export it.`);
+        setActiveTab('editor' as typeof activeTab);
+      } catch (err) {
+        setStatusMessage(err instanceof Error ? err.message : 'Could not import file from Drive.');
+      } finally {
+        setImporting(false);
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const initialLoadRef = useRef(false);
   useEffect(() => {
@@ -372,10 +407,12 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
       if (!target) return;
       if (target.closest('[data-docsheet-topmenu-root]')) return;
       setTopMenuOpen(null);
+      setMenuAnchorPos(null);
     };
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setTopMenuOpen(null);
+        setMenuAnchorPos(null);
       }
     };
     window.addEventListener('mousedown', handlePointerDown);
@@ -1313,6 +1350,27 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [copySelectionToClipboard, handleRedo, handleUndo, isResizingColumn, layout, moveSelectionBy, pasteClipboardIntoSheet]);
 
+  /* ── Collab: auto-save workbook snapshot when workbook changes ── */
+  useEffect(() => {
+    if (!workbook) return;
+    const snapshot = JSON.stringify(workbook);
+    collabEngine.triggerAutoSave(snapshot);
+    collabEngine.broadcastEdit(snapshot);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workbook.updatedAt]);
+
+  /* ── Collab: apply remote workbook snapshot from peers ── */
+  useEffect(() => {
+    if (!collabEngine.remoteContent) return;
+    try {
+      const remoteWorkbook = JSON.parse(collabEngine.remoteContent) as typeof workbook;
+      if (remoteWorkbook?.id && remoteWorkbook?.sheets) {
+        setWorkbook(remoteWorkbook);
+      }
+    } catch { /* ignore non-workbook payloads */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [collabEngine.remoteContent]);
+
   const updateSelectedCellRawValue = (value: string) => {
     if (!selectedCell) return;
     updateCell(selectedCell.rowId, selectedCell.columnId, value);
@@ -1922,80 +1980,245 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
     const runMenuAction = (action: () => void) => {
       action();
       setTopMenuOpen(null);
+      setMenuAnchorPos(null);
     };
 
     return (
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(191,219,254,0.12),transparent_22%),radial-gradient(circle_at_top_right,rgba(167,243,208,0.10),transparent_28%),linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)]">
+      <div className="min-h-screen flex flex-col ds-page-root" data-docsheet-theme={theme} style={{ background: theme === 'dark' ? '#08090a' : '#f5f6f8' }}>
+        <style>{`
+          /* ── Theme tokens (CSS variables) ──────────────────────────────── */
+          .ds-page-root[data-docsheet-theme="dark"] {
+            --ds-c1: rgba(255,255,255,0.88); --ds-c2: rgba(255,255,255,0.72);
+            --ds-c3: rgba(255,255,255,0.52); --ds-c4: rgba(255,255,255,0.38);
+            --ds-c5: rgba(255,255,255,0.25);
+            --ds-s1: rgba(255,255,255,0.09); --ds-s2: rgba(255,255,255,0.07);
+            --ds-s3: rgba(255,255,255,0.05); --ds-s4: rgba(255,255,255,0.03);
+            --ds-bg: rgba(8,9,10,0.97);
+            --ds-grid: #08090a; --ds-cell: #0d0e11; --ds-th: #131417;
+          }
+          .ds-page-root[data-docsheet-theme="light"] {
+            --ds-c1: rgba(0,0,0,0.85);  --ds-c2: rgba(0,0,0,0.68);
+            --ds-c3: rgba(0,0,0,0.50);  --ds-c4: rgba(0,0,0,0.38);
+            --ds-c5: rgba(0,0,0,0.25);
+            --ds-s1: rgba(0,0,0,0.10);  --ds-s2: rgba(0,0,0,0.07);
+            --ds-s3: rgba(0,0,0,0.04);  --ds-s4: rgba(0,0,0,0.02);
+            --ds-bg: #ffffff;
+            --ds-grid: #f5f6f8; --ds-cell: #ffffff; --ds-th: #f0f2f5;
+          }
+
+          /* ── DocSheet theme system ───────────────────────────────────────── */
+
+          /* ─ Shadcn Radix Select dropdown ─ */
+          [data-docsheet-theme="dark"] [data-radix-popper-content-wrapper] [role="listbox"],
+          [data-docsheet-theme="dark"] [data-radix-popper-content-wrapper] [data-radix-select-content] {
+            background: rgba(10,11,14,0.99) !important;
+            border: 1px solid rgba(255,255,255,0.10) !important;
+            color: rgba(255,255,255,0.82) !important;
+            box-shadow: 0 16px 40px rgba(0,0,0,0.65) !important;
+          }
+          [data-docsheet-theme="light"] [data-radix-popper-content-wrapper] [role="listbox"],
+          [data-docsheet-theme="light"] [data-radix-popper-content-wrapper] [data-radix-select-content] {
+            background: #ffffff !important;
+            border: 1px solid rgba(0,0,0,0.09) !important;
+            color: rgba(0,0,0,0.82) !important;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.12) !important;
+          }
+          [data-docsheet-theme="dark"] [data-radix-popper-content-wrapper] [role="option"]:hover,
+          [data-docsheet-theme="dark"] [data-radix-popper-content-wrapper] [data-highlighted] {
+            background: rgba(255,255,255,0.08) !important; color: rgba(255,255,255,0.95) !important;
+          }
+          [data-docsheet-theme="light"] [data-radix-popper-content-wrapper] [role="option"]:hover,
+          [data-docsheet-theme="light"] [data-radix-popper-content-wrapper] [data-highlighted] {
+            background: rgba(0,0,0,0.05) !important; color: rgba(0,0,0,0.90) !important;
+          }
+
+          /* ─ Radix Tabs ─ */
+          [data-docsheet-theme="dark"] [data-radix-tabs-trigger] { color: rgba(255,255,255,0.52) !important; }
+          [data-docsheet-theme="dark"] [data-radix-tabs-trigger][data-state="active"] {
+            background: rgba(255,255,255,0.10) !important; color: rgba(255,255,255,0.92) !important;
+          }
+          [data-docsheet-theme="light"] [data-radix-tabs-trigger] { color: rgba(0,0,0,0.55) !important; }
+          [data-docsheet-theme="light"] [data-radix-tabs-trigger][data-state="active"] {
+            background: rgba(0,0,0,0.08) !important; color: rgba(0,0,0,0.88) !important;
+          }
+
+          /* ─ Dialog text ─ */
+          [data-docsheet-theme="dark"] [data-radix-dialog-content] h2 { color: rgba(255,255,255,0.92) !important; }
+          [data-docsheet-theme="dark"] [data-radix-dialog-content] p   { color: rgba(255,255,255,0.52) !important; }
+          [data-docsheet-theme="light"] [data-radix-dialog-content] h2 { color: rgba(0,0,0,0.88) !important; }
+          [data-docsheet-theme="light"] [data-radix-dialog-content] p  { color: rgba(0,0,0,0.55) !important; }
+
+          /* ─ Grid row hover ─ */
+          [data-docsheet-theme="dark"]  .ds-row:hover td { background: rgba(255,255,255,0.022) !important; }
+          [data-docsheet-theme="light"] .ds-row:hover td { background: rgba(0,0,0,0.020) !important; }
+
+          /* ─ Scrollbars ─ */
+          .ds-grid-scroll::-webkit-scrollbar { width: 7px; height: 7px; }
+          [data-docsheet-theme="dark"] .ds-grid-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
+          [data-docsheet-theme="dark"] .ds-grid-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+          [data-docsheet-theme="dark"] .ds-grid-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.22); }
+          [data-docsheet-theme="light"] .ds-grid-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.04); }
+          [data-docsheet-theme="light"] .ds-grid-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.16); border-radius: 4px; }
+          [data-docsheet-theme="light"] .ds-grid-scroll::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.28); }
+
+          /* ─ Light theme structural overrides (beat inline styles) ─ */
+          [data-docsheet-theme="light"] .ds-header       { background: rgba(255,255,255,0.97) !important; border-color: rgba(0,0,0,0.07) !important; box-shadow: 0 1px 0 rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.06) !important; }
+          [data-docsheet-theme="light"] .ds-panel-side   { background: rgba(255,255,255,0.98) !important; border-color: rgba(0,0,0,0.07) !important; }
+          [data-docsheet-theme="light"] .ds-tabs-bar     { background: rgba(255,255,255,0.97) !important; border-color: rgba(0,0,0,0.07) !important; }
+          [data-docsheet-theme="light"] .ds-menu-drop    { background: rgba(255,255,255,0.99) !important; border-color: rgba(0,0,0,0.08) !important; box-shadow: 0 12px 32px rgba(0,0,0,0.10) !important; }
+          [data-docsheet-theme="light"] .ds-ctx-menu     { background: rgba(255,255,255,0.99) !important; border-color: rgba(0,0,0,0.08) !important; box-shadow: 0 16px 40px rgba(0,0,0,0.12) !important; }
+          [data-docsheet-theme="light"] .ds-grid-wrap    { background: #ffffff !important; border-color: rgba(0,0,0,0.08) !important; }
+          [data-docsheet-theme="light"] thead th          { background: #f0f2f5 !important; color: rgba(0,0,0,0.60) !important; border-color: rgba(0,0,0,0.08) !important; }
+          [data-docsheet-theme="light"] tbody td          { background: #ffffff !important; border-color: rgba(0,0,0,0.07) !important; }
+          [data-docsheet-theme="light"] tbody td input    { color: rgba(0,0,0,0.85) !important; }
+          [data-docsheet-theme="light"] .ds-menu-item    { color: rgba(0,0,0,0.72) !important; }
+          [data-docsheet-theme="light"] .ds-menu-item:hover { background: rgba(0,0,0,0.05) !important; }
+          [data-docsheet-theme="light"] .ds-menu-label   { color: rgba(0,0,0,0.40) !important; }
+          [data-docsheet-theme="light"] .ds-separator     { background: rgba(0,0,0,0.08) !important; }
+          [data-docsheet-theme="light"] .ds-card          { background: rgba(0,0,0,0.02) !important; border-color: rgba(0,0,0,0.07) !important; }
+          [data-docsheet-theme="light"] .ds-input         { background: rgba(0,0,0,0.03) !important; border-color: rgba(0,0,0,0.10) !important; color: rgba(0,0,0,0.85) !important; }
+          [data-docsheet-theme="light"] .ds-btn-ghost     { color: rgba(0,0,0,0.60) !important; }
+          [data-docsheet-theme="light"] .ds-btn-ghost:hover { background: rgba(0,0,0,0.06) !important; }
+          [data-docsheet-theme="light"] .ds-text-primary  { color: rgba(0,0,0,0.88) !important; }
+          [data-docsheet-theme="light"] .ds-text-secondary{ color: rgba(0,0,0,0.55) !important; }
+          [data-docsheet-theme="light"] .ds-text-muted    { color: rgba(0,0,0,0.40) !important; }
+          [data-docsheet-theme="light"] .ds-cell-sel      { background: rgba(16,185,129,0.12) !important; }
+          [data-docsheet-theme="light"] .ds-tab-active    { background: rgba(5,150,105,0.12) !important; border-color: rgba(5,150,105,0.30) !important; color: #059669 !important; }
+          [data-docsheet-theme="light"] .ds-tab-inactive  { background: rgba(0,0,0,0.04) !important; border-color: rgba(0,0,0,0.08) !important; color: rgba(0,0,0,0.58) !important; }
+          [data-docsheet-theme="light"] .ds-save-btn      { background: rgba(5,150,105,0.12) !important; border-color: rgba(5,150,105,0.28) !important; color: #059669 !important; }
+          [data-docsheet-theme="light"] .ds-share-btn     { background: rgba(59,130,246,0.12) !important; border-color: rgba(59,130,246,0.28) !important; color: #2563eb !important; }
+          [data-docsheet-theme="light"] .ds-ctx-hdr       { background: rgba(0,0,0,0.04) !important; color: rgba(0,0,0,0.45) !important; border-color: rgba(0,0,0,0.08) !important; }
+          [data-docsheet-theme="light"] .ds-row-num       { background: #f0f2f5 !important; color: rgba(0,0,0,0.38) !important; border-color: rgba(0,0,0,0.08) !important; }
+          [data-docsheet-theme="light"] .ds-fx-badge      { background: rgba(0,0,0,0.06) !important; color: rgba(0,0,0,0.55) !important; }
+          [data-docsheet-theme="light"] .ds-toolbar-divider { background: rgba(0,0,0,0.10) !important; }
+          [data-docsheet-theme="light"] .ds-cell-ref-box  { background: rgba(0,0,0,0.04) !important; border-color: rgba(0,0,0,0.09) !important; color: rgba(0,0,0,0.68) !important; }
+          [data-docsheet-theme="light"] .ds-ai-float      { background: rgba(255,255,255,0.98) !important; border-color: rgba(0,0,0,0.09) !important; box-shadow: 0 20px 48px rgba(0,0,0,0.14) !important; }
+          [data-docsheet-theme="light"] .ds-ai-float-fab  { background: #059669 !important; box-shadow: 0 4px 20px rgba(5,150,105,0.35) !important; }
+          [data-docsheet-theme="light"] .ds-ai-float * { color: inherit; }
+          [data-docsheet-theme="light"] .ds-ai-float .ds-ai-hdr-title { color: rgba(0,0,0,0.85) !important; }
+          [data-docsheet-theme="light"] .ds-ai-float .ds-ai-msg { color: rgba(0,0,0,0.78) !important; }
+          [data-docsheet-theme="light"] .ds-ai-float textarea { background: rgba(0,0,0,0.03) !important; border-color: rgba(0,0,0,0.10) !important; color: rgba(0,0,0,0.80) !important; }
+          [data-docsheet-theme="light"] .ds-ai-float textarea::placeholder { color: rgba(0,0,0,0.35) !important; }
+          /* Toolbar in light */
+          [data-docsheet-theme="light"] .ds-toolbar-scroll { background: rgba(255,255,255,0.95) !important; border-color: rgba(0,0,0,0.07) !important; }
+          [data-docsheet-theme="light"] .ds-toolbar-scroll button { color: rgba(0,0,0,0.65) !important; }
+          [data-docsheet-theme="light"] .ds-toolbar-scroll button:hover { background: rgba(0,0,0,0.06) !important; }
+          /* Formula bar in light */
+          [data-docsheet-theme="light"] .ds-formula-bar { border-color: rgba(0,0,0,0.08) !important; }
+          [data-docsheet-theme="light"] .ds-formula-bar input { color: rgba(0,0,0,0.85) !important; background: transparent !important; }
+          /* Menu bar in light */
+          [data-docsheet-theme="light"] .ds-menu-bar { border-color: rgba(0,0,0,0.08) !important; }
+          [data-docsheet-theme="light"] .ds-menu-bar button { color: rgba(0,0,0,0.62) !important; }
+          [data-docsheet-theme="light"] .ds-menu-bar button:hover { background: rgba(0,0,0,0.06) !important; color: rgba(0,0,0,0.85) !important; }
+          [data-docsheet-theme="light"] .ds-menu-bar button[style*="rgba(255,255,255,0.09)"] { background: rgba(0,0,0,0.06) !important; color: rgba(0,0,0,0.88) !important; }
+          /* AI quick-access btn keeps emerald in light */
+          [data-docsheet-theme="light"] .ds-menu-bar button[style*="#34d399"] { color: #059669 !important; background: rgba(5,150,105,0.10) !important; border-color: rgba(5,150,105,0.22) !important; }
+          /* Header input in light mode */
+          [data-docsheet-theme="light"] .ds-header input { color: rgba(0,0,0,0.85) !important; background: rgba(0,0,0,0.03) !important; border-color: rgba(0,0,0,0.09) !important; }
+          [data-docsheet-theme="light"] .ds-header input::placeholder { color: rgba(0,0,0,0.35) !important; }
+          /* Sheet tabs in light */
+          [data-docsheet-theme="light"] .ds-tabs-bar button { color: rgba(0,0,0,0.58) !important; }
+          /* Number format select trigger in light */
+          [data-docsheet-theme="light"] [data-radix-select-trigger] { background: rgba(0,0,0,0.03) !important; border-color: rgba(0,0,0,0.10) !important; color: rgba(0,0,0,0.72) !important; }
+          /* Add Column/Row buttons in light */
+          [data-docsheet-theme="light"] .ds-toolbar-scroll [class*="rounded-lg"][class*="px-2"] { background: rgba(0,0,0,0.03) !important; border-color: rgba(0,0,0,0.10) !important; color: rgba(0,0,0,0.65) !important; }
+          /* Insights/AI icons row in light */
+          [data-docsheet-theme="light"] .ds-btn-ghost svg { opacity: 0.65; }
+
+          /* ─ FAB pulse ring ─ */
+          @keyframes ds-fab-pulse {
+            0%   { box-shadow: 0 0 0 0 rgba(16,185,129,0.45), 0 4px 22px rgba(16,185,129,0.42); }
+            70%  { box-shadow: 0 0 0 10px rgba(16,185,129,0), 0 4px 22px rgba(16,185,129,0.42); }
+            100% { box-shadow: 0 0 0 0 rgba(16,185,129,0), 0 4px 22px rgba(16,185,129,0.42); }
+          }
+          .ds-ai-float-fab:not([data-open]) { animation: ds-fab-pulse 2.4s ease-out infinite; }
+          /* ─ AI float panel slide-in ─ */
+          @keyframes ds-float-in {
+            from { opacity: 0; transform: translateY(12px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+          }
+          .ds-ai-float { animation: ds-float-in 0.18s ease-out; }
+          /* ─ Mobile responsive ─ */
+          @media (max-width: 640px) {
+            .ds-toolbar-scroll  { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+            .ds-toolbar-scroll::-webkit-scrollbar { display: none; }
+            .ds-menu-bar        { overflow-x: auto; scrollbar-width: none; }
+            .ds-menu-bar::-webkit-scrollbar { display: none; }
+            .ds-formula-bar     { flex-wrap: wrap; }
+            .ds-formula-functions { display: none !important; }
+            .ds-header-actions  { gap: 6px; }
+          }
+        `}</style>
         <Dialog open={shortcutsOpen} onOpenChange={setShortcutsOpen}>
-          <DialogContent className="max-w-xl rounded-2xl border border-slate-200 bg-white/95 backdrop-blur-xl">
+          <DialogContent className="max-w-xl rounded-2xl border bg-[var(--ds-bg)] backdrop-blur-xl" style={{ borderColor: 'var(--ds-s1)', color: 'var(--ds-c1)' }}>
             <DialogHeader>
               <DialogTitle>DocSheet keyboard shortcuts</DialogTitle>
               <DialogDescription>Fast navigation and editing, Sheets-style.</DialogDescription>
             </DialogHeader>
-            <div className="mt-2 grid gap-2 text-sm text-slate-700">
-              <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3">
+            <div className="mt-2 grid gap-2 text-sm" style={{ color: 'var(--ds-c2)' }}>
+              <div className="flex items-center justify-between rounded-xl px-4 py-3" style={{ border: '1px solid var(--ds-s2)', background: 'var(--ds-s4)' }}>
                 <span>Undo</span>
-                <span className="font-mono text-xs text-slate-600">Ctrl/Cmd + Z</span>
+                <span className="font-mono text-xs" style={{ color: 'var(--ds-c4)' }}>Ctrl/Cmd + Z</span>
               </div>
-              <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3">
+              <div className="flex items-center justify-between rounded-xl px-4 py-3" style={{ border: '1px solid var(--ds-s2)', background: 'var(--ds-s4)' }}>
                 <span>Redo</span>
-                <span className="font-mono text-xs text-slate-600">Shift + Ctrl/Cmd + Z</span>
+                <span className="font-mono text-xs" style={{ color: 'var(--ds-c4)' }}>Shift + Ctrl/Cmd + Z</span>
               </div>
-              <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3">
+              <div className="flex items-center justify-between rounded-xl px-4 py-3" style={{ border: '1px solid var(--ds-s2)', background: 'var(--ds-s4)' }}>
                 <span>Move selection</span>
-                <span className="font-mono text-xs text-slate-600">Arrow keys</span>
+                <span className="font-mono text-xs" style={{ color: 'var(--ds-c4)' }}>Arrow keys</span>
               </div>
-              <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3">
+              <div className="flex items-center justify-between rounded-xl px-4 py-3" style={{ border: '1px solid var(--ds-s2)', background: 'var(--ds-s4)' }}>
                 <span>Extend selection</span>
-                <span className="font-mono text-xs text-slate-600">Shift + Arrow</span>
+                <span className="font-mono text-xs" style={{ color: 'var(--ds-c4)' }}>Shift + Arrow</span>
               </div>
-              <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3">
+              <div className="flex items-center justify-between rounded-xl px-4 py-3" style={{ border: '1px solid var(--ds-s2)', background: 'var(--ds-s4)' }}>
                 <span>Copy range</span>
-                <span className="font-mono text-xs text-slate-600">Ctrl/Cmd + C</span>
+                <span className="font-mono text-xs" style={{ color: 'var(--ds-c4)' }}>Ctrl/Cmd + C</span>
               </div>
-              <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3">
+              <div className="flex items-center justify-between rounded-xl px-4 py-3" style={{ border: '1px solid var(--ds-s2)', background: 'var(--ds-s4)' }}>
                 <span>Paste</span>
-                <span className="font-mono text-xs text-slate-600">Ctrl/Cmd + V</span>
+                <span className="font-mono text-xs" style={{ color: 'var(--ds-c4)' }}>Ctrl/Cmd + V</span>
               </div>
-              <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3">
+              <div className="flex items-center justify-between rounded-xl px-4 py-3" style={{ border: '1px solid var(--ds-s2)', background: 'var(--ds-s4)' }}>
                 <span>Next cell / previous cell</span>
-                <span className="font-mono text-xs text-slate-600">Tab / Shift + Tab</span>
+                <span className="font-mono text-xs" style={{ color: 'var(--ds-c4)' }}>Tab / Shift + Tab</span>
               </div>
-              <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3">
+              <div className="flex items-center justify-between rounded-xl px-4 py-3" style={{ border: '1px solid var(--ds-s2)', background: 'var(--ds-s4)' }}>
                 <span>Next row</span>
-                <span className="font-mono text-xs text-slate-600">Enter</span>
+                <span className="font-mono text-xs" style={{ color: 'var(--ds-c4)' }}>Enter</span>
               </div>
             </div>
           </DialogContent>
         </Dialog>
 
         <Dialog open={findReplaceOpen} onOpenChange={setFindReplaceOpen}>
-          <DialogContent className="max-w-xl rounded-2xl border border-slate-200 bg-white/95 backdrop-blur-xl">
+          <DialogContent className="max-w-xl rounded-2xl border bg-[var(--ds-bg)] backdrop-blur-xl" style={{ borderColor: 'var(--ds-s1)', color: 'var(--ds-c1)' }}>
             <DialogHeader>
               <DialogTitle>Find and replace</DialogTitle>
               <DialogDescription>Search inside the active sheet and replace safely.</DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
               <div className="grid gap-2">
-                <label className="text-xs font-semibold text-slate-700">Find</label>
-                <Input value={findText} onChange={(event) => setFindText(event.target.value)} placeholder="Text to find" />
+                <label className="text-xs font-semibold" style={{ color: 'var(--ds-c3)' }}>Find</label>
+                <Input value={findText} onChange={(event) => setFindText(event.target.value)} placeholder="Text to find" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c1)' }} />
               </div>
               <div className="grid gap-2">
-                <label className="text-xs font-semibold text-slate-700">Replace with</label>
-                <Input value={replaceText} onChange={(event) => setReplaceText(event.target.value)} placeholder="Replacement text" />
+                <label className="text-xs font-semibold" style={{ color: 'var(--ds-c3)' }}>Replace with</label>
+                <Input value={replaceText} onChange={(event) => setReplaceText(event.target.value)} placeholder="Replacement text" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c1)' }} />
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <Button type="button" variant="outline" onClick={() => runFindReplace('find')} disabled={!activeSheet || !findText.trim()}>
+                <button type="button" className="h-9 rounded-lg px-3 text-sm font-medium transition disabled:opacity-40" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c2)' }} onClick={() => runFindReplace('find')} disabled={!activeSheet || !findText.trim()}>
                   Find next
-                </Button>
-                <Button type="button" variant="outline" onClick={() => runFindReplace('replace-one')} disabled={!activeSheet || !findText.trim()}>
+                </button>
+                <button type="button" className="h-9 rounded-lg px-3 text-sm font-medium transition disabled:opacity-40" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c2)' }} onClick={() => runFindReplace('replace-one')} disabled={!activeSheet || !findText.trim()}>
                   Replace one
-                </Button>
-                <Button type="button" onClick={() => runFindReplace('replace-all')} disabled={!activeSheet || !findText.trim()}>
+                </button>
+                <button type="button" className="h-9 rounded-lg px-3 text-sm font-medium transition disabled:opacity-40" style={{ background: 'rgba(16,185,129,0.18)', border: '1px solid rgba(16,185,129,0.35)', color: '#34d399' }} onClick={() => runFindReplace('replace-all')} disabled={!activeSheet || !findText.trim()}>
                   Replace all
-                </Button>
+                </button>
               </div>
-              <p className="text-xs leading-5 text-slate-500">Tip: Works on raw cell text (including formulas). Use undo if needed.</p>
+              <p className="text-xs leading-5" style={{ color: 'var(--ds-c4)' }}>Tip: Works on raw cell text (including formulas). Use undo if needed.</p>
             </div>
           </DialogContent>
         </Dialog>
@@ -2004,93 +2227,96 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
           <div
             data-docsheet-contextmenu
             ref={contextMenuRef}
-            className="fixed z-[60] w-[280px] max-h-[70vh] overflow-auto rounded-2xl border border-slate-200 bg-white/95 shadow-[0_22px_55px_rgba(15,23,42,0.16)] backdrop-blur-xl"
+            className="ds-ctx-menu fixed z-[60] w-[280px] max-h-[70vh] overflow-auto rounded-xl backdrop-blur-xl"
             style={{
+              border: '1px solid var(--ds-s1)',
+              background: 'var(--ds-bg)',
+              boxShadow: '0 22px 55px rgba(0,0,0,0.6)',
               left: contextMenuPosition.left,
               top: contextMenuPosition.top,
             }}
           >
-            <div className="border-b border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+            <div className="ds-ctx-hdr px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ borderBottom: '1px solid var(--ds-s2)', background: 'var(--ds-s4)', color: 'var(--ds-c4)' }}>
               Quick actions
             </div>
             <div className="p-1">
-              <button type="button" className="w-full rounded-xl px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => { setEditingCellKey(getCellKey(contextMenu.rowId, contextMenu.columnId)); setContextMenu(null); }}>
+              <button type="button" className="ds-menu-item w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => { setEditingCellKey(getCellKey(contextMenu.rowId, contextMenu.columnId)); setContextMenu(null); }}>
                 Edit cell (F2)
               </button>
-              <button type="button" className="w-full rounded-xl px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => { void copySelectionToClipboard(); setContextMenu(null); }}>
+              <button type="button" className="ds-menu-item w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => { void copySelectionToClipboard(); setContextMenu(null); }}>
                 Copy
               </button>
-              <button type="button" className="w-full rounded-xl px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => { void pasteClipboardIntoSheet(); setContextMenu(null); }}>
+              <button type="button" className="ds-menu-item w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => { void pasteClipboardIntoSheet(); setContextMenu(null); }}>
                 Paste
               </button>
-              <button type="button" className="w-full rounded-xl px-3 py-2 text-left text-sm text-rose-700 hover:bg-rose-50" onClick={() => { clearContentsForRange(); setContextMenu(null); }}>
+              <button type="button" className="ds-menu-item w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'rgba(251,113,133,0.85)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='rgba(251,113,133,0.08)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => { clearContentsForRange(); setContextMenu(null); }}>
                 Clear contents
               </button>
-              <button type="button" className="w-full rounded-xl px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => { openPanel('comments'); setContextMenu(null); }}>
+              <button type="button" className="ds-menu-item w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => { openPanel('comments'); setContextMenu(null); }}>
                 Add comment
               </button>
 
-              <div className="my-1 h-px bg-slate-200" />
+              <div className="ds-separator my-1 h-px" style={{ background: 'var(--ds-s2)' }} />
 
-              <div className="px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Formulas</div>
+              <div className="px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--ds-c4)' }}>Formulas</div>
               <div className="grid grid-cols-2 gap-1 px-1 pb-1">
-                <button type="button" className="rounded-xl px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => { applyAggregateFormulaToSelection('SUM'); setContextMenu(null); }}>
+                <button type="button" className="ds-menu-item rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => { applyAggregateFormulaToSelection('SUM'); setContextMenu(null); }}>
                   SUM
                 </button>
-                <button type="button" className="rounded-xl px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => { applyAggregateFormulaToSelection('AVERAGE'); setContextMenu(null); }}>
+                <button type="button" className="ds-menu-item rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => { applyAggregateFormulaToSelection('AVERAGE'); setContextMenu(null); }}>
                   AVERAGE
                 </button>
-                <button type="button" className="rounded-xl px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => { applyAggregateFormulaToSelection('MIN'); setContextMenu(null); }}>
+                <button type="button" className="ds-menu-item rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => { applyAggregateFormulaToSelection('MIN'); setContextMenu(null); }}>
                   MIN
                 </button>
-                <button type="button" className="rounded-xl px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => { applyAggregateFormulaToSelection('MAX'); setContextMenu(null); }}>
+                <button type="button" className="ds-menu-item rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => { applyAggregateFormulaToSelection('MAX'); setContextMenu(null); }}>
                   MAX
                 </button>
-                <button type="button" className="rounded-xl px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => { applyAggregateFormulaToSelection('COUNT'); setContextMenu(null); }}>
+                <button type="button" className="ds-menu-item rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => { applyAggregateFormulaToSelection('COUNT'); setContextMenu(null); }}>
                   COUNT
                 </button>
-                <button type="button" className="rounded-xl px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => { setAiMode('change'); openPanel('ai'); setAiInstruction('Recommend and apply the best formulas for this sheet (totals, percent, gaps, and a summary sheet).'); setContextMenu(null); }}>
+                <button type="button" className="ds-menu-item rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => { setAiMode('change'); openPanel('ai'); setAiInstruction('Recommend and apply the best formulas for this sheet (totals, percent, gaps, and a summary sheet).'); setContextMenu(null); }}>
                   Formula Coach
                 </button>
               </div>
 
-              <div className="my-1 h-px bg-slate-200" />
+              <div className="ds-separator my-1 h-px" style={{ background: 'var(--ds-s2)' }} />
 
-              <div className="px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Fill</div>
+              <div className="px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--ds-c4)' }}>Fill</div>
               <div className="grid grid-cols-2 gap-1 px-1 pb-1">
-                <button type="button" className="rounded-xl px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => { fillDown(); setContextMenu(null); }}>
+                <button type="button" className="ds-menu-item rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => { fillDown(); setContextMenu(null); }}>
                   Fill down
                 </button>
-                <button type="button" className="rounded-xl px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => { fillRight(); setContextMenu(null); }}>
+                <button type="button" className="ds-menu-item rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => { fillRight(); setContextMenu(null); }}>
                   Fill right
                 </button>
               </div>
 
-              <div className="my-1 h-px bg-slate-200" />
+              <div className="ds-separator my-1 h-px" style={{ background: 'var(--ds-s2)' }} />
 
-              <div className="px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Row / Column</div>
-              <button type="button" className="w-full rounded-xl px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => { insertRowBelowSelection(); setContextMenu(null); }}>
+              <div className="px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--ds-c4)' }}>Row / Column</div>
+              <button type="button" className="ds-menu-item w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => { insertRowBelowSelection(); setContextMenu(null); }}>
                 Insert row
               </button>
-              <button type="button" className="w-full rounded-xl px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => { insertColumnRightOfSelection(); setContextMenu(null); }}>
+              <button type="button" className="ds-menu-item w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => { insertColumnRightOfSelection(); setContextMenu(null); }}>
                 Insert column
               </button>
-              <button type="button" className="w-full rounded-xl px-3 py-2 text-left text-sm text-rose-700 hover:bg-rose-50" onClick={() => { deleteSelectedRows(); setContextMenu(null); }}>
+              <button type="button" className="ds-menu-item w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'rgba(251,113,133,0.85)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='rgba(251,113,133,0.08)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => { deleteSelectedRows(); setContextMenu(null); }}>
                 Delete row(s)
               </button>
-              <button type="button" className="w-full rounded-xl px-3 py-2 text-left text-sm text-rose-700 hover:bg-rose-50" onClick={() => { deleteSelectedColumns(); setContextMenu(null); }}>
+              <button type="button" className="ds-menu-item w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'rgba(251,113,133,0.85)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='rgba(251,113,133,0.08)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => { deleteSelectedColumns(); setContextMenu(null); }}>
                 Delete column(s)
               </button>
 
-              <div className="my-1 h-px bg-slate-200" />
+              <div className="ds-separator my-1 h-px" style={{ background: 'var(--ds-s2)' }} />
 
-              <div className="px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Format</div>
+              <div className="px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--ds-c4)' }}>Format</div>
               <div className="grid grid-cols-3 gap-1 px-1 pb-1">
-                <button type="button" className="rounded-xl px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => { toggleFormatFlag('bold'); setContextMenu(null); }}>Bold</button>
-                <button type="button" className="rounded-xl px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => { toggleFormatFlag('italic'); setContextMenu(null); }}>Italic</button>
-                <button type="button" className="rounded-xl px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => { toggleFormatFlag('underline'); setContextMenu(null); }}>Underline</button>
+                <button type="button" className="ds-menu-item rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => { toggleFormatFlag('bold'); setContextMenu(null); }}>Bold</button>
+                <button type="button" className="ds-menu-item rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => { toggleFormatFlag('italic'); setContextMenu(null); }}>Italic</button>
+                <button type="button" className="ds-menu-item rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => { toggleFormatFlag('underline'); setContextMenu(null); }}>Underline</button>
               </div>
-              <button type="button" className="w-full rounded-xl px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => { clearFormattingForRange(); setContextMenu(null); }}>
+              <button type="button" className="ds-menu-item w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => { clearFormattingForRange(); setContextMenu(null); }}>
                 Clear formatting
               </button>
             </div>
@@ -2105,8 +2331,8 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
           onChange={(event) => void importWorkbook(event)}
         />
 
-        <div className="sticky top-0 z-40 border-b border-slate-200/70 bg-white/75 backdrop-blur-xl">
-          <div className="flex items-center gap-3 px-3 py-2 sm:px-4">
+        <div className="ds-header sticky top-0 z-40 backdrop-blur-xl" style={{ borderBottom: '1px solid var(--ds-s2)', background: 'var(--ds-bg)', boxShadow: '0 1px 0 var(--ds-s4), 0 4px 24px rgba(0,0,0,0.3)' }}>
+          <div className="flex items-center gap-2 px-3 py-2 sm:px-4 sm:gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-[0.9rem] bg-emerald-500 text-white shadow-sm">
               <FileSpreadsheet className="h-[18px] w-[18px]" />
             </div>
@@ -2115,14 +2341,14 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
               <Input
                 value={workbook.title}
                 onChange={(event) => setWorkbook((current) => ({ ...current, title: event.target.value }))}
-                className="h-9 w-full max-w-[520px] truncate rounded-full border-slate-200 bg-white/80 text-sm font-medium text-slate-900 shadow-none focus-visible:ring-2 focus-visible:ring-sky-200"
+                className="h-9 w-full max-w-[520px] truncate rounded-full text-sm font-medium shadow-none focus-visible:ring-2 focus-visible:ring-emerald-500/50" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c1)' }}
                 placeholder="Untitled spreadsheet"
               />
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="hidden h-9 w-9 rounded-full text-slate-600 hover:bg-slate-100 sm:inline-flex"
+                className="hidden h-9 w-9 rounded-full sm:inline-flex" style={{ color: 'var(--ds-c4)' }}
                 onClick={() => setStatusMessage('Starred workbooks are coming next.')}
                 aria-label="Star workbook"
               >
@@ -2130,50 +2356,89 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
               </Button>
             </div>
 
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="hidden h-9 rounded-full border-slate-200 bg-white/80 px-3 text-sm text-slate-800 shadow-none hover:bg-slate-50 sm:inline-flex"
-                onClick={() => openPanel('history')}
-              >
-                Open
-              </Button>
-              <div className="hidden items-center text-xs text-slate-500 sm:flex">
+            <div className="ds-header-actions flex flex-wrap items-center justify-end gap-2">
+              {/* Auto-save status */}
+              <div className="hidden items-center text-xs sm:flex ds-text-muted" style={{ color: 'var(--ds-c4)' }}>
                 {saving ? 'Saving…' : isDirty ? `Auto-save in ${Math.ceil((autosaveCountdownMs || 0) / 1000)}s` : 'Saved'}
               </div>
+              {/* Import */}
               <Button
                 type="button"
                 variant="outline"
-                className="h-9 rounded-full border-slate-200 bg-white/80 px-3 text-sm text-slate-800 shadow-none hover:bg-slate-50"
+                className="h-8 rounded-lg px-2.5 text-xs shadow-none hidden sm:inline-flex" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c2)' }}
                 onClick={() => fileInputRef.current?.click()}
                 disabled={importing}
               >
-                {importing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                <span className="hidden sm:inline">Import</span>
+                {importing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                <span className="ml-1.5">Import</span>
               </Button>
+              {/* Save */}
               <Button
                 type="button"
-                className="h-9 rounded-full bg-slate-950 px-4 text-sm text-white shadow-none hover:bg-slate-900"
+                className="ds-save-btn h-8 rounded-lg px-3 text-xs shadow-none" style={{ background: 'rgba(16,185,129,0.18)', border: '1px solid rgba(16,185,129,0.35)', color: '#34d399' }}
                 onClick={saveWorkbook}
                 disabled={saving}
               >
-                <Save className="mr-2 h-4 w-4" />
-                <span className="hidden sm:inline">{saving ? 'Saving' : 'Save'}</span>
+                {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                <span className="ml-1.5 hidden sm:inline">{saving ? 'Saving' : 'Save'}</span>
               </Button>
+              {/* Share */}
               <Button
                 type="button"
-                className="h-9 rounded-full bg-sky-600 px-4 text-sm text-white shadow-none hover:bg-sky-700"
+                className="ds-share-btn h-8 rounded-lg px-3 text-xs shadow-none" style={{ background: 'rgba(59,130,246,0.20)', border: '1px solid rgba(59,130,246,0.40)', color: '#60a5fa' }}
                 onClick={() => openPanel('share')}
               >
-                <Link2 className="mr-2 h-4 w-4" />
-                <span className="hidden sm:inline">Share</span>
+                <Link2 className="h-3.5 w-3.5" />
+                <span className="ml-1.5 hidden sm:inline">Share</span>
               </Button>
+              {/* Live collab */}
+              <button
+                type="button"
+                onClick={() => setCollabOpen((v) => !v)}
+                className="h-8 rounded-lg px-2.5 text-xs font-medium flex items-center gap-1.5 transition"
+                style={{
+                  background: collabOpen ? 'rgba(139,92,246,0.22)' : 'rgba(139,92,246,0.10)',
+                  border: `1px solid ${collabOpen ? 'rgba(139,92,246,0.55)' : 'rgba(139,92,246,0.28)'}`,
+                  color: collabOpen ? '#c4b5fd' : '#a78bfa',
+                }}
+                title="Live collaboration"
+              >
+                <Users className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Live</span>
+                {collabEngine.users.length > 1 && (
+                  <span style={{ background: 'rgba(139,92,246,0.3)', color: '#c4b5fd', borderRadius: '9999px', fontSize: 10, padding: '0 5px', fontWeight: 700, minWidth: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {collabEngine.users.length}
+                  </span>
+                )}
+              </button>
+              {/* Theme toggle */}
+              <button
+                type="button"
+                onClick={() => setTheme((t) => t === 'dark' ? 'light' : 'dark')}
+                className="h-8 w-8 rounded-lg flex items-center justify-center transition ds-btn-ghost"
+                style={{ color: 'var(--ds-c3)', border: '1px solid var(--ds-s2)', background: 'var(--ds-s4)' }}
+                title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {theme === 'dark' ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+              </button>
             </div>
           </div>
 
-          <div data-docsheet-topmenu-root className="flex flex-wrap items-center gap-2 border-t border-slate-200/70 px-3 py-2 text-xs text-slate-600 sm:px-4">
-            <div className="flex items-center gap-1">
+          <div data-docsheet-topmenu-root className="ds-menu-bar flex items-center gap-1 px-3 py-1.5 text-xs sm:px-4 overflow-x-auto" style={{ borderTop: '1px solid var(--ds-s2)', color: 'var(--ds-c3)' }}>
+            {/* ── Menu items ── */}
+            <div className="flex items-center gap-0.5 shrink-0">
+              {/* Dedicated AI quick-access button */}
+              <button
+                type="button"
+                className="rounded-md px-2.5 py-1.5 text-xs font-semibold transition whitespace-nowrap flex items-center gap-1.5 mr-1"
+                style={{ color: '#34d399', background: 'rgba(16,185,129,0.10)', border: '1px solid rgba(16,185,129,0.22)' }}
+                onClick={() => { setAiFloatOpen((v) => !v); setTopMenuOpen(null); setMenuAnchorPos(null); }}
+                title="Open DocSheet AI assistant"
+              >
+                <BrainCircuit className="h-3 w-3" />
+                AI
+              </button>
+              <div className="ds-toolbar-divider h-4 w-px shrink-0 mr-1" style={{ background: 'var(--ds-s1)' }} />
               {([
                 { id: 'file', label: 'File' },
                 { id: 'edit', label: 'Edit' },
@@ -2184,161 +2449,249 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
                 { id: 'tools', label: 'Tools' },
                 { id: 'help', label: 'Help' },
               ] as Array<{ id: NonNullable<DocSheetTopMenu>; label: string }>).map((item) => (
-                <div key={item.id} className="relative">
+                <div key={item.id}>
                   <button
                     type="button"
-                    className={`rounded-md px-2 py-1 transition hover:bg-slate-100 ${topMenuOpen === item.id ? 'bg-slate-100 text-slate-900' : ''}`}
-                    onClick={() => setTopMenuOpen((current) => (current === item.id ? null : item.id))}
+                    className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition whitespace-nowrap ${topMenuOpen === item.id ? 'bg-[var(--ds-s1)] text-white' : 'text-[var(--ds-c3)] hover:bg-[var(--ds-s3)] hover:text-white'}`}
+                    onClick={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      if (topMenuOpen === item.id) {
+                        setTopMenuOpen(null);
+                        setMenuAnchorPos(null);
+                      } else {
+                        setTopMenuOpen(item.id);
+                        setMenuAnchorPos({ top: rect.bottom + 4, left: rect.left });
+                      }
+                    }}
                   >
                     {item.label}
                   </button>
 
-                  {topMenuOpen === item.id ? (
-                    <div className="absolute left-0 top-[calc(100%+6px)] z-50 w-64 rounded-xl border border-slate-200 bg-white/95 p-1 shadow-[0_18px_40px_rgba(15,23,42,0.10)] backdrop-blur-xl">
+                  {topMenuOpen === item.id && menuAnchorPos ? (
+                    <div className="ds-menu-drop fixed z-[9999] min-w-[240px] max-w-[92vw] rounded-xl backdrop-blur-xl" style={{ top: menuAnchorPos.top, left: Math.min(menuAnchorPos.left, window.innerWidth - 248), maxHeight: 'calc(100vh - ' + (menuAnchorPos.top + 12) + 'px)', overflowY: 'auto', border: '1px solid var(--ds-s1)', background: 'var(--ds-bg)', boxShadow: '0 20px 44px rgba(0,0,0,0.55)' }}>
                       {item.id === 'file' ? (
-                        <div className="space-y-1">
-                          <button type="button" className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => runMenuAction(createNewWorkbook)}>
-                            New workbook
+                        <div className="space-y-1 py-1">
+                          <div className="ds-menu-label px-3 pb-1 pt-0.5 text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'var(--ds-c5)' }}>Workbook</div>
+                          <button type="button" className="ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => runMenuAction(createNewWorkbook)}>
+                            <FileSpreadsheet className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.42 }} />
+                            <span className="flex-1">New workbook</span>
                           </button>
-                          <button type="button" className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => runMenuAction(() => openPanel('history'))}>
-                            Open saved workbook
+                          <button type="button" className="ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => runMenuAction(() => openPanel('history'))}>
+                            <Clock className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.42 }} />
+                            <span className="flex-1">Open saved workbook</span>
                           </button>
-                          <button type="button" className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => runMenuAction(() => fileInputRef.current?.click())}>
-                            Import (CSV/XLSX)
+                          <div className="ds-separator my-1 h-px" style={{ background: 'var(--ds-s2)' }} />
+                          <div className="ds-menu-label px-3 pb-1 pt-0.5 text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'var(--ds-c5)' }}>Import / Export</div>
+                          <button type="button" className="ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => runMenuAction(() => fileInputRef.current?.click())}>
+                            <Upload className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.42 }} />
+                            <span className="flex-1">Import (CSV/XLSX)</span>
                           </button>
-                          <div className="my-1 h-px bg-slate-200" />
-                          <button type="button" className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => runMenuAction(() => openPanel('export'))}>
-                            Export / Download
+                          <button type="button" className="ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => runMenuAction(() => openPanel('export'))}>
+                            <Download className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.42 }} />
+                            <span className="flex-1">Export / Download</span>
                           </button>
-                          <button type="button" className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => runMenuAction(() => openPanel('share'))}>
-                            Share
+                          <div className="ds-separator my-1 h-px" style={{ background: 'var(--ds-s2)' }} />
+                          <button type="button" className="ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => runMenuAction(() => openPanel('share'))}>
+                            <Link2 className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.42 }} />
+                            <span className="flex-1">Share</span>
                           </button>
                         </div>
                       ) : null}
 
                       {item.id === 'edit' ? (
-                        <div className="space-y-1">
-                          <button type="button" className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => runMenuAction(() => setFindReplaceOpen(true))}>
-                            Find / Replace
+                        <div className="space-y-1 py-1">
+                          <button type="button" className="ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => runMenuAction(() => setFindReplaceOpen(true))}>
+                            <Search className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.42 }} />
+                            <span className="flex-1">Find / Replace</span>
+                            <span className="text-[10px] font-mono" style={{ opacity: 0.30 }}>Ctrl+H</span>
                           </button>
-                          <div className="my-1 h-px bg-slate-200" />
-                          <button type="button" className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => runMenuAction(handleUndo)}>
-                            Undo
+                          <div className="ds-separator my-1 h-px" style={{ background: 'var(--ds-s2)' }} />
+                          <div className="ds-menu-label px-3 pb-1 pt-0.5 text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'var(--ds-c5)' }}>History</div>
+                          <button type="button" className="ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => runMenuAction(handleUndo)}>
+                            <Undo2 className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.42 }} />
+                            <span className="flex-1">Undo</span>
+                            <span className="text-[10px] font-mono" style={{ opacity: 0.30 }}>Ctrl+Z</span>
                           </button>
-                          <button type="button" className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => runMenuAction(handleRedo)}>
-                            Redo
+                          <button type="button" className="ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => runMenuAction(handleRedo)}>
+                            <Redo2 className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.42 }} />
+                            <span className="flex-1">Redo</span>
+                            <span className="text-[10px] font-mono" style={{ opacity: 0.30 }}>Ctrl+Shift+Z</span>
                           </button>
-                          <div className="my-1 h-px bg-slate-200" />
-                          <button type="button" className={`w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-slate-100 ${hasSelection ? 'text-slate-800' : 'cursor-not-allowed text-slate-400'}`} disabled={!hasSelection} onClick={() => runMenuAction(() => void copySelectionToClipboard())}>
-                            Copy
+                          <div className="ds-separator my-1 h-px" style={{ background: 'var(--ds-s2)' }} />
+                          <div className="ds-menu-label px-3 pb-1 pt-0.5 text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'var(--ds-c5)' }}>Clipboard</div>
+                          <button type="button" className={`ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors ${hasSelection ? '' : 'cursor-not-allowed opacity-30'}`} style={{ color: hasSelection ? 'var(--ds-c2)' : 'var(--ds-c5)' }} onMouseEnter={(e)=>{if(hasSelection)(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} disabled={!hasSelection} onClick={() => runMenuAction(() => void copySelectionToClipboard())}>
+                            <Copy className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.42 }} />
+                            <span className="flex-1">Copy</span>
+                            <span className="text-[10px] font-mono" style={{ opacity: 0.30 }}>Ctrl+C</span>
                           </button>
-                          <button type="button" className={`w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-slate-100 ${selectionFocus ? 'text-slate-800' : 'cursor-not-allowed text-slate-400'}`} disabled={!selectionFocus} onClick={() => runMenuAction(() => void pasteClipboardIntoSheet())}>
-                            Paste
+                          <button type="button" className={`ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors ${selectionFocus ? '' : 'cursor-not-allowed opacity-30'}`} style={{ color: selectionFocus ? 'var(--ds-c2)' : 'var(--ds-c5)' }} onMouseEnter={(e)=>{if(selectionFocus)(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} disabled={!selectionFocus} onClick={() => runMenuAction(() => void pasteClipboardIntoSheet())}>
+                            <RefreshCw className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.42 }} />
+                            <span className="flex-1">Paste</span>
+                            <span className="text-[10px] font-mono" style={{ opacity: 0.30 }}>Ctrl+V</span>
                           </button>
-                          <div className="my-1 h-px bg-slate-200" />
-                          <button type="button" className={`w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-slate-100 ${hasSelection ? 'text-slate-800' : 'cursor-not-allowed text-slate-400'}`} disabled={!hasSelection} onClick={() => runMenuAction(fillDown)}>
-                            Fill down
+                          <div className="ds-separator my-1 h-px" style={{ background: 'var(--ds-s2)' }} />
+                          <div className="ds-menu-label px-3 pb-1 pt-0.5 text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'var(--ds-c5)' }}>Fill</div>
+                          <button type="button" className={`ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors ${hasSelection ? '' : 'cursor-not-allowed opacity-30'}`} style={{ color: hasSelection ? 'var(--ds-c2)' : 'var(--ds-c5)' }} onMouseEnter={(e)=>{if(hasSelection)(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} disabled={!hasSelection} onClick={() => runMenuAction(fillDown)}>
+                            <Rows3 className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.42 }} />
+                            <span className="flex-1">Fill down</span>
+                            <span className="text-[10px] font-mono" style={{ opacity: 0.30 }}>Ctrl+D</span>
                           </button>
-                          <button type="button" className={`w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-slate-100 ${hasSelection ? 'text-slate-800' : 'cursor-not-allowed text-slate-400'}`} disabled={!hasSelection} onClick={() => runMenuAction(fillRight)}>
-                            Fill right
+                          <button type="button" className={`ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors ${hasSelection ? '' : 'cursor-not-allowed opacity-30'}`} style={{ color: hasSelection ? 'var(--ds-c2)' : 'var(--ds-c5)' }} onMouseEnter={(e)=>{if(hasSelection)(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} disabled={!hasSelection} onClick={() => runMenuAction(fillRight)}>
+                            <AlignRight className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.42 }} />
+                            <span className="flex-1">Fill right</span>
+                            <span className="text-[10px] font-mono" style={{ opacity: 0.30 }}>Ctrl+R</span>
                           </button>
-                          <div className="my-1 h-px bg-slate-200" />
-                          <button type="button" className={`w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-slate-100 ${hasSelection ? 'text-rose-700' : 'cursor-not-allowed text-slate-400'}`} disabled={!hasSelection} onClick={() => runMenuAction(deleteSelectedRows)}>
-                            Delete row(s)
+                          <div className="ds-separator my-1 h-px" style={{ background: 'var(--ds-s2)' }} />
+                          <div className="ds-menu-label px-3 pb-1 pt-0.5 text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'rgba(251,113,133,0.45)' }}>Delete</div>
+                          <button type="button" className={`ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors ${hasSelection ? '' : 'cursor-not-allowed opacity-30'}`} style={{ color: hasSelection ? 'rgba(251,113,133,0.85)' : 'var(--ds-c5)' }} onMouseEnter={(e)=>{if(hasSelection)(e.currentTarget as HTMLButtonElement).style.background='rgba(251,113,133,0.08)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} disabled={!hasSelection} onClick={() => runMenuAction(deleteSelectedRows)}>
+                            <Trash2 className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.55, color: 'rgba(251,113,133,0.85)' }} />
+                            <span className="flex-1">Delete row(s)</span>
                           </button>
-                          <button type="button" className={`w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-slate-100 ${hasSelection ? 'text-rose-700' : 'cursor-not-allowed text-slate-400'}`} disabled={!hasSelection} onClick={() => runMenuAction(deleteSelectedColumns)}>
-                            Delete column(s)
+                          <button type="button" className={`ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors ${hasSelection ? '' : 'cursor-not-allowed opacity-30'}`} style={{ color: hasSelection ? 'rgba(251,113,133,0.85)' : 'var(--ds-c5)' }} onMouseEnter={(e)=>{if(hasSelection)(e.currentTarget as HTMLButtonElement).style.background='rgba(251,113,133,0.08)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} disabled={!hasSelection} onClick={() => runMenuAction(deleteSelectedColumns)}>
+                            <Trash2 className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.55, color: 'rgba(251,113,133,0.85)' }} />
+                            <span className="flex-1">Delete column(s)</span>
                           </button>
                         </div>
                       ) : null}
 
                       {item.id === 'view' ? (
-                        <div className="space-y-1">
-                          <button type="button" className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => runMenuAction(toggleFreezeColumnA)}>
-                            {activeSheet?.frozenColumnCount === 1 ? 'Unfreeze column A' : 'Freeze column A'}
+                        <div className="space-y-1 py-1">
+                          <div className="ds-menu-label px-3 pb-1 pt-0.5 text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'var(--ds-c5)' }}>Layout</div>
+                          <button type="button" className="ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => runMenuAction(toggleFreezeColumnA)}>
+                            <SlidersHorizontal className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.42 }} />
+                            <span className="flex-1">{activeSheet?.frozenColumnCount === 1 ? 'Unfreeze column A' : 'Freeze column A'}</span>
                           </button>
-                          <div className="my-1 h-px bg-slate-200" />
-                          <button type="button" className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => runMenuAction(() => openPanel('insights'))}>
-                            Insights panel
+                          <div className="ds-separator my-1 h-px" style={{ background: 'var(--ds-s2)' }} />
+                          <div className="ds-menu-label px-3 pb-1 pt-0.5 text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'var(--ds-c5)' }}>Panels</div>
+                          <button type="button" className="ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => runMenuAction(() => openPanel('insights'))}>
+                            <BarChart3 className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.42 }} />
+                            <span className="flex-1">Insights panel</span>
                           </button>
-                          <button type="button" className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => runMenuAction(() => openPanel('ai'))}>
-                            AI Studio panel
+                          <button type="button" className="ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => runMenuAction(() => openPanel('ai'))}>
+                            <BrainCircuit className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.42 }} />
+                            <span className="flex-1">AI Studio panel</span>
                           </button>
-                          <button type="button" className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => runMenuAction(() => setStudioPanel('none'))}>
-                            Hide side panel
+                          <button type="button" className="ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => runMenuAction(() => setStudioPanel('none'))}>
+                            <Eye className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.42 }} />
+                            <span className="flex-1">Hide side panel</span>
                           </button>
                         </div>
                       ) : null}
 
                       {item.id === 'insert' ? (
-                        <div className="space-y-1">
-                          <button type="button" className={`w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-slate-100 ${selectionFocus ? 'text-slate-800' : 'cursor-not-allowed text-slate-400'}`} disabled={!selectionFocus} onClick={() => runMenuAction(insertRowBelowSelection)}>
-                            Insert row
+                        <div className="space-y-1 py-1">
+                          <div className="ds-menu-label px-3 pb-1 pt-0.5 text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'var(--ds-c5)' }}>Cells</div>
+                          <button type="button" className={`ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors ${selectionFocus ? '' : 'cursor-not-allowed opacity-30'}`} style={{ color: selectionFocus ? 'var(--ds-c2)' : 'var(--ds-c5)' }} onMouseEnter={(e)=>{if(selectionFocus)(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} disabled={!selectionFocus} onClick={() => runMenuAction(insertRowBelowSelection)}>
+                            <Rows3 className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.42 }} />
+                            <span className="flex-1">Insert row</span>
                           </button>
-                          <button type="button" className={`w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-slate-100 ${selectionFocus ? 'text-slate-800' : 'cursor-not-allowed text-slate-400'}`} disabled={!selectionFocus} onClick={() => runMenuAction(insertColumnRightOfSelection)}>
-                            Insert column
+                          <button type="button" className={`ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors ${selectionFocus ? '' : 'cursor-not-allowed opacity-30'}`} style={{ color: selectionFocus ? 'var(--ds-c2)' : 'var(--ds-c5)' }} onMouseEnter={(e)=>{if(selectionFocus)(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} disabled={!selectionFocus} onClick={() => runMenuAction(insertColumnRightOfSelection)}>
+                            <Plus className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.42 }} />
+                            <span className="flex-1">Insert column</span>
                           </button>
-                          <div className="my-1 h-px bg-slate-200" />
-                          <button type="button" className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => runMenuAction(addSheet)}>
-                            New sheet
+                          <div className="ds-separator my-1 h-px" style={{ background: 'var(--ds-s2)' }} />
+                          <button type="button" className="ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => runMenuAction(addSheet)}>
+                            <Sheet className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.42 }} />
+                            <span className="flex-1">New sheet</span>
                           </button>
                         </div>
                       ) : null}
 
                       {item.id === 'format' ? (
-                        <div className="space-y-1">
-                          <button type="button" className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => runMenuAction(() => openPanel('formatting'))}>
-                            Conditional formatting
+                        <div className="space-y-1 py-1">
+                          <div className="ds-menu-label px-3 pb-1 pt-0.5 text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'var(--ds-c5)' }}>Rules</div>
+                          <button type="button" className="ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => runMenuAction(() => openPanel('formatting'))}>
+                            <PencilLine className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.42 }} />
+                            <span className="flex-1">Conditional formatting</span>
                           </button>
-                          <button type="button" className={`w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-slate-100 ${selectedCell ? 'text-slate-800' : 'cursor-not-allowed text-slate-400'}`} disabled={!selectedCell} onClick={() => runMenuAction(() => openPanel('comments'))}>
-                            Comments
+                          <button type="button" className={`ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors ${!selectedCell ? 'cursor-not-allowed opacity-30' : ''}`} style={{ color: selectedCell ? 'var(--ds-c2)' : 'var(--ds-c5)' }} onMouseEnter={(e)=>{if(selectedCell)(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} disabled={!selectedCell} onClick={() => runMenuAction(() => openPanel('comments'))}>
+                            <MessageCircle className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.42 }} />
+                            <span className="flex-1">Comments</span>
                           </button>
-                          <div className="my-1 h-px bg-slate-200" />
-                          <button type="button" className={`w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-slate-100 ${hasSelection ? 'text-slate-800' : 'cursor-not-allowed text-slate-400'}`} disabled={!hasSelection} onClick={() => runMenuAction(() => toggleFormatFlag('bold'))}>
-                            Bold
+                          <div className="ds-separator my-1 h-px" style={{ background: 'var(--ds-s2)' }} />
+                          <div className="ds-menu-label px-3 pb-1 pt-0.5 text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'var(--ds-c5)' }}>Text Style</div>
+                          <button type="button" className={`ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors ${hasSelection ? '' : 'cursor-not-allowed opacity-30'}`} style={{ color: hasSelection ? 'var(--ds-c2)' : 'var(--ds-c5)' }} onMouseEnter={(e)=>{if(hasSelection)(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} disabled={!hasSelection} onClick={() => runMenuAction(() => toggleFormatFlag('bold'))}>
+                            <Bold className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.42 }} />
+                            <span className="flex-1">Bold</span>
+                            <span className="text-[10px] font-mono" style={{ opacity: 0.30 }}>Ctrl+B</span>
                           </button>
-                          <button type="button" className={`w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-slate-100 ${hasSelection ? 'text-slate-800' : 'cursor-not-allowed text-slate-400'}`} disabled={!hasSelection} onClick={() => runMenuAction(() => toggleFormatFlag('italic'))}>
-                            Italic
+                          <button type="button" className={`ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors ${hasSelection ? '' : 'cursor-not-allowed opacity-30'}`} style={{ color: hasSelection ? 'var(--ds-c2)' : 'var(--ds-c5)' }} onMouseEnter={(e)=>{if(hasSelection)(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} disabled={!hasSelection} onClick={() => runMenuAction(() => toggleFormatFlag('italic'))}>
+                            <Italic className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.42 }} />
+                            <span className="flex-1">Italic</span>
+                            <span className="text-[10px] font-mono" style={{ opacity: 0.30 }}>Ctrl+I</span>
                           </button>
-                          <button type="button" className={`w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-slate-100 ${hasSelection ? 'text-slate-800' : 'cursor-not-allowed text-slate-400'}`} disabled={!hasSelection} onClick={() => runMenuAction(() => toggleFormatFlag('underline'))}>
-                            Underline
+                          <button type="button" className={`ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors ${hasSelection ? '' : 'cursor-not-allowed opacity-30'}`} style={{ color: hasSelection ? 'var(--ds-c2)' : 'var(--ds-c5)' }} onMouseEnter={(e)=>{if(hasSelection)(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} disabled={!hasSelection} onClick={() => runMenuAction(() => toggleFormatFlag('underline'))}>
+                            <Underline className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.42 }} />
+                            <span className="flex-1">Underline</span>
+                            <span className="text-[10px] font-mono" style={{ opacity: 0.30 }}>Ctrl+U</span>
                           </button>
-                          <div className="my-1 h-px bg-slate-200" />
-                          <button type="button" className={`w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-slate-100 ${hasSelection ? 'text-slate-800' : 'cursor-not-allowed text-slate-400'}`} disabled={!hasSelection} onClick={() => runMenuAction(() => applyAlign('left'))}>
-                            Align left
+                          <div className="ds-separator my-1 h-px" style={{ background: 'var(--ds-s2)' }} />
+                          <div className="ds-menu-label px-3 pb-1 pt-0.5 text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'var(--ds-c5)' }}>Alignment</div>
+                          <button type="button" className={`ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors ${hasSelection ? '' : 'cursor-not-allowed opacity-30'}`} style={{ color: hasSelection ? 'var(--ds-c2)' : 'var(--ds-c5)' }} onMouseEnter={(e)=>{if(hasSelection)(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} disabled={!hasSelection} onClick={() => runMenuAction(() => applyAlign('left'))}>
+                            <AlignLeft className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.42 }} />
+                            <span className="flex-1">Align left</span>
                           </button>
-                          <button type="button" className={`w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-slate-100 ${hasSelection ? 'text-slate-800' : 'cursor-not-allowed text-slate-400'}`} disabled={!hasSelection} onClick={() => runMenuAction(() => applyAlign('center'))}>
-                            Align center
+                          <button type="button" className={`ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors ${hasSelection ? '' : 'cursor-not-allowed opacity-30'}`} style={{ color: hasSelection ? 'var(--ds-c2)' : 'var(--ds-c5)' }} onMouseEnter={(e)=>{if(hasSelection)(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} disabled={!hasSelection} onClick={() => runMenuAction(() => applyAlign('center'))}>
+                            <AlignCenter className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.42 }} />
+                            <span className="flex-1">Align center</span>
                           </button>
-                          <button type="button" className={`w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-slate-100 ${hasSelection ? 'text-slate-800' : 'cursor-not-allowed text-slate-400'}`} disabled={!hasSelection} onClick={() => runMenuAction(() => applyAlign('right'))}>
-                            Align right
+                          <button type="button" className={`ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors ${hasSelection ? '' : 'cursor-not-allowed opacity-30'}`} style={{ color: hasSelection ? 'var(--ds-c2)' : 'var(--ds-c5)' }} onMouseEnter={(e)=>{if(hasSelection)(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} disabled={!hasSelection} onClick={() => runMenuAction(() => applyAlign('right'))}>
+                            <AlignRight className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.42 }} />
+                            <span className="flex-1">Align right</span>
                           </button>
                         </div>
                       ) : null}
 
                       {item.id === 'data' ? (
-                        <div className="space-y-1">
-                          <button type="button" className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => runMenuAction(() => openPanel('smart'))}>
-                            Smart Sheets (templates + packs)
+                        <div className="space-y-1 py-1">
+                          <div className="ds-menu-label px-3 pb-1 pt-0.5 text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'var(--ds-c5)' }}>Sort &amp; Filter</div>
+                          <button type="button" className="ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => runMenuAction(() => openPanel('smart'))}>
+                            <LineChart className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.42 }} />
+                            <span className="flex-1">Smart Sheets / Templates</span>
+                          </button>
+                          <button type="button" className="ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => runMenuAction(() => openPanel('formatting'))}>
+                            <SlidersHorizontal className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.42 }} />
+                            <span className="flex-1">Sort &amp; Filter</span>
+                          </button>
+                          <div className="ds-separator my-1 h-px" style={{ background: 'var(--ds-s2)' }} />
+                          <div className="ds-menu-label px-3 pb-1 pt-0.5 text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'var(--ds-c5)' }}>Analysis</div>
+                          <button type="button" className="ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => runMenuAction(() => openPanel('insights'))}>
+                            <BarChart3 className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.42 }} />
+                            <span className="flex-1">Insights &amp; Analytics</span>
                           </button>
                         </div>
                       ) : null}
 
                       {item.id === 'tools' ? (
-                        <div className="space-y-1">
-                          <button type="button" className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => runMenuAction(() => openPanel('insights'))}>
-                            Insights
+                        <div className="space-y-1 py-1">
+                          <div className="ds-menu-label px-3 pb-1 pt-0.5 text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'var(--ds-c5)' }}>AI Features</div>
+                          <button type="button" className="ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: '#34d399' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='rgba(16,185,129,0.08)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => { setAiFloatOpen(true); setAiMode('ask'); setTopMenuOpen(null); setMenuAnchorPos(null); }}>
+                            <Search className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.70 }} />
+                            <span className="flex-1">Ask AI (DocSheet Chat)</span>
                           </button>
-                          <button type="button" className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => runMenuAction(() => openPanel('ai'))}>
-                            AI Studio
+                          <button type="button" className="ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: '#34d399' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='rgba(16,185,129,0.08)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => { setAiFloatOpen(true); setAiMode('change'); setTopMenuOpen(null); setMenuAnchorPos(null); }}>
+                            <BrainCircuit className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.70 }} />
+                            <span className="flex-1">Edit Sheet with AI</span>
+                          </button>
+                          <button type="button" className="ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => runMenuAction(() => openPanel('ai'))}>
+                            <BrainCircuit className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.42 }} />
+                            <span className="flex-1">AI Studio (full panel)</span>
+                          </button>
+                          <div className="ds-separator my-1 h-px" style={{ background: 'var(--ds-s2)' }} />
+                          <div className="ds-menu-label px-3 pb-1 pt-0.5 text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'var(--ds-c5)' }}>Analytics</div>
+                          <button type="button" className="ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => runMenuAction(() => openPanel('insights'))}>
+                            <BarChart3 className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.42 }} />
+                            <span className="flex-1">Insights</span>
                           </button>
                         </div>
                       ) : null}
 
                       {item.id === 'help' ? (
                         <div className="space-y-1">
-                          <button type="button" className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => runMenuAction(() => setShortcutsOpen(true))}>
-                            Keyboard shortcuts
+                          <button type="button" className="ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => runMenuAction(() => setShortcutsOpen(true))}>
+                            <KeyRound className="h-3.5 w-3.5 shrink-0" style={{ opacity: 0.42 }} />
+                            <span className="flex-1">Keyboard shortcuts</span>
+                            <span className="text-[10px] font-mono" style={{ opacity: 0.30 }}>Ctrl+/</span>
                           </button>
                         </div>
                       ) : null}
@@ -2348,35 +2701,35 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
               ))}
             </div>
 
-            <div className="ml-auto flex flex-wrap items-center gap-2">
-              <Button type="button" variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-600 hover:bg-slate-100" onClick={() => openPanel('export')} aria-label="Export">
+            <div className="ml-auto flex items-center gap-1 shrink-0 pl-2">
+              <Button type="button" variant="ghost" size="icon" className="ds-btn-ghost h-8 w-8 rounded-lg flex items-center justify-center transition" style={{ color: 'var(--ds-c3)' }} onClick={() => openPanel('export')} aria-label="Export">
                 <Download className="h-4 w-4" />
               </Button>
-              <Button type="button" variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-600 hover:bg-slate-100" onClick={() => openPanel('insights')} aria-label="Insights">
+              <Button type="button" variant="ghost" size="icon" className="ds-btn-ghost h-8 w-8 rounded-lg flex items-center justify-center transition" style={{ color: 'var(--ds-c3)' }} onClick={() => openPanel('insights')} aria-label="Insights">
                 <BarChart3 className="h-4 w-4" />
               </Button>
-              <Button type="button" variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-600 hover:bg-slate-100" onClick={() => openPanel('ai')} aria-label="AI Studio">
+              <Button type="button" variant="ghost" size="icon" className="ds-btn-ghost h-8 w-8 rounded-lg flex items-center justify-center transition" style={{ color: 'var(--ds-c3)' }} onClick={() => openPanel('ai')} aria-label="AI Studio">
                 <BrainCircuit className="h-4 w-4" />
               </Button>
-              <Button type="button" variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-600 hover:bg-slate-100" onClick={() => openPanel('history')} aria-label="History">
+              <Button type="button" variant="ghost" size="icon" className="ds-btn-ghost h-8 w-8 rounded-lg flex items-center justify-center transition" style={{ color: 'var(--ds-c3)' }} onClick={() => openPanel('history')} aria-label="History">
                 <SlidersHorizontal className="h-4 w-4" />
               </Button>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 border-t border-slate-200/70 px-3 py-2 sm:px-4">
-            <Button type="button" variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-700 hover:bg-slate-100" onClick={handleUndo} aria-label="Undo">
+          <div className="ds-toolbar-scroll flex items-center gap-1.5 px-3 py-1.5 sm:px-4 overflow-x-auto" style={{ borderTop: '1px solid var(--ds-s2)' }}>
+            <Button type="button" variant="ghost" size="icon" className="h-8 w-8 rounded-lg" style={{ color: 'var(--ds-c3)' }} onClick={handleUndo} aria-label="Undo">
               <Undo2 className="h-4 w-4" />
             </Button>
-            <Button type="button" variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-700 hover:bg-slate-100" onClick={handleRedo} aria-label="Redo">
+            <Button type="button" variant="ghost" size="icon" className="h-8 w-8 rounded-lg" style={{ color: 'var(--ds-c3)' }} onClick={handleRedo} aria-label="Redo">
               <Redo2 className="h-4 w-4" />
             </Button>
-            <div className="h-6 w-px bg-slate-200" />
+            <div className="ds-toolbar-divider h-5 w-px shrink-0" style={{ background: 'var(--ds-s1)' }} />
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              className={`h-8 w-8 rounded-lg hover:bg-slate-100 ${selectedFormat.bold ? 'text-slate-950' : 'text-slate-700'}`}
+              className='h-8 w-8 rounded-lg' style={{ color: selectedFormat.bold ? 'var(--ds-c1)' : 'var(--ds-c3)' }}
               onClick={() => toggleFormatFlag('bold')}
               disabled={!hasSelection}
               aria-label="Bold"
@@ -2387,7 +2740,7 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
               type="button"
               variant="ghost"
               size="icon"
-              className={`h-8 w-8 rounded-lg hover:bg-slate-100 ${selectedFormat.italic ? 'text-slate-950' : 'text-slate-700'}`}
+              className='h-8 w-8 rounded-lg' style={{ color: selectedFormat.italic ? 'var(--ds-c1)' : 'var(--ds-c3)' }}
               onClick={() => toggleFormatFlag('italic')}
               disabled={!hasSelection}
               aria-label="Italic"
@@ -2398,30 +2751,30 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
               type="button"
               variant="ghost"
               size="icon"
-              className={`h-8 w-8 rounded-lg hover:bg-slate-100 ${selectedFormat.underline ? 'text-slate-950' : 'text-slate-700'}`}
+              className='h-8 w-8 rounded-lg' style={{ color: selectedFormat.underline ? 'var(--ds-c1)' : 'var(--ds-c3)' }}
               onClick={() => toggleFormatFlag('underline')}
               disabled={!hasSelection}
               aria-label="Underline"
             >
               <Underline className="h-4 w-4" />
             </Button>
-            <div className="h-6 w-px bg-slate-200" />
-            <Button type="button" variant="ghost" size="icon" className={`h-8 w-8 rounded-lg hover:bg-slate-100 ${selectedFormat.align === 'left' || !selectedFormat.align ? 'text-slate-950' : 'text-slate-700'}`} onClick={() => applyAlign('left')} disabled={!hasSelection} aria-label="Align left">
+            <div className="ds-toolbar-divider h-5 w-px shrink-0" style={{ background: 'var(--ds-s1)' }} />
+            <Button type="button" variant="ghost" size="icon" className='h-8 w-8 rounded-lg' style={{ color: (selectedFormat.align === 'left' || !selectedFormat.align) ? 'var(--ds-c1)' : 'var(--ds-c3)' }} onClick={() => applyAlign('left')} disabled={!hasSelection} aria-label="Align left">
               <AlignLeft className="h-4 w-4" />
             </Button>
-            <Button type="button" variant="ghost" size="icon" className={`h-8 w-8 rounded-lg hover:bg-slate-100 ${selectedFormat.align === 'center' ? 'text-slate-950' : 'text-slate-700'}`} onClick={() => applyAlign('center')} disabled={!hasSelection} aria-label="Align center">
+            <Button type="button" variant="ghost" size="icon" className='h-8 w-8 rounded-lg' style={{ color: selectedFormat.align === 'center' ? 'var(--ds-c1)' : 'var(--ds-c3)' }} onClick={() => applyAlign('center')} disabled={!hasSelection} aria-label="Align center">
               <AlignCenter className="h-4 w-4" />
             </Button>
-            <Button type="button" variant="ghost" size="icon" className={`h-8 w-8 rounded-lg hover:bg-slate-100 ${selectedFormat.align === 'right' ? 'text-slate-950' : 'text-slate-700'}`} onClick={() => applyAlign('right')} disabled={!hasSelection} aria-label="Align right">
+            <Button type="button" variant="ghost" size="icon" className='h-8 w-8 rounded-lg' style={{ color: selectedFormat.align === 'right' ? 'var(--ds-c1)' : 'var(--ds-c3)' }} onClick={() => applyAlign('right')} disabled={!hasSelection} aria-label="Align right">
               <AlignRight className="h-4 w-4" />
             </Button>
-            <div className="h-6 w-px bg-slate-200" />
+            <div className="ds-toolbar-divider h-5 w-px shrink-0" style={{ background: 'var(--ds-s1)' }} />
             <Select
               value={selectedFormat.numberFormat || 'auto'}
               onValueChange={(value) => updateCellFormatForRange({ numberFormat: value as DocSheetCellFormat['numberFormat'] })}
               disabled={!hasSelection}
             >
-              <SelectTrigger className="h-8 w-[160px] rounded-lg border-slate-200 bg-white/80 text-xs shadow-none">
+              <SelectTrigger className="h-8 w-[160px] rounded-lg text-xs shadow-none" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c2)' }}>
                 <SelectValue placeholder="Number format" />
               </SelectTrigger>
               <SelectContent>
@@ -2432,25 +2785,25 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
                 <SelectItem value="date">Date</SelectItem>
               </SelectContent>
             </Select>
-            <div className="ml-auto flex items-center gap-2">
-              <Button type="button" variant="outline" className="h-8 rounded-lg border-slate-200 bg-white/80 px-2.5 text-xs shadow-none hover:bg-slate-50" onClick={addColumn} disabled={!activeSheet}>
+            <div className="ml-auto flex items-center gap-1.5 shrink-0">
+              <Button type="button" variant="outline" className="h-8 rounded-lg px-2.5 text-xs shadow-none" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c3)' }} onClick={addColumn} disabled={!activeSheet}>
                 <Plus className="mr-1.5 h-4 w-4" />
                 Column
               </Button>
-              <Button type="button" variant="outline" className="h-8 rounded-lg border-slate-200 bg-white/80 px-2.5 text-xs shadow-none hover:bg-slate-50" onClick={addRow} disabled={!activeSheet}>
+              <Button type="button" variant="outline" className="h-8 rounded-lg px-2.5 text-xs shadow-none" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c3)' }} onClick={addRow} disabled={!activeSheet}>
                 <Plus className="mr-1.5 h-4 w-4" />
                 Row
               </Button>
-              <Button type="button" variant="outline" className="h-8 rounded-lg border-slate-200 bg-white/80 px-2.5 text-xs shadow-none hover:bg-slate-50" onClick={insertColumnRightOfSelection} disabled={!activeSheet || !selectionFocus}>
+              <Button type="button" variant="outline" className="h-8 rounded-lg px-2.5 text-xs shadow-none" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c3)' }} onClick={insertColumnRightOfSelection} disabled={!activeSheet || !selectionFocus}>
                 Insert col
               </Button>
-              <Button type="button" variant="outline" className="h-8 rounded-lg border-slate-200 bg-white/80 px-2.5 text-xs shadow-none hover:bg-slate-50" onClick={insertRowBelowSelection} disabled={!activeSheet || !selectionFocus}>
+              <Button type="button" variant="outline" className="h-8 rounded-lg px-2.5 text-xs shadow-none" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c3)' }} onClick={insertRowBelowSelection} disabled={!activeSheet || !selectionFocus}>
                 Insert row
               </Button>
               <Button
                 type="button"
                 variant="outline"
-                className="h-8 rounded-lg border-rose-200 bg-white/80 px-2.5 text-xs text-rose-700 shadow-none hover:bg-rose-50 hover:text-rose-800"
+                className="h-8 rounded-lg px-2.5 text-xs shadow-none" style={{ border: '1px solid rgba(251,113,133,0.25)', background: 'rgba(251,113,133,0.07)', color: 'rgba(251,113,133,0.80)' }}
                 onClick={deleteSelectedColumns}
                 disabled={!hasSelection}
               >
@@ -2460,7 +2813,7 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
               <Button
                 type="button"
                 variant="outline"
-                className="h-8 rounded-lg border-rose-200 bg-white/80 px-2.5 text-xs text-rose-700 shadow-none hover:bg-rose-50 hover:text-rose-800"
+                className="h-8 rounded-lg px-2.5 text-xs shadow-none" style={{ border: '1px solid rgba(251,113,133,0.25)', background: 'rgba(251,113,133,0.07)', color: 'rgba(251,113,133,0.80)' }}
                 onClick={deleteSelectedRows}
                 disabled={!hasSelection}
               >
@@ -2470,27 +2823,27 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
             </div>
           </div>
 
-          <div className="flex items-center gap-2 border-t border-slate-200/70 px-3 py-2 sm:px-4">
-            <div className="flex w-[82px] items-center justify-between rounded-lg border border-slate-200 bg-white/80 px-2 py-1 text-xs text-slate-700 shadow-none">
+          <div className="ds-formula-bar flex items-center gap-2 px-3 py-1.5 sm:px-4" style={{ borderTop: '1px solid var(--ds-s2)' }}>
+            <div className="ds-cell-ref-box flex w-[72px] items-center justify-between rounded-lg px-2 py-1 text-xs shrink-0" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c2)' }}>
               <span className="font-medium">{selectedCellRef || 'A1'}</span>
-              <span className="text-slate-400">▾</span>
+              <span style={{ color: 'var(--ds-c5)' }}>▾</span>
             </div>
             <div className="flex flex-1 items-center gap-2">
-              <span className="rounded-md bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-700">fx</span>
+              <span className="ds-fx-badge rounded-md px-2 py-1 text-[11px] font-semibold shrink-0" style={{ background: 'var(--ds-s2)', color: 'var(--ds-c3)' }}>fx</span>
               <Input
                 ref={formulaBarRef}
                 value={selectedCell ? selectedCellRawValue : ''}
                 onChange={(event) => updateSelectedCellRawValue(event.target.value)}
                 placeholder={selectedCell ? 'Enter a value or formula like =SUM(C1:C10)' : 'Select a cell to edit'}
                 disabled={!selectedCell}
-                className="h-9 rounded-lg border-slate-200 bg-white/80 text-sm shadow-none focus-visible:ring-2 focus-visible:ring-sky-200"
+                className="h-9 rounded-lg text-sm shadow-none focus-visible:ring-2 focus-visible:ring-emerald-500/50" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s4)', color: 'var(--ds-c1)' }}
               />
-              <div className="hidden items-center gap-1 md:flex">
+              <div className="ds-formula-functions hidden items-center gap-1 md:flex">
                 {(['SUM', 'AVERAGE', 'MIN', 'MAX', 'COUNT'] as const).map((fn) => (
                   <button
                     key={fn}
                     type="button"
-                    className="rounded-lg border border-slate-200 bg-white/80 px-2 py-1 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-50"
+                    className="ds-formula-chip rounded-lg px-2 py-1 text-[11px] font-semibold transition" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c3)' }}
                     onClick={() => {
                       if (selectionBounds) {
                         applyAggregateFormulaToSelection(fn);
@@ -2510,7 +2863,7 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
             </div>
             <div className="hidden items-center gap-2 sm:flex">
               <Select value={workbook.currencyCode || 'INR'} onValueChange={(value) => setWorkbook((current) => ({ ...current, currencyCode: value }))}>
-                <SelectTrigger className="h-9 w-[96px] rounded-lg border-slate-200 bg-white/80 text-xs shadow-none">
+                <SelectTrigger className="h-9 w-[96px] rounded-lg text-xs shadow-none" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c2)' }}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -2524,28 +2877,31 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
         </div>
 
         {(statusMessage || errorMessage) ? (
-          <div className="px-3 pt-3 sm:px-4">
-            {statusMessage ? <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">{statusMessage}</div> : null}
-            {errorMessage ? <div className="mt-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{errorMessage}</div> : null}
+          <div className="ds-status-bar px-3 pt-3 sm:px-4">
+            {statusMessage ? <div className="ds-status-ok rounded-xl px-4 py-3 text-sm" style={{ border: '1px solid rgba(16,185,129,0.25)', background: 'rgba(16,185,129,0.10)', color: '#34d399' }}>{statusMessage}</div> : null}
+            {errorMessage ? <div className="ds-status-err mt-2 rounded-xl px-4 py-3 text-sm" style={{ border: '1px solid rgba(251,113,133,0.25)', background: 'rgba(251,113,133,0.10)', color: 'rgba(251,113,133,0.90)' }}>{errorMessage}</div> : null}
           </div>
         ) : null}
 
         <div className="flex min-h-0 flex-1">
-          <div ref={gridRootRef} className="min-h-0 flex-1 overflow-auto px-3 pb-4 pt-3 sm:px-4">
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_16px_40px_rgba(15,23,42,0.06)]">
-              <div className="max-w-full overflow-auto">
+          <div ref={gridRootRef} className="ds-grid-root min-h-0 flex-1 overflow-auto px-3 pb-4 pt-3 sm:px-4" style={{ background: 'var(--ds-grid)' }}>
+            <div className="ds-grid-wrap overflow-hidden rounded-2xl" style={{ border: '1px solid var(--ds-s2)', background: 'var(--ds-cell)', boxShadow: '0 16px 40px rgba(0,0,0,0.40)' }}>
+              <div className="max-w-full overflow-auto ds-grid-scroll">
                 {activeSheet ? (
                   <table className="min-w-max border-collapse text-sm">
-                    <thead className="sticky top-0 z-10 bg-slate-50">
+                    <thead className="sticky top-0 z-10" style={{ background: 'var(--ds-th)' }}>
                       <tr>
-                        <th className="sticky left-0 z-20 w-12 border-b border-r border-slate-200 bg-slate-50 px-2 py-2 text-right text-xs font-medium text-slate-500">
+                        <th className="sticky left-0 z-20 w-12 px-2 py-2 text-right text-xs font-medium" style={{ borderBottom: '1px solid var(--ds-s2)', borderRight: '1px solid var(--ds-s2)', background: 'var(--ds-th)', color: 'var(--ds-c5)' }}>
                           #
                         </th>
                         {activeSheet.columns.map((column, columnIndex) => (
                           <th
                             key={column.id}
-                            className={`relative border-b border-slate-200 px-3 py-2 text-left text-xs font-semibold text-slate-600 ${activeSheet.frozenColumnCount === 1 && columnIndex === 0 ? 'sticky z-30 bg-slate-50' : ''}`}
+                            className={`relative px-3 py-2 text-left text-xs font-semibold ${activeSheet.frozenColumnCount === 1 && columnIndex === 0 ? 'sticky z-30' : ''}`}
                             style={{
+                              borderBottom: '1px solid var(--ds-s2)',
+                              background: 'var(--ds-th)',
+                              color: 'var(--ds-c4)',
                               width: column.width || 140,
                               minWidth: column.width || 140,
                               ...(activeSheet.frozenColumnCount === 1 && columnIndex === 0 ? { left: 48 } : null),
@@ -2555,7 +2911,7 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
                             <span className="select-none">{getDocSheetColumnLetter(columnIndex)}</span>
                             <button
                               type="button"
-                              className="absolute right-0 top-0 h-full w-2 cursor-col-resize bg-transparent hover:bg-sky-100"
+                              className="absolute right-0 top-0 h-full w-2 cursor-col-resize bg-transparent hover:bg-emerald-500/20"
                               aria-label="Resize column"
                               onMouseDown={(event) => {
                                 event.preventDefault();
@@ -2566,7 +2922,7 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
                         ))}
                       </tr>
                       <tr>
-                        <th className="sticky left-0 z-20 w-12 border-b border-r border-slate-200 bg-slate-50 px-2 py-2 text-right text-[11px] font-medium text-slate-400">
+                        <th className="sticky left-0 z-20 w-12 px-2 py-2 text-right text-[11px] font-medium" style={{ borderBottom: '1px solid var(--ds-s2)', borderRight: '1px solid var(--ds-s2)', background: 'var(--ds-th)', color: 'var(--ds-c5)' }}>
                           1
                         </th>
                         {activeSheet.columns.map((column, columnIndex) => {
@@ -2575,8 +2931,11 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
                           return (
                             <th
                               key={`${column.id}-label`}
-                              className={`relative border-b border-slate-200 bg-slate-50 px-3 py-2 text-left text-[11px] font-semibold text-slate-700 ${activeSheet.frozenColumnCount === 1 && columnIndex === 0 ? 'sticky z-30' : ''}`}
+                              className={`relative px-3 py-2 text-left text-[11px] font-semibold ${activeSheet.frozenColumnCount === 1 && columnIndex === 0 ? 'sticky z-30' : ''}`}
                               style={{
+                                borderBottom: '1px solid var(--ds-s2)',
+                                background: 'var(--ds-th)',
+                                color: 'var(--ds-c3)',
                                 width: column.width || 140,
                                 minWidth: column.width || 140,
                                 ...(activeSheet.frozenColumnCount === 1 && columnIndex === 0 ? { left: 48 } : null),
@@ -2596,7 +2955,7 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
                               </button>
                               <button
                                 type="button"
-                                className={`absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-1 py-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 ${filterActive || sorted ? 'text-slate-900' : ''}`}
+                                className={`absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-1 py-1 transition ${filterActive || sorted ? 'text-white' : 'text-[var(--ds-c4)]' }`}
                                 aria-label="Column menu"
                                 onClick={(event) => {
                                   event.stopPropagation();
@@ -2612,26 +2971,26 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
                               </button>
 
                               {columnMenuOpen === column.id ? (
-                                <div data-docsheet-column-menu className="absolute left-0 top-[calc(100%+6px)] z-50 w-72 rounded-xl border border-slate-200 bg-white/95 p-2 shadow-[0_18px_40px_rgba(15,23,42,0.10)] backdrop-blur-xl">
+                                <div data-docsheet-column-menu className="ds-col-menu absolute left-0 top-[calc(100%+6px)] z-50 w-72 rounded-xl p-2 backdrop-blur-xl" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-bg)', boxShadow: '0 18px 40px rgba(0,0,0,0.55)' }}>
                                   <div className="flex items-center gap-2">
-                                    <Button type="button" variant="outline" size="sm" className="h-8 rounded-lg" onClick={() => { setSortState(column.id, 'asc'); setColumnMenuOpen(null); }}>
+                                    <button type="button" className="h-8 rounded-lg px-3 text-xs font-medium transition" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c2)' }} onClick={() => { setSortState(column.id, 'asc'); setColumnMenuOpen(null); }}>
                                       Sort A-Z
-                                    </Button>
-                                    <Button type="button" variant="outline" size="sm" className="h-8 rounded-lg" onClick={() => { setSortState(column.id, 'desc'); setColumnMenuOpen(null); }}>
+                                    </button>
+                                    <button type="button" className="h-8 rounded-lg px-3 text-xs font-medium transition" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c2)' }} onClick={() => { setSortState(column.id, 'desc'); setColumnMenuOpen(null); }}>
                                       Sort Z-A
-                                    </Button>
-                                    <Button type="button" variant="ghost" size="sm" className="h-8 rounded-lg text-slate-600 hover:bg-slate-100" onClick={() => { setSortState(column.id, null); setColumnMenuOpen(null); }}>
+                                    </button>
+                                    <button type="button" className="h-8 rounded-lg px-3 text-xs font-medium transition" style={{ color: 'var(--ds-c4)' }} onClick={() => { setSortState(column.id, null); setColumnMenuOpen(null); }}>
                                       Clear
-                                    </Button>
+                                    </button>
                                   </div>
-                                  <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3">
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Filter</p>
+                                  <div className="mt-3 rounded-xl p-3" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s4)' }}>
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--ds-c4)' }}>Filter</p>
                                     <div className="mt-2 grid grid-cols-[96px_1fr] gap-2">
                                       <Select
                                         value={columnFilterDraft?.columnId === column.id ? columnFilterDraft.op : 'contains'}
                                         onValueChange={(value) => setColumnFilterDraft((current) => current && current.columnId === column.id ? { ...current, op: value as any } : { columnId: column.id, op: value as any, value: '' })}
                                       >
-                                        <SelectTrigger className="h-9 rounded-lg border-slate-200 bg-white/90 text-xs shadow-none">
+                                        <SelectTrigger className="h-9 rounded-lg text-xs shadow-none" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c2)' }}>
                                           <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -2646,15 +3005,15 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
                                       <Input
                                         value={columnFilterDraft?.columnId === column.id ? columnFilterDraft.value : ''}
                                         onChange={(event) => setColumnFilterDraft((current) => current && current.columnId === column.id ? { ...current, value: event.target.value } : { columnId: column.id, op: 'contains', value: event.target.value })}
-                                        className="h-9 rounded-lg border-slate-200 bg-white/90 text-sm shadow-none"
+                                        className="h-9 rounded-lg text-sm shadow-none" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c1)' }}
                                         placeholder="Value"
                                       />
                                     </div>
                                     <div className="mt-3 flex items-center gap-2">
-                                      <Button
+                                      <button
                                         type="button"
-                                        size="sm"
-                                        className="h-8 rounded-lg"
+                                        className="h-8 rounded-lg px-3 text-xs font-medium transition"
+                                        style={{ background: 'rgba(16,185,129,0.18)', border: '1px solid rgba(16,185,129,0.35)', color: '#34d399' }}
                                         onClick={() => {
                                           if (!columnFilterDraft || columnFilterDraft.columnId !== column.id) return;
                                           applyColumnFilter(column.id, columnFilterDraft.op, columnFilterDraft.value);
@@ -2662,21 +3021,20 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
                                         }}
                                       >
                                         Apply
-                                      </Button>
-                                      <Button
+                                      </button>
+                                      <button
                                         type="button"
-                                        size="sm"
-                                        variant="outline"
-                                        className="h-8 rounded-lg"
+                                        className="h-8 rounded-lg px-3 text-xs font-medium transition"
+                                        style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c3)' }}
                                         onClick={() => {
                                           clearColumnFilter(column.id);
                                           setColumnMenuOpen(null);
                                         }}
                                       >
                                         Clear
-                                      </Button>
+                                      </button>
                                     </div>
-                                    {filterActive ? <p className="mt-2 text-xs text-slate-500">Filter active</p> : null}
+                                    {filterActive ? <p className="mt-2 text-xs" style={{ color: 'var(--ds-c4)' }}>Filter active</p> : null}
                                   </div>
                                 </div>
                               ) : null}
@@ -2687,8 +3045,8 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
                     </thead>
                     <tbody>
                       {derivedRows.map((row, rowIndex) => (
-                        <tr key={row.id} className="group">
-                          <td className="sticky left-0 z-10 w-12 border-r border-slate-200 bg-slate-50 px-2 py-1 text-right text-xs text-slate-500">
+                        <tr key={row.id} className="group ds-row">
+                          <td className="ds-row-num sticky left-0 z-10 w-12 px-2 py-1 text-right text-xs" style={{ borderRight: '1px solid var(--ds-s2)', background: 'var(--ds-th)', color: 'var(--ds-c5)' }}>
                             {rowIndex + 1}
                           </td>
                           {activeSheet.columns.map((column, columnIndex) => {
@@ -2739,13 +3097,15 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
                             return (
                               <td
                                 key={`${row.id}-${column.id}`}
-                                className={`border-b border-r border-slate-100 px-0 py-0 ${inRange ? 'bg-sky-50' : 'bg-white'} ${frozenA ? 'sticky z-20' : ''}`}
+                                className={`px-0 py-0 ${frozenA ? 'sticky z-20' : ''}`}
                                 style={{
+                                  borderBottom: '1px solid var(--ds-s2)',
+                                  borderRight: '1px solid var(--ds-s2)',
+                                  background: conditionalStyle?.bg || (inRange ? 'rgba(16,185,129,0.09)' : 'var(--ds-cell)'),
+                                  color: conditionalStyle?.text || undefined,
                                   width: column.width || 140,
                                   minWidth: column.width || 140,
                                   ...(frozenA ? { left: 48 } : null),
-                                  ...(conditionalStyle?.bg ? { backgroundColor: conditionalStyle.bg } : null),
-                                  ...(conditionalStyle?.text ? { color: conditionalStyle.text } : null),
                                 }}
                               >
                                 <div className="relative">
@@ -2821,9 +3181,9 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
                                       if (!isEditing) return;
                                       updateCell(row.id, column.id, event.target.value);
                                     }}
-                                    className={`h-9 w-full bg-transparent px-3 text-sm text-slate-900 outline-none transition ${formatClass} ${
-                                      isSelected ? 'ring-2 ring-sky-500 ring-offset-[-2px]' : 'focus:ring-2 focus:ring-sky-200 focus:ring-offset-[-2px]'
-                                    }`}
+                                    className={`h-9 w-full bg-transparent px-3 text-sm outline-none transition ${formatClass} ${
+                                      isSelected ? 'ring-2 ring-emerald-500/80 ring-offset-[-2px]' : 'focus:ring-2 focus:ring-emerald-500/40 focus:ring-offset-[-2px]'
+                                    }`} style={{ color: 'var(--ds-c1)' }}
                                     inputMode={column.type === 'number' || column.type === 'currency' || column.type === 'percent' ? 'decimal' : undefined}
                                   />
                                   {commentCount ? (
@@ -2846,7 +3206,7 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
                     </tbody>
                   </table>
                 ) : (
-                  <div className="px-8 py-16 text-center text-sm text-slate-500">
+                  <div className="px-8 py-16 text-center text-sm" style={{ color: 'var(--ds-c4)' }}>
                     Create a sheet to start using DocSheet.
                   </div>
                 )}
@@ -2858,13 +3218,13 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
             <div className="fixed inset-0 z-50 lg:static lg:z-auto lg:block lg:w-[380px] lg:min-w-[380px]">
               <button
                 type="button"
-                className="absolute inset-0 bg-slate-950/25 backdrop-blur-[2px] lg:hidden"
+                className="absolute inset-0 backdrop-blur-[2px] lg:hidden" style={{ background: 'rgba(0,0,0,0.55)' }}
                 aria-label="Close panel"
                 onClick={closePanel}
               />
-              <div className="absolute bottom-0 left-0 right-0 max-h-[78vh] overflow-hidden rounded-t-[1.6rem] border-t border-slate-200/70 bg-white/75 backdrop-blur-xl lg:static lg:max-h-none lg:h-full lg:rounded-none lg:border-l lg:border-t-0">
-                <div className="flex items-center justify-between border-b border-slate-200/70 px-4 py-3">
-                  <p className="text-sm font-semibold text-slate-950">
+              <div className="ds-panel-side absolute bottom-0 left-0 right-0 max-h-[78vh] overflow-hidden rounded-t-[1.6rem] backdrop-blur-xl lg:static lg:max-h-none lg:h-full lg:rounded-none" style={{ borderTop: '1px solid var(--ds-s2)', background: 'var(--ds-bg)' }}>
+                <div className="ds-panel-header flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--ds-s2)' }}>
+                  <p className="text-sm font-semibold" style={{ color: 'var(--ds-c1)' }}>
                     {studioPanel === 'share'
                       ? 'Share'
                       : studioPanel === 'export'
@@ -2883,27 +3243,27 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
                                     ? 'Comments'
                                     : 'File'}
                   </p>
-                  <Button type="button" variant="ghost" size="sm" className="h-8 rounded-lg px-2 text-slate-600 hover:bg-slate-100" onClick={closePanel}>
+                  <Button type="button" variant="ghost" size="sm" className="h-8 rounded-lg px-2" style={{ color: 'var(--ds-c3)' }} onClick={closePanel}>
                     Close
                   </Button>
                 </div>
 
-                <div className="max-h-[calc(78vh-52px)] overflow-auto px-4 py-4 lg:max-h-[calc(100vh-180px)]">
+                <div className="ds-panel-body max-h-[calc(78vh-52px)] overflow-auto px-4 py-4 lg:max-h-[calc(100vh-180px)]">
                 {studioPanel === 'file' ? (
                   <div className="space-y-3">
-                    <Button type="button" variant="outline" className="w-full justify-start" onClick={createNewWorkbook}>
+                    <Button type="button" variant="outline" className="w-full justify-start" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s4)', color: 'var(--ds-c2)' }} onClick={createNewWorkbook}>
                       <RefreshCw className="mr-2 h-4 w-4" />
                       New workbook
                     </Button>
-                    <Button type="button" variant="outline" className="w-full justify-start" onClick={() => fileInputRef.current?.click()} disabled={importing}>
+                    <Button type="button" variant="outline" className="w-full justify-start" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s4)', color: 'var(--ds-c2)' }} onClick={() => fileInputRef.current?.click()} disabled={importing}>
                       <Upload className="mr-2 h-4 w-4" />
                       Import spreadsheet (CSV/XLSX)
                     </Button>
-                    <Button type="button" variant="outline" className="w-full justify-start" onClick={() => openPanel('export')}>
+                    <Button type="button" variant="outline" className="w-full justify-start" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s4)', color: 'var(--ds-c2)' }} onClick={() => openPanel('export')}>
                       <Download className="mr-2 h-4 w-4" />
                       Download / Export
                     </Button>
-                    <Button type="button" variant="outline" className="w-full justify-start" onClick={() => openPanel('history')}>
+                    <Button type="button" variant="outline" className="w-full justify-start" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s4)', color: 'var(--ds-c2)' }} onClick={() => openPanel('history')}>
                       <SlidersHorizontal className="mr-2 h-4 w-4" />
                       Open saved workbook
                     </Button>
@@ -2912,9 +3272,9 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
 
                 {studioPanel === 'share' ? (
                   <div className="space-y-4">
-                    <div className="grid gap-3 rounded-2xl border border-slate-200 bg-white/80 p-4">
+                    <div className="ds-card grid gap-3 rounded-2xl p-4" style={{ border: '1px solid var(--ds-s2)', background: 'var(--ds-s4)' }}>
                       <div className="grid gap-2">
-                        <label className="text-xs font-semibold text-slate-700">Link type</label>
+                        <label className="text-xs font-semibold" style={{ color: 'var(--ds-c3)' }}>Link type</label>
                         <div className="grid grid-cols-2 gap-2">
                           <Button
                             type="button"
@@ -2933,15 +3293,15 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
                             Secure
                           </Button>
                         </div>
-                        <p className="text-xs leading-5 text-slate-500">
+                        <p className="text-xs leading-5" style={{ color: 'var(--ds-c4)' }}>
                           Public opens instantly. Secure requires a password before the sheet loads.
                         </p>
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-xs font-semibold text-slate-700">Access policy</label>
+                        <label className="text-xs font-semibold" style={{ color: 'var(--ds-c3)' }}>Access policy</label>
                         <Select value={shareAccessPolicy} onValueChange={(value) => setShareAccessPolicy(value as typeof shareAccessPolicy)}>
-                          <SelectTrigger className="bg-white">
+                          <SelectTrigger style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c2)' }}>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -2954,23 +3314,23 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
 
                       {shareAccessPolicy === 'expiring' ? (
                         <div className="space-y-2">
-                          <label className="text-xs font-semibold text-slate-700">Expiry days</label>
-                          <Input value={docsheetExpiryDays} onChange={(event) => setDocsheetExpiryDays(event.target.value)} />
+                          <label className="text-xs font-semibold" style={{ color: 'var(--ds-c3)' }}>Expiry days</label>
+                          <Input value={docsheetExpiryDays} onChange={(event) => setDocsheetExpiryDays(event.target.value)} style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c2)' }} />
                         </div>
                       ) : null}
 
                       {shareAccessPolicy === 'one_time' ? (
                         <div className="space-y-2">
-                          <label className="text-xs font-semibold text-slate-700">Allowed opens</label>
-                          <Input value={shareMaxAccessCount} onChange={(event) => setShareMaxAccessCount(event.target.value)} placeholder="1" />
-                          <p className="text-xs leading-5 text-slate-500">After this many opens/downloads, the link stops working.</p>
+                          <label className="text-xs font-semibold" style={{ color: 'var(--ds-c3)' }}>Allowed opens</label>
+                          <Input value={shareMaxAccessCount} onChange={(event) => setShareMaxAccessCount(event.target.value)} placeholder="1" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c2)' }} />
+                          <p className="text-xs leading-5" style={{ color: 'var(--ds-c4)' }}>After this many opens/downloads, the link stops working.</p>
                         </div>
                       ) : null}
 
                       <div className="space-y-2">
-                        <label className="text-xs font-semibold text-slate-700">Share mode</label>
+                        <label className="text-xs font-semibold" style={{ color: 'var(--ds-c3)' }}>Share mode</label>
                         <Select value={docsheetShareMode} onValueChange={(value) => setDocsheetShareMode(value as 'view' | 'edit')}>
-                          <SelectTrigger className="bg-white">
+                          <SelectTrigger style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c2)' }}>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -2980,40 +3340,40 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <label className="text-xs font-semibold text-slate-700">Shared with</label>
-                        <Input value={docsheetSharedWithEmail} onChange={(event) => setDocsheetSharedWithEmail(event.target.value)} placeholder="recipient@company.com" />
+                        <label className="text-xs font-semibold" style={{ color: 'var(--ds-c3)' }}>Shared with</label>
+                        <Input value={docsheetSharedWithEmail} onChange={(event) => setDocsheetSharedWithEmail(event.target.value)} placeholder="recipient@company.com" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c2)' }} />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-xs font-semibold text-slate-700">Session label</label>
-                        <Input value={docsheetSessionLabel} onChange={(event) => setDocsheetSessionLabel(event.target.value)} placeholder="Budget review round 1" />
+                        <label className="text-xs font-semibold" style={{ color: 'var(--ds-c3)' }}>Session label</label>
+                        <Input value={docsheetSessionLabel} onChange={(event) => setDocsheetSessionLabel(event.target.value)} placeholder="Budget review round 1" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c2)' }} />
                       </div>
 
                       {shareRequiresPassword ? (
                         <div className="space-y-2">
-                          <label className="text-xs font-semibold text-slate-700">Password</label>
+                          <label className="text-xs font-semibold" style={{ color: 'var(--ds-c3)' }}>Password</label>
                           <div className="flex items-center gap-2">
                             <Input
                               value={sharePassword}
                               onChange={(event) => setSharePassword(event.target.value.toUpperCase())}
+                              style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c2)' }}
                               placeholder={savedRecord?.sharePassword ? '' : 'Save to generate'}
                             />
                             <Button
                               type="button"
-                              variant="outline"
-                              size="icon"
+                              style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c3)', width: 36, height: 36, borderRadius: 9 }}
                               onClick={() => setSharePassword(createSharePassword())}
                               aria-label="Rotate password"
                             >
                               <RefreshCw className="h-4 w-4" />
                             </Button>
                           </div>
-                          <p className="text-xs leading-5 text-slate-500">Rotate password any time, then apply share settings.</p>
+                          <p className="text-xs leading-5" style={{ color: 'var(--ds-c4)' }}>Rotate password any time, then apply share settings.</p>
                         </div>
                       ) : null}
                     </div>
 
-                    <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 text-sm text-slate-700">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Share details</p>
+                    <div className="rounded-2xl p-4 text-sm" style={{ border: '1px solid var(--ds-s2)', background: 'var(--ds-s4)', color: 'var(--ds-c3)' }}>
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--ds-c4)' }}>Share details</p>
                       <p className="mt-3">Last saved: {formatDate(savedRecord?.generatedAt)}</p>
                       <p className="mt-1">Link: {savedRecord?.shareUrl ? 'Ready' : 'Save workbook to generate a governed link'}</p>
                       <p className="mt-1">Status: {savedRecord?.revokedAt ? 'Revoked' : (savedRecord?.shareExpiresAt && new Date(savedRecord.shareExpiresAt).getTime() < Date.now() ? 'Expired' : 'Active')}</p>
@@ -3025,7 +3385,7 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
                         <div className="mt-3 grid gap-2">
                           <Button
                             type="button"
-                            className="w-full"
+                            className="w-full" style={{ background: 'rgba(59,130,246,0.18)', border: '1px solid rgba(59,130,246,0.35)', color: '#60a5fa' }}
                             onClick={() => window.open(
                               shareRequiresPassword && (savedRecord?.sharePassword || sharePassword)
                                 ? `${shareUrl}?password=${encodeURIComponent((savedRecord?.sharePassword || sharePassword).trim().toUpperCase())}`
@@ -3039,8 +3399,7 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
                           </Button>
                           <Button
                             type="button"
-                            variant="outline"
-                            className="w-full"
+                            className="w-full" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c3)'  }}
                             onClick={() => {
                               const urlLine = `Link: ${shareUrl}`;
                               const passwordLine = shareRequiresPassword
@@ -3062,12 +3421,12 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
                         </div>
                       ) : null}
                       <div className="mt-3 grid gap-2">
-                        <Button type="button" variant="outline" className="w-full" onClick={() => void updateShareSettings()} disabled={saving}>
+                        <Button type="button" className="w-full" style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.30)', color: '#34d399' }} onClick={() => void updateShareSettings()} disabled={saving}>
                           {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                           Apply share settings
                         </Button>
                         {savedHistoryId ? (
-                          <Button type="button" variant="outline" className="w-full text-rose-700 hover:text-rose-800" onClick={() => void revokeShareLink()} disabled={saving}>
+                          <Button type="button" className="w-full" style={{ border: '1px solid rgba(251,113,133,0.25)', background: 'rgba(251,113,133,0.08)', color: 'rgba(251,113,133,0.80)' }} onClick={() => void revokeShareLink()} disabled={saving}>
                             <Trash2 className="mr-2 h-4 w-4" />
                             Revoke link
                           </Button>
@@ -3079,15 +3438,15 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
 
                 {studioPanel === 'export' ? (
                   <div className="space-y-3">
-                    <Button type="button" variant="outline" className="w-full justify-start" onClick={copyVisualizerPayload} disabled={!activeSheet}>
+                    <Button type="button" variant="outline" className="w-full justify-start" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s4)', color: 'var(--ds-c2)' }} onClick={copyVisualizerPayload} disabled={!activeSheet}>
                       <Copy className="mr-2 h-4 w-4" />
                       Copy for Visualizer
                     </Button>
-                    <Button type="button" variant="outline" className="w-full justify-start" onClick={exportCsv} disabled={!activeSheet}>
+                    <Button type="button" variant="outline" className="w-full justify-start" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s4)', color: 'var(--ds-c2)' }} onClick={exportCsv} disabled={!activeSheet}>
                       <Download className="mr-2 h-4 w-4" />
                       Export CSV
                     </Button>
-                    <Button type="button" variant="outline" className="w-full justify-start" onClick={() => void exportWorkbookXlsx()}>
+                    <Button type="button" variant="outline" className="w-full justify-start" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s4)', color: 'var(--ds-c2)' }} onClick={() => void exportWorkbookXlsx()}>
                       <FileSpreadsheet className="mr-2 h-4 w-4" />
                       Download XLSX
                     </Button>
@@ -3099,15 +3458,15 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
                     {savedWorkbooks.length ? (
                       <div className="space-y-2">
                         {savedWorkbooks.slice(0, 12).map((entry) => (
-                          <div key={entry.id} className="rounded-2xl border border-slate-200 bg-white/80 p-3">
+                          <div key={entry.id} className="ds-card rounded-2xl p-3" style={{ border: '1px solid var(--ds-s2)', background: 'var(--ds-s4)' }}>
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
-                                <p className="truncate text-sm font-semibold text-slate-950">{entry.templateName}</p>
-                                <p className="mt-1 text-xs text-slate-500">{formatDate(entry.generatedAt)}</p>
+                                <p className="ds-text-primary truncate text-sm font-semibold" style={{ color: 'var(--ds-c1)' }}>{entry.templateName}</p>
+                                <p className="ds-text-muted mt-1 text-xs" style={{ color: 'var(--ds-c4)' }}>{formatDate(entry.generatedAt)}</p>
                               </div>
                               <div className="flex items-center gap-2">
-                                <Button type="button" size="sm" variant="outline" onClick={() => loadWorkbook(entry)}>Open</Button>
-                                <Button type="button" size="sm" variant="ghost" className="text-rose-600 hover:bg-rose-50 hover:text-rose-700" onClick={() => void deleteWorkbook(entry.id)} disabled={deletingId === entry.id}>
+                                <Button type="button" size="sm" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c2)'  }} onClick={() => loadWorkbook(entry)}>Open</Button>
+                                <Button type="button" size="sm" variant="ghost" style={{ color: 'rgba(251,113,133,0.75)' }} onClick={() => void deleteWorkbook(entry.id)} disabled={deletingId === entry.id}>
                                   {deletingId === entry.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                                 </Button>
                               </div>
@@ -3116,7 +3475,7 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
                         ))}
                       </div>
                     ) : (
-                      <div className="rounded-2xl border border-dashed border-slate-300 bg-white/80 px-4 py-10 text-center text-sm text-slate-500">
+                      <div className="rounded-2xl px-4 py-10 text-center text-sm" style={{ border: '1px dashed var(--ds-s1)', background: 'var(--ds-s4)', color: 'var(--ds-c4)' }}>
                         No saved DocSheet workbooks yet. Save once and they will appear here.
                       </div>
                     )}
@@ -3125,32 +3484,31 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
 
                 {studioPanel === 'ai' ? (
                   <div className="space-y-4">
-                    <div className="rounded-2xl border border-slate-200 bg-white/80 p-4">
-                      <p className="text-sm font-semibold text-slate-950">DocSheet AI Studio</p>
-                      <p className="mt-2 text-sm leading-6 text-slate-600">Ask questions about the active sheet, or tell AI to change the workbook.</p>
+                    <div className="ds-card rounded-2xl p-4" style={{ border: '1px solid var(--ds-s2)', background: 'var(--ds-s4)' }}>
+                      <p className="text-sm font-semibold" style={{ color: 'var(--ds-c1)' }}>DocSheet AI Studio</p>
+                      <p className="mt-2 text-sm leading-6" style={{ color: 'var(--ds-c3)' }}>Ask questions about the active sheet, or tell AI to change the workbook.</p>
                     </div>
 
                     <Tabs value={aiMode} onValueChange={(value) => setAiMode(value as typeof aiMode)}>
-                      <TabsList className="grid w-full grid-cols-2 rounded-2xl bg-slate-100 p-1">
+                      <TabsList className="grid w-full grid-cols-2 rounded-2xl p-1" style={{ background: 'var(--ds-s3)' }}>
                         <TabsTrigger value="ask" className="rounded-xl">Ask</TabsTrigger>
                         <TabsTrigger value="change" className="rounded-xl">Make changes</TabsTrigger>
                       </TabsList>
 
                       <TabsContent value="ask" className="mt-4 space-y-3">
-                        <div className="rounded-2xl border border-slate-200 bg-white/80 p-3">
+                        <div className="ds-card rounded-2xl p-3" style={{ border: '1px solid var(--ds-s2)', background: 'var(--ds-s4)' }}>
                           <div className="max-h-[320px] space-y-2 overflow-auto pr-1">
                             {docsheetAskMessages.length ? (
                               docsheetAskMessages.slice(-24).map((msg) => (
-                                <div key={msg.id} className={`rounded-2xl border px-3 py-2 ${msg.role === 'user' ? 'border-sky-200 bg-sky-50 text-slate-900' : 'border-slate-200 bg-white text-slate-800'}`}>
-                                  <p className="whitespace-pre-wrap text-sm leading-6">{msg.text}</p>
-                                  {msg.meta ? <p className="mt-2 text-xs text-slate-500">{msg.meta}</p> : null}
+                                <div key={msg.id} className="rounded-2xl px-3 py-2" style={{ border: msg.role === 'user' ? '1px solid rgba(16,185,129,0.25)' : '1px solid var(--ds-s2)', background: msg.role === 'user' ? 'rgba(16,185,129,0.10)' : 'var(--ds-s4)', color: 'var(--ds-c2)' }}>
+                                  <p className="whitespace-pre-wrap text-sm leading-6" style={{ color: 'var(--ds-c2)' }}>{msg.text}</p>
+                                  {msg.meta ? <p className="mt-2 text-xs" style={{ color: 'var(--ds-c4)' }}>{msg.meta}</p> : null}
                                   {msg.role === 'assistant' && msg.actionInstruction ? (
                                     <div className="mt-2 flex flex-wrap gap-2">
                                       <Button
                                         type="button"
                                         size="sm"
-                                        variant="outline"
-                                        className="h-8 rounded-lg"
+                                        className="h-8 rounded-lg" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c3)' }}
                                         onClick={() => {
                                           setAiMode('change');
                                           setAiInstruction(msg.actionInstruction || '');
@@ -3161,7 +3519,7 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
                                       <Button
                                         type="button"
                                         size="sm"
-                                        className="h-8 rounded-lg"
+                                        className="h-8 rounded-lg" style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.30)', color: '#34d399' }}
                                         onClick={() => void runDocSheetAi(msg.actionInstruction)}
                                         disabled={aiBusy}
                                       >
@@ -3172,42 +3530,42 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
                                 </div>
                               ))
                             ) : (
-                              <div className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-8 text-center text-sm text-slate-500">
+                              <div className="rounded-xl px-4 py-8 text-center text-sm" style={{ border: '1px dashed var(--ds-s1)', background: 'var(--ds-s4)', color: 'var(--ds-c4)' }}>
                                 Ask something like: “Which rows are at risk?” or “Summarize totals by Status”.
                               </div>
                             )}
                           </div>
                         </div>
 
-                        <div className="rounded-2xl border border-slate-200 bg-white/80 p-3">
-                          <label className="text-xs font-semibold text-slate-700">Ask about this sheet</label>
+                        <div className="ds-card rounded-2xl p-3" style={{ border: '1px solid var(--ds-s2)', background: 'var(--ds-s4)' }}>
+                          <label className="text-xs font-semibold" style={{ color: 'var(--ds-c3)' }}>Ask about this sheet</label>
                           <div className="mt-2 flex items-end gap-2">
                             <textarea
                               value={docsheetAskInput}
                               onChange={(event) => setDocsheetAskInput(event.target.value)}
-                              className="min-h-[84px] flex-1 resize-none rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm leading-6 text-slate-800 outline-none transition focus:border-slate-400"
+                              className="min-h-[84px] flex-1 resize-none rounded-xl px-3 py-3 text-sm leading-6 outline-none transition" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c2)' }}
                               placeholder="Ask a question. Example: Which owner has the highest Value?"
                             />
-                            <Button type="button" className="h-10 rounded-xl" onClick={() => void askDocSheet()} disabled={docsheetAskBusy || !docsheetAskInput.trim()}>
+                            <Button type="button" className="h-10 rounded-xl" style={{ background: 'rgba(16,185,129,0.18)', border: '1px solid rgba(16,185,129,0.35)', color: '#34d399' }} onClick={() => void askDocSheet()} disabled={docsheetAskBusy || !docsheetAskInput.trim()}>
                               {docsheetAskBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                               Ask
                             </Button>
                           </div>
-                          <p className="mt-2 text-xs text-slate-500">Answers are grounded in the active sheet extract (first rows). Use “Apply as change” when you want edits.</p>
+                          <p className="mt-2 text-xs" style={{ color: 'var(--ds-c4)' }}>Answers are grounded in the active sheet extract (first rows). Use “Apply as change” when you want edits.</p>
                         </div>
                       </TabsContent>
 
                       <TabsContent value="change" className="mt-4 space-y-3">
                         {activeSheet ? (
-                          <div className="rounded-2xl border border-slate-200 bg-white/80 p-4">
-                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Formula Coach</p>
-                            <p className="mt-2 text-sm leading-6 text-slate-700">One-click prompts that add the formulas most teams need.</p>
+                          <div className="ds-card rounded-2xl p-4" style={{ border: '1px solid var(--ds-s2)', background: 'var(--ds-s4)' }}>
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--ds-c4)' }}>Formula Coach</p>
+                            <p className="mt-2 text-sm leading-6" style={{ color: 'var(--ds-c3)' }}>One-click prompts that add the formulas most teams need.</p>
                             <div className="mt-3 flex flex-wrap gap-2">
                               {formulaCoachPrompts.map((prompt) => (
                                 <button
                                   key={prompt}
                                   type="button"
-                                  className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                                  className="rounded-full px-3 py-2 text-xs transition" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c3)' }}
                                   onClick={() => setAiInstruction(prompt)}
                                 >
                                   {prompt}
@@ -3219,19 +3577,19 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
                         <textarea
                           value={aiInstruction}
                           onChange={(event) => setAiInstruction(event.target.value)}
-                          className="min-h-[160px] w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-4 text-sm leading-7 text-slate-800 outline-none transition focus:border-slate-400"
+                          className="min-h-[160px] w-full rounded-2xl px-4 py-4 text-sm leading-7 outline-none transition" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c2)' }}
                           placeholder="Example: Add a new sheet called Summary, group totals by Status, and flag any Value below 100 as At Risk."
                         />
-                        <Button type="button" className="w-full" onClick={() => void runDocSheetAi()} disabled={aiBusy}>
+                        <Button type="button" className="w-full" style={{ background: 'rgba(16,185,129,0.18)', border: '1px solid rgba(16,185,129,0.35)', color: '#34d399' }} onClick={() => void runDocSheetAi()} disabled={aiBusy}>
                           {aiBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BrainCircuit className="mr-2 h-4 w-4" />}
                           {aiBusy ? 'Running...' : 'Apply changes with AI'}
                         </Button>
                         {aiSummary ? (
-                          <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 text-sm text-slate-700">
-                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Summary</p>
-                            <p className="mt-2 whitespace-pre-wrap leading-6">{aiSummary}</p>
+                          <div className="rounded-2xl p-4 text-sm" style={{ border: '1px solid var(--ds-s2)', background: 'var(--ds-s4)', color: 'var(--ds-c3)' }}>
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--ds-c4)' }}>Summary</p>
+                            <p className="mt-2 whitespace-pre-wrap leading-6" style={{ color: 'var(--ds-c2)' }}>{aiSummary}</p>
                             {aiNextSteps.length ? (
-                              <div className="mt-3 space-y-1 text-xs text-slate-500">
+                              <div className="mt-3 space-y-1 text-xs" style={{ color: 'var(--ds-c4)' }}>
                                 {aiNextSteps.slice(0, 6).map((step) => <p key={step}>• {step}</p>)}
                               </div>
                             ) : null}
@@ -3244,12 +3602,12 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
 
                 {studioPanel === 'insights' ? (
                   <div className="space-y-4">
-                    <Button type="button" variant="outline" className="w-full justify-start" onClick={() => void runVisualization()} disabled={visualLoading || !activeSheet}>
+                    <Button type="button" variant="outline" className="w-full justify-start" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s4)', color: 'var(--ds-c2)' }} onClick={() => void runVisualization()} disabled={visualLoading || !activeSheet}>
                       {visualLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BarChart3 className="mr-2 h-4 w-4" />}
                       Refresh insights
                     </Button>
-                    {visualError ? <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{visualError}</div> : null}
-                    {visualMessage ? <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">{visualMessage}</div> : null}
+                    {visualError ? <div className="rounded-xl px-4 py-3 text-sm" style={{ border: '1px solid rgba(251,113,133,0.25)', background: 'rgba(251,113,133,0.10)', color: 'rgba(251,113,133,0.90)' }}>{visualError}</div> : null}
+                    {visualMessage ? <div className="rounded-xl px-4 py-3 text-sm" style={{ border: '1px solid rgba(16,185,129,0.25)', background: 'rgba(16,185,129,0.10)', color: '#34d399' }}>{visualMessage}</div> : null}
                     {visualResult ? (
                       <div className="space-y-4">
                         {visualResult.keyMetrics?.length ? (
@@ -3264,7 +3622,7 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
                         ) : null}
                       </div>
                     ) : (
-                      <div className="rounded-2xl border border-dashed border-slate-300 bg-white/80 px-4 py-10 text-center text-sm text-slate-500">
+                      <div className="rounded-2xl px-4 py-10 text-center text-sm" style={{ border: '1px dashed var(--ds-s1)', background: 'var(--ds-s4)', color: 'var(--ds-c4)' }}>
                         Run insights to generate charts and deep notes for this sheet.
                       </div>
                     )}
@@ -3273,14 +3631,14 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
 
                 {studioPanel === 'smart' ? (
                   <div className="space-y-4">
-                    <div className="rounded-2xl border border-slate-200 bg-white/80 p-4">
-                      <p className="text-sm font-semibold text-slate-950">Smart Sheets</p>
-                      <p className="mt-2 text-sm leading-6 text-slate-600">Apply templates or formula packs to get started faster.</p>
+                    <div className="ds-card rounded-2xl p-4" style={{ border: '1px solid var(--ds-s2)', background: 'var(--ds-s4)' }}>
+                      <p className="text-sm font-semibold" style={{ color: 'var(--ds-c1)' }}>Smart Sheets</p>
+                      <p className="mt-2 text-sm leading-6" style={{ color: 'var(--ds-c3)' }}>Apply templates or formula packs to get started faster.</p>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-semibold text-slate-700">Templates</label>
+                      <label className="text-xs font-semibold" style={{ color: 'var(--ds-c3)' }}>Templates</label>
                       <Select onValueChange={(value) => value && applyTemplate(value)}>
-                        <SelectTrigger className="bg-white">
+                        <SelectTrigger style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c2)' }}>
                           <SelectValue placeholder="Select a template" />
                         </SelectTrigger>
                         <SelectContent>
@@ -3291,13 +3649,13 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-semibold text-slate-700">Formula packs</label>
+                      <label className="text-xs font-semibold" style={{ color: 'var(--ds-c3)' }}>Formula packs</label>
                       <Select
                         onValueChange={(value) => {
                           applyFormulaPack(value);
                         }}
                       >
-                        <SelectTrigger className="bg-white">
+                        <SelectTrigger style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c2)' }}>
                           <SelectValue placeholder="Apply a formula pack" />
                         </SelectTrigger>
                         <SelectContent>
@@ -3312,9 +3670,9 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
 
                 {studioPanel === 'formatting' ? (
                   <div className="space-y-4">
-                    <div className="rounded-2xl border border-slate-200 bg-white/80 p-4">
-                      <p className="text-sm font-semibold text-slate-950">Conditional formatting</p>
-                      <p className="mt-2 text-sm leading-6 text-slate-600">Highlight cells automatically based on simple rules.</p>
+                    <div className="ds-card rounded-2xl p-4" style={{ border: '1px solid var(--ds-s2)', background: 'var(--ds-s4)' }}>
+                      <p className="text-sm font-semibold" style={{ color: 'var(--ds-c1)' }}>Conditional formatting</p>
+                      <p className="mt-2 text-sm leading-6" style={{ color: 'var(--ds-c3)' }}>Highlight cells automatically based on simple rules.</p>
                     </div>
 
                     {activeSheet?.conditionalRules?.length ? (
@@ -3323,16 +3681,16 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
                           const columnIndex = activeSheet.columns.findIndex((col) => col.id === rule.columnId);
                           const columnLabel = columnIndex >= 0 ? getDocSheetColumnLetter(columnIndex) : 'Column';
                           return (
-                            <div key={rule.id} className="rounded-2xl border border-slate-200 bg-white/80 p-3">
+                            <div key={rule.id} className="ds-card rounded-2xl p-3" style={{ border: '1px solid var(--ds-s2)', background: 'var(--ds-s4)' }}>
                               <div className="flex items-start justify-between gap-3">
                                 <div className="min-w-0">
-                                  <p className="text-sm font-semibold text-slate-950">{columnLabel} {rule.op} {rule.value}</p>
-                                  <div className="mt-2 flex items-center gap-2 text-xs text-slate-600">
-                                    <span className="h-3 w-3 rounded-full border border-slate-200" style={{ backgroundColor: rule.style?.bg || '#FEF3C7' }} />
-                                    <span className="truncate">{rule.enabled === false ? 'Disabled' : 'Enabled'}</span>
+                                  <p className="text-sm font-semibold" style={{ color: 'var(--ds-c1)' }}>{columnLabel} {rule.op} {rule.value}</p>
+                                  <div className="mt-2 flex items-center gap-2 text-xs" style={{ color: 'var(--ds-c3)' }}>
+                                    <span className="h-3 w-3 rounded-full" style={{ border: '1px solid var(--ds-s1)', backgroundColor: rule.style?.bg || '#FEF3C7' }} />
+                                    <span className="truncate" style={{ color: 'var(--ds-c3)' }}>{rule.enabled === false ? 'Disabled' : 'Enabled'}</span>
                                   </div>
                                 </div>
-                                <Button type="button" variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-rose-600 hover:bg-rose-50 hover:text-rose-700" onClick={() => deleteConditionalRule(rule.id)} aria-label="Delete rule">
+                                <Button type="button" variant="ghost" size="icon" className="h-9 w-9 rounded-xl" style={{ color: 'rgba(251,113,133,0.75)' }} onClick={() => deleteConditionalRule(rule.id)} aria-label="Delete rule">
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
@@ -3341,15 +3699,14 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
                         })}
                       </div>
                     ) : (
-                      <div className="rounded-2xl border border-dashed border-slate-300 bg-white/80 px-4 py-10 text-center text-sm text-slate-500">
+                      <div className="rounded-2xl px-4 py-10 text-center text-sm" style={{ border: '1px dashed var(--ds-s1)', background: 'var(--ds-s4)', color: 'var(--ds-c4)' }}>
                         No rules yet. Add one to start highlighting cells.
                       </div>
                     )}
 
                     <Button
                       type="button"
-                      variant="outline"
-                      className="w-full"
+                      className="w-full" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c3)' }}
                       onClick={() => {
                         setRulesDraftOpen((current) => !current);
                         if (!ruleDraft.columnId && activeSheet?.columns?.[0]?.id) {
@@ -3362,11 +3719,11 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
                     </Button>
 
                     {rulesDraftOpen && activeSheet ? (
-                      <div className="space-y-3 rounded-2xl border border-slate-200 bg-white/80 p-4">
+                      <div className="ds-card space-y-3 rounded-2xl p-4" style={{ border: '1px solid var(--ds-s2)', background: 'var(--ds-s4)' }}>
                         <div className="space-y-2">
-                          <label className="text-xs font-semibold text-slate-700">Column</label>
+                          <label className="text-xs font-semibold" style={{ color: 'var(--ds-c3)' }}>Column</label>
                           <Select value={ruleDraft.columnId || activeSheet.columns[0]?.id || ''} onValueChange={(value) => setRuleDraft((current) => ({ ...current, columnId: value }))}>
-                            <SelectTrigger className="bg-white">
+                            <SelectTrigger style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c2)' }}>
                               <SelectValue placeholder="Select a column" />
                             </SelectTrigger>
                             <SelectContent>
@@ -3378,9 +3735,9 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-2">
-                            <label className="text-xs font-semibold text-slate-700">Operator</label>
+                            <label className="text-xs font-semibold" style={{ color: 'var(--ds-c3)' }}>Operator</label>
                             <Select value={ruleDraft.op} onValueChange={(value) => setRuleDraft((current) => ({ ...current, op: value as any }))}>
-                              <SelectTrigger className="bg-white">
+                              <SelectTrigger style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c2)' }}>
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
@@ -3394,22 +3751,23 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
                             </Select>
                           </div>
                           <div className="space-y-2">
-                            <label className="text-xs font-semibold text-slate-700">Value</label>
-                            <Input value={ruleDraft.value} onChange={(event) => setRuleDraft((current) => ({ ...current, value: event.target.value }))} placeholder="Example: 100" />
+                            <label className="text-xs font-semibold" style={{ color: 'var(--ds-c3)' }}>Value</label>
+                            <Input value={ruleDraft.value} onChange={(event) => setRuleDraft((current) => ({ ...current, value: event.target.value }))} placeholder="Example: 100" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c2)' }} />
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-2">
-                            <label className="text-xs font-semibold text-slate-700">Background</label>
-                            <Input value={ruleDraft.bg} onChange={(event) => setRuleDraft((current) => ({ ...current, bg: event.target.value }))} placeholder="#FEF3C7" />
+                            <label className="text-xs font-semibold" style={{ color: 'var(--ds-c3)' }}>Background</label>
+                            <Input value={ruleDraft.bg} onChange={(event) => setRuleDraft((current) => ({ ...current, bg: event.target.value }))} placeholder="#FEF3C7" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c2)' }} />
                           </div>
                           <div className="space-y-2">
-                            <label className="text-xs font-semibold text-slate-700">Text</label>
-                            <Input value={ruleDraft.text} onChange={(event) => setRuleDraft((current) => ({ ...current, text: event.target.value }))} placeholder="#92400E" />
+                            <label className="text-xs font-semibold" style={{ color: 'var(--ds-c3)' }}>Text</label>
+                            <Input value={ruleDraft.text} onChange={(event) => setRuleDraft((current) => ({ ...current, text: event.target.value }))} placeholder="#92400E" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c2)' }} />
                           </div>
                         </div>
                         <Button
                           type="button"
+                          style={{ background: 'rgba(16,185,129,0.18)', border: '1px solid rgba(16,185,129,0.35)', color: '#34d399', borderRadius: 9, padding: '8px 16px', fontSize: 13, cursor: 'pointer' }}
                           onClick={() => {
                             if (!ruleDraft.columnId || !ruleDraft.value.trim()) {
                               setErrorMessage('Pick a column and enter a rule value.');
@@ -3435,9 +3793,9 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
 
                 {studioPanel === 'comments' ? (
                   <div className="space-y-4">
-                    <div className="rounded-2xl border border-slate-200 bg-white/80 p-4">
-                      <p className="text-sm font-semibold text-slate-950">Comments</p>
-                      <p className="mt-2 text-sm leading-6 text-slate-600">
+                    <div className="ds-card rounded-2xl p-4" style={{ border: '1px solid var(--ds-s2)', background: 'var(--ds-s4)' }}>
+                      <p className="text-sm font-semibold" style={{ color: 'var(--ds-c1)' }}>Comments</p>
+                      <p className="mt-2 text-sm leading-6" style={{ color: 'var(--ds-c3)' }}>
                         {selectedCell ? `Cell ${selectedCellRef || ''}` : 'Select a cell to view or add comments.'}
                       </p>
                     </div>
@@ -3447,28 +3805,29 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
                         <div className="space-y-2">
                           {(activeSheet.cellComments?.[getCellKey(selectedCell.rowId, selectedCell.columnId)] || []).length ? (
                             (activeSheet.cellComments?.[getCellKey(selectedCell.rowId, selectedCell.columnId)] || []).slice(-12).map((comment) => (
-                              <div key={comment.id} className="rounded-2xl border border-slate-200 bg-white/80 p-3">
-                                <p className="text-sm text-slate-800">{comment.text}</p>
-                                <p className="mt-2 text-xs text-slate-500">{new Date(comment.createdAt).toLocaleString()}</p>
+                              <div key={comment.id} className="ds-card rounded-2xl p-3" style={{ border: '1px solid var(--ds-s2)', background: 'var(--ds-s4)' }}>
+                                <p className="text-sm" style={{ color: 'var(--ds-c2)' }}>{comment.text}</p>
+                                <p className="mt-2 text-xs" style={{ color: 'var(--ds-c4)' }}>{new Date(comment.createdAt).toLocaleString()}</p>
                               </div>
                             ))
                           ) : (
-                            <div className="rounded-2xl border border-dashed border-slate-300 bg-white/80 px-4 py-10 text-center text-sm text-slate-500">
+                            <div className="rounded-2xl px-4 py-10 text-center text-sm" style={{ border: '1px dashed var(--ds-s1)', background: 'var(--ds-s4)', color: 'var(--ds-c4)' }}>
                               No comments yet for this cell.
                             </div>
                           )}
                         </div>
 
-                        <div className="space-y-2 rounded-2xl border border-slate-200 bg-white/80 p-4">
-                          <label className="text-xs font-semibold text-slate-700">Add a comment</label>
+                        <div className="ds-card space-y-2 rounded-2xl p-4" style={{ border: '1px solid var(--ds-s2)', background: 'var(--ds-s4)' }}>
+                          <label className="text-xs font-semibold" style={{ color: 'var(--ds-c3)' }}>Add a comment</label>
                           <textarea
                             value={commentDraft}
                             onChange={(event) => setCommentDraft(event.target.value)}
-                            className="min-h-[110px] w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-800 outline-none transition focus:border-slate-400"
+                            className="min-h-[110px] w-full rounded-xl px-3 py-3 text-sm outline-none transition" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c2)' }}
                             placeholder="Write a comment for this cell"
                           />
                           <Button
                             type="button"
+                            style={{ background: 'rgba(16,185,129,0.18)', border: '1px solid rgba(16,185,129,0.35)', color: '#34d399', borderRadius: 9, padding: '8px 16px', fontSize: 13, cursor: 'pointer' }}
                             onClick={() => {
                               if (!commentDraft.trim()) return;
                               addCommentToSelectedCell(commentDraft.trim());
@@ -3480,7 +3839,7 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
                         </div>
                       </>
                     ) : (
-                      <div className="rounded-2xl border border-dashed border-slate-300 bg-white/80 px-4 py-10 text-center text-sm text-slate-500">
+                      <div className="rounded-2xl px-4 py-10 text-center text-sm" style={{ border: '1px dashed var(--ds-s1)', background: 'var(--ds-s4)', color: 'var(--ds-c4)' }}>
                         Select a cell, then open Comments again.
                       </div>
                     )}
@@ -3492,9 +3851,99 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
           ) : null}
         </div>
 
-        <div className="sticky bottom-0 z-30 border-t border-slate-200/70 bg-white/75 backdrop-blur-xl">
+        {/* ── Floating AI Assistant ── */}
+        <div className="fixed bottom-[68px] right-4 z-[70] sm:bottom-6 sm:right-6 flex flex-col items-end gap-3">
+          {aiFloatOpen && (
+            <div className="ds-ai-float w-[min(360px,calc(100vw-32px))] rounded-2xl overflow-hidden backdrop-blur-xl" style={{ background: 'var(--ds-bg)', border: '1px solid var(--ds-s1)', boxShadow: '0 24px 56px rgba(0,0,0,0.65)' }}>
+              <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--ds-s2)' }}>
+                <div className="flex items-center gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: 'rgba(16,185,129,0.18)', border: '1px solid rgba(16,185,129,0.30)' }}>
+                    <BrainCircuit className="h-4 w-4" style={{ color: '#34d399' }} />
+                  </div>
+                  <span className="text-sm font-semibold" style={{ color: 'var(--ds-c1)' }}>DocSheet AI</span>
+                  <span className="rounded-full px-2 py-0.5 text-[10px] font-medium" style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.25)', color: '#34d399' }}>Smart</span>
+                </div>
+                <button type="button" className="h-7 w-7 flex items-center justify-center rounded-lg" style={{ color: 'var(--ds-c4)', background: 'var(--ds-s3)' }} onClick={() => setAiFloatOpen(false)}>
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <div className="flex" style={{ borderBottom: '1px solid var(--ds-s2)' }}>
+                {(['ask', 'change'] as const).map((mode) => (
+                  <button key={mode} type="button"
+                    className="flex-1 py-2.5 text-xs font-medium transition"
+                    style={{ color: aiMode === mode ? '#34d399' : 'var(--ds-c4)', borderBottom: aiMode === mode ? '2px solid #34d399' : '2px solid transparent', background: 'transparent' }}
+                    onClick={() => setAiMode(mode)}
+                  >
+                    {mode === 'ask' ? '💬 Ask' : '✨ Edit Sheet'}
+                  </button>
+                ))}
+              </div>
+              {aiMode === 'ask' && (
+                <div className="p-3 space-y-2">
+                  <div className="max-h-[200px] overflow-auto space-y-2">
+                    {docsheetAskMessages.length === 0 ? (
+                      <p className="text-center py-4 text-xs" style={{ color: 'var(--ds-c4)' }}>Ask anything about your sheet — totals, trends, missing data…</p>
+                    ) : docsheetAskMessages.slice(-12).map((msg) => (
+                      <div key={msg.id} className="rounded-xl px-3 py-2 text-xs leading-5"
+                        style={{ background: msg.role === 'user' ? 'rgba(16,185,129,0.10)' : 'var(--ds-s4)', border: `1px solid ${msg.role === 'user' ? 'rgba(16,185,129,0.20)' : 'var(--ds-s2)'}`, color: 'var(--ds-c2)' }}>
+                        {msg.text}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-end gap-2">
+                    <textarea value={docsheetAskInput} onChange={(e) => setDocsheetAskInput(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void askDocSheet(); } }}
+                      className="flex-1 resize-none rounded-xl px-3 py-2.5 text-xs leading-5 outline-none"
+                      style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c1)', minHeight: 56 }}
+                      placeholder="Ask… (Enter to send)" rows={2} />
+                    <button type="button" className="h-9 w-9 flex items-center justify-center rounded-xl shrink-0 transition"
+                      style={{ background: docsheetAskBusy || !docsheetAskInput.trim() ? 'var(--ds-s3)' : 'rgba(16,185,129,0.20)', border: '1px solid rgba(16,185,129,0.35)', color: '#34d399' }}
+                      disabled={docsheetAskBusy || !docsheetAskInput.trim()} onClick={() => void askDocSheet()}>
+                      {docsheetAskBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+              )}
+              {aiMode === 'change' && (
+                <div className="p-3 space-y-2">
+                  {activeSheet && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {formulaCoachPrompts.slice(0, 4).map((prompt) => (
+                        <button key={prompt} type="button" className="rounded-full px-2.5 py-1 text-[10px] transition"
+                          style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c3)' }}
+                          onClick={() => setAiInstruction(prompt)}>{prompt}</button>
+                      ))}
+                    </div>
+                  )}
+                  <textarea value={aiInstruction} onChange={(e) => setAiInstruction(e.target.value)}
+                    className="w-full resize-none rounded-xl px-3 py-2.5 text-xs leading-5 outline-none"
+                    style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-s3)', color: 'var(--ds-c1)', minHeight: 72 }}
+                    placeholder="e.g. Add a SUM row at the bottom and flag values below 100…" rows={3} />
+                  <button type="button" className="w-full flex items-center justify-center gap-2 h-9 rounded-xl text-xs font-semibold"
+                    style={{ background: aiBusy ? 'var(--ds-s3)' : 'rgba(16,185,129,0.18)', border: '1px solid rgba(16,185,129,0.35)', color: '#34d399' }}
+                    disabled={aiBusy || !aiInstruction.trim()} onClick={() => void runDocSheetAi()}>
+                    {aiBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <BrainCircuit className="h-3.5 w-3.5" />}
+                    {aiBusy ? 'Processing…' : 'Apply with AI'}
+                  </button>
+                  {aiSummary ? (
+                    <p className="text-[11px] leading-5 rounded-xl px-3 py-2" style={{ color: '#34d399', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.18)' }}>{aiSummary}</p>
+                  ) : null}
+                </div>
+              )}
+            </div>
+          )}
+          <button type="button" onClick={() => setAiFloatOpen((v) => !v)}
+            className="ds-ai-float-fab h-12 w-12 rounded-full flex items-center justify-center transition-all active:scale-95"
+            style={{ background: aiFloatOpen ? 'rgba(239,68,68,0.85)' : '#10b981', boxShadow: '0 4px 22px rgba(16,185,129,0.42)', border: '1px solid var(--ds-s1)' }}
+            data-open={aiFloatOpen ? '' : undefined}
+            title={aiFloatOpen ? 'Close AI assistant' : 'Ask AI — DocSheet assistant'}>
+            {aiFloatOpen ? <X className="h-5 w-5 text-white" /> : <Search className="h-5 w-5 text-white" />}
+          </button>
+        </div>
+
+        <div className="ds-tabs-bar sticky bottom-0 z-30 backdrop-blur-xl" style={{ borderTop: '1px solid var(--ds-s2)', background: 'var(--ds-bg)' }}>
           <div className="flex items-center gap-2 px-3 py-2 sm:px-4">
-            <Button type="button" variant="ghost" size="icon" className="h-9 w-9 rounded-lg text-slate-700 hover:bg-slate-100" onClick={addSheet} aria-label="Add sheet">
+            <Button type="button" variant="ghost" size="icon" className="h-9 w-9 rounded-lg" style={{ color: 'var(--ds-c3)' }} onClick={addSheet} aria-label="Add sheet">
               <Plus className="h-4 w-4" />
             </Button>
             <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
@@ -3509,31 +3958,29 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
                     updateSheet(sheet.id, (current) => ({ ...current, name: nextName.trim() }));
                     setStatusMessage('Sheet renamed.');
                   }}
-                  className={`whitespace-nowrap rounded-full px-3 py-1.5 text-sm transition ${
-                    sheet.id === activeSheetId ? 'bg-slate-950 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }`}
+                  className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition ${sheet.id === activeSheetId ? 'ds-tab-active text-emerald-300' : 'ds-tab-inactive text-[var(--ds-c3)] hover:text-white'}`} style={{ background: sheet.id === activeSheetId ? 'rgba(16,185,129,0.18)' : 'var(--ds-s3)', border: sheet.id === activeSheetId ? '1px solid rgba(16,185,129,0.35)' : '1px solid var(--ds-s2)' }}
                 >
                   {sheet.name}
                 </button>
               ))}
             </div>
-            <Button type="button" variant="ghost" size="icon" className="h-9 w-9 rounded-lg text-slate-700 hover:bg-slate-100" onClick={removeActiveSheet} disabled={workbook.sheets.length <= 1} aria-label="Delete active sheet">
+            <Button type="button" variant="ghost" size="icon" className="h-9 w-9 rounded-lg" style={{ color: 'var(--ds-c4)' }} onClick={removeActiveSheet} disabled={workbook.sheets.length <= 1} aria-label="Delete active sheet">
               <Trash2 className="h-4 w-4" />
             </Button>
             <div className="relative">
-              <Button type="button" variant="ghost" size="icon" className="h-9 w-9 rounded-lg text-slate-700 hover:bg-slate-100" onClick={() => setSheetMenuOpen((current) => !current)} aria-label="Sheet actions">
+              <Button type="button" variant="ghost" size="icon" className="h-9 w-9 rounded-lg" style={{ color: 'var(--ds-c4)' }} onClick={() => setSheetMenuOpen((current) => !current)} aria-label="Sheet actions">
                 <SlidersHorizontal className="h-4 w-4" />
               </Button>
               {sheetMenuOpen ? (
-                <div className="absolute bottom-[calc(100%+10px)] right-0 z-50 w-56 rounded-xl border border-slate-200 bg-white/95 p-1 shadow-[0_18px_40px_rgba(15,23,42,0.10)] backdrop-blur-xl">
-                  <button type="button" className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => { renameActiveSheet(); setSheetMenuOpen(false); }}>
+                <div className="absolute bottom-[calc(100%+10px)] right-0 z-50 w-56 rounded-xl p-1 backdrop-blur-xl" style={{ border: '1px solid var(--ds-s1)', background: 'var(--ds-bg)', boxShadow: '0 18px 40px rgba(0,0,0,0.55)' }}>
+                  <button type="button" className="ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => { renameActiveSheet(); setSheetMenuOpen(false); }}>
                     Rename sheet
                   </button>
-                  <button type="button" className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-100" onClick={() => { duplicateActiveSheet(); setSheetMenuOpen(false); }}>
+                  <button type="button" className="ds-menu-item w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors" style={{ color: 'var(--ds-c2)' }} onMouseEnter={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='var(--ds-s2)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} onClick={() => { duplicateActiveSheet(); setSheetMenuOpen(false); }}>
                     Duplicate sheet
                   </button>
-                  <div className="my-1 h-px bg-slate-200" />
-                  <button type="button" className={`w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-slate-100 ${workbook.sheets.length > 1 ? 'text-rose-700' : 'cursor-not-allowed text-slate-400'}`} disabled={workbook.sheets.length <= 1} onClick={() => { removeActiveSheet(); setSheetMenuOpen(false); }}>
+                  <div className="ds-separator my-1 h-px" style={{ background: 'var(--ds-s2)' }} />
+                  <button type="button" className={`w-full rounded-lg px-3 py-2 text-left text-sm transition-colors ${workbook.sheets.length <= 1 ? 'cursor-not-allowed opacity-30' : ''}`} style={{ color: workbook.sheets.length > 1 ? 'rgba(251,113,133,0.85)' : 'var(--ds-c5)' }} onMouseEnter={(e)=>{if(workbook.sheets.length>1)(e.currentTarget as HTMLButtonElement).style.background='rgba(251,113,133,0.08)'}} onMouseLeave={(e)=>{(e.currentTarget as HTMLButtonElement).style.background='transparent'}} disabled={workbook.sheets.length <= 1} onClick={() => { removeActiveSheet(); setSheetMenuOpen(false); }}>
                     Delete sheet
                   </button>
                 </div>
@@ -3545,185 +3992,179 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
     );
   }
 
-  const libraryBadgeBase = 'inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/60 px-2.5 py-1 text-[11px] font-medium text-slate-700 shadow-sm backdrop-blur';
+  /* ── dark-glass badge used in module layout ── */
+  const libBadge: React.CSSProperties = {
+    display: 'inline-flex', alignItems: 'center', gap: 5,
+    borderRadius: 999, border: '1px solid var(--ds-s1)',
+    background: 'var(--ds-s3)',
+    padding: '3px 9px',
+    fontSize: 10.5, fontWeight: 500, color: 'var(--ds-c4)',
+    whiteSpace: 'nowrap',
+  };
+  const libBtn: React.CSSProperties = {
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    height: 30, borderRadius: 9, border: '1px solid var(--ds-s1)',
+    background: 'var(--ds-s3)', color: 'var(--ds-c3)',
+    fontSize: 12, fontWeight: 500, cursor: 'pointer', transition: 'background 0.15s',
+    gap: 5,
+  };
+  const libIconBtn: React.CSSProperties = { ...libBtn, width: 30, padding: 0 };
 
   if (layout === 'module') {
     return (
-      <div className={pageShellClassName}>
-        <Card className="border-white/60 bg-white/84 shadow-[0_18px_40px_rgba(15,23,42,0.06)] backdrop-blur">
-          <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/70 bg-white/70 shadow-sm backdrop-blur">
-                <Sheet className="h-5 w-5 text-slate-900" />
-              </div>
-              <div className="min-w-0">
-                <CardTitle className="truncate text-xl font-medium tracking-[-0.03em] text-slate-950">DocSheet</CardTitle>
-                <p className="mt-1 text-sm text-slate-600">Saved workbooks and governed share sessions.</p>
-              </div>
-            </div>
+      <div style={{ height: '100%', overflowY: 'auto', padding: '20px 24px 32px', scrollbarWidth: 'none' }}>
 
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" variant="outline" onClick={onHistoryRefresh}>
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Refresh
-              </Button>
-              <Button type="button" asChild>
-                <Link href="/docsheet">
-                  <FileSpreadsheet className="mr-2 h-4 w-4" />
-                  Open Studio
-                </Link>
-              </Button>
-            </div>
-          </CardHeader>
+        {/* ── Header row ── */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 600, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1.2 }}>Saved Workbooks</p>
+            <p style={{ fontSize: 11, color: 'var(--ds-c4)', marginTop: 3, letterSpacing: '0.01em' }}>Governed share sessions &amp; workbooks</p>
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            <button type="button" style={{ ...libBtn, paddingInline: 12 }} onClick={onHistoryRefresh}>
+              <RefreshCw style={{ width: 13, height: 13 }} /> Refresh
+            </button>
+            <Link href="/docsheet" style={{ ...libBtn, paddingInline: 12, textDecoration: 'none', background: 'rgba(16,185,129,0.10)', border: '1px solid rgba(16,185,129,0.22)', color: '#34d399' }}>
+              <FileSpreadsheet style={{ width: 13, height: 13 }} /> Open Studio
+            </Link>
+          </div>
+        </div>
 
-          <CardContent className="space-y-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <Input
-                value={libraryQuery}
-                onChange={(event) => setLibraryQuery(event.target.value)}
-                placeholder="Search workbooks, sheets, categories..."
-                className="h-11 rounded-2xl border-white/70 bg-white/70 shadow-sm backdrop-blur placeholder:text-slate-400"
-              />
-              <div className="flex items-center justify-between gap-2 sm:justify-end">
-                <div className="text-sm text-slate-600">
-                  {filteredWorkbooks.length ? `${filteredWorkbooks.length} workbooks` : 'No workbooks'}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button type="button" variant="outline" size="sm" onClick={() => setLibraryPage((current) => Math.max(1, current - 1))} disabled={libraryPage <= 1}>
-                    Prev
-                  </Button>
-                  <div className="min-w-[92px] text-center text-sm text-slate-600">Page {libraryPage} / {libraryTotalPages}</div>
-                  <Button type="button" variant="outline" size="sm" onClick={() => setLibraryPage((current) => Math.min(libraryTotalPages, current + 1))} disabled={libraryPage >= libraryTotalPages}>
-                    Next
-                  </Button>
-                </div>
-              </div>
-            </div>
+        {/* ── Search + pagination row ── */}
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
+          <input
+            value={libraryQuery}
+            onChange={(e) => setLibraryQuery(e.target.value)}
+            placeholder="Search workbooks, sheets, categories…"
+            style={{
+              flex: 1, minWidth: 180, height: 36, borderRadius: 10,
+              border: '1px solid var(--ds-s1)',
+              background: 'var(--ds-s3)',
+              color: '#fff', fontSize: 12.5, padding: '0 12px',
+              outline: 'none',
+            }}
+          />
+          <span style={{ fontSize: 11, color: 'var(--ds-c5)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+            {filteredWorkbooks.length ? `${filteredWorkbooks.length} workbook${filteredWorkbooks.length !== 1 ? 's' : ''}` : 'No workbooks'}
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+            <button type="button" style={{ ...libBtn, paddingInline: 10, opacity: libraryPage <= 1 ? 0.35 : 1 }} disabled={libraryPage <= 1}
+              onClick={() => setLibraryPage((p) => Math.max(1, p - 1))}>Prev</button>
+            <span style={{ fontSize: 11, color: 'var(--ds-c5)', minWidth: 64, textAlign: 'center' }}>
+              {libraryPage} / {libraryTotalPages}
+            </span>
+            <button type="button" style={{ ...libBtn, paddingInline: 10, opacity: libraryPage >= libraryTotalPages ? 0.35 : 1 }} disabled={libraryPage >= libraryTotalPages}
+              onClick={() => setLibraryPage((p) => Math.min(libraryTotalPages, p + 1))}>Next</button>
+          </div>
+        </div>
 
-            {statusMessage ? <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">{statusMessage}</div> : null}
-            {errorMessage ? <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{errorMessage}</div> : null}
+        {/* ── Status / error banners ── */}
+        {statusMessage && (
+          <div style={{ marginBottom: 12, borderRadius: 10, border: '1px solid rgba(52,211,153,0.22)', background: 'rgba(52,211,153,0.08)', padding: '10px 14px', fontSize: 12, color: '#6ee7b7' }}>
+            {statusMessage}
+          </div>
+        )}
+        {errorMessage && (
+          <div style={{ marginBottom: 12, borderRadius: 10, border: '1px solid rgba(239,68,68,0.22)', background: 'rgba(239,68,68,0.08)', padding: '10px 14px', fontSize: 12, color: '#fca5a5' }}>
+            {errorMessage}
+          </div>
+        )}
 
-            <div className="grid gap-3">
-              {pagedWorkbooks.length ? (
-                pagedWorkbooks.map((entry) => {
-                  const extracted = extractWorkbookFromHistory(entry);
-                  const openHref = `/docsheet?workbook=${encodeURIComponent(entry.id)}`;
-                  const shareHref = entry.shareUrl ? entry.shareUrl : '';
-                  const shareAbsolute = shareHref ? buildAbsoluteAppUrl(shareHref, window.location.origin) : '';
-                  const shareMode = entry.docsheetShareMode || (entry.recipientAccess === 'edit' ? 'edit' : 'view');
-                  const expiresAt = entry.shareExpiresAt ? new Date(entry.shareExpiresAt) : null;
-                  const expiresLabel = expiresAt && Number.isFinite(expiresAt.getTime())
-                    ? expiresAt.toLocaleDateString()
-                    : '';
+        {/* ── Workbook list ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {pagedWorkbooks.length ? (
+            pagedWorkbooks.map((entry) => {
+              const extracted = extractWorkbookFromHistory(entry);
+              const openHref = `/docsheet?workbook=${encodeURIComponent(entry.id)}`;
+              const shareHref = entry.shareUrl ?? '';
+              const shareAbsolute = shareHref ? buildAbsoluteAppUrl(shareHref, window.location.origin) : '';
+              const shareMode = entry.docsheetShareMode || (entry.recipientAccess === 'edit' ? 'edit' : 'view');
+              const expiresAt = entry.shareExpiresAt ? new Date(entry.shareExpiresAt) : null;
+              const expiresLabel = expiresAt && Number.isFinite(expiresAt.getTime()) ? expiresAt.toLocaleDateString() : '';
 
-                  return (
-                    <div
-                      key={entry.id}
-                      className="grid gap-3 rounded-[1.35rem] border border-white/60 bg-white/72 p-3 shadow-[0_14px_38px_rgba(15,23,42,0.06)] backdrop-blur sm:grid-cols-[170px_1fr_auto] sm:items-center"
-                    >
-                      <button
-                        type="button"
-                        className="text-left"
-                        onClick={() => window.open(openHref, '_blank', 'noopener,noreferrer')}
-                        aria-label={`Open ${extracted?.title || entry.templateName} in DocSheet Studio`}
-                      >
-                        <DocSheetThumbnail workbook={extracted} />
-                      </button>
+              return (
+                <div key={entry.id} style={{
+                  display: 'grid',
+                  gridTemplateColumns: '150px 1fr auto',
+                  gap: 14,
+                  alignItems: 'center',
+                  borderRadius: 16,
+                  border: '1px solid var(--ds-s2)',
+                  background: 'var(--ds-s4)',
+                  padding: '14px 16px 14px 14px',
+                }}>
+                  {/* Thumbnail */}
+                  <button type="button" style={{ textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                    onClick={() => window.open(openHref, '_blank', 'noopener,noreferrer')}
+                    aria-label={`Open ${extracted?.title || entry.templateName}`}>
+                    <DocSheetThumbnail workbook={extracted} />
+                  </button>
 
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-slate-950">{extracted?.title || entry.templateName}</p>
-                        <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                          <span>{(extracted?.sheets?.length ?? 0)} sheets</span>
-                          <span className="text-slate-300">•</span>
-                          <span>{formatDate(entry.generatedAt)}</span>
-                        </p>
-
-                        <div className="mt-2 flex flex-wrap items-center gap-2">
-                          <span className={libraryBadgeBase}>
-                            {shareMode === 'edit' ? <PencilLine className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                            {shareMode === 'edit' ? 'Editable' : 'View only'}
-                          </span>
-                          {entry.shareUrl ? (
-                            <span className={libraryBadgeBase}>
-                              <Link2 className="h-3.5 w-3.5" />
-                              Link ready
-                            </span>
-                          ) : null}
-                          {entry.shareRequiresPassword ? (
-                            <span className={libraryBadgeBase}>
-                              <KeyRound className="h-3.5 w-3.5" />
-                              Password
-                            </span>
-                          ) : null}
-                          {entry.shareAccessPolicy === 'one_time' ? (
-                            <span className={libraryBadgeBase}>
-                              <Clock className="h-3.5 w-3.5" />
-                              One-time
-                            </span>
-                          ) : null}
-                          {entry.shareAccessPolicy === 'expiring' && expiresLabel ? (
-                            <span className={libraryBadgeBase}>
-                              <Clock className="h-3.5 w-3.5" />
-                              Expires {expiresLabel}
-                            </span>
-                          ) : null}
-                          {entry.docsheetSharedWithEmail ? (
-                            <span className={libraryBadgeBase}>
-                              <Mail className="h-3.5 w-3.5" />
-                              {entry.docsheetSharedWithEmail}
-                            </span>
-                          ) : null}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-end gap-1 sm:flex-col sm:items-end sm:gap-2">
-                        <div className="flex flex-wrap items-center justify-end gap-1">
-                          <Button type="button" variant="outline" size="sm" asChild>
-                            <Link href={openHref} target="_blank" rel="noreferrer">
-                              <span className="hidden sm:inline">Open</span>
-                              <span className="sm:hidden">↗</span>
-                            </Link>
-                          </Button>
-                          {shareAbsolute ? (
-                            <Button type="button" variant="outline" size="icon" onClick={() => window.open(shareAbsolute, '_blank', 'noopener,noreferrer')} aria-label="Open share link">
-                              <Link2 className="h-4 w-4" />
-                            </Button>
-                          ) : null}
-                          {shareAbsolute ? (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="icon"
-                              onClick={() => void navigator.clipboard.writeText(shareAbsolute)}
-                              aria-label="Copy share link"
-                            >
-                              <Copy className="h-4 w-4" />
-                            </Button>
-                          ) : null}
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            className="text-rose-600 hover:text-rose-700"
-                            onClick={() => void deleteWorkbook(entry.id)}
-                            disabled={deletingId === entry.id}
-                            aria-label="Delete workbook"
-                          >
-                            {deletingId === entry.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                          </Button>
-                        </div>
-                      </div>
+                  {/* Details */}
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: '#fff', letterSpacing: '-0.015em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {extracted?.title || entry.templateName}
+                    </p>
+                    <p style={{ marginTop: 4, fontSize: 11, color: 'var(--ds-c5)', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      <span>{extracted?.sheets?.length ?? 0} sheet{(extracted?.sheets?.length ?? 0) !== 1 ? 's' : ''}</span>
+                      <span style={{ opacity: 0.4 }}>·</span>
+                      <span>{formatDate(entry.generatedAt)}</span>
+                    </p>
+                    <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      <span style={libBadge}>
+                        {shareMode === 'edit' ? <PencilLine style={{ width: 11, height: 11 }} /> : <Eye style={{ width: 11, height: 11 }} />}
+                        {shareMode === 'edit' ? 'Editable' : 'View only'}
+                      </span>
+                      {entry.shareUrl && <span style={libBadge}><Link2 style={{ width: 11, height: 11 }} />Link ready</span>}
+                      {entry.shareRequiresPassword && <span style={libBadge}><KeyRound style={{ width: 11, height: 11 }} />Password</span>}
+                      {entry.shareAccessPolicy === 'one_time' && <span style={libBadge}><Clock style={{ width: 11, height: 11 }} />One-time</span>}
+                      {entry.shareAccessPolicy === 'expiring' && expiresLabel && (
+                        <span style={libBadge}><Clock style={{ width: 11, height: 11 }} />Expires {expiresLabel}</span>
+                      )}
+                      {entry.docsheetSharedWithEmail && (
+                        <span style={libBadge}><Mail style={{ width: 11, height: 11 }} />{entry.docsheetSharedWithEmail}</span>
+                      )}
                     </div>
-                  );
-                })
-              ) : (
-                <div className="rounded-[1.35rem] border border-dashed border-white/60 bg-white/55 px-4 py-10 text-center text-sm text-slate-600 shadow-sm backdrop-blur">
-                  No DocSheet workbooks yet. Create one in the Studio, save it, and it will show up here.
+                  </div>
+
+                  {/* Actions */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                    <Link href={openHref} target="_blank" rel="noreferrer"
+                      style={{ ...libBtn, paddingInline: 12, textDecoration: 'none' }}>
+                      Open
+                    </Link>
+                    {shareAbsolute && (
+                      <button type="button" style={libIconBtn} onClick={() => window.open(shareAbsolute, '_blank', 'noopener,noreferrer')} aria-label="Open share link">
+                        <Link2 style={{ width: 13, height: 13 }} />
+                      </button>
+                    )}
+                    {shareAbsolute && (
+                      <button type="button" style={libIconBtn} onClick={() => void navigator.clipboard.writeText(shareAbsolute)} aria-label="Copy share link">
+                        <Copy style={{ width: 13, height: 13 }} />
+                      </button>
+                    )}
+                    <button type="button"
+                      style={{ ...libIconBtn, color: 'rgba(239,68,68,0.65)', borderColor: 'rgba(239,68,68,0.18)', background: 'rgba(239,68,68,0.06)' }}
+                      onClick={() => void deleteWorkbook(entry.id)}
+                      disabled={deletingId === entry.id}
+                      aria-label="Delete workbook">
+                      {deletingId === entry.id ? <Loader2 style={{ width: 13, height: 13 }} className="animate-spin" /> : <Trash2 style={{ width: 13, height: 13 }} />}
+                    </button>
+                  </div>
                 </div>
-              )}
+              );
+            })
+          ) : (
+            <div style={{
+              borderRadius: 14, border: '1px dashed var(--ds-s1)',
+              background: 'var(--ds-s4)',
+              padding: '40px 24px', textAlign: 'center',
+              fontSize: 12, color: 'var(--ds-c5)', lineHeight: 1.6,
+            }}>
+              No workbooks saved yet.<br />Create one in the Studio, save it, and it will appear here.
             </div>
-          </CardContent>
-        </Card>
+          )}
+        </div>
       </div>
     );
   }
@@ -4362,6 +4803,20 @@ export default function DocSheetCenter({ history, onHistoryRefresh, layout = 'mo
           {/* Intentionally minimal: keep the workflow focused on the sheet editor + actions. */}
         </div>
       </div>
+
+      {/* ── Real-time CollabBar ── */}
+      {collabOpen ? (
+        <CollabBar
+          engine={collabEngine}
+          content={JSON.stringify(workbook)}
+          onContentChange={(snap) => {
+            try {
+              const wb = JSON.parse(snap) as typeof workbook;
+              if (wb?.id && wb?.sheets) setWorkbook(wb);
+            } catch { /* ignore */ }
+          }}
+        />
+      ) : null}
     </div>
   );
 }

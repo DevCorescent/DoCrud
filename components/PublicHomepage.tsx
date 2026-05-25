@@ -11,13 +11,17 @@ import {
   Activity,
   ArrowRight,
   Award,
+  BarChart2,
   Bookmark,
+  BookMarked,
   BookOpen,
   Briefcase,
+  CalendarDays,
   Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ClipboardList,
   Crown,
   Eye,
   FileSignature,
@@ -25,8 +29,11 @@ import {
   FolderLock,
   FormInput,
   Heart,
+  Globe,
   HelpCircle,
   LayoutGrid,
+  ListChecks,
+  Loader2,
   LockKeyhole,
   LogOut,
   Layers,
@@ -34,7 +41,9 @@ import {
   Medal,
   Menu,
   MessageCircle,
+  MessageSquare,
   Mic,
+  Music,
   Newspaper,
   Package,
   Paperclip,
@@ -45,7 +54,10 @@ import {
   Send,
   Settings,
   Share2,
+  Sheet,
   Sparkles,
+  Star,
+  Terminal,
   ThumbsUp,
   TrendingDown,
   TrendingUp,
@@ -53,8 +65,10 @@ import {
   User,
   UserPlus,
   Users,
+  Video,
   Wand2,
   X,
+  Zap,
 } from 'lucide-react';
 import HomepageNav from '@/components/HomepageNav';
 import { AssistantResultCardView } from '@/components/home-chat/AssistantResultCard';
@@ -64,8 +78,11 @@ import FileTransferCenter from '@/components/FileTransferCenter';
 import PdfStudio from '@/components/PdfStudio';
 import FormsCenter from '@/components/FormsCenter';
 import ScratchpadCenter from '@/components/ScratchpadCenter';
+import DocSheetCenter from '@/components/DocSheetCenter';
+import type { DocumentHistory } from '@/types/document';
 import DocumentVisualizerModal from '@/components/DocumentVisualizerModal';
 import ESignStudioModal from '@/components/ESignStudioModal';
+import FileDriveCenter from '@/components/FileDriveCenter';
 import type { AssistantResultCard, DocumentQuickAction, UploadedDocument } from '@/types/doc-assistant';
 
 interface PublicHomepageProps {
@@ -103,6 +120,7 @@ const sidebarNav = [
   { label: 'Secure Sharing', href: '#', Icon: FolderLock, group: 'Security' },
   { label: 'E‑Sign', href: '/workspace?tab=generate', Icon: FileSignature, group: 'Security' },
   { label: 'People', href: '/people', Icon: Users, group: 'Discover' },
+  { label: 'Public Faces', href: '/people', Icon: Users, group: 'Discover' },
 ] as const;
 
 const welcomeCards = [
@@ -144,49 +162,26 @@ const welcomeCards = [
   },
 ] as const;
 
-/* ─── Homepage hero feature cards ───────────────────────────── */
-const HERO_FEATURE_CARDS = [
-  {
-    id: 'sign-off',
-    title: 'The Sign-Off Hero',
-    description: 'Close deals faster with integrated digital signatures.',
-    Icon: FileSignature,
-    iconBg: 'bg-violet-500/[0.12]',
-    iconColor: 'text-violet-400',
-    border: 'border-violet-500/[0.15]',
-    glow: 'rgba(139,92,246,0.12)',
-  },
-  {
-    id: 'vault',
-    title: 'The Vault Keeper',
-    description: 'Secure. Encrypted. Always protected.',
-    Icon: LockKeyhole,
-    iconBg: 'bg-emerald-500/[0.12]',
-    iconColor: 'text-emerald-400',
-    border: 'border-emerald-500/[0.15]',
-    glow: 'rgba(16,185,129,0.12)',
-  },
-  {
-    id: 'pdf',
-    title: 'The PDF Decoder',
-    description: 'AI-powered document insights in seconds.',
-    Icon: FileText,
-    iconBg: 'bg-blue-500/[0.12]',
-    iconColor: 'text-blue-400',
-    border: 'border-blue-500/[0.15]',
-    glow: 'rgba(59,130,246,0.12)',
-  },
-  {
-    id: 'draft',
-    title: 'The Draft Whisperer',
-    description: 'Banish writer\'s block. Create content, offers, and invoices in seconds.',
-    Icon: PenLine,
-    iconBg: 'bg-amber-500/[0.12]',
-    iconColor: 'text-amber-400',
-    border: 'border-amber-500/[0.15]',
-    glow: 'rgba(245,158,11,0.12)',
-  },
-] as const;
+/* ─── Quick-action feature definitions ───────────────────────── */
+const ALL_QUICK_FEATURES = [
+  // href: real route to navigate | modal: key to open an on-page modal | null = not applicable
+  { id: 'docword',    label: 'DocWord',    desc: 'AI document editor, proposals & drafts',    Icon: FileText,      href: '/docword',                  modal: null,          ic: '#60a5fa', ib: 'rgba(59,130,246,0.14)',   bd: 'rgba(59,130,246,0.20)'  },
+  { id: 'docsheets',  label: 'DocSheets',  desc: 'Smart spreadsheets with AI-powered formulas', Icon: Sheet,        href: null,                        modal: 'docsheets',   ic: '#34d399', ib: 'rgba(52,211,153,0.14)',  bd: 'rgba(52,211,153,0.20)'  },
+  { id: 'esign',      label: 'E-Sign',     desc: 'Digital signatures & contract workflows',   Icon: FileSignature, href: null,                        modal: 'esign',       ic: '#a78bfa', ib: 'rgba(139,92,246,0.14)', bd: 'rgba(139,92,246,0.20)'  },
+  { id: 'pdf',        label: 'PDF Editor', desc: 'Edit, merge, annotate & convert PDFs',      Icon: Wand2,         href: null,                        modal: 'pdf',         ic: '#f87171', ib: 'rgba(239,68,68,0.12)',   bd: 'rgba(239,68,68,0.18)'   },
+  { id: 'scratchpad', label: 'Scratchpad', desc: 'Quick notes, ideas & personal drafts',      Icon: PenLine,       href: null,                        modal: 'scratchpad',  ic: '#fbbf24', ib: 'rgba(245,158,11,0.14)', bd: 'rgba(245,158,11,0.20)'  },
+  { id: 'people',     label: 'People',     desc: 'Discover & connect with professionals',     Icon: Users,         href: '/people',                   modal: null,          ic: '#4ade80', ib: 'rgba(74,222,128,0.14)', bd: 'rgba(74,222,128,0.20)'  },
+  { id: 'messages',   label: 'Messages',   desc: 'Chat & collaborate with connections',        Icon: MessageCircle, href: '/messages',                 modal: null,          ic: '#93c5fd', ib: 'rgba(56,189,248,0.14)', bd: 'rgba(56,189,248,0.20)'  },
+  { id: 'gigs',       label: 'Gigs',       desc: 'Find & post freelance opportunities',        Icon: Zap,           href: '/gigs',                     modal: null,          ic: '#facc15', ib: 'rgba(250,204,21,0.14)', bd: 'rgba(250,204,21,0.20)'  },
+  { id: 'talent',     label: 'Talent',     desc: 'Hire top professionals for your project',   Icon: Star,          href: '/talent',                   modal: null,          ic: '#f472b6', ib: 'rgba(244,114,182,0.14)',bd: 'rgba(244,114,182,0.20)' },
+  { id: 'publish',    label: 'Publish',    desc: 'Share news, articles, portfolios & more',   Icon: Send,          href: null,                        modal: 'publish',     ic: '#fb923c', ib: 'rgba(251,146,60,0.14)', bd: 'rgba(251,146,60,0.20)'  },
+  { id: 'explore',    label: 'Explore',    desc: 'Browse community posts & insights',         Icon: Newspaper,     href: '/published',                modal: null,          ic: '#22d3ee', ib: 'rgba(34,211,238,0.12)', bd: 'rgba(34,211,238,0.18)'  },
+  { id: 'portfolio',  label: 'Portfolio',  desc: 'Showcase your work & achievements',         Icon: Layers,        href: '/published?tab=portfolio',  modal: null,          ic: '#c084fc', ib: 'rgba(192,132,252,0.14)',bd: 'rgba(192,132,252,0.20)' },
+];
+type QuickFeature = typeof ALL_QUICK_FEATURES[number];
+const GUEST_FEATURE_IDS   = ['docword', 'docsheets', 'pdf',   'people']   as const;
+const DEFAULT_FEATURE_IDS = ['docword', 'docsheets', 'esign', 'gigs']     as const;
+const USAGE_LS_KEY = 'docrud_qf_usage_v1';
 
 /* ─── New professionals data ─────────────────────────────────── */
 const NEW_PROFESSIONALS = [
@@ -1237,9 +1232,9 @@ function PublishShowcase({
             </button>
 
             {/* Left smoke fade */}
-            <div className="pointer-events-none absolute inset-y-0 left-0 z-[5] w-16 sm:w-24 bg-gradient-to-r from-black via-black/60 to-transparent" />
+            <div className="pointer-events-none absolute inset-y-0 left-0 z-[5] w-16 sm:w-28 lg:w-40" style={{ background: 'linear-gradient(to right, rgb(13,13,15) 0%, rgba(13,13,15,0.98) 5%, rgba(13,13,15,0.95) 10%, rgba(13,13,15,0.90) 16%, rgba(13,13,15,0.83) 23%, rgba(13,13,15,0.74) 31%, rgba(13,13,15,0.63) 40%, rgba(13,13,15,0.51) 49%, rgba(13,13,15,0.40) 58%, rgba(13,13,15,0.28) 67%, rgba(13,13,15,0.18) 75%, rgba(13,13,15,0.09) 83%, rgba(13,13,15,0.03) 91%, transparent 100%)' }} />
             {/* Right smoke fade */}
-            <div className="pointer-events-none absolute inset-y-0 right-0 z-[5] w-16 sm:w-24 bg-gradient-to-l from-black via-black/60 to-transparent" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 z-[5] w-16 sm:w-28 lg:w-40" style={{ background: 'linear-gradient(to left, rgb(13,13,15) 0%, rgba(13,13,15,0.98) 5%, rgba(13,13,15,0.95) 10%, rgba(13,13,15,0.90) 16%, rgba(13,13,15,0.83) 23%, rgba(13,13,15,0.74) 31%, rgba(13,13,15,0.63) 40%, rgba(13,13,15,0.51) 49%, rgba(13,13,15,0.40) 58%, rgba(13,13,15,0.28) 67%, rgba(13,13,15,0.18) 75%, rgba(13,13,15,0.09) 83%, rgba(13,13,15,0.03) 91%, transparent 100%)' }} />
 
             <div
               id="publish-showcase-scroller"
@@ -1362,9 +1357,9 @@ function PublishShowcase({
                 aria-label="Scroll right"
               ><ChevronDown className="h-4 w-4 -rotate-90" /></button>
               {/* Left smoke fade */}
-              <div className="pointer-events-none absolute inset-y-0 left-0 z-[5] w-16 sm:w-24 bg-gradient-to-r from-black via-black/60 to-transparent" />
+              <div className="pointer-events-none absolute inset-y-0 left-0 z-[5] w-16 sm:w-28 lg:w-40" style={{ background: 'linear-gradient(to right, rgb(13,13,15) 0%, rgba(13,13,15,0.98) 5%, rgba(13,13,15,0.95) 10%, rgba(13,13,15,0.90) 16%, rgba(13,13,15,0.83) 23%, rgba(13,13,15,0.74) 31%, rgba(13,13,15,0.63) 40%, rgba(13,13,15,0.51) 49%, rgba(13,13,15,0.40) 58%, rgba(13,13,15,0.28) 67%, rgba(13,13,15,0.18) 75%, rgba(13,13,15,0.09) 83%, rgba(13,13,15,0.03) 91%, transparent 100%)' }} />
               {/* Right smoke fade */}
-              <div className="pointer-events-none absolute inset-y-0 right-0 z-[5] w-16 sm:w-24 bg-gradient-to-l from-black via-black/60 to-transparent" />
+              <div className="pointer-events-none absolute inset-y-0 right-0 z-[5] w-16 sm:w-28 lg:w-40" style={{ background: 'linear-gradient(to left, rgb(13,13,15) 0%, rgba(13,13,15,0.98) 5%, rgba(13,13,15,0.95) 10%, rgba(13,13,15,0.90) 16%, rgba(13,13,15,0.83) 23%, rgba(13,13,15,0.74) 31%, rgba(13,13,15,0.63) 40%, rgba(13,13,15,0.51) 49%, rgba(13,13,15,0.40) 58%, rgba(13,13,15,0.28) 67%, rgba(13,13,15,0.18) 75%, rgba(13,13,15,0.09) 83%, rgba(13,13,15,0.03) 91%, transparent 100%)' }} />
 
               <div
                 id="gigs-scroller"
@@ -1479,9 +1474,9 @@ function TalentsSection({ onViewDetails }: { onViewDetails: (d: SliderDetails) =
             </button>
 
             {/* Left smoke fade */}
-            <div className="pointer-events-none absolute inset-y-0 left-0 z-[5] w-16 sm:w-24 bg-gradient-to-r from-black via-black/60 to-transparent" />
+            <div className="pointer-events-none absolute inset-y-0 left-0 z-[5] w-16 sm:w-28 lg:w-40" style={{ background: 'linear-gradient(to right, rgb(13,13,15) 0%, rgba(13,13,15,0.98) 5%, rgba(13,13,15,0.95) 10%, rgba(13,13,15,0.90) 16%, rgba(13,13,15,0.83) 23%, rgba(13,13,15,0.74) 31%, rgba(13,13,15,0.63) 40%, rgba(13,13,15,0.51) 49%, rgba(13,13,15,0.40) 58%, rgba(13,13,15,0.28) 67%, rgba(13,13,15,0.18) 75%, rgba(13,13,15,0.09) 83%, rgba(13,13,15,0.03) 91%, transparent 100%)' }} />
             {/* Right smoke fade */}
-            <div className="pointer-events-none absolute inset-y-0 right-0 z-[5] w-16 sm:w-24 bg-gradient-to-l from-black via-black/60 to-transparent" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 z-[5] w-16 sm:w-28 lg:w-40" style={{ background: 'linear-gradient(to left, rgb(13,13,15) 0%, rgba(13,13,15,0.98) 5%, rgba(13,13,15,0.95) 10%, rgba(13,13,15,0.90) 16%, rgba(13,13,15,0.83) 23%, rgba(13,13,15,0.74) 31%, rgba(13,13,15,0.63) 40%, rgba(13,13,15,0.51) 49%, rgba(13,13,15,0.40) 58%, rgba(13,13,15,0.28) 67%, rgba(13,13,15,0.18) 75%, rgba(13,13,15,0.09) 83%, rgba(13,13,15,0.03) 91%, transparent 100%)' }} />
 
             <div
               id="talents-scroller"
@@ -2604,6 +2599,989 @@ function PremiumFooter() {
 }
 
 /* ─────────────────────────────────────────────────────────────
+   ProductScreenshotsSlider — CSS product UI mockups (no images needed)
+───────────────────────────────────────────────────────────── */
+
+/* Shared line helper */
+const MLine = ({ w = '100%', h = 2, bg = 'rgba(255,255,255,0.10)', r = 2 }: { w?: string | number; h?: number; bg?: string; r?: number }) => (
+  <div style={{ width: w, height: h, background: bg, borderRadius: r, flexShrink: 0 }} />
+);
+
+function PdfEditorMockup() {
+  return (
+    <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
+      {/* Sidebar */}
+      <div style={{ width: '28%', background: '#0f0f14', borderRight: '1px solid rgba(255,255,255,0.06)', padding: '14px 9px', display: 'flex', flexDirection: 'column', gap: 7 }}>
+        <div style={{ width: 30, height: 30, borderRadius: 10, background: 'rgba(239,68,68,0.16)', border: '1px solid rgba(239,68,68,0.26)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 6 }}>
+          <Wand2 style={{ width: 14, height: 14, color: '#ef4444' }} />
+        </div>
+        {[true, false, false, false].map((active, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 7px', borderRadius: 7, background: active ? 'rgba(239,68,68,0.12)' : 'transparent' }}>
+            <div style={{ width: 7, height: 7, borderRadius: 2, background: active ? '#ef4444' : 'rgba(255,255,255,0.12)', flexShrink: 0 }} />
+            <div style={{ height: 3.5, borderRadius: 2, flex: 1, background: active ? 'rgba(239,68,68,0.55)' : 'rgba(255,255,255,0.11)' }} />
+          </div>
+        ))}
+        <div style={{ marginTop: 'auto', background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)', padding: '8px 9px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+          {[['68%', 'rgba(255,255,255,0.28)'], ['48%', 'rgba(239,68,68,0.50)'], ['58%', 'rgba(255,255,255,0.18)']].map(([w, bg], i) => (
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
+              <div style={{ height: 3, borderRadius: 1.5, background: 'rgba(255,255,255,0.07)', flex: 1 }} />
+              <div style={{ height: 3, borderRadius: 1.5, background: bg, width: w, flexShrink: 0 }} />
+            </div>
+          ))}
+        </div>
+      </div>
+      {/* Page thumbnails */}
+      <div style={{ width: '19%', background: '#0b0b0f', borderRight: '1px solid rgba(255,255,255,0.05)', padding: '12px 6px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {[true, false, false].map((active, i) => (
+          <div key={i} style={{ borderRadius: 5, border: active ? '1.5px solid #ef4444' : '1px solid rgba(255,255,255,0.08)', background: '#fff', padding: '6px 5px', display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+            {[80, 100, 62, 88, 52, 72].map((w, j) => (
+              <div key={j} style={{ height: 2, background: j === 0 ? '#1a1a1a' : '#ddd', borderRadius: 1, width: `${w}%` }} />
+            ))}
+          </div>
+        ))}
+      </div>
+      {/* Document preview */}
+      <div style={{ flex: 1, background: '#d4d4d8', padding: 8 }}>
+        <div style={{ background: '#fff', borderRadius: 6, height: '100%', padding: '12px 13px', boxShadow: '0 3px 16px rgba(0,0,0,0.16)', overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {/* Heading */}
+          <div style={{ height: 11, borderRadius: 3, background: 'linear-gradient(90deg,#ef4444,#f87171)', width: '80%' }} />
+          <div style={{ height: 5, borderRadius: 2, background: '#e0e0e0', width: '50%', marginBottom: 5 }} />
+          {/* Section label bars */}
+          <div style={{ height: 3.5, borderRadius: 2, background: '#bbb', width: '36%', marginBottom: 3 }} />
+          {[100, 93, 88, 97, 83, 92, 76].map((w, i) => (
+            <div key={i} style={{ height: 2.5, background: '#e8e8e8', borderRadius: 1, width: `${w}%` }} />
+          ))}
+          {/* Highlight block */}
+          <div style={{ marginTop: 7, background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.16)', borderRadius: 5, padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {[82, 70, 88].map((w, i) => (
+              <div key={i} style={{ height: 2.5, background: 'rgba(239,68,68,0.20)', borderRadius: 1, width: `${w}%` }} />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ScratchpadMockup() {
+  return (
+    <div style={{ display: 'flex', height: '100%', overflow: 'hidden', background: '#0e0e13' }}>
+      {/* Left toolbar */}
+      <div style={{ width: 30, background: '#111117', borderRight: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 12, gap: 10 }}>
+        {[PenLine, Search, Share2, Layers, FolderLock].map((Icon, i) => (
+          <div key={i} style={{ width: 21, height: 21, borderRadius: 6, background: i === 0 ? 'rgba(249,115,22,0.22)' : 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon style={{ width: 10, height: 10, color: i === 0 ? '#f97316' : 'rgba(255,255,255,0.28)' }} />
+          </div>
+        ))}
+      </div>
+      {/* Canvas */}
+      <div style={{ flex: 1, position: 'relative', padding: '12px 10px', overflow: 'hidden' }}>
+        {/* Flow nodes row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'center', marginBottom: 12 }}>
+          {[
+            { accent: '#f97316', bg: 'rgba(249,115,22,0.16)' },
+            { accent: 'rgba(255,255,255,0.20)', bg: 'rgba(255,255,255,0.03)' },
+            { accent: 'rgba(255,255,255,0.20)', bg: 'rgba(255,255,255,0.03)' },
+            { accent: 'rgba(249,115,22,0.55)', bg: 'rgba(249,115,22,0.08)' },
+            { accent: 'rgba(255,255,255,0.20)', bg: 'rgba(255,255,255,0.03)' },
+          ].map((n, i) => (
+            <React.Fragment key={i}>
+              <div style={{ padding: '5px 8px', border: `1.5px solid ${n.accent}`, borderRadius: 6, background: n.bg, display: 'flex', flexDirection: 'column', gap: 3, minWidth: 28 }}>
+                <div style={{ height: 2.5, borderRadius: 1.5, background: n.accent, width: '100%' }} />
+                <div style={{ height: 2, borderRadius: 1, background: n.accent, width: '65%', opacity: 0.55 }} />
+              </div>
+              {i < 4 && <ArrowRight style={{ width: 8, height: 8, color: 'rgba(255,255,255,0.18)', flexShrink: 0 }} />}
+            </React.Fragment>
+          ))}
+        </div>
+        {/* Sub-panels */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 7, padding: '7px 7px' }}>
+            <div style={{ height: 2, width: '38%', borderRadius: 1, background: 'rgba(249,115,22,0.45)', marginBottom: 6 }} />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3 }}>
+              {[0,1,2,3].map(i => (
+                <div key={i} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 4, height: 18 }} />
+              ))}
+            </div>
+          </div>
+          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 7, padding: '7px 7px' }}>
+            <div style={{ height: 2, width: '38%', borderRadius: 1, background: 'rgba(249,115,22,0.45)', marginBottom: 6 }} />
+            {[0,1,2,3].map(i => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 4 }}>
+                <Check style={{ width: 7, height: 7, color: i < 2 ? '#34d399' : 'rgba(255,255,255,0.18)', flexShrink: 0 }} />
+                <div style={{ height: 2.5, borderRadius: 1.5, background: 'rgba(255,255,255,0.14)', flex: 1 }} />
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* Colour palette */}
+        <div style={{ position: 'absolute', bottom: 9, left: 10, display: 'flex', gap: 4 }}>
+          {['#fff','#ef4444','#f97316','#fbbf24','#34d399','#60a5fa','#818cf8'].map(c => (
+            <div key={c} style={{ width: 10, height: 10, borderRadius: '50%', background: c, border: '1px solid rgba(255,255,255,0.18)', flexShrink: 0 }} />
+          ))}
+        </div>
+      </div>
+      {/* Right boards */}
+      <div style={{ width: 34, background: '#111117', borderLeft: '1px solid rgba(255,255,255,0.06)', padding: '12px 5px', display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center' }}>
+        <Layers style={{ width: 10, height: 10, color: '#f97316', marginBottom: 2 }} />
+        {[true, false, false].map((active, i) => (
+          <div key={i} style={{ width: '90%', height: 22, borderRadius: 5, background: active ? 'rgba(249,115,22,0.12)' : 'rgba(255,255,255,0.04)', border: `1px solid ${active ? 'rgba(249,115,22,0.28)' : 'rgba(255,255,255,0.06)'}` }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DocWordMockup() {
+  return (
+    <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
+      {/* Left sidebar */}
+      <div style={{ width: '32%', background: '#0e0e12', borderRight: '1px solid rgba(255,255,255,0.06)', padding: '14px 9px', display: 'flex', flexDirection: 'column', gap: 7 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
+          <div style={{ width: 24, height: 24, borderRadius: 8, background: 'rgba(129,140,248,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <FileText style={{ width: 12, height: 12, color: '#818cf8' }} />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <div style={{ height: 5, width: 46, borderRadius: 2, background: 'rgba(255,255,255,0.72)' }} />
+            <div style={{ height: 3, width: 64, borderRadius: 2, background: 'rgba(255,255,255,0.18)' }} />
+          </div>
+        </div>
+        {/* Search bar */}
+        <div style={{ height: 20, borderRadius: 7, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', paddingLeft: 7, gap: 5 }}>
+          <Search style={{ width: 8, height: 8, color: 'rgba(255,255,255,0.22)' }} />
+          <div style={{ height: 3, width: 50, borderRadius: 2, background: 'rgba(255,255,255,0.10)' }} />
+        </div>
+        {/* Doc items */}
+        {[true, false, false, false].map((active, i) => (
+          <div key={i} style={{ padding: '6px 7px', borderRadius: 7, background: active ? 'rgba(129,140,248,0.10)' : 'rgba(255,255,255,0.02)', border: active ? '1px solid rgba(129,140,248,0.22)' : '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <div style={{ width: 7, height: 7, borderRadius: 2, background: active ? '#818cf8' : 'rgba(255,255,255,0.12)', flexShrink: 0 }} />
+              <div style={{ height: 3, borderRadius: 1.5, flex: 1, background: active ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.16)' }} />
+            </div>
+            {active && <div style={{ height: 2.5, width: '48%', borderRadius: 1.5, background: 'rgba(129,140,248,0.32)', marginLeft: 12 }} />}
+          </div>
+        ))}
+      </div>
+      {/* Editor */}
+      <div style={{ flex: 1, background: '#f0f0f5', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {/* Toolbar */}
+        <div style={{ display: 'flex', gap: 3, padding: '5px 8px', background: '#fff', borderBottom: '1px solid #e6e6ef', flexShrink: 0 }}>
+          {[false, false, true, false, false].map((active, i) => (
+            <div key={i} style={{ width: 28, height: 12, borderRadius: 3, background: active ? 'rgba(129,140,248,0.16)' : 'rgba(0,0,0,0.05)' }} />
+          ))}
+        </div>
+        {/* Document */}
+        <div style={{ flex: 1, background: '#fff', margin: '8px', borderRadius: 7, padding: '12px 13px', boxShadow: '0 2px 14px rgba(0,0,0,0.09)', overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {/* Title */}
+          <div style={{ height: 11, width: '76%', borderRadius: 3, background: '#1a1a2e' }} />
+          <div style={{ height: 5, width: '52%', borderRadius: 2, background: '#e4e4e4', marginBottom: 5 }} />
+          {/* Comment box */}
+          <div style={{ background: '#f5f5ff', border: '1px solid #dcdcf0', borderRadius: 5, padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <div style={{ width: 11, height: 11, borderRadius: '50%', background: '#818cf8', flexShrink: 0 }} />
+              <div style={{ height: 2.5, flex: 1, borderRadius: 1.5, background: '#d0d0e4' }} />
+            </div>
+            <div style={{ height: 2, width: '72%', borderRadius: 1, background: '#e0e0ec', marginLeft: 15 }} />
+          </div>
+          {/* Body lines */}
+          {[100, 92, 87, 96, 80, 91].map((w, i) => (
+            <div key={i} style={{ height: 2.5, background: '#ebebeb', borderRadius: 1, width: `${w}%` }} />
+          ))}
+          {/* E-sign strip */}
+          <div style={{ marginTop: 'auto', background: 'rgba(129,140,248,0.07)', border: '1px solid rgba(129,140,248,0.18)', borderRadius: 6, padding: '6px 9px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex' }}>
+              {['#818cf8','#a78bfa','#c084fc'].map((c, i) => (
+                <div key={i} style={{ width: 15, height: 15, borderRadius: '50%', background: c, border: '1.5px solid #fff', marginLeft: i > 0 ? -5 : 0 }} />
+              ))}
+            </div>
+            <div style={{ background: '#818cf8', borderRadius: 6, padding: '4px 9px', fontSize: 7, fontWeight: 700, color: '#fff' }}>e-Sign</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DocSheetsMockup() {
+  const rowBars = [
+    ['#34d399','rgba(255,255,255,0.16)','rgba(255,255,255,0.11)','rgba(255,255,255,0.18)'],
+    ['rgba(255,255,255,0.13)','rgba(255,255,255,0.09)','#34d399','rgba(255,255,255,0.14)'],
+    ['rgba(255,255,255,0.11)','#34d399','rgba(255,255,255,0.13)','rgba(255,255,255,0.17)'],
+    ['rgba(255,255,255,0.15)','rgba(255,255,255,0.11)','rgba(255,255,255,0.09)','#34d399'],
+    ['rgba(255,255,255,0.13)','rgba(255,255,255,0.17)','rgba(255,255,255,0.11)','rgba(255,255,255,0.13)'],
+    ['rgba(255,255,255,0.09)','rgba(255,255,255,0.13)','rgba(255,255,255,0.17)','rgba(255,255,255,0.11)'],
+  ];
+  return (
+    <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
+      {/* Left panel */}
+      <div style={{ width: '35%', background: '#0c0c10', borderRight: '1px solid rgba(255,255,255,0.06)', padding: '14px 10px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+          <div style={{ width: 24, height: 24, borderRadius: 8, background: 'rgba(52,211,153,0.20)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Sheet style={{ width: 12, height: 12, color: '#34d399' }} />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <div style={{ height: 5, width: 52, borderRadius: 2, background: 'rgba(255,255,255,0.72)' }} />
+            <div style={{ height: 3, width: 68, borderRadius: 2, background: 'rgba(255,255,255,0.18)' }} />
+          </div>
+        </div>
+        {/* Headline bars */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{ height: 9, width: '86%', borderRadius: 3, background: 'rgba(255,255,255,0.65)' }} />
+          <div style={{ height: 9, width: '58%', borderRadius: 3, background: '#34d399' }} />
+        </div>
+        {/* Desc bars */}
+        {[100, 80, 88].map((w, i) => (
+          <div key={i} style={{ height: 2.5, borderRadius: 1.5, background: 'rgba(255,255,255,0.13)', width: `${w}%` }} />
+        ))}
+        {/* Action buttons */}
+        <div style={{ display: 'flex', gap: 5 }}>
+          <div style={{ flex: 1, background: '#34d399', borderRadius: 7, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Plus style={{ width: 10, height: 10, color: '#000' }} />
+          </div>
+          <div style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 7, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Share2 style={{ width: 10, height: 10, color: 'rgba(255,255,255,0.42)' }} />
+          </div>
+        </div>
+        {/* Feature icon tiles */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5 }}>
+          {[Sheet, Share2, Sparkles, BarChart2].map((Icon, i) => (
+            <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 7, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Icon style={{ width: 12, height: 12, color: '#34d399' }} />
+            </div>
+          ))}
+        </div>
+      </div>
+      {/* Spreadsheet */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#0b0b0f', overflow: 'hidden' }}>
+        {/* Toolbar */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 8px', background: '#111116', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
+          {[0,1,2].map(i => <div key={i} style={{ width: 14, height: 11, borderRadius: 3, background: 'rgba(255,255,255,0.07)' }} />)}
+          <div style={{ flex: 1 }} />
+          <div style={{ background: 'rgba(52,211,153,0.10)', border: '1px solid rgba(52,211,153,0.20)', borderRadius: 4, padding: '2px 7px', display: 'flex', alignItems: 'center', gap: 3 }}>
+            <Sparkles style={{ width: 7, height: 7, color: '#34d399' }} />
+            <div style={{ width: 20, height: 2.5, borderRadius: 1, background: 'rgba(52,211,153,0.45)' }} />
+          </div>
+        </div>
+        {/* Col headers */}
+        <div style={{ display: 'grid', gridTemplateColumns: '14px repeat(4, 1fr)', background: '#111116', borderBottom: '1px solid rgba(255,255,255,0.07)', flexShrink: 0 }}>
+          <div style={{ borderRight: '1px solid rgba(255,255,255,0.06)', padding: 3 }} />
+          {[75, 68, 82, 70].map((w, i) => (
+            <div key={i} style={{ padding: '4px 5px', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
+              <div style={{ height: 3.5, borderRadius: 1.5, background: 'rgba(255,255,255,0.22)', width: `${w}%` }} />
+            </div>
+          ))}
+        </div>
+        {/* Data rows */}
+        {rowBars.map((row, ri) => (
+          <div key={ri} style={{ display: 'grid', gridTemplateColumns: '14px repeat(4, 1fr)', borderBottom: '1px solid rgba(255,255,255,0.04)', background: ri % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.012)', flexShrink: 0 }}>
+            <div style={{ borderRight: '1px solid rgba(255,255,255,0.04)', padding: '4px 2px' }}>
+              <div style={{ height: 3, borderRadius: 1, background: 'rgba(255,255,255,0.08)', width: '75%', margin: '0 auto' }} />
+            </div>
+            {row.map((bg, ci) => (
+              <div key={ci} style={{ padding: '4px 5px', borderRight: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center' }}>
+                <div style={{ height: 3.5, borderRadius: 1.5, background: bg, width: `${48 + (ci * 9 + ri * 13) % 42}%` }} />
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const PRODUCT_SCREENSHOTS: Array<{
+  id: string; name: string; tagline: string; desc: string;
+  accent: string; accentDim: string; Icon: React.ElementType;
+  Mockup: () => React.ReactElement;
+  modal: 'pdf' | 'scratchpad' | 'docsheets' | null;
+  href: string | null;
+}> = [
+  { id: 'pdf',       name: 'PDF Editor', tagline: 'Edit PDFs. Your way.',         desc: 'Edit text, organise pages, watermark, merge & convert',             accent: '#ef4444', accentDim: 'rgba(239,68,68,0.18)',   Icon: Wand2,       Mockup: PdfEditorMockup,  modal: 'pdf',       href: null        },
+  { id: 'scratchpad',name: 'Scratchpad', tagline: 'Scribble collaboratively.',     desc: 'Draw, diagram, and think visually — solo or with your team',        accent: '#f97316', accentDim: 'rgba(249,115,22,0.18)',  Icon: PenLine,     Mockup: ScratchpadMockup, modal: 'scratchpad',href: null        },
+  { id: 'docword',   name: 'DocWord',    tagline: 'Create. Edit. E-Sign. Done.',   desc: 'The all-in-one document workspace for professionals',               accent: '#818cf8', accentDim: 'rgba(129,140,248,0.18)',Icon: FileText,    Mockup: DocWordMockup,    modal: null,        href: '/docword'  },
+  { id: 'docsheets', name: 'DocSheets',  tagline: 'One place for .csv & .xlsx.',   desc: 'Smart spreadsheets — open, work, analyse, and ask AI',              accent: '#34d399', accentDim: 'rgba(52,211,153,0.18)', Icon: Sheet,       Mockup: DocSheetsMockup,  modal: 'docsheets', href: null        },
+];
+
+/* ─────────────────────────────────────────────────────────────
+   PremiumProductSlider — animated product banner carousel
+───────────────────────────────────────────────────────────── */
+const PRODUCT_SLIDES = [
+  {
+    id: 'pdf',
+    tag: 'PDF Studio',
+    headline: 'Edit PDFs.',
+    headlineAccent: 'Your way.',
+    sub: 'Edit text, organise pages, add watermark, merge, split and convert PDFs with ease. All in one powerful editor.',
+    cta: 'Open PDF Editor',
+    accent: '#ef4444',
+    accentDim: 'rgba(239,68,68,0.12)',
+    accentBorder: 'rgba(239,68,68,0.25)',
+    bgFrom: '#150404',
+    bgTo: '#0d0e11',
+    features: ['Edit Text', 'Organise Pages', 'Watermark', 'Merge & Split', 'Convert', 'Compress'],
+    icon: '📄',
+    badgeColor: 'rgba(239,68,68,0.18)',
+    mockupLines: [
+      { w: '72%', opacity: 0.55 }, { w: '90%', opacity: 0.42 }, { w: '60%', opacity: 0.30 },
+      { w: '85%', opacity: 0.42 }, { w: '50%', opacity: 0.30 }, { w: '78%', opacity: 0.38 },
+    ],
+  },
+  {
+    id: 'scratchpad',
+    tag: 'Scratchpad',
+    headline: 'Think. Draw.',
+    headlineAccent: 'Create.',
+    sub: 'A flexible scratchpad for ideas, diagrams and visual thinking — built for clarity, collaboration and flow.',
+    cta: 'Open Scratchpad',
+    accent: '#f97316',
+    accentDim: 'rgba(249,115,22,0.12)',
+    accentBorder: 'rgba(249,115,22,0.25)',
+    bgFrom: '#130a02',
+    bgTo: '#0d0e11',
+    features: ['Draw Freely', 'Collaborate', 'Multiple Boards', 'Smart Tools', 'Export', 'Share'],
+    icon: '✏️',
+    badgeColor: 'rgba(249,115,22,0.18)',
+    mockupLines: [
+      { w: '55%', opacity: 0.55 }, { w: '80%', opacity: 0.42 }, { w: '65%', opacity: 0.38 },
+      { w: '90%', opacity: 0.30 }, { w: '45%', opacity: 0.42 }, { w: '70%', opacity: 0.30 },
+    ],
+  },
+  {
+    id: 'docword',
+    tag: 'DocWord',
+    headline: 'Create. Edit.',
+    headlineAccent: 'E-Sign. Done.',
+    sub: 'The all-in-one document workspace to create, collaborate, export, and get documents e-signed instantly.',
+    cta: 'Open DocWord',
+    accent: '#818cf8',
+    accentDim: 'rgba(129,140,248,0.12)',
+    accentBorder: 'rgba(129,140,248,0.25)',
+    bgFrom: '#06050f',
+    bgTo: '#0d0e11',
+    features: ['Rich Editor', 'E-Sign Instantly', 'Export Anywhere', 'AI Assistant', 'Comments', 'Share'],
+    icon: '📝',
+    badgeColor: 'rgba(129,140,248,0.18)',
+    mockupLines: [
+      { w: '88%', opacity: 0.55 }, { w: '65%', opacity: 0.42 }, { w: '80%', opacity: 0.38 },
+      { w: '50%', opacity: 0.30 }, { w: '92%', opacity: 0.42 }, { w: '58%', opacity: 0.30 },
+    ],
+  },
+  {
+    id: 'docsheets',
+    tag: 'DocSheets',
+    headline: 'Create .csv,',
+    headlineAccent: '.xlsx files.',
+    sub: 'Open, work, export, ask questions to your sheet, analyse with visuals in realtime, and create sheets with AI.',
+    cta: 'Open DocSheets',
+    accent: '#34d399',
+    accentDim: 'rgba(52,211,153,0.12)',
+    accentBorder: 'rgba(52,211,153,0.25)',
+    bgFrom: '#020f08',
+    bgTo: '#0d0e11',
+    features: ['.CSV / .XLSX', 'Open & Work', 'Export Anywhere', 'Ask Questions', 'AI Sheet Maker', 'Visuals'],
+    icon: '📊',
+    badgeColor: 'rgba(52,211,153,0.18)',
+    mockupLines: [
+      { w: '82%', opacity: 0.55 }, { w: '60%', opacity: 0.42 }, { w: '75%', opacity: 0.38 },
+      { w: '95%', opacity: 0.30 }, { w: '55%', opacity: 0.42 }, { w: '88%', opacity: 0.30 },
+    ],
+  },
+] as const;
+
+interface PremiumSliderActions {
+  onPdfClick: () => void;
+  onScratchpadClick: () => void;
+  onDocSheetClick: () => void;
+}
+
+function PremiumProductSlider({ onPdfClick, onScratchpadClick, onDocSheetClick }: PremiumSliderActions) {
+  const [active, setActive] = React.useState(0);
+  const [prev, setPrev] = React.useState<number | null>(null);
+  const [dir, setDir] = React.useState<'next' | 'prev'>('next');
+  const [animating, setAnimating] = React.useState(false);
+  const [paused, setPaused] = React.useState(false);
+  const timerRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+  const total = PRODUCT_SLIDES.length;
+  const touchStartX = React.useRef<number | null>(null);
+
+  const handleCta = React.useCallback((id: string) => {
+    if (id === 'pdf')        { onPdfClick();        return; }
+    if (id === 'scratchpad') { onScratchpadClick(); return; }
+    if (id === 'docsheets')  { onDocSheetClick();   return; }
+    if (id === 'docword')    {
+      /* smooth page transition — brief scale-down then navigate */
+      const el = document.querySelector('.pps-card') as HTMLElement | null;
+      if (el) {
+        el.style.transition = 'opacity 0.22s ease, transform 0.22s ease';
+        el.style.opacity = '0.55';
+        el.style.transform = 'scale(0.985)';
+      }
+      setTimeout(() => { window.location.href = '/docword'; }, 200);
+    }
+  }, [onPdfClick, onScratchpadClick, onDocSheetClick]);
+
+  const go = React.useCallback((nextIdx: number, direction: 'next' | 'prev') => {
+    if (animating) return;
+    setDir(direction);
+    setPrev(active);
+    setActive(nextIdx);
+    setAnimating(true);
+    setTimeout(() => { setPrev(null); setAnimating(false); }, 480);
+  }, [active, animating]);
+
+  const goNext = React.useCallback(() => go((active + 1) % total, 'next'), [go, active, total]);
+  const goPrev = React.useCallback(() => go((active - 1 + total) % total, 'prev'), [go, active, total]);
+
+  React.useEffect(() => {
+    if (paused) return;
+    timerRef.current = setInterval(goNext, 4800);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [goNext, paused]);
+
+  const slide = PRODUCT_SLIDES[active];
+
+  /* swipe handling */
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    setPaused(true);
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current !== null) {
+      const dx = e.changedTouches[0].clientX - touchStartX.current;
+      if (Math.abs(dx) > 40) { dx < 0 ? goNext() : goPrev(); }
+      touchStartX.current = null;
+    }
+    setTimeout(() => setPaused(false), 2200);
+  };
+
+  const NavBtn = ({ onClick, label, children }: { onClick: () => void; label: string; children: React.ReactNode }) => (
+    <button type="button" aria-label={label} onClick={onClick}
+      className="flex items-center justify-center rounded-full transition-all duration-200 hover:scale-110 active:scale-90 shrink-0"
+      style={{ width: 30, height: 30, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.11)', backdropFilter: 'blur(10px)', color: 'rgba(255,255,255,0.68)' }}>
+      {children}
+    </button>
+  );
+
+  return (
+    <section className="w-full" style={{ paddingBottom: 2 }}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
+      <style>{`
+        @keyframes pps-in-next  { from { opacity:0; transform:translateX(36px) scale(0.982); } to { opacity:1; transform:none; } }
+        @keyframes pps-in-prev  { from { opacity:0; transform:translateX(-36px) scale(0.982); } to { opacity:1; transform:none; } }
+        @keyframes pps-out-next { from { opacity:1; transform:none; } to { opacity:0; transform:translateX(-36px) scale(0.982); } }
+        @keyframes pps-out-prev { from { opacity:1; transform:none; } to { opacity:0; transform:translateX(36px) scale(0.982); } }
+        @keyframes pps-badge-in   { from { opacity:0; transform:translateY(-5px); }  to { opacity:1; transform:none; } }
+        @keyframes pps-head-in    { from { opacity:0; transform:translateY(9px); }   to { opacity:1; transform:none; } }
+        @keyframes pps-sub-in     { from { opacity:0; transform:translateY(12px); }  to { opacity:1; transform:none; } }
+        @keyframes pps-chip-in    { from { opacity:0; transform:translateY(10px) scale(0.88); } to { opacity:1; transform:none; } }
+        @keyframes pps-progress   { from { transform:scaleX(0); } to { transform:scaleX(1); } }
+        @keyframes pps-orb        { 0%,100% { opacity:0.30; transform:scale(1); } 50% { opacity:0.44; transform:scale(1.08) translate(5px,-5px); } }
+        @keyframes pps-grid-float { 0%,100% { opacity:0.045; } 50% { opacity:0.075; } }
+        @keyframes pps-scan       { 0%,100% { opacity:0.24; } 50% { opacity:0.52; } }
+        .pps-anim-in-next  { animation: pps-in-next  0.46s cubic-bezier(0.22,1,0.36,1) both; }
+        .pps-anim-in-prev  { animation: pps-in-prev  0.46s cubic-bezier(0.22,1,0.36,1) both; }
+        .pps-anim-out-next { animation: pps-out-next 0.26s cubic-bezier(0.55,0,1,0.45) both; }
+        .pps-anim-out-prev { animation: pps-out-prev 0.26s cubic-bezier(0.55,0,1,0.45) both; }
+      `}</style>
+
+      {/* ── Card ── */}
+      <div
+        className="pps-card relative overflow-hidden rounded-none sm:rounded-[22px]"
+        style={{
+          background: `linear-gradient(150deg, ${slide.bgFrom} 0%, ${slide.bgTo} 100%)`,
+          border: `1px solid ${slide.accentBorder}`,
+          boxShadow: `0 0 0 1px rgba(255,255,255,0.035), 0 8px 36px rgba(0,0,0,0.62), 0 0 70px ${slide.accentDim}`,
+          transition: 'background 0.55s ease, border-color 0.55s ease, box-shadow 0.55s ease',
+        }}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        {/* dot-grid bg */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={{ zIndex:0,
+          backgroundImage: `linear-gradient(${slide.accent}07 1px,transparent 1px),linear-gradient(90deg,${slide.accent}07 1px,transparent 1px)`,
+          backgroundSize: '26px 26px', animation: 'pps-grid-float 9s ease-in-out infinite' }} />
+
+        {/* orbs */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden" style={{ zIndex:0 }}>
+          <div style={{ position:'absolute', top:'-20%', right:'6%', width:'clamp(120px,26vw,300px)', height:'clamp(120px,26vw,300px)', borderRadius:'50%', background:`radial-gradient(circle,${slide.accent}2e 0%,transparent 68%)`, animation:'pps-orb 7.5s ease-in-out infinite', filter:'blur(24px)' }} />
+          <div style={{ position:'absolute', bottom:'-14%', left:'4%', width:'clamp(70px,14vw,160px)', height:'clamp(70px,14vw,160px)', borderRadius:'50%', background:`radial-gradient(circle,${slide.accent}18 0%,transparent 68%)`, animation:'pps-orb 12s ease-in-out infinite reverse', filter:'blur(18px)' }} />
+        </div>
+
+        {/* slide exit */}
+        {prev !== null && animating && (() => {
+          const ps = PRODUCT_SLIDES[prev];
+          return (
+            <div key={`out-${prev}`} className={dir === 'next' ? 'pps-anim-out-next' : 'pps-anim-out-prev'}
+              style={{ position:'absolute', inset:0, zIndex:2 }}>
+              <SlideContent slide={ps} animKey={-1} onCta={() => handleCta(ps.id)} />
+            </div>
+          );
+        })()}
+
+        {/* slide enter */}
+        <div key={`in-${active}`} className={animating ? (dir === 'next' ? 'pps-anim-in-next' : 'pps-anim-in-prev') : ''}
+          style={{ position:'relative', zIndex:3, width:'100%' }}>
+          <SlideContent slide={slide} animKey={active} onCta={() => handleCta(slide.id)} />
+        </div>
+
+        {/* ── Desktop side arrows (sm+) — tucked inside padding, never over text ── */}
+        <button type="button" aria-label="Previous slide" onClick={goPrev}
+          className="hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 z-10 h-8 w-8 items-center justify-center rounded-full transition-all duration-200 hover:scale-110 active:scale-90"
+          style={{ background:'rgba(0,0,0,0.38)', border:'1px solid rgba(255,255,255,0.10)', backdropFilter:'blur(12px)', color:'rgba(255,255,255,0.70)' }}>
+          <ChevronLeft className="h-3.5 w-3.5" />
+        </button>
+        <button type="button" aria-label="Next slide" onClick={goNext}
+          className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 z-10 h-8 w-8 items-center justify-center rounded-full transition-all duration-200 hover:scale-110 active:scale-90"
+          style={{ background:'rgba(0,0,0,0.38)', border:'1px solid rgba(255,255,255,0.10)', backdropFilter:'blur(12px)', color:'rgba(255,255,255,0.70)' }}>
+          <ChevronRight className="h-3.5 w-3.5" />
+        </button>
+
+        {/* ── Desktop dots — inside card bottom ── */}
+        <div className="hidden sm:flex absolute bottom-3 left-1/2 -translate-x-1/2 z-10 items-center gap-1.5">
+          {PRODUCT_SLIDES.map((s, i) => (
+            <button key={s.id} type="button" aria-label={`Slide ${i + 1}`}
+              onClick={() => go(i, i > active ? 'next' : 'prev')}
+              className="relative overflow-hidden rounded-full transition-all duration-300"
+              style={{ width: i === active ? 22 : 5, height: 5,
+                background: i === active ? s.accent : 'rgba(255,255,255,0.20)',
+                boxShadow: i === active ? `0 0 6px ${s.accent}88` : 'none' }}>
+              {i === active && !paused && (
+                <span key={active} style={{ position:'absolute', inset:0, background:'rgba(255,255,255,0.28)', transformOrigin:'left', animation:'pps-progress 4.8s linear forwards' }} />
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Mobile control bar — BELOW card, never overlaps content ── */}
+      <div className="flex sm:hidden items-center justify-between mt-2.5 px-3">
+        <NavBtn onClick={goPrev} label="Previous slide"><ChevronLeft className="h-3.5 w-3.5" /></NavBtn>
+
+        {/* dots */}
+        <div className="flex items-center gap-1.5">
+          {PRODUCT_SLIDES.map((s, i) => (
+            <button key={s.id} type="button" aria-label={`Slide ${i + 1}`}
+              onClick={() => go(i, i > active ? 'next' : 'prev')}
+              className="relative overflow-hidden rounded-full transition-all duration-300"
+              style={{ width: i === active ? 20 : 5, height: 5,
+                background: i === active ? s.accent : 'rgba(255,255,255,0.18)',
+                boxShadow: i === active ? `0 0 5px ${s.accent}88` : 'none' }}>
+              {i === active && !paused && (
+                <span key={active} style={{ position:'absolute', inset:0, background:'rgba(255,255,255,0.26)', transformOrigin:'left', animation:'pps-progress 4.8s linear forwards' }} />
+              )}
+            </button>
+          ))}
+        </div>
+
+        <NavBtn onClick={goNext} label="Next slide"><ChevronRight className="h-3.5 w-3.5" /></NavBtn>
+      </div>
+    </section>
+  );
+}
+
+function SlideContent({ slide, animKey, onCta }: { slide: typeof PRODUCT_SLIDES[number]; animKey: number; onCta: () => void }) {
+  return (
+    <div className="flex w-full items-stretch"
+      style={{
+        flexDirection: 'row',
+        minHeight: 'clamp(148px, 22vw, 268px)',
+        /* Mobile: tight 16px padding; sm+: generous 32-40px, with extra left/right for the side arrows */
+        padding: 'clamp(14px,2.4vw,32px) clamp(14px,2.2vw,36px)',
+      }}>
+
+      {/* ── Left: text ── */}
+      <div className="flex flex-1 flex-col justify-center"
+        style={{ gap: 'clamp(5px,0.9vw,10px)', minWidth: 0,
+          /* on desktop push content away from the side-arrow buttons */
+          paddingLeft: 'clamp(0px,2vw,28px)',
+          paddingRight: 'clamp(0px,2vw,20px)',
+        }}>
+
+        {/* Badge */}
+        <div className="flex items-center gap-1.5" style={{ animation:'pps-badge-in 0.35s 0.03s cubic-bezier(0.22,1,0.36,1) both' }}>
+          <span style={{ fontSize: 'clamp(12px,1.5vw,15px)', lineHeight:1 }}>{slide.icon}</span>
+          <span className="rounded-full font-semibold uppercase"
+            style={{ fontSize:'clamp(8px,0.75vw,9.5px)', letterSpacing:'0.10em',
+              padding:'2px 8px', background: slide.badgeColor, color: slide.accent, border:`1px solid ${slide.accentBorder}` }}>
+            {slide.tag}
+          </span>
+        </div>
+
+        {/* Headline */}
+        <h2 style={{
+          fontSize: 'clamp(16px,2.6vw,40px)',
+          fontWeight: 800, lineHeight: 1.07, letterSpacing: '-0.022em',
+          color: 'rgba(255,255,255,0.92)', margin: 0,
+          animation: 'pps-head-in 0.42s 0.09s cubic-bezier(0.22,1,0.36,1) both',
+        }}>
+          {slide.headline}{' '}
+          <span style={{ color: slide.accent }}>{slide.headlineAccent}</span>
+        </h2>
+
+        {/* Subtitle — hidden on tiny screens, 1 line on sm, 2 on lg */}
+        <p className="hidden xs:block" style={{
+          fontSize: 'clamp(9.5px,0.95vw,12.5px)', color:'rgba(255,255,255,0.46)', lineHeight:1.55, margin:0,
+          display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden',
+          maxWidth: 'clamp(180px,36vw,420px)',
+          animation: 'pps-sub-in 0.44s 0.16s cubic-bezier(0.22,1,0.36,1) both',
+        }}>
+          {slide.sub}
+        </p>
+
+        {/* Feature chips — 4 on mobile, all on sm+ */}
+        <div className="flex flex-wrap" style={{ gap:'clamp(3px,0.5vw,6px)', animation:'pps-sub-in 0.44s 0.20s cubic-bezier(0.22,1,0.36,1) both' }}>
+          {slide.features.map((f, fi) => (
+            <span key={f}
+              className={fi >= 4 ? 'hidden sm:inline-flex' : 'inline-flex'}
+              style={{
+                fontSize: 'clamp(7.5px,0.7vw,9px)', fontWeight:500,
+                padding: 'clamp(2px,0.3vw,3px) clamp(6px,0.9vw,9px)',
+                borderRadius: 100,
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.09)',
+                color: 'rgba(255,255,255,0.44)',
+                animation: `pps-chip-in 0.34s ${0.24 + fi * 0.035}s cubic-bezier(0.22,1,0.36,1) both`,
+              }}>
+              {f}
+            </span>
+          ))}
+        </div>
+
+        {/* CTA */}
+        <div style={{ animation:'pps-sub-in 0.44s 0.30s cubic-bezier(0.22,1,0.36,1) both', marginTop: 'clamp(1px,0.4vw,4px)' }}>
+          <button type="button" onClick={onCta}
+            className="inline-flex items-center gap-1.5 rounded-full font-semibold transition-all duration-200 hover:scale-[1.04] active:scale-[0.96] hover:brightness-110"
+            style={{
+              background: slide.accent, color:'#fff',
+              fontSize: 'clamp(9px,0.85vw,11.5px)',
+              padding: 'clamp(5px,0.65vw,8px) clamp(12px,1.5vw,20px)',
+              boxShadow: `0 3px 16px ${slide.accent}50`,
+              letterSpacing: '0.01em',
+              cursor: 'pointer',
+            }}>
+            {slide.cta}
+            <ArrowRight className="h-2.5 w-2.5 shrink-0" />
+          </button>
+        </div>
+      </div>
+
+      {/* ── Right: mockup — hidden on mobile, visible sm+ ── */}
+      <div className="hidden sm:flex shrink-0 items-center justify-end"
+        style={{ width:'clamp(110px,20vw,240px)', paddingLeft:'clamp(10px,1.6vw,20px)', paddingRight:'clamp(0px,1.8vw,22px)' }}>
+        <div className="relative w-full"
+          style={{ background:'rgba(255,255,255,0.028)', border:`1px solid ${slide.accentBorder}`,
+            borderRadius:12, padding:'clamp(10px,1.3vw,16px)', backdropFilter:'blur(10px)',
+            boxShadow:`inset 0 1px 0 rgba(255,255,255,0.055), 0 4px 20px rgba(0,0,0,0.42)` }}>
+          {/* traffic-light dots */}
+          <div className="flex items-center gap-1 mb-2.5">
+            {['#ef4444','#f97316','#34d399'].map((c,ci) => (
+              <div key={ci} style={{ width:6,height:6,borderRadius:'50%',background:c,opacity:0.52 }} />
+            ))}
+            <div className="flex-1 ml-1.5 rounded-sm" style={{ height:5,background:'rgba(255,255,255,0.05)' }} />
+          </div>
+          {/* animated lines */}
+          {slide.mockupLines.map((l, li) => (
+            <div key={li} className="mb-1.5 rounded-sm overflow-hidden"
+              style={{ width:l.w, height:li%3===0?7:5, background:slide.accent,
+                opacity:l.opacity, animation:`pps-scan ${3.0+li*0.45}s ease-in-out infinite` }} />
+          ))}
+          {/* mini CTA row */}
+          <div className="mt-2.5 flex items-center gap-1">
+            <div className="flex-1 h-5 rounded" style={{ background:`${slide.accent}1e`,border:`1px solid ${slide.accentBorder}` }} />
+            <div className="h-5 px-2 rounded flex items-center text-[7px] font-semibold" style={{ background:slide.accent,color:'#fff' }}>→</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   PublishHeading — animated headline above content-type strip
+───────────────────────────────────────────────────────────── */
+const CYCLE_TYPES = [
+  { label: 'News',       color: '#60a5fa', rgb: '96,165,250',   Icon: Newspaper    },
+  { label: 'Gigs',       color: '#facc15', rgb: '250,204,21',   Icon: Zap          },
+  { label: 'Articles',   color: '#818cf8', rgb: '129,140,248',  Icon: BookOpen     },
+  { label: 'Events',     color: '#f87171', rgb: '248,113,113',  Icon: CalendarDays },
+  { label: 'Docs',       color: '#22d3ee', rgb: '34,211,238',   Icon: FileText     },
+  { label: 'Videos',     color: '#ef4444', rgb: '239,68,68',    Icon: Video        },
+  { label: 'Jobs',       color: '#34d399', rgb: '52,211,153',   Icon: Briefcase    },
+  { label: 'Portfolios', color: '#f472b6', rgb: '244,114,182',  Icon: Layers       },
+  { label: 'Tutorials',  color: '#84cc16', rgb: '132,204,22',   Icon: BookMarked   },
+  { label: 'Hackathons', color: '#4ade80', rgb: '74,222,128',   Icon: Terminal     },
+  { label: 'Polls',      color: '#38bdf8', rgb: '56,189,248',   Icon: ListChecks   },
+  { label: 'Charts',     color: '#10b981', rgb: '16,185,129',   Icon: BarChart2    },
+] as const;
+
+function PublishHeading({ onPublish }: { onPublish: () => void }) {
+  const [idx, setIdx]         = React.useState(0);
+  const [phase, setPhase]     = React.useState<'in' | 'out'>('in');
+
+  React.useEffect(() => {
+    const out = setTimeout(() => setPhase('out'), 2000);
+    const swap = setTimeout(() => {
+      setIdx(i => (i + 1) % CYCLE_TYPES.length);
+      setPhase('in');
+    }, 2320);
+    return () => { clearTimeout(out); clearTimeout(swap); };
+  }, [idx]);
+
+  const current = CYCLE_TYPES[idx];
+
+  return (
+    <div className="w-full select-none">
+      <style>{`
+        @keyframes ph-word-in  { from { opacity:0; transform:translateY(10px) scale(0.92); } to { opacity:1; transform:none; } }
+        @keyframes ph-word-out { from { opacity:1; transform:none; } to { opacity:0; transform:translateY(-8px) scale(0.94); } }
+        @keyframes ph-line-in  { from { opacity:0; transform:translateX(-6px); } to { opacity:1; transform:none; } }
+      `}</style>
+
+      {/* Main headline + publish button */}
+      <div className="flex items-start justify-between gap-3"
+        style={{ animation: 'ph-line-in 0.5s 0.05s cubic-bezier(0.22,1,0.36,1) both' }}>
+
+        {/* Left: headline */}
+        <div style={{ minWidth: 0 }}>
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+          {/* Static part */}
+          <span
+            style={{ fontSize: 'clamp(18px,4vw,26px)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.1, color: 'rgba(255,255,255,0.88)' }}>
+            Publish
+          </span>
+
+          {/* Animated word */}
+          <span
+            key={idx}
+            style={{
+              fontSize: 'clamp(18px,4vw,26px)', fontWeight: 800,
+              letterSpacing: '-0.03em', lineHeight: 1.1,
+              color: current.color,
+              textShadow: `0 0 28px ${current.color}55`,
+              display: 'inline-flex', alignItems: 'baseline', gap: 5,
+              animation: phase === 'in'
+                ? 'ph-word-in 0.32s cubic-bezier(0.22,1,0.36,1) both'
+                : 'ph-word-out 0.28s cubic-bezier(0.55,0,1,0.45) both',
+              transition: 'color 0.28s ease, text-shadow 0.28s ease',
+            }}>
+            {/* tiny icon next to word */}
+            <current.Icon style={{
+              width: 'clamp(13px,2.2vw,17px)', height: 'clamp(13px,2.2vw,17px)',
+              color: current.color, opacity: 0.75,
+              verticalAlign: 'middle', marginBottom: 1, flexShrink: 0,
+            }} />
+            {current.label}
+          </span>
+
+          <span
+            style={{ fontSize: 'clamp(18px,4vw,26px)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.1, color: 'rgba(255,255,255,0.88)' }}>
+            & more.
+          </span>
+        </div>
+
+        {/* Sub-line */}
+        <p style={{
+          marginTop: 5, fontSize: 'clamp(10px,1.2vw,11.5px)',
+          color: 'rgba(255,255,255,0.30)', lineHeight: 1.5,
+          fontWeight: 400, letterSpacing: '0.01em',
+          animation: 'ph-line-in 0.5s 0.18s cubic-bezier(0.22,1,0.36,1) both',
+        }}>
+          Share your work — news, gigs, docs, portfolios, videos and 14 more types.
+        </p>
+        </div>{/* end left */}
+
+        {/* Right: Publish button */}
+        <button
+          type="button"
+          onClick={onPublish}
+          className="shrink-0 flex items-center gap-1.5 rounded-xl font-semibold transition-all duration-200 hover:scale-[1.04] hover:brightness-110 active:scale-[0.95]"
+          style={{
+            marginTop: 2,
+            padding: '8px 13px',
+            background: 'rgba(255,255,255,0.07)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.10), 0 2px 12px rgba(0,0,0,0.30)',
+            color: 'rgba(255,255,255,0.82)',
+            fontSize: 12,
+            letterSpacing: '0.01em',
+            animation: 'ph-line-in 0.5s 0.22s cubic-bezier(0.22,1,0.36,1) both',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <Plus style={{ width: 13, height: 13, flexShrink: 0, opacity: 0.80 }} />
+          Publish
+        </button>
+
+      </div>{/* end flex row */}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   ContentDiscoveryStrip — find-by-type stats bar
+───────────────────────────────────────────────────────────── */
+const CONTENT_TYPES = [
+  { id: 'all',          label: 'All',         count: 125, Icon: LayoutGrid,  color: '#a78bfa', rgb: '167,139,250'  },
+  { id: 'news',         label: 'News',         count:   9, Icon: Newspaper,   color: '#60a5fa', rgb: '96,165,250'   },
+  { id: 'article',      label: 'Articles',     count:   7, Icon: BookOpen,    color: '#818cf8', rgb: '129,140,248'  },
+  { id: 'document',     label: 'Docs',         count:   6, Icon: FileText,    color: '#22d3ee', rgb: '34,211,238'   },
+  { id: 'portfolio',    label: 'Portfolio',    count:   4, Icon: Layers,      color: '#f472b6', rgb: '244,114,182'  },
+  { id: 'announcement', label: 'Announce',     count:   5, Icon: Megaphone,   color: '#fb923c', rgb: '251,146,60'   },
+  { id: 'job',          label: 'Jobs',         count:   5, Icon: Briefcase,   color: '#34d399', rgb: '52,211,153'   },
+  { id: 'resume',       label: 'Resumes',      count:   3, Icon: User,        color: '#2dd4bf', rgb: '45,212,191'   },
+  { id: 'product',      label: 'Products',     count:   4, Icon: Package,     color: '#fbbf24', rgb: '251,191,36'   },
+  { id: 'event',        label: 'Events',       count:   7, Icon: CalendarDays,color: '#f87171', rgb: '248,113,113'  },
+  { id: 'hackathon',    label: 'Hackathons',   count:   6, Icon: Terminal,    color: '#4ade80', rgb: '74,222,128'   },
+  { id: 'post',         label: 'Posts',        count:   5, Icon: PenLine,     color: '#c084fc', rgb: '192,132,252'  },
+  { id: 'poll',         label: 'Polls',        count:   5, Icon: ListChecks,  color: '#38bdf8', rgb: '56,189,248'   },
+  { id: 'survey',       label: 'Surveys',      count:   3, Icon: ClipboardList,color:'#f59e0b', rgb: '245,158,11'   },
+  { id: 'chart',        label: 'Charts',       count:   3, Icon: BarChart2,   color: '#10b981', rgb: '16,185,129'   },
+  { id: 'thread',       label: 'Threads',      count:   3, Icon: MessageSquare,color:'#3b82f6', rgb: '59,130,246'   },
+  { id: 'video',        label: 'Videos',       count:   5, Icon: Video,       color: '#ef4444', rgb: '239,68,68'    },
+  { id: 'milestone',    label: 'Milestones',   count:   3, Icon: Award,       color: '#eab308', rgb: '234,179,8'    },
+  { id: 'tutorial',     label: 'Tutorials',    count:   4, Icon: BookMarked,  color: '#84cc16', rgb: '132,204,22'   },
+  { id: 'gig',          label: 'Gigs',         count:  35, Icon: Zap,         color: '#facc15', rgb: '250,204,21'   },
+] as const;
+
+function CdsPill({ id, label, count, Icon, color, rgb, delay = 0 }: {
+  id: string; label: string; count: number;
+  Icon: React.ElementType; color: string; rgb: string; delay?: number;
+}) {
+  return (
+    <Link
+      href={`/published${id === 'all' ? '' : `?tab=${id}`}`}
+      className="cds-pill shrink-0 flex items-center gap-2 select-none"
+      style={{
+        height: 36,
+        padding: '0 12px 0 8px',
+        borderRadius: 12,
+        background: 'rgba(0,0,0,0.38)',
+        backdropFilter: 'blur(18px) saturate(1.6)',
+        WebkitBackdropFilter: 'blur(18px) saturate(1.6)',
+        border: '1px solid rgba(255,255,255,0.09)',
+        boxShadow: '0 2px 10px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.07)',
+        animation: `cds-in 0.32s ${delay}s cubic-bezier(0.22,1,0.36,1) both`,
+        textDecoration: 'none',
+      }}
+    >
+      <div className="flex items-center justify-center rounded-[8px] shrink-0"
+        style={{ width: 22, height: 22, background: `rgba(${rgb},0.90)`, boxShadow: `0 1px 4px rgba(${rgb},0.40)` }}>
+        <Icon style={{ width: 11, height: 11, color: '#fff', flexShrink: 0 }} />
+      </div>
+      <span style={{ fontSize: 12.5, fontWeight: 600, lineHeight: 1, color: 'rgba(255,255,255,0.80)', letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}>
+        {label}
+      </span>
+      <span style={{ fontSize: 10, fontWeight: 500, lineHeight: 1, color: 'rgba(255,255,255,0.28)', letterSpacing: '0.01em', fontVariantNumeric: 'tabular-nums' }}>
+        {count}
+      </span>
+    </Link>
+  );
+}
+
+function ContentDiscoveryStrip() {
+  const [expanded, setExpanded] = React.useState(false);
+
+  return (
+    <section className="-mx-3 sm:mx-0">
+      <style>{`
+        @keyframes cds-in {
+          from { opacity:0; transform:scale(0.88) translateY(6px); }
+          to   { opacity:1; transform:none; }
+        }
+        @keyframes cds-expand-in {
+          from { opacity:0; transform:translateY(-8px); max-height:0; }
+          to   { opacity:1; transform:none; max-height:400px; }
+        }
+        @keyframes cds-expand-out {
+          from { opacity:1; transform:none; }
+          to   { opacity:0; transform:translateY(-6px); }
+        }
+        .cds-pill {
+          transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1),
+                      background 0.16s ease, border-color 0.16s ease,
+                      box-shadow 0.16s ease;
+        }
+        .cds-pill:hover  { transform: scale(1.05); }
+        .cds-pill:active { transform: scale(0.94); transition-duration:0.08s; }
+        .cds-arrow-btn {
+          transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1),
+                      background 0.16s ease, border-color 0.16s ease;
+        }
+        .cds-arrow-btn:hover  { transform: scale(1.10); }
+        .cds-arrow-btn:active { transform: scale(0.90); }
+        .cds-arrow-icon {
+          transition: transform 0.28s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        .cds-arrow-icon.open { transform: rotate(180deg); }
+        .cds-grid {
+          animation: cds-expand-in 0.34s cubic-bezier(0.22,1,0.36,1) both;
+          overflow: hidden;
+        }
+      `}</style>
+
+      {/* ── Scrollable strip + arrow ── */}
+      <div className="flex items-center gap-2 pr-3 sm:pr-0">
+
+        {/* Pill scroll container */}
+        <div className="relative flex-1 min-w-0">
+          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 sm:w-20"
+            style={{ background:'linear-gradient(to right, rgb(13,13,15) 0%, rgba(13,13,15,0.98) 5%, rgba(13,13,15,0.95) 10%, rgba(13,13,15,0.90) 16%, rgba(13,13,15,0.83) 23%, rgba(13,13,15,0.74) 31%, rgba(13,13,15,0.63) 40%, rgba(13,13,15,0.51) 49%, rgba(13,13,15,0.40) 58%, rgba(13,13,15,0.28) 67%, rgba(13,13,15,0.18) 75%, rgba(13,13,15,0.09) 83%, rgba(13,13,15,0.03) 91%, transparent 100%)' }} />
+          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 sm:w-20"
+            style={{ background:'linear-gradient(to left, rgb(13,13,15) 0%, rgba(13,13,15,0.98) 5%, rgba(13,13,15,0.95) 10%, rgba(13,13,15,0.90) 16%, rgba(13,13,15,0.83) 23%, rgba(13,13,15,0.74) 31%, rgba(13,13,15,0.63) 40%, rgba(13,13,15,0.51) 49%, rgba(13,13,15,0.40) 58%, rgba(13,13,15,0.28) 67%, rgba(13,13,15,0.18) 75%, rgba(13,13,15,0.09) 83%, rgba(13,13,15,0.03) 91%, transparent 100%)' }} />
+          <div className="no-scrollbar flex items-center gap-2 overflow-x-auto"
+            style={{ scrollbarWidth:'none', padding:'2px 0' }}>
+            {CONTENT_TYPES.map(({ id, label, count, Icon, color, rgb }, idx) => (
+              <CdsPill key={id} id={id} label={label} count={count} Icon={Icon}
+                color={color} rgb={rgb} delay={0.01 + idx * 0.012} />
+            ))}
+          </div>
+        </div>
+
+        {/* Expand / collapse arrow */}
+        <button
+          type="button"
+          aria-label={expanded ? 'Collapse' : 'Show all types'}
+          onClick={() => setExpanded(v => !v)}
+          className="cds-arrow-btn shrink-0 flex items-center justify-center rounded-xl"
+          style={{
+            width: 36, height: 36,
+            background: expanded ? 'rgba(167,139,250,0.12)' : 'rgba(0,0,0,0.38)',
+            backdropFilter: 'blur(18px)',
+            WebkitBackdropFilter: 'blur(18px)',
+            border: `1px solid ${expanded ? 'rgba(167,139,250,0.28)' : 'rgba(255,255,255,0.09)'}`,
+            boxShadow: expanded
+              ? '0 0 14px rgba(167,139,250,0.20), inset 0 1px 0 rgba(255,255,255,0.10)'
+              : '0 2px 10px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.07)',
+          }}
+        >
+          <ChevronDown
+            className={`cds-arrow-icon${expanded ? ' open' : ''}`}
+            style={{
+              width: 14, height: 14,
+              color: expanded ? '#a78bfa' : 'rgba(255,255,255,0.50)',
+            }}
+          />
+        </button>
+      </div>
+
+      {/* ── Expanded grid ── */}
+      {expanded && (
+        <div className="cds-grid mt-3 flex flex-wrap gap-2 px-3 sm:px-0">
+          {CONTENT_TYPES.map(({ id, label, count, Icon, color, rgb }, idx) => (
+            <CdsPill key={id} id={id} label={label} count={count} Icon={Icon}
+              color={color} rgb={rgb} delay={idx * 0.018} />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
    LiveLeaderboards — multi-board real-time section
 ───────────────────────────────────────────────────────────── */
 type LBEntry = {
@@ -2994,7 +3972,7 @@ function LiveLeaderboards() {
 ───────────────────────────────────────────────────────────── */
 type NHCLiveProfile = {
   id: string; name: string; accountType: string; createdAt: string; docrudGo: boolean;
-  profile: { headline?: string; bio?: string; location?: string; avatarUrl?: string; skills?: string[]; openToWork?: boolean };
+  profile: { headline?: string; bio?: string; location?: string; avatarUrl?: string; bannerUrl?: string; coverGradient?: string; coverPosition?: string; skills?: string[]; openToWork?: boolean };
   stats: { followers: number; following: number; gigsCount: number };
   upraiseCount: number;
 };
@@ -3014,6 +3992,7 @@ type NHCLiveFeed = {
   id: string; shareId: string; category: string; catCls: string; ilk: string;
   title: string; description: string; author: string; authorAv: string; authorBg: string;
   likes: string; likesRaw: number; comments: number; href: string;
+  thumbnailUrl?: string | null; mimeType?: string | null; createdAt?: string; featured?: boolean;
 };
 
 function NewHomepageContent({
@@ -3022,6 +4001,10 @@ function NewHomepageContent({
   inputRef,
   welcomeScrollRef,
   onPublishClick,
+  onESignClick,
+  onScratchpadClick,
+  onPdfClick,
+  onDocSheetClick,
   liveProfiles = [],
   liveGigs = [],
   liveMetrics,
@@ -3033,7 +4016,11 @@ function NewHomepageContent({
   setDraft: (d: string) => void;
   inputRef: React.RefObject<HTMLTextAreaElement | null>;
   welcomeScrollRef: React.RefObject<HTMLDivElement | null>;
-  onPublishClick: () => void;
+  onPublishClick: (category?: string) => void;
+  onESignClick: () => void;
+  onScratchpadClick: () => void;
+  onPdfClick: () => void;
+  onDocSheetClick: () => void;
   liveProfiles?: NHCLiveProfile[];
   liveGigs?: NHCLiveGig[];
   liveMetrics?: NHCLiveMetrics | null;
@@ -3041,21 +4028,104 @@ function NewHomepageContent({
 }) {
   const { data: nhcSession } = useSession();
   const [activeFeedTab, setActiveFeedTab] = React.useState<string>('All');
+  const [feedSliderKey, setFeedSliderKey] = React.useState(0);
   const [heroDot, setHeroDot] = React.useState(0);
   const [followingSet, setFollowingSet] = React.useState<Set<string>>(new Set());
   const [pendingFollow, setPendingFollow] = React.useState<Set<string>>(new Set());
+  const [showAllFeatures, setShowAllFeatures] = React.useState(false);
+
+  /* ── Mobile greeting clock ── */
+  const [clockNow, setClockNow] = React.useState<Date | null>(null);
+  const [clockPhase, setClockPhase] = React.useState('');
+  const [clockVisible, setClockVisible] = React.useState(false);
+  React.useEffect(() => {
+    const tick = () => {
+      const d = new Date();
+      setClockNow(d);
+      const h = d.getHours();
+      const phase = h >= 5 && h < 12 ? 'morning' : h >= 12 && h < 17 ? 'afternoon' : h >= 17 && h < 21 ? 'evening' : 'night';
+      setClockPhase(phase);
+    };
+    tick();
+    // Reveal after 80ms so enter animation is always visible
+    const showId = setTimeout(() => setClockVisible(true), 80);
+    const id = setInterval(tick, 30_000);
+    return () => { clearInterval(id); clearTimeout(showId); };
+  }, []);
+
+  const greetingMeta = React.useMemo(() => {
+    if (!clockNow) return null;
+    const h = clockNow.getHours();
+    if (h >= 5 && h < 12)  return { text: 'Good Morning',   sub: 'Start your day strong.',       color: '#d97706', accent: 'rgba(217,119,6,0.55)',   glow: 'rgba(245,158,11,0.07)' };
+    if (h >= 12 && h < 17) return { text: 'Good Afternoon', sub: 'Your workspace is live.',       color: '#b45309', accent: 'rgba(180,83,9,0.55)',    glow: 'rgba(251,191,36,0.06)' };
+    if (h >= 17 && h < 21) return { text: 'Good Evening',   sub: 'Stay focused, finish strong.',  color: '#ea580c', accent: 'rgba(234,88,12,0.55)',   glow: 'rgba(249,115,22,0.07)' };
+    return                         { text: 'Good Night',     sub: 'Your tools are always ready.', color: '#7c3aed', accent: 'rgba(124,58,237,0.55)', glow: 'rgba(167,139,250,0.07)' };
+  }, [clockNow]);
+
+  const timeDisplay = React.useMemo(() => {
+    if (!clockNow) return '';
+    return clockNow.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }).toUpperCase();
+  }, [clockNow]);
+
+  const dateDisplay = React.useMemo(() => {
+    if (!clockNow) return '';
+    const day  = clockNow.toLocaleDateString('en-IN', { weekday: 'long' });
+    const date = clockNow.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+    return { day, date };
+  }, [clockNow]);
+
+  /* ── Slot-machine word cycling ── */
+  const slotWords = [
+    { word: 'Professionals', sub: 'The professional network powering ambitious careers worldwide.' },
+    { word: 'Freelancers',   sub: 'Find top-paying gigs & clients perfectly matched to your skills.' },
+    { word: 'Gig Seekers',   sub: 'Discover verified opportunities posted by businesses that matter.' },
+    { word: 'Creators',      sub: 'Publish, share & grow your professional presence effortlessly.' },
+    { word: 'Connections',   sub: 'Real connections, real growth — your network, amplified.' },
+    { word: 'Daily Updates', sub: 'Stay ahead with live industry news, trends & opportunities.' },
+    { word: 'Pro Tools',     sub: 'Smart documents, e-sign, proposals & more — all in one place.' },
+    { word: 'Entrepreneurs', sub: 'Connect with talent, investors & partners who move fast.' },
+  ];
+  const [slotIdx, setSlotIdx] = React.useState(0);
+  const [slotKey, setSlotKey] = React.useState(0);
 
   React.useEffect(() => {
-    const id = setInterval(() => setHeroDot((d) => (d + 1) % 4), 4000);
+    const id = setInterval(() => {
+      setSlotIdx(i => (i + 1) % slotWords.length);
+      setSlotKey(k => k + 1);
+    }, 2800);
     return () => clearInterval(id);
   }, []);
 
-  const heroSubtitles = [
-    'Smart tools, real opportunities, limitless possibilities.',
-    'Create stunning documents, PDFs & proposals in seconds.',
-    'Discover top talent and exciting gigs on one platform.',
-    'E-sign, share, and collaborate with complete security.',
-  ];
+  /* ── Feature usage tracking ── */
+  const [usageMap, setUsageMap] = React.useState<Record<string, number>>({});
+  React.useEffect(() => {
+    try { const s = localStorage.getItem(USAGE_LS_KEY); if (s) setUsageMap(JSON.parse(s) as Record<string,number>); } catch { /* ignore */ }
+  }, []);
+
+  function trackAndGo(featureId: string, href: string | null, modal: string | null) {
+    const next = { ...usageMap, [featureId]: (usageMap[featureId] ?? 0) + 1 };
+    setUsageMap(next);
+    try { localStorage.setItem(USAGE_LS_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+    if (modal === 'esign')      { onESignClick();           return; }
+    if (modal === 'scratchpad') { onScratchpadClick();      return; }
+    if (modal === 'pdf')        { onPdfClick();             return; }
+    if (modal === 'docsheets')  { onDocSheetClick();        return; }
+    if (modal === 'publish')    { onPublishClick();         return; }
+    if (href) window.location.href = href;
+  }
+
+  const topFeatures: QuickFeature[] = React.useMemo(() => {
+    const ids = nhcSession
+      ? (Object.keys(usageMap).length > 0
+          ? [...ALL_QUICK_FEATURES].sort((a, b) => (usageMap[b.id] ?? 0) - (usageMap[a.id] ?? 0)).slice(0, 4).map(f => f.id)
+          : DEFAULT_FEATURE_IDS as readonly string[])
+      : (GUEST_FEATURE_IDS as readonly string[]);
+    return (ids as string[]).map(id => ALL_QUICK_FEATURES.find(f => f.id === id)!).filter(Boolean);
+  }, [nhcSession, usageMap]);
+
+  const topFeatureId = Object.keys(usageMap).length > 0
+    ? Object.entries(usageMap).sort((a, b) => b[1] - a[1])[0]?.[0] ?? ''
+    : '';
 
   const handleFollow = React.useCallback(async (targetUserId: string, e: React.MouseEvent) => {
     e.preventDefault();
@@ -3094,301 +4164,1062 @@ function NewHomepageContent({
     >
       <div className="mx-auto w-full max-w-[1600px] space-y-3 sm:space-y-4 px-3 sm:px-4 lg:px-6 xl:px-8 pt-3 sm:pt-4">
 
-        {/* ── Row 1: Hero Banner + Feature Cards ──────────────────── */}
-        <div className="flex gap-2 sm:gap-3 min-h-[180px] sm:min-h-[230px] lg:min-h-[260px]">
+        {/* ── Mobile greeting banner (sm:hidden) ── */}
+        {greetingMeta && clockNow && typeof dateDisplay === 'object' && (
+          <div
+            className="sm:hidden"
+            style={{
+              opacity: clockVisible ? 1 : 0,
+              transform: clockVisible ? 'translateY(0)' : 'translateY(-10px)',
+              transition: 'opacity 0.55s cubic-bezier(0.22,1,0.36,1), transform 0.55s cubic-bezier(0.22,1,0.36,1)',
+            }}
+          >
+            <style>{`
+              @keyframes mobileGreetIn {
+                0%   { opacity:0; transform:translateY(-5px); filter:blur(4px); }
+                100% { opacity:1; transform:translateY(0);    filter:blur(0);   }
+              }
+            `}</style>
 
-          {/* Hero card */}
-          <div className="relative flex-[1.45] min-w-0 overflow-hidden rounded-[18px] sm:rounded-[22px] border border-white/[0.07] bg-[#0d0e11] shadow-[0_8px_40px_rgba(0,0,0,0.55)]">
-            {/* Subtle grid overlay */}
             <div
-              className="pointer-events-none absolute inset-0 opacity-[0.04]"
-              style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.5) 1px,transparent 1px)', backgroundSize: '32px 32px' }}
-            />
-            {/* 3D sphere — right side, overflows */}
-            <div className="absolute right-[-8%] top-1/2 -translate-y-1/2 h-[170%] w-auto aspect-square pointer-events-none select-none opacity-90">
-              <AnimatedSphere />
-            </div>
-            {/* Gradient overlay to blend sphere into background */}
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#0d0e11] via-[#0d0e11]/75 to-transparent" />
-            {/* Text content */}
-            <div className="relative z-10 flex h-full flex-col justify-between p-5 sm:p-6 lg:p-8">
-              <div>
-                <h1
-                  className="font-bold leading-tight tracking-tight text-white"
-                  style={{ fontSize: 'clamp(1.3rem,3.2vw,2.4rem)' }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                borderRadius: 13,
+                border: '1px solid rgba(255,255,255,0.06)',
+                background: 'rgba(0,0,0,0.42)',
+                backdropFilter: 'blur(18px)',
+                overflow: 'hidden',
+                animation: 'mobileGreetIn 0.45s cubic-bezier(0.22,1,0.36,1) both',
+              }}
+            >
+              {/* Left accent bar */}
+              <div
+                aria-hidden="true"
+                style={{ flexShrink: 0, width: 2, alignSelf: 'stretch', background: greetingMeta.accent }}
+              />
+
+              {/* Single row: greeting · date — time */}
+              <div
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px 14px',
+                  gap: 8,
+                }}
+              >
+                <span
+                  key={`greet-${clockPhase}`}
+                  style={{
+                    fontSize: 15,
+                    fontWeight: 500,
+                    color: '#ffffff',
+                    letterSpacing: '-0.025em',
+                    lineHeight: 1,
+                    animation: 'mobileGreetIn 0.40s cubic-bezier(0.22,1,0.36,1) both 0.04s',
+                  }}
                 >
-                  <span>{softwareName.toLowerCase()}</span>{' '}
-                  <span className="text-white/50">that</span>{' '}
-                  <span className="text-emerald-400 drop-shadow-[0_0_18px_rgba(52,211,153,0.45)]">empowers</span>{' '}
-                  <span>professionals</span>
-                </h1>
-                <div className="relative mt-2.5 overflow-hidden" style={{ height: 'clamp(1.1rem,2.2vw,1.4rem)', maxWidth: '26rem' }}>
-                  {heroSubtitles.map((sub, idx) => {
-                    const offset = idx - heroDot;
-                    return (
-                      <p
-                        key={idx}
-                        className="absolute inset-x-0 top-0 leading-relaxed text-white/50"
-                        style={{
-                          fontSize: 'clamp(0.7rem,1.4vw,0.875rem)',
-                          transform: `translateY(${offset * 110}%)`,
-                          opacity: offset === 0 ? 1 : 0,
-                          transition: 'transform 0.6s cubic-bezier(0.4,0,0.2,1), opacity 0.5s ease',
-                          pointerEvents: 'none',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {sub}
-                      </p>
-                    );
-                  })}
+                  {greetingMeta.text}
+                </span>
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 400,
+                    color: 'rgba(255,255,255,0.22)',
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {dateDisplay.day}
+                </span>
+                <span
+                  key={`time-${timeDisplay}`}
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: 'rgba(255,255,255,0.38)',
+                    letterSpacing: '-0.01em',
+                    fontVariantNumeric: 'tabular-nums',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {timeDisplay}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Mobile quick-actions strip (top, before hero) ── */}
+        <div className="sm:hidden flex gap-2 overflow-x-auto" style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+
+          {/* ── "All features" button — first in strip ── */}
+          <button
+            type="button"
+            onClick={() => setShowAllFeatures(true)}
+            className="flex-shrink-0 flex items-center gap-2 active:scale-[0.96] transition-transform duration-150"
+            style={{
+              height: 36,
+              padding: '0 12px 0 9px',
+              borderRadius: 12,
+              background: showAllFeatures ? 'rgba(139,92,246,0.14)' : 'rgba(8,8,11,0.82)',
+              backdropFilter: 'blur(20px) saturate(1.4)',
+              WebkitBackdropFilter: 'blur(20px) saturate(1.4)',
+              border: showAllFeatures ? '1px solid rgba(139,92,246,0.28)' : '1px solid rgba(255,255,255,0.07)',
+              boxShadow: '0 2px 12px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.05)',
+            }}
+          >
+            <div style={{
+              width: 22, height: 22, borderRadius: 7, flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(139,92,246,0.16)', border: '1px solid rgba(139,92,246,0.22)',
+            }}>
+              <LayoutGrid style={{ width: 11, height: 11, color: '#a78bfa' }} />
+            </div>
+            <span style={{
+              fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap',
+              color: 'rgba(255,255,255,0.58)', letterSpacing: '-0.015em',
+            }}>All</span>
+          </button>
+
+          {topFeatures.map((f) => {
+            const isMostUsed = f.id === topFeatureId;
+            return (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => trackAndGo(f.id, f.href, f.modal)}
+                className="flex-shrink-0 flex items-center gap-2 active:scale-[0.97] transition-transform duration-150"
+                style={{
+                  height: 36,
+                  padding: '0 13px 0 9px',
+                  borderRadius: 12,
+                  background: 'rgba(8,8,11,0.82)',
+                  backdropFilter: 'blur(20px) saturate(1.4)',
+                  WebkitBackdropFilter: 'blur(20px) saturate(1.4)',
+                  border: isMostUsed ? '1px solid rgba(255,255,255,0.13)' : '1px solid rgba(255,255,255,0.07)',
+                  boxShadow: '0 2px 12px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.05)',
+                }}
+              >
+                <div style={{
+                  width: 22, height: 22, borderRadius: 7, flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: f.ib, border: `1px solid ${f.bd}`,
+                }}>
+                  <f.Icon style={{ width: 11, height: 11, color: f.ic }} />
+                </div>
+                <span style={{
+                  fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap',
+                  color: isMostUsed ? 'rgba(255,255,255,0.90)' : 'rgba(255,255,255,0.60)',
+                  letterSpacing: '-0.015em',
+                }}>{f.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* ── All-features bottom sheet (mobile only) ── */}
+        {showAllFeatures && typeof document !== 'undefined' && createPortal(
+          <>
+            <style>{`
+              @keyframes qf-backdrop-in  { from { opacity:0; } to { opacity:1; } }
+              @keyframes qf-sheet-in     { from { transform:translateY(100%); } to { transform:translateY(0); } }
+              @keyframes qf-sheet-out    { from { transform:translateY(0); } to { transform:translateY(100%); } }
+              @keyframes qf-item-in      {
+                from { opacity:0; transform:translateY(12px) scale(0.93); }
+                to   { opacity:1; transform:none; }
+              }
+              .qf-item {
+                transition: transform 0.16s cubic-bezier(0.34,1.56,0.64,1),
+                            background 0.15s ease, border-color 0.15s ease;
+              }
+              .qf-item:hover  { transform: scale(1.04); }
+              .qf-item:active { transform: scale(0.93); transition-duration:0.07s; }
+            `}</style>
+
+            {/* Backdrop */}
+            <div
+              onClick={() => setShowAllFeatures(false)}
+              style={{
+                position: 'fixed', inset: 0, zIndex: 85,
+                background: 'rgba(0,0,0,0.62)',
+                backdropFilter: 'blur(6px)',
+                WebkitBackdropFilter: 'blur(6px)',
+                animation: 'qf-backdrop-in 0.22s ease both',
+              }}
+            />
+
+            {/* Sheet */}
+            <div
+              style={{
+                position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 86,
+                background: 'linear-gradient(170deg, rgba(18,14,28,0.97) 0%, rgba(10,10,16,0.98) 100%)',
+                backdropFilter: 'blur(32px) saturate(1.8)',
+                WebkitBackdropFilter: 'blur(32px) saturate(1.8)',
+                borderTop: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: '22px 22px 0 0',
+                boxShadow: '0 -12px 60px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.06)',
+                paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 20px)',
+                animation: 'qf-sheet-in 0.42s cubic-bezier(0.22,1,0.36,1) both',
+              }}
+            >
+              {/* Handle */}
+              <div style={{ display:'flex', justifyContent:'center', paddingTop: 12, paddingBottom: 4 }}>
+                <div style={{ width: 36, height: 4, borderRadius: 999, background: 'rgba(255,255,255,0.14)' }} />
+              </div>
+
+              {/* Header row */}
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding: '10px 20px 14px' }}>
+                <div>
+                  <p style={{ fontSize: 16, fontWeight: 700, color: '#fff', letterSpacing: '-0.025em', lineHeight: 1 }}>All Features</p>
+                  <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.34)', marginTop: 3, fontWeight: 400 }}>{ALL_QUICK_FEATURES.length} tools available</p>
                 </div>
                 <button
                   type="button"
-                  onClick={() => {
-                    setDraft(`Show me what ${softwareName} can do for my workflow.`);
-                    setTimeout(() => inputRef.current?.focus(), 0);
+                  onClick={() => setShowAllFeatures(false)}
+                  style={{
+                    width: 30, height: 30, borderRadius: 10, flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)',
+                    color: 'rgba(255,255,255,0.50)', cursor: 'pointer',
+                    transition: 'background 0.15s ease',
                   }}
-                  className="mt-4 sm:mt-5 inline-flex items-center gap-1.5 rounded-[10px] border border-white/[0.14] bg-white/[0.09] px-3.5 py-2 text-[12.5px] font-semibold text-white/85 backdrop-blur-sm transition hover:bg-white/[0.15] hover:border-white/[0.22] hover:text-white active:scale-95"
                 >
-                  Explore now <ArrowRight className="h-3 w-3" />
+                  <ChevronDown style={{ width: 14, height: 14 }} />
                 </button>
               </div>
-              {/* Carousel dots */}
+
+              {/* Divider */}
+              <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', marginLeft: 20, marginRight: 20, marginBottom: 16 }} />
+
+              {/* Feature grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, padding: '0 16px 8px' }}>
+                {ALL_QUICK_FEATURES.map((f, idx) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    className="qf-item"
+                    onClick={() => { setShowAllFeatures(false); setTimeout(() => trackAndGo(f.id, f.href, f.modal), 120); }}
+                    style={{
+                      display: 'flex', flexDirection: 'column', alignItems: 'center',
+                      gap: 8, padding: '14px 8px 12px',
+                      borderRadius: 16,
+                      background: 'rgba(255,255,255,0.03)',
+                      border: '1px solid rgba(255,255,255,0.07)',
+                      cursor: 'pointer', textAlign: 'center',
+                      animation: `qf-item-in 0.34s ${0.04 + idx * 0.028}s cubic-bezier(0.22,1,0.36,1) both`,
+                    }}
+                  >
+                    {/* Icon square */}
+                    <div style={{
+                      width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: f.ib, border: `1px solid ${f.bd}`,
+                      boxShadow: `0 2px 10px ${f.ib}`,
+                    }}>
+                      <f.Icon style={{ width: 18, height: 18, color: f.ic }} />
+                    </div>
+                    {/* Label */}
+                    <span style={{
+                      fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.72)',
+                      letterSpacing: '-0.01em', lineHeight: 1.2, whiteSpace: 'nowrap',
+                    }}>{f.label}</span>
+                    {/* Desc */}
+                    <span style={{
+                      fontSize: 9.5, color: 'rgba(255,255,255,0.28)', lineHeight: 1.3,
+                      display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                    }}>{f.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>,
+          document.body
+        )}
+
+        {/* ── Row 1: Hero Banner + Feature Cards ──────────────────── */}
+        <div className="flex gap-2 sm:gap-3 min-h-[180px] sm:min-h-[230px] lg:min-h-[260px]">
+
+          {/* ── Hero card ── */}
+          <div className="relative flex-[1.45] min-w-0 overflow-hidden rounded-[18px] sm:rounded-[22px] border border-white/[0.07] bg-[#0d0e11] shadow-[0_8px_40px_rgba(0,0,0,0.55)]">
+
+            {/* Slot-machine CSS */}
+            <style>{`
+              @keyframes slotIn {
+                0%   { transform: translateY(70%) scaleY(0.6); opacity: 0; filter: blur(12px); }
+                55%  { transform: translateY(-5%) scaleY(1.06); opacity: 1; filter: blur(0.5px); }
+                72%  { transform: translateY(2.5%) scaleY(0.97); opacity: 1; filter: blur(0px); }
+                86%  { transform: translateY(-1%) scaleY(1.01); }
+                100% { transform: translateY(0) scaleY(1); opacity: 1; filter: blur(0px); }
+              }
+              .slot-word { display: inline-block; animation: slotIn 0.68s cubic-bezier(0.22,1,0.36,1) both; }
+              @keyframes subFadeIn {
+                from { opacity: 0; transform: translateY(6px); filter: blur(5px); }
+                to   { opacity: 1; transform: none; filter: blur(0px); }
+              }
+              .sub-fade { animation: subFadeIn 0.52s cubic-bezier(0.22,1,0.36,1) both 0.1s; }
+              @keyframes dotPulse {
+                0%,100% { box-shadow: 0 0 0 0 rgba(167,139,250,0); }
+                50%     { box-shadow: 0 0 0 3px rgba(167,139,250,0.22); }
+              }
+              .dot-active { animation: dotPulse 1.8s ease infinite; }
+            `}</style>
+
+            {/* Grid overlay */}
+            <div className="pointer-events-none absolute inset-0 opacity-[0.03]"
+              style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.6) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.6) 1px,transparent 1px)', backgroundSize: '28px 28px' }} />
+
+            {/* Ambient glow orbs */}
+            <div className="pointer-events-none absolute -top-20 -left-20 w-72 h-72 rounded-full opacity-[0.12]"
+              style={{ background: 'radial-gradient(circle,#6366f1 0%,transparent 70%)', filter: 'blur(48px)' }} />
+            <div className="pointer-events-none absolute -bottom-16 right-8 w-56 h-56 rounded-full opacity-[0.09]"
+              style={{ background: 'radial-gradient(circle,#34d399 0%,transparent 70%)', filter: 'blur(40px)' }} />
+
+            {/* 3D sphere */}
+            <div className="absolute right-[-8%] top-1/2 -translate-y-1/2 h-[170%] w-auto aspect-square pointer-events-none select-none opacity-90">
+              <AnimatedSphere />
+            </div>
+            {/* Gradient overlay */}
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#0d0e11] via-[#0d0e11]/80 to-transparent" />
+
+            {/* Content */}
+            <div className="relative z-10 flex h-full flex-col justify-between p-5 sm:p-6 lg:p-8">
+              <div>
+                {/* Eyebrow label */}
+               
+
+                {/* Main heading — inline with slot word */}
+                <h1
+                  className="font-bold leading-tight tracking-tight"
+                  style={{ fontSize: 'clamp(1.25rem,3vw,2.25rem)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0 0.35em' }}
+                >
+                  <span style={{ color: 'rgba(255,255,255,0.40)', fontWeight: 700 }}>{softwareName.toLowerCase()} for</span>
+                  {/* Slot word — inline, clips vertically */}
+                  <span className="overflow-hidden inline-flex items-center" style={{ height: 'clamp(1.9rem,4.2vw,3.2rem)', verticalAlign: 'middle' }}>
+                    <span
+                      key={slotKey}
+                      className="slot-word"
+                      style={{
+                        color: '#ffffff',
+                        fontWeight: 800,
+                        letterSpacing: '-0.02em',
+                        fontSize: 'clamp(1.25rem,3vw,2.25rem)',
+                        lineHeight: 1,
+                      }}
+                    >
+                      {slotWords[slotIdx].word}
+                    </span>
+                  </span>
+                </h1>
+
+                {/* Animated subtitle */}
+                <p
+                  key={`sub-${slotKey}`}
+                  className="sub-fade leading-relaxed"
+                  style={{ fontSize: 'clamp(0.7rem,1.35vw,0.85rem)', color: 'rgba(255,255,255,0.42)', marginTop: 10, maxWidth: '28rem' }}
+                >
+                  {slotWords[slotIdx].sub}
+                </p>
+
+                {/* CTA buttons */}
+                <div className="mt-4 sm:mt-5 flex flex-wrap items-center gap-2">
+                  {nhcSession ? (
+                    /* ── Logged-in CTAs ── */
+                    <>
+                      <Link
+                        href="/profile"
+                        className="inline-flex items-center gap-1.5 rounded-[11px] border border-white/[0.14] bg-white/[0.08] px-4 py-2.5 font-semibold text-white/80 backdrop-blur-sm transition-all hover:bg-white/[0.14] hover:border-white/[0.24] hover:text-white active:scale-95"
+                        style={{ fontSize: 12.5 }}
+                      >
+                        <User className="h-3 w-3" /> My Profile
+                      </Link>
+                      <Link
+                        href="/published"
+                        className="inline-flex items-center gap-1.5 rounded-[11px] px-4 py-2.5 font-semibold text-white transition-all active:scale-95 hover:scale-[1.03]"
+                        style={{
+                          fontSize: 12.5,
+                          background: 'rgba(8,8,11,0.82)',
+                          backdropFilter: 'blur(28px) saturate(1.6)',
+                          WebkitBackdropFilter: 'blur(28px) saturate(1.6)',
+                          border: '1px solid rgba(255,255,255,0.06)',
+                          boxShadow: '0 8px 28px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06)',
+                        }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 12px 36px rgba(0,0,0,0.70), inset 0 1px 0 rgba(255,255,255,0.10)'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.12)'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 28px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.06)'; }}
+                      >
+                        Explore Feed <ArrowRight className="h-3 w-3" />
+                      </Link>
+                    </>
+                  ) : (
+                    /* ── Guest CTAs ── */
+                    <>
+                      <Link
+                        href="/register"
+                        className="inline-flex items-center gap-1.5 rounded-[11px] px-4 py-2.5 font-semibold text-white transition-all active:scale-95 hover:scale-[1.03]"
+                        style={{
+                          fontSize: 12.5,
+                          background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+                          boxShadow: '0 4px 22px rgba(99,102,241,0.50), inset 0 1px 0 rgba(255,255,255,0.12)',
+                        }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 32px rgba(99,102,241,0.70), inset 0 1px 0 rgba(255,255,255,0.14)'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 22px rgba(99,102,241,0.50), inset 0 1px 0 rgba(255,255,255,0.12)'; }}
+                      >
+                        Get Started Free <ArrowRight className="h-3 w-3" />
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => { setDraft(`Show me what ${softwareName} can do for my workflow.`); setTimeout(() => inputRef.current?.focus(), 0); }}
+                        className="inline-flex items-center gap-1.5 rounded-[11px] border border-white/[0.14] bg-white/[0.08] px-4 py-2.5 font-semibold text-white/80 backdrop-blur-sm transition-all hover:bg-white/[0.14] hover:border-white/[0.24] hover:text-white active:scale-95"
+                        style={{ fontSize: 12.5 }}
+                      >
+                        Explore now <ArrowRight className="h-3 w-3" />
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Slot progress dots */}
               <div className="flex items-center gap-1.5 mt-4">
-                {[0, 1, 2, 3].map((i) => (
+                {slotWords.map((_, i) => (
                   <button
                     key={i}
                     type="button"
-                    aria-label={`Slide ${i + 1}`}
-                    onClick={() => setHeroDot(i)}
+                    aria-label={`Word ${i + 1}`}
+                    onClick={() => { setSlotIdx(i); setSlotKey(k => k + 1); }}
                     className={[
                       'h-1.5 rounded-full transition-all duration-500 cursor-pointer',
-                      heroDot === i ? 'w-5 bg-white' : 'w-1.5 bg-white/25 hover:bg-white/50',
+                      slotIdx === i ? 'w-6 dot-active' : 'w-1.5 hover:bg-white/40',
                     ].join(' ')}
+                    style={{ background: slotIdx === i ? 'linear-gradient(90deg,#6366f1,#a78bfa)' : 'rgba(255,255,255,0.18)' }}
                   />
                 ))}
               </div>
             </div>
           </div>
 
-          {/* Feature cards — desktop: 4 in a row (2×2 on medium) */}
+          {/* Feature cards — desktop: 2×2 grid, behaviour-tracked */}
           <div className="hidden sm:grid gap-2 sm:gap-2.5" style={{ gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gridTemplateRows: 'repeat(2,minmax(0,1fr))' }}>
-            {HERO_FEATURE_CARDS.map((card) => (
-              <button
-                key={card.id}
-                type="button"
-                onClick={() => {
-                  setDraft(`Tell me more about ${card.title}`);
-                  setTimeout(() => inputRef.current?.focus(), 0);
-                }}
-                className={`group flex flex-col items-start rounded-[16px] border ${card.border} bg-white/[0.04] p-3.5 backdrop-blur-xl transition hover:bg-white/[0.07] hover:-translate-y-0.5 text-left`}
-                style={{ minWidth: 148, maxWidth: 200 }}
-              >
-                <div className={`flex h-8 w-8 items-center justify-center rounded-[9px] ${card.iconBg}`}>
-                  <card.Icon className={`h-4 w-4 ${card.iconColor}`} aria-hidden="true" />
-                </div>
-                <div className="mt-2.5 text-[12.5px] font-bold leading-snug text-white">{card.title}</div>
-                <div className="mt-1 flex-1 text-[10.5px] leading-relaxed text-white/40 line-clamp-2">{card.description}</div>
-                <div className="mt-2.5 flex items-center gap-1 text-[10.5px] font-semibold text-white/30 transition-colors group-hover:text-white/55">
-                  View details <ArrowRight className="h-2.5 w-2.5" />
-                </div>
-              </button>
-            ))}
+            {topFeatures.map((f) => {
+              const isMostUsed = f.id === topFeatureId;
+              return (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => trackAndGo(f.id, f.href, f.modal)}
+                  className="group relative flex flex-col items-start text-left overflow-hidden transition-all duration-300 hover:-translate-y-[1px]"
+                  style={{
+                    borderRadius: 18,
+                    border: '1px solid rgba(255,255,255,0.07)',
+                    background: 'rgba(8,8,11,0.88)',
+                    backdropFilter: 'blur(28px) saturate(1.5)',
+                    WebkitBackdropFilter: 'blur(28px) saturate(1.5)',
+                    boxShadow: '0 6px 24px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.05)',
+                    padding: '15px 16px 13px',
+                    minWidth: 148,
+                  }}
+                >
+                  {/* Hover border brightening */}
+                  <div className="pointer-events-none absolute inset-0 rounded-[18px] opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                    style={{ border: '1px solid rgba(255,255,255,0.12)', borderRadius: 18 }} />
+
+                  {/* Icon */}
+                  <div style={{
+                    width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: f.ib, border: `1px solid ${f.bd}`,
+                  }}>
+                    <f.Icon style={{ width: 16, height: 16, color: f.ic }} aria-hidden="true" />
+                  </div>
+
+                  {/* Label */}
+                  <div style={{ marginTop: 11, fontSize: 13, fontWeight: 600, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+                    {f.label}
+                  </div>
+
+                  {/* Description */}
+                  <div style={{ marginTop: 4, fontSize: 10.5, lineHeight: 1.5, color: 'rgba(255,255,255,0.36)', flex: 1 }}
+                    className="line-clamp-2">
+                    {f.desc}
+                  </div>
+
+                  {/* Bottom row */}
+                  <div style={{ marginTop: 12, display: 'flex', alignItems: 'center' }}>
+                    {isMostUsed ? (
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 4,
+                        fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+                        padding: '3px 8px', borderRadius: 999,
+                        background: f.ib, border: `1px solid ${f.bd}`, color: f.ic,
+                      }}>
+                        <Sparkles style={{ width: 8, height: 8 }} /> Most used
+                      </span>
+                    ) : (
+                      <span style={{
+                        display: 'flex', alignItems: 'center', gap: 4,
+                        fontSize: 10, fontWeight: 500, letterSpacing: '0.01em',
+                        color: 'rgba(255,255,255,0.25)',
+                        transition: 'color 0.2s',
+                      }} className="group-hover:!text-white/50">
+                        Open <ArrowRight style={{ width: 10, height: 10 }} />
+                      </span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
           </div>
-          {/* Feature cards — mobile: horizontal scroll */}
-          <div className="sm:hidden flex gap-2 overflow-x-auto no-scrollbar shrink-0 w-[136px]">
-            {HERO_FEATURE_CARDS.map((card) => (
-              <div
-                key={card.id}
-                className={`shrink-0 flex flex-col rounded-[13px] border ${card.border} bg-white/[0.04] p-3 w-[130px]`}
-              >
-                <div className={`flex h-7 w-7 items-center justify-center rounded-[8px] ${card.iconBg}`}>
-                  <card.Icon className={`h-3.5 w-3.5 ${card.iconColor}`} aria-hidden="true" />
-                </div>
-                <div className="mt-2 text-[11.5px] font-bold leading-snug text-white">{card.title}</div>
-                <div className="mt-0.5 text-[10px] leading-relaxed text-white/40 line-clamp-3">{card.description}</div>
-              </div>
-            ))}
-          </div>
+          {/* Feature cards — mobile: hidden (strip at top handles mobile) */}
         </div>
 
+        {/* ── Hero Banners: Explore Professionals + Public Faces ── */}
+        <div className="mb-2.5 flex items-center justify-between">
+          <h2 className="text-[12.5px] font-medium tracking-wide" style={{ color: 'rgba(255,255,255,0.42)', letterSpacing: '0.04em' }}>Explore Professionals</h2>
+          <Link href="/people" className="flex items-center gap-1 text-[11px] font-medium text-white/25 transition hover:text-white/50" style={{ letterSpacing: '0.01em' }}>
+            View all <ArrowRight className="h-2.5 w-2.5" />
+          </Link>
+        </div>
+        {(() => {
+          // Curated avatar sets — Indian-leaning for Explore, Western-leaning for Public Faces.
+          // Picture services: i.pravatar.cc (diverse real portraits) and randomuser.me.
+          const FOREIGNER_AVATARS = [
+            { name: 'Liam', url: 'https://randomuser.me/api/portraits/men/32.jpg', initials: 'L' },
+            { name: 'Sophie', url: 'https://randomuser.me/api/portraits/women/44.jpg', initials: 'S' },
+            { name: 'Ethan', url: 'https://randomuser.me/api/portraits/men/77.jpg', initials: 'E' },
+            { name: 'Emma', url: 'https://randomuser.me/api/portraits/women/68.jpg', initials: 'E' },
+            { name: 'Marcus', url: 'https://randomuser.me/api/portraits/men/52.jpg', initials: 'M' },
+            { name: 'Olivia', url: 'https://randomuser.me/api/portraits/women/12.jpg', initials: 'O' },
+          ];
+          const INDIAN_AVATARS = [
+            { name: 'Arjun', url: 'https://randomuser.me/api/portraits/men/41.jpg', initials: 'A' },
+            { name: 'Priya', url: 'https://randomuser.me/api/portraits/women/65.jpg', initials: 'P' },
+            { name: 'Rohit', url: 'https://randomuser.me/api/portraits/men/15.jpg', initials: 'R' },
+            { name: 'Ananya', url: 'https://randomuser.me/api/portraits/women/22.jpg', initials: 'A' },
+            { name: 'Vikram', url: 'https://randomuser.me/api/portraits/men/64.jpg', initials: 'V' },
+            { name: 'Neha', url: 'https://randomuser.me/api/portraits/women/8.jpg', initials: 'N' },
+          ];
+
+          // Explore Professionals — prefer live Indian profiles, fall back to curated Indian set
+          const liveAvatars = liveProfiles
+            .filter((p) => !!p.profile.avatarUrl)
+            .slice(0, 6)
+            .map((p) => ({
+              name: p.name,
+              url: p.profile.avatarUrl || '',
+              initials: p.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase(),
+            }));
+          const exploreAvatars = (liveAvatars.length >= 5 ? liveAvatars : INDIAN_AVATARS).slice(0, 6);
+
+          // Public Faces — Western/foreigner set (visually distinct from Explore)
+          const facesAvatars = FOREIGNER_AVATARS.slice(0, 6);
+
+          // Back-compat alias (used by category-card legacy refs if any remain in the file)
+          const bannerAvatars = exploreAvatars;
+          const facesCategories = [
+            { label: 'Entrepreneurship', Icon: TrendingUp, fg: '#fca5a5', bg: 'rgba(220,38,38,0.18)', bd: 'rgba(220,38,38,0.30)' },
+            { label: 'Technology',       Icon: Sparkles,   fg: '#93c5fd', bg: 'rgba(37,99,235,0.20)',  bd: 'rgba(37,99,235,0.32)' },
+            { label: 'Lifestyle',        Icon: Heart,      fg: '#86efac', bg: 'rgba(16,185,129,0.18)', bd: 'rgba(16,185,129,0.30)' },
+            { label: 'Marketing',        Icon: Megaphone,  fg: '#d8b4fe', bg: 'rgba(147,51,234,0.18)', bd: 'rgba(147,51,234,0.30)' },
+            { label: 'Education',        Icon: BookOpen,   fg: '#fde68a', bg: 'rgba(202,138,4,0.18)',  bd: 'rgba(202,138,4,0.32)' },
+            { label: 'Music',            Icon: Music,      fg: '#fdba74', bg: 'rgba(217,119,6,0.18)',  bd: 'rgba(217,119,6,0.30)' },
+          ];
+
+          return (
+            <section className="hero-banners-section -mx-3 sm:mx-0 px-3 sm:px-0 lg:px-0 flex lg:grid lg:grid-cols-2 gap-3 sm:gap-4 overflow-x-auto lg:overflow-visible snap-x snap-mandatory no-scrollbar scroll-px-3 sm:scroll-px-0 [scroll-behavior:smooth] [&_.hero-banner]:snap-start [&_.hero-banner]:shrink-0 [&_.hero-banner]:min-w-[88%] sm:[&_.hero-banner]:min-w-[72%] lg:[&_.hero-banner]:min-w-0 lg:[&_.hero-banner]:snap-none">
+              <style dangerouslySetInnerHTML={{ __html: `
+                @keyframes heroBannerIn {
+                  from { opacity: 0; transform: translateY(14px) scale(0.985); filter: blur(6px); }
+                  to   { opacity: 1; transform: translateY(0)    scale(1);     filter: blur(0); }
+                }
+                @keyframes heroAvatarIn {
+                  from { opacity: 0; transform: translateY(10px) scale(0.85); }
+                  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+                }
+                @keyframes heroFloat {
+                  0%, 100% { transform: translateY(0); }
+                  50%      { transform: translateY(-4px); }
+                }
+                @keyframes heroFloatAlt {
+                  0%, 100% { transform: translateY(0); }
+                  50%      { transform: translateY(4px); }
+                }
+                @keyframes heroTitleSheen {
+                  0%   { background-position: -120% 0; }
+                  100% { background-position: 220% 0; }
+                }
+                @keyframes heroGlowPulse {
+                  0%, 100% { opacity: 0.55; }
+                  50%      { opacity: 0.95; }
+                }
+                @keyframes heroPathDraw {
+                  from { stroke-dashoffset: 600; }
+                  to   { stroke-dashoffset: 0; }
+                }
+                @keyframes heroStarShine {
+                  0%, 100% { opacity: 0.55; transform: rotate(0deg) scale(1); filter: drop-shadow(0 0 4px rgba(251,191,36,0.40)); }
+                  45%      { opacity: 1;    transform: rotate(15deg) scale(1.15); filter: drop-shadow(0 0 10px rgba(251,191,36,0.85)); }
+                  55%      { opacity: 1;    transform: rotate(15deg) scale(1.15); filter: drop-shadow(0 0 10px rgba(251,191,36,0.85)); }
+                }
+                @keyframes heroStarTwinkle {
+                  0%, 100% { opacity: 0; transform: scale(0.4); }
+                  50%      { opacity: 1; transform: scale(1); }
+                }
+                .hero-star-shine {
+                  animation: heroStarShine 2.6s ease-in-out infinite;
+                  transform-origin: center;
+                  color: #fbbf24;
+                  fill: #fbbf24;
+                }
+                .hero-star-twinkle {
+                  animation: heroStarTwinkle 1.8s ease-in-out infinite;
+                }
+                .hero-banner {
+                  animation: heroBannerIn 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+                }
+                .hero-banner:nth-child(2) { animation-delay: 0.12s; }
+                .hero-avatar-shell {
+                  animation: heroAvatarIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+                  will-change: transform;
+                }
+                .hero-avatar-float {
+                  animation: heroFloat 5.5s ease-in-out infinite;
+                }
+                .hero-avatar-float-alt {
+                  animation: heroFloatAlt 6.2s ease-in-out infinite;
+                }
+                .hero-banner:hover .hero-avatar-shell {
+                  transform: translateY(-3px);
+                  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+                }
+                .hero-title-sheen {
+                  background: linear-gradient(110deg, rgba(255,255,255,0) 30%, rgba(255,255,255,0.55) 50%, rgba(255,255,255,0) 70%);
+                  background-size: 200% 100%;
+                  -webkit-background-clip: text;
+                  background-clip: text;
+                  -webkit-text-fill-color: transparent;
+                  animation: heroTitleSheen 4.5s ease-in-out infinite;
+                  position: absolute; inset: 0;
+                  pointer-events: none;
+                }
+                .hero-glow-pulse {
+                  animation: heroGlowPulse 4s ease-in-out infinite;
+                }
+                .hero-line-draw {
+                  stroke-dasharray: 600;
+                  animation: heroPathDraw 2.4s cubic-bezier(0.22, 1, 0.36, 1) 0.4s both;
+                }
+                .hero-cta {
+                  opacity: 0;
+                  transform: translateY(6px);
+                  transition: opacity 0.4s ease, transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+                }
+                .hero-banner:hover .hero-cta {
+                  opacity: 1;
+                  transform: translateY(0);
+                }
+                @media (prefers-reduced-motion: reduce) {
+                  .hero-banner, .hero-avatar-shell, .hero-avatar-float, .hero-avatar-float-alt,
+                  .hero-title-sheen, .hero-glow-pulse, .hero-line-draw {
+                    animation: none !important;
+                  }
+                }
+              ` }} />
+
+              {/* ── Banner 1: Explore Professionals ── */}
+              <Link
+                href="/people"
+                className="hero-banner group relative flex items-center overflow-hidden rounded-[16px] transition-all duration-500 hover:-translate-y-[1px]"
+                style={{
+                  height: 'clamp(78px, 11vw, 116px)',
+                  background: 'rgba(8,8,11,0.82)',
+                  backdropFilter: 'blur(28px) saturate(1.6)',
+                  WebkitBackdropFilter: 'blur(28px) saturate(1.6)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  boxShadow: '0 6px 22px rgba(0,0,0,0.50), inset 0 1px 0 rgba(255,255,255,0.05)',
+                }}
+                aria-label="Explore Professionals"
+              >
+                {/* Soft glow */}
+                <div className="absolute inset-0 pointer-events-none hero-glow-pulse" style={{ background: 'radial-gradient(ellipse 55% 80% at 50% 50%, rgba(251,146,60,0.10), transparent 70%)' }} />
+
+                {/* Left avatar cluster */}
+                <div className="absolute left-3 sm:left-4 inset-y-0 flex items-center pointer-events-none">
+                  {[0, 1, 2].map((idx) => {
+                    const a = bannerAvatars[idx];
+                    const floatCls = idx % 2 === 0 ? 'hero-avatar-float' : 'hero-avatar-float-alt';
+                    return (
+                      <div key={`l-${idx}`} className={`hero-avatar-shell ${floatCls}`}
+                        style={{ marginLeft: idx === 0 ? 0 : 'clamp(-10px,-1.5vw,-14px)', zIndex: 3 - idx, animationDelay: `${idx * 0.1}s, ${idx * 0.5}s` }}>
+                        <div
+                          className="rounded-full overflow-hidden flex items-center justify-center font-light text-white/85"
+                          style={{
+                            width: 'clamp(28px, 4vw, 40px)', height: 'clamp(28px, 4vw, 40px)',
+                            background: 'linear-gradient(135deg,#1f2937,#0f172a)',
+                            border: '1.5px solid rgba(8,8,11,1)',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.55)',
+                            fontSize: 'clamp(9px,1.1vw,12px)',
+                          }}
+                        >
+                          {a.url
+                            ? <img src={a.url} alt={a.name} className="w-full h-full object-cover" />
+                            : <span className="opacity-60">{a.initials}</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Right avatar cluster */}
+                <div className="absolute right-3 sm:right-4 inset-y-0 flex items-center pointer-events-none">
+                  {[3, 4].map((idx, i) => {
+                    const a = bannerAvatars[idx];
+                    const floatCls = i % 2 === 0 ? 'hero-avatar-float-alt' : 'hero-avatar-float';
+                    return (
+                      <div key={`r-${idx}`} className={`hero-avatar-shell ${floatCls}`}
+                        style={{ marginLeft: i === 0 ? 0 : 'clamp(-10px,-1.5vw,-14px)', zIndex: i, animationDelay: `${0.3 + i * 0.1}s, ${i * 0.5}s` }}>
+                        <div
+                          className="rounded-full overflow-hidden flex items-center justify-center font-light text-white/85"
+                          style={{
+                            width: 'clamp(28px, 4vw, 40px)', height: 'clamp(28px, 4vw, 40px)',
+                            background: 'linear-gradient(135deg,#1f2937,#0f172a)',
+                            border: '1.5px solid rgba(8,8,11,1)',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.55)',
+                            fontSize: 'clamp(9px,1.1vw,12px)',
+                          }}
+                        >
+                          {a.url
+                            ? <img src={a.url} alt={a.name} className="w-full h-full object-cover" />
+                            : <span className="opacity-60">{a.initials}</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Title — centered */}
+                <div className="relative z-[2] mx-auto flex flex-col items-center justify-center pointer-events-none px-4">
+                  <h3
+                    className="relative whitespace-nowrap text-center leading-[1.05] text-white/95"
+                    style={{
+                      fontSize: 'clamp(15px,2vw,24px)',
+                      fontWeight: 200,
+                      letterSpacing: '-0.022em',
+                      textShadow: '0 2px 14px rgba(0,0,0,0.55)',
+                    }}
+                  >
+                    <span style={{ position: 'relative', display: 'inline-block' }}>
+                      Explore
+                      <span aria-hidden="true" className="hero-title-sheen">Explore</span>
+                    </span>
+                    {' '}
+                    <span style={{
+                      background: 'linear-gradient(135deg,#fb923c 0%,#f97316 60%,#fdba74 100%)',
+                      WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+                      fontWeight: 300, letterSpacing: '-0.022em',
+                    }}>
+                      Professionals
+                    </span>
+                  </h3>
+                  <span className="hero-cta mt-[3px] inline-flex items-center gap-1 text-white/45"
+                    style={{ fontSize: 'clamp(9px,0.85vw,11px)', fontWeight: 300, letterSpacing: '0.05em' }}>
+                    Discover <ArrowRight className="h-2.5 w-2.5" />
+                  </span>
+                </div>
+              </Link>
+
+              {/* ── Banner 2: Public Faces ── */}
+              <Link
+                href="/people?filter=public-face"
+                className="hero-banner group relative flex items-center overflow-hidden rounded-[16px] transition-all duration-500 hover:-translate-y-[1px]"
+                style={{
+                  height: 'clamp(78px, 11vw, 116px)',
+                  background: 'rgba(8,8,11,0.82)',
+                  backdropFilter: 'blur(28px) saturate(1.6)',
+                  WebkitBackdropFilter: 'blur(28px) saturate(1.6)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  boxShadow: '0 6px 22px rgba(0,0,0,0.50), inset 0 1px 0 rgba(255,255,255,0.05)',
+                }}
+                aria-label="Public Faces"
+              >
+                {/* Soft glow */}
+                <div className="absolute inset-0 pointer-events-none hero-glow-pulse" style={{ background: 'radial-gradient(ellipse 55% 80% at 50% 50%, rgba(251,146,60,0.08), transparent 70%)' }} />
+
+                {/* Left avatar cluster — rounded squares (foreigners set) */}
+                <div className="absolute left-3 sm:left-4 inset-y-0 flex items-center pointer-events-none">
+                  {[0, 1, 2].map((idx) => {
+                    const a = facesAvatars[idx];
+                    const floatCls = idx % 2 === 0 ? 'hero-avatar-float' : 'hero-avatar-float-alt';
+                    return (
+                      <div key={`pf-l-${idx}`} className={`hero-avatar-shell ${floatCls}`}
+                        style={{ marginLeft: idx === 0 ? 0 : 'clamp(-10px,-1.5vw,-14px)', zIndex: 3 - idx, animationDelay: `${idx * 0.1}s, ${idx * 0.5}s` }}>
+                        <div
+                          className="rounded-[9px] overflow-hidden flex items-center justify-center font-light text-white/85"
+                          style={{
+                            width: 'clamp(28px, 4vw, 40px)', height: 'clamp(28px, 4vw, 40px)',
+                            background: 'linear-gradient(135deg,#1f2937,#0f172a)',
+                            border: '1.5px solid rgba(8,8,11,1)',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.55)',
+                            fontSize: 'clamp(9px,1.1vw,12px)',
+                          }}
+                        >
+                          {a.url
+                            ? <img src={a.url} alt={a.name} className="w-full h-full object-cover" />
+                            : <span className="opacity-60">{a.initials}</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Right avatar cluster — rounded squares (foreigners set) */}
+                <div className="absolute right-3 sm:right-4 inset-y-0 flex items-center pointer-events-none">
+                  {[3, 4, 5].map((idx, i) => {
+                    const a = facesAvatars[idx];
+                    const floatCls = i % 2 === 0 ? 'hero-avatar-float-alt' : 'hero-avatar-float';
+                    return (
+                      <div key={`pf-r-${idx}`} className={`hero-avatar-shell ${floatCls}`}
+                        style={{ marginLeft: i === 0 ? 0 : 'clamp(-10px,-1.5vw,-14px)', zIndex: i, animationDelay: `${0.3 + i * 0.1}s, ${i * 0.5}s` }}>
+                        <div
+                          className="rounded-[9px] overflow-hidden flex items-center justify-center font-light text-white/85"
+                          style={{
+                            width: 'clamp(28px, 4vw, 40px)', height: 'clamp(28px, 4vw, 40px)',
+                            background: 'linear-gradient(135deg,#1f2937,#0f172a)',
+                            border: '1.5px solid rgba(8,8,11,1)',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.55)',
+                            fontSize: 'clamp(9px,1.1vw,12px)',
+                          }}
+                        >
+                          {a.url
+                            ? <img src={a.url} alt={a.name} className="w-full h-full object-cover" />
+                            : <span className="opacity-60">{a.initials}</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Title — centered, with shining star accent */}
+                <div className="relative z-[2] mx-auto flex flex-col items-center justify-center pointer-events-none px-4">
+                  <h3
+                    className="relative flex items-center whitespace-nowrap gap-2 sm:gap-2.5 text-center leading-[1.05] text-white/95"
+                    style={{
+                      fontSize: 'clamp(15px,2vw,24px)',
+                      fontWeight: 200,
+                      letterSpacing: '-0.022em',
+                      textShadow: '0 2px 14px rgba(0,0,0,0.55)',
+                    }}
+                  >
+                    <span style={{ position: 'relative', display: 'inline-block' }}>
+                      Public
+                      <span aria-hidden="true" className="hero-title-sheen">Public</span>
+                    </span>
+                    <span style={{
+                      background: 'linear-gradient(135deg,#fb923c 0%,#f59e0b 60%,#fdba74 100%)',
+                      WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+                      fontWeight: 300, letterSpacing: '-0.022em',
+                    }}>
+                      Faces
+                    </span>
+                    {/* Shining star accent */}
+                    <span className="relative inline-flex items-center justify-center" aria-hidden="true">
+                      <Star className="hero-star-shine" style={{ width: 'clamp(14px,1.6vw,20px)', height: 'clamp(14px,1.6vw,20px)' }} strokeWidth={1.5} />
+                      <span className="hero-star-twinkle absolute -top-1 -right-1.5 rounded-full"
+                        style={{ width: 4, height: 4, background: '#fde68a', boxShadow: '0 0 6px rgba(253,230,138,0.85)' }} />
+                      <span className="hero-star-twinkle absolute -bottom-1 -left-1 rounded-full"
+                        style={{ width: 3, height: 3, background: '#fde68a', boxShadow: '0 0 5px rgba(253,230,138,0.75)', animationDelay: '0.6s' }} />
+                    </span>
+                  </h3>
+                  <span className="hero-cta mt-[3px] inline-flex items-center gap-1 text-white/45"
+                    style={{ fontSize: 'clamp(9px,0.85vw,11px)', fontWeight: 300, letterSpacing: '0.05em' }}>
+                    Meet creators <ArrowRight className="h-2.5 w-2.5" />
+                  </span>
+                </div>
+              </Link>
+            </section>
+          );
+        })()}
+
+
+
         {/* ── Row 2: New Professionals — infinite auto-smooth slider ── */}
-        <section>
-          <div className="mb-2.5 flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <Sparkles className="h-3.5 w-3.5 text-white/50" />
-              <h2 className="text-[13.5px] font-bold text-white">Top Professionals</h2>
-            </div>
-            <Link href="/people" className="flex items-center gap-1 text-[11.5px] font-semibold text-white/40 transition hover:text-white/70">
-              View all <ArrowRight className="h-3 w-3" />
-            </Link>
-          </div>
+        <section className="-mx-3 sm:mx-0">
           {/* Infinite duplicated slider — pauses on hover/touch */}
           <div className="relative">
-            <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 sm:w-16 bg-gradient-to-r from-[#0d0e11] via-[#0d0e11]/55 to-transparent" />
-            <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 sm:w-16 bg-gradient-to-l from-[#0d0e11] via-[#0d0e11]/55 to-transparent" />
+            <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-14 sm:w-28"
+              style={{ background: 'linear-gradient(to right, rgb(13,13,15) 0%, rgba(13,13,15,0.98) 5%, rgba(13,13,15,0.95) 10%, rgba(13,13,15,0.90) 16%, rgba(13,13,15,0.83) 23%, rgba(13,13,15,0.74) 31%, rgba(13,13,15,0.63) 40%, rgba(13,13,15,0.51) 49%, rgba(13,13,15,0.40) 58%, rgba(13,13,15,0.28) 67%, rgba(13,13,15,0.18) 75%, rgba(13,13,15,0.09) 83%, rgba(13,13,15,0.03) 91%, transparent 100%)' }} />
+            <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-14 sm:w-28"
+              style={{ background: 'linear-gradient(to left, rgb(13,13,15) 0%, rgba(13,13,15,0.98) 5%, rgba(13,13,15,0.95) 10%, rgba(13,13,15,0.90) 16%, rgba(13,13,15,0.83) 23%, rgba(13,13,15,0.74) 31%, rgba(13,13,15,0.63) 40%, rgba(13,13,15,0.51) 49%, rgba(13,13,15,0.40) 58%, rgba(13,13,15,0.28) 67%, rgba(13,13,15,0.18) 75%, rgba(13,13,15,0.09) 83%, rgba(13,13,15,0.03) 91%, transparent 100%)' }} />
           <div
             id="pros-slider"
             data-auto-slider="true"
             data-auto-speed="0.6"
             data-auto-loop="sets"
             data-auto-sets="2"
-            className="no-scrollbar flex gap-2.5 sm:gap-3 overflow-x-auto pb-0.5"
+            className="no-scrollbar flex items-stretch gap-2 sm:gap-2.5 overflow-x-auto overflow-y-hidden py-2 px-3 sm:px-0"
             style={{ scrollbarWidth: 'none' }}
           >
             {/* Render two copies for infinite loop illusion */}
             {[...Array(2)].flatMap((_, copyIdx) => {
+              const SLIDER_BANNER_GRADIENTS = [
+                'linear-gradient(135deg,#0f172a 0%,#1e3a8a 100%)',
+                'linear-gradient(135deg,#0d1b0d 0%,#14532d 100%)',
+                'linear-gradient(135deg,#1a0d2e 0%,#4c1d95 100%)',
+                'linear-gradient(135deg,#1c0a0a 0%,#7f1d1d 100%)',
+                'linear-gradient(135deg,#0d1a1a 0%,#134e4a 100%)',
+                'linear-gradient(135deg,#1a150d 0%,#78350f 100%)',
+                'linear-gradient(135deg,#0a0d1a 0%,#1e1b4b 100%)',
+                'linear-gradient(135deg,#0f0a1a 0%,#581c87 100%)',
+              ];
               const profiles = liveProfiles.length > 0
                 ? liveProfiles.slice(0, 12).map((p, i) => ({
                     id: `${copyIdx}-live-${p.id}-${i}`,
                     name: p.name,
                     role: p.profile.headline || (p.accountType === 'individual' ? 'Professional' : 'Business'),
-                    avatar: p.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase(),
-                    avatarBg: ['from-pink-500 to-rose-600','from-blue-500 to-indigo-600','from-purple-500 to-violet-600','from-orange-500 to-amber-600','from-teal-500 to-emerald-600','from-cyan-500 to-blue-600','from-fuchsia-500 to-pink-600','from-red-500 to-rose-600'][i % 8],
+                    initials: p.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase(),
+                    avatarUrl: p.profile.avatarUrl || '',
+                    bannerUrl: p.profile.bannerUrl || '',
+                    coverGradient: p.profile.coverGradient || '',
+                    coverPosition: p.profile.coverPosition || 'center',
+                    docrudGo: p.docrudGo,
                     location: p.profile.location || '',
                     skills: (p.profile.skills || []).slice(0, 3),
                     upraises: p.upraiseCount,
                     followers: p.stats.followers,
                     openToWork: p.profile.openToWork,
                     profileId: p.id,
+                    bannerFallback: SLIDER_BANNER_GRADIENTS[Array.from(p.name).reduce((a: number, c: string) => a + c.charCodeAt(0), 0) % SLIDER_BANNER_GRADIENTS.length],
                   }))
                 : NEW_PROFESSIONALS.slice(0, 6).map((p, i) => ({
                     id: `${copyIdx}-static-${p.id}-${i}`,
-                    name: p.name, role: p.role, avatar: p.avatar, avatarBg: p.avatarBg,
+                    name: p.name, role: p.role, initials: p.avatar, avatarUrl: '', bannerUrl: '',
+                    coverGradient: '', coverPosition: 'center', docrudGo: false,
                     location: '', skills: [...p.skills], upraises: 0, followers: 0,
                     openToWork: false, profileId: '',
+                    bannerFallback: SLIDER_BANNER_GRADIENTS[i % SLIDER_BANNER_GRADIENTS.length],
                   }));
+
               return profiles.map((pro) => {
                 const profileHref = pro.profileId ? `/u/${pro.profileId}` : '/people';
                 const isFollowed = followingSet.has(pro.profileId);
                 const isPending = pendingFollow.has(pro.profileId);
-                return (
-                  <div
-                    key={pro.id}
-                    className="relative shrink-0 w-[min(200px,58vw)] sm:w-[210px] rounded-[14px] border border-white/[0.07] bg-white/[0.04] p-3.5 backdrop-blur-xl transition hover:bg-white/[0.08] hover:-translate-y-0.5 hover:border-white/[0.13] group"
-                  >
-                    {/* stretched navigation link — sits below button */}
-                    <Link href={profileHref} className="absolute inset-0 z-0 rounded-[14px]" aria-label={pro.name} />
-                    <div className="relative z-10 pointer-events-none">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <div className="relative shrink-0">
-                            <div className={`flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br ${pro.avatarBg} text-[11px] font-bold text-white shadow-md`}>
-                              {pro.avatar}
-                            </div>
-                            {pro.openToWork && (
-                              <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-[1.5px] border-[#0d0e11] bg-emerald-400" />
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="truncate text-[12px] font-bold text-white leading-tight">{pro.name}</div>
-                            <div className="truncate text-[10.5px] text-white/40 leading-snug">{pro.role}</div>
-                          </div>
-                        </div>
-                        {pro.upraises > 0 && (
-                          <span className="shrink-0 flex items-center gap-0.5 text-[9.5px] text-amber-400/70 mt-0.5">
-                            <Sparkles className="h-2.5 w-2.5" />{pro.upraises}
-                          </span>
-                        )}
-                      </div>
-                      {pro.location && (
-                        <div className="mt-1.5 text-[9.5px] text-white/25 truncate">{pro.location}</div>
-                      )}
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {pro.skills.slice(0, 3).map((sk) => (
-                          <span key={sk} className="rounded-full border border-white/[0.07] bg-white/[0.03] px-1.5 py-0.5 text-[9.5px] font-medium text-white/45">
-                            {sk}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      disabled={isPending || !pro.profileId}
-                      onClick={(e) => pro.profileId ? handleFollow(pro.profileId, e) : undefined}
-                      className={[
-                        'relative z-10 mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-[9px] border py-1.5 text-[11px] font-semibold transition active:scale-95',
-                        isFollowed
-                          ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/15'
-                          : 'border-white/[0.09] bg-white/[0.04] text-white/60 hover:bg-white/[0.10] hover:text-white/90',
-                        isPending ? 'opacity-50 cursor-not-allowed' : '',
-                      ].join(' ')}
-                    >
-                      {isFollowed ? (
-                        <><Check className="h-3 w-3" /> Following</>
-                      ) : (
-                        <><UserPlus className="h-3 w-3" /> Follow</>
-                      )}
-                    </button>
-                  </div>
-                );
-              });
-            })}
-          </div>
-          </div>
-        </section>
+                const v = pro.docrudGo;
 
-        {/* ── Row 3: Live Gigs — auto-smooth slider ──────────────── */}
-        <section>
-          <div className="mb-2.5 flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <Briefcase className="h-3.5 w-3.5 text-white/50" />
-              <h2 className="text-[13.5px] font-bold text-white">Live Gigs</h2>
-            </div>
-            <Link href="/gigs" className="flex items-center gap-1 text-[11.5px] font-semibold text-white/40 transition hover:text-white/70">
-              Browse all <ArrowRight className="h-3 w-3" />
-            </Link>
-          </div>
-          <div className="relative">
-            <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 sm:w-16 bg-gradient-to-r from-[#0d0e11] via-[#0d0e11]/55 to-transparent" />
-            <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 sm:w-16 bg-gradient-to-l from-[#0d0e11] via-[#0d0e11]/55 to-transparent" />
-          <div
-            id="gigs-slider"
-            data-auto-slider="true"
-            data-auto-speed="0.5"
-            data-auto-loop="sets"
-            data-auto-sets="2"
-            className="no-scrollbar flex gap-2.5 sm:gap-3 overflow-x-auto pb-0.5"
-            style={{ scrollbarWidth: 'none' }}
-          >
-            {[...Array(2)].flatMap((_, copyIdx) => {
-              const gigsSource = liveGigs.length > 0 ? liveGigs.slice(0, 10) : GIGS_DATA.slice(0, 6);
-              return gigsSource.map((gig, i) => {
-                const isLive = liveGigs.length > 0;
-                const title = isLive ? (gig as NHCLiveGig).title : (gig as typeof GIGS_DATA[0]).title;
-                const org = isLive ? (gig as NHCLiveGig).organizationName : (gig as typeof GIGS_DATA[0]).company;
-                const budget = isLive ? (gig as NHCLiveGig).budgetLabel : (gig as typeof GIGS_DATA[0]).budget;
-                const loc = isLive ? ((gig as NHCLiveGig).locationPreference === 'remote' ? 'Remote' : 'On-site') : (gig as typeof GIGS_DATA[0]).location;
-                const skills = isLive ? (gig as NHCLiveGig).skills.slice(0, 3) : [...(gig as typeof GIGS_DATA[0]).skills].slice(0, 3);
-                const logoLetters = org.slice(0, 2).toUpperCase();
-                const logoBgs = ['bg-blue-600','bg-purple-600','bg-emerald-600','bg-rose-600','bg-amber-600','bg-indigo-600','bg-teal-600','bg-pink-600'];
-                const gigHref = isLive ? `/gigs/${(gig as NHCLiveGig).slug}` : '/gigs';
+                /* banner style: real image → stored gradient → name-derived gradient */
+                const sliderBannerStyle: React.CSSProperties = pro.bannerUrl
+                  ? { backgroundImage: `url(${pro.bannerUrl})`, backgroundSize: 'cover', backgroundPosition: pro.coverPosition }
+                  : pro.coverGradient
+                    ? { background: pro.coverGradient }
+                    : v
+                      ? { background: 'linear-gradient(135deg,#1c1608 0%,#3a2a06 55%,#1c1608 100%)' }
+                      : { background: pro.bannerFallback };
+
+                const cardBorderSlider = v
+                  ? 'linear-gradient(135deg,rgba(201,168,76,0.55),rgba(240,216,120,0.28) 50%,rgba(201,168,76,0.50))'
+                  : 'rgba(255,255,255,0.07)';
+
                 return (
                   <Link
-                    key={`${copyIdx}-gig-${i}`}
-                    href={gigHref}
-                    className="shrink-0 w-[min(260px,74vw)] sm:w-[270px] rounded-[14px] border border-white/[0.07] bg-white/[0.04] p-3.5 backdrop-blur-xl transition hover:bg-white/[0.08] hover:-translate-y-0.5 hover:border-white/[0.13] flex flex-col gap-2.5 block"
+                    key={pro.id}
+                    href={profileHref}
+                    className="relative shrink-0 rounded-[18px] overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(0,0,0,0.65)] group flex flex-col"
+                    style={{
+                      width: 'clamp(148px,40vw,220px)',
+                      background: v
+                        ? 'linear-gradient(160deg,rgba(28,22,8,0.92),rgba(18,14,4,0.92))'
+                        : 'rgba(14,14,20,0.82)',
+                      backdropFilter: 'blur(28px) saturate(1.6)',
+                      WebkitBackdropFilter: 'blur(28px) saturate(1.6)',
+                      border: `1px solid ${v ? 'rgba(201,168,76,0.22)' : 'rgba(255,255,255,0.09)'}`,
+                      boxShadow: `0 4px 28px rgba(0,0,0,0.55), inset 0 1px 0 ${v ? 'rgba(201,168,76,0.12)' : 'rgba(255,255,255,0.06)'}`,
+                    }}
                   >
-                    <div className="flex items-start gap-2.5">
-                      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] ${logoBgs[i % logoBgs.length]} text-[11px] font-bold text-white`}>
-                        {logoLetters}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-[12px] font-bold text-white leading-snug">{title}</div>
-                        <div className="truncate text-[10.5px] text-white/40">{org} · {loc}</div>
+                    {/* ── Banner ── */}
+                    <div className="relative shrink-0" style={{ height: 52, ...sliderBannerStyle }}>
+                      <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom,rgba(0,0,0,0.0) 0%,rgba(0,0,0,0.62) 100%)' }} />
+                      {v && <div className="pointer-events-none absolute inset-0" style={{ background: 'linear-gradient(108deg,transparent 25%,rgba(201,168,76,0.12) 55%,transparent 78%)' }} />}
+                      {/* Go badge */}
+                      {v && (
+                        <span className="absolute top-2 right-2 rounded-full px-2 py-[2px] text-[7.5px] font-black uppercase tracking-[0.06em]"
+                          style={{ background: 'rgba(201,168,76,0.28)', border: '1px solid rgba(201,168,76,0.44)', color: '#F0D878', backdropFilter: 'blur(8px)' }}>
+                          ✦ Go
+                        </span>
+                      )}
+                      {/* Open to work */}
+                      {pro.openToWork && !v && (
+                        <span className="absolute top-2 right-2 rounded-full px-2 py-[2px] text-[7px] font-semibold"
+                          style={{ background: 'rgba(16,185,129,0.20)', border: '1px solid rgba(16,185,129,0.30)', color: '#6ee7b7', backdropFilter: 'blur(8px)' }}>
+                          Hiring
+                        </span>
+                      )}
+                      {/* Avatar — straddling boundary */}
+                      <div className="absolute z-10" style={{ bottom: -18, left: 12 }}>
+                        <div className="rounded-full shadow-[0_2px_12px_rgba(0,0,0,0.55)]"
+                          style={{ padding: 2, background: v ? 'linear-gradient(135deg,#C9A84C,#F0D878)' : 'rgba(255,255,255,0.22)' }}>
+                          <div className="rounded-full overflow-hidden flex items-center justify-center font-bold text-[11px]"
+                            style={{ width: 36, height: 36, background: v ? '#1a1208' : 'rgba(22,22,30,1)', color: v ? '#C9A84C' : 'rgba(255,255,255,0.75)' }}>
+                            {pro.avatarUrl
+                              ? <img src={pro.avatarUrl} alt={pro.name} className="w-full h-full object-cover" />
+                              : pro.initials}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex flex-wrap gap-1">
-                      {skills.map((sk) => (
-                        <span key={sk} className="rounded-full border border-white/[0.07] bg-white/[0.03] px-1.5 py-0.5 text-[9.5px] font-medium text-white/45">{sk}</span>
-                      ))}
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold text-emerald-400">{budget}</span>
-                      <span className="flex items-center gap-1 rounded-[8px] border border-white/[0.10] bg-white/[0.05] px-2.5 py-1 text-[10.5px] font-semibold text-white/65">
-                        Apply <ArrowRight className="h-2.5 w-2.5" />
-                      </span>
+
+                    {/* ── Body ── */}
+                    <div className="flex flex-col flex-1 px-3 pb-3" style={{ paddingTop: 26 }}>
+                      <div className="flex flex-col flex-1 min-h-0 gap-1">
+                        {/* Name + upraises */}
+                        <div className="flex items-start justify-between gap-1">
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate text-[12px] font-bold text-white leading-tight">{pro.name}</div>
+                            <div className="truncate text-[10px] leading-snug mt-[2px]"
+                              style={{ color: 'rgba(255,255,255,0.40)' }}>
+                              {pro.role}
+                            </div>
+                          </div>
+                          {pro.upraises > 0 && (
+                            <span className="shrink-0 flex items-center gap-0.5 text-[9px] mt-0.5"
+                              style={{ color: 'rgba(201,168,76,0.70)' }}>
+                              <TrendingUp className="h-2.5 w-2.5" />{pro.upraises}
+                            </span>
+                          )}
+                        </div>
+                        {/* Skills */}
+                        {pro.skills.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-0.5">
+                            {pro.skills.slice(0, 2).map((sk) => (
+                              <span key={sk} className="rounded-full px-2 py-[2px] text-[8.5px] font-medium truncate max-w-full"
+                                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.09)', color: 'rgba(255,255,255,0.45)' }}>
+                                {sk}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      {/* Follow button */}
+                      <button
+                        type="button"
+                        disabled={isPending || !pro.profileId}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (pro.profileId) handleFollow(pro.profileId, e);
+                        }}
+                        className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-[10px] py-[6px] text-[10.5px] font-semibold transition-all duration-200 active:scale-[0.97]"
+                        style={isFollowed
+                          ? { background: 'rgba(16,185,129,0.10)', border: '1px solid rgba(16,185,129,0.24)', color: '#6ee7b7' }
+                          : v
+                            ? { background: 'linear-gradient(135deg,#C9A84C,#E8CC7A)', color: '#1a1208', fontWeight: 700, boxShadow: '0 2px 12px rgba(201,168,76,0.30)' }
+                            : { background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.82)' }
+                        }
+                      >
+                        {isFollowed
+                          ? <><Check className="h-3 w-3" /> Following</>
+                          : <><UserPlus className="h-3 w-3" /> Follow</>}
+                      </button>
                     </div>
                   </Link>
                 );
@@ -3398,92 +5229,437 @@ function NewHomepageContent({
           </div>
         </section>
 
-        {/* ── Row 4: Feeds — auto-smooth slider ────────────────────── */}
-        <section>
-          <div className="mb-2.5 flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <Newspaper className="h-3.5 w-3.5 text-white/50" />
-              <h2 className="text-[13.5px] font-bold text-white">Feeds</h2>
-            </div>
-            <div className="flex items-center gap-2">
-              <Link href="/file-directory" className="hidden sm:flex items-center gap-1 text-[11.5px] font-semibold text-white/40 transition hover:text-white/70">
-                View all <ArrowRight className="h-3 w-3" />
-              </Link>
-              <div className="flex gap-1">
-                <button type="button" onClick={() => { const el = document.getElementById('feeds-slider'); if (el) el.scrollBy({ left: -280, behavior: 'smooth' }); }} className="flex h-6 w-6 items-center justify-center rounded-full border border-white/[0.09] bg-white/[0.03] text-white/40 transition hover:text-white/75">
-                  <ChevronLeft className="h-3 w-3" />
-                </button>
-                <button type="button" onClick={() => { const el = document.getElementById('feeds-slider'); if (el) el.scrollBy({ left: 280, behavior: 'smooth' }); }} className="flex h-6 w-6 items-center justify-center rounded-full border border-white/[0.09] bg-white/[0.03] text-white/40 transition hover:text-white/75">
-                  <ChevronRight className="h-3 w-3" />
-                </button>
-              </div>
-            </div>
+        {/* ── Hero Banners: Post a Gig + Trending Gigs ── */}
+        <div className="mb-2.5 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h2 className="text-[12.5px] font-medium tracking-wide" style={{ color: 'rgba(255,255,255,0.42)', letterSpacing: '0.04em' }}>Live Gigs</h2>
+            {liveGigs.length > 0 && <span className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold tabular-nums" style={{ background: 'rgba(52,211,153,0.08)', color: 'rgba(52,211,153,0.65)', border: '1px solid rgba(52,211,153,0.14)' }}>{liveGigs.length} live</span>}
           </div>
-          {/* Category tabs */}
-          <div className="no-scrollbar mb-3 flex gap-1.5 overflow-x-auto">
-            {FEED_CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setActiveFeedTab(cat)}
-                className={[
-                  'shrink-0 rounded-full px-3 py-1.5 text-[11px] font-semibold transition',
-                  activeFeedTab === cat
-                    ? 'border border-white/[0.18] bg-white/[0.11] text-white'
-                    : 'border border-white/[0.06] bg-transparent text-white/40 hover:text-white/65 hover:border-white/[0.12]',
-                ].join(' ')}
+          <Link href="/gigs" className="flex items-center gap-1 text-[11px] font-medium text-white/25 transition hover:text-white/50" style={{ letterSpacing: '0.01em' }}>
+            Browse all <ArrowRight className="h-2.5 w-2.5" />
+          </Link>
+        </div>
+        {(() => {
+          const GIG_CATEGORIES = [
+            { label: 'Tech',      Icon: Sparkles,   fg: '#86efac', bg: 'rgba(16,185,129,0.18)', bd: 'rgba(16,185,129,0.30)' },
+            { label: 'Design',    Icon: Wand2,      fg: '#d8b4fe', bg: 'rgba(147,51,234,0.18)', bd: 'rgba(147,51,234,0.30)' },
+            { label: 'Finance',   Icon: TrendingUp, fg: '#7dd3fc', bg: 'rgba(14,165,233,0.18)', bd: 'rgba(14,165,233,0.30)' },
+            { label: 'Marketing', Icon: Megaphone,  fg: '#fdba74', bg: 'rgba(217,119,6,0.18)',  bd: 'rgba(217,119,6,0.30)'  },
+            { label: 'Content',   Icon: PenLine,    fg: '#fca5a5', bg: 'rgba(220,38,38,0.18)',  bd: 'rgba(220,38,38,0.30)'  },
+            { label: 'AI / ML',   Icon: Activity,   fg: '#fde68a', bg: 'rgba(202,138,4,0.18)',  bd: 'rgba(202,138,4,0.30)'  },
+          ];
+
+          return (
+            <section className="hero-banners-section -mx-3 sm:mx-0 px-3 sm:px-0 lg:px-0 flex lg:grid lg:grid-cols-2 gap-3 sm:gap-4 overflow-x-auto lg:overflow-visible snap-x snap-mandatory no-scrollbar scroll-px-3 sm:scroll-px-0 [scroll-behavior:smooth] [&_.hero-banner]:snap-start [&_.hero-banner]:shrink-0 [&_.hero-banner]:min-w-[88%] sm:[&_.hero-banner]:min-w-[72%] lg:[&_.hero-banner]:min-w-0 lg:[&_.hero-banner]:snap-none">
+              <style dangerouslySetInnerHTML={{ __html: `
+                @keyframes __unused_hiringPulse {
+                  0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.55); }
+                  50%      { box-shadow: 0 0 0 6px rgba(16,185,129,0); }
+                }
+                @keyframes __placeholder {
+                  from { transform: rotate(0deg); }
+                  to   { transform: rotate(0deg); }
+                }
+                @keyframes postGigPlusSpin {
+                  0%, 100% { transform: rotate(0deg) scale(1); }
+                  50%      { transform: rotate(90deg) scale(1.10); }
+                }
+                @keyframes postGigGlowSweep {
+                  0%   { transform: translateX(-120%) skewX(-20deg); opacity: 0; }
+                  30%  { opacity: 0.85; }
+                  100% { transform: translateX(220%) skewX(-20deg); opacity: 0; }
+                }
+              ` }} />
+
+              {/* ── Banner 1: Apply Now ── */}
+              <Link
+                href="/gigs"
+                className="hero-banner group relative flex items-center overflow-hidden rounded-[16px] transition-all duration-500 hover:-translate-y-[1px]"
+                style={{
+                  height: 'clamp(78px, 11vw, 116px)',
+                  background: 'rgba(8,8,11,0.82)',
+                  backdropFilter: 'blur(28px) saturate(1.6)',
+                  WebkitBackdropFilter: 'blur(28px) saturate(1.6)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  boxShadow: '0 6px 22px rgba(0,0,0,0.50), inset 0 1px 0 rgba(255,255,255,0.05)',
+                }}
+                aria-label="Apply Now"
               >
-                {cat}
+                <div className="absolute inset-0 pointer-events-none hero-glow-pulse"
+                  style={{ background: 'radial-gradient(ellipse 55% 80% at 50% 50%, rgba(251,146,60,0.08), transparent 70%)' }} />
+
+                {/* Left cluster — apply-themed icons */}
+                <div className="absolute left-3 sm:left-4 inset-y-0 flex items-center pointer-events-none">
+                  {([
+                    { Icon: Search,    bg: 'rgba(251,146,60,0.18)',  fg: '#fdba74' },
+                    { Icon: Briefcase, bg: 'rgba(202,138,4,0.18)',   fg: '#fde68a' },
+                    { Icon: Star,      bg: 'rgba(217,119,6,0.18)',   fg: '#fcd34d' },
+                  ]).map(({ Icon, bg, fg }, idx) => {
+                    const floatCls = idx % 2 === 0 ? 'hero-avatar-float' : 'hero-avatar-float-alt';
+                    return (
+                      <div key={`an-l-${idx}`} className={`hero-avatar-shell ${floatCls}`}
+                        style={{ marginLeft: idx === 0 ? 0 : 'clamp(-10px,-1.5vw,-14px)', zIndex: 3 - idx, animationDelay: `${idx * 0.1}s, ${idx * 0.5}s` }}>
+                        <div className="rounded-full overflow-hidden flex items-center justify-center"
+                          style={{ width: 'clamp(28px,4vw,40px)', height: 'clamp(28px,4vw,40px)', background: bg, border: '1.5px solid rgba(8,8,11,1)', boxShadow: '0 2px 8px rgba(0,0,0,0.55)', color: fg }}>
+                          <Icon style={{ width: 'clamp(11px,1.3vw,15px)', height: 'clamp(11px,1.3vw,15px)' }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Right cluster */}
+                <div className="absolute right-3 sm:right-4 inset-y-0 flex items-center pointer-events-none">
+                  {([
+                    { Icon: User,     bg: 'rgba(234,88,12,0.18)',   fg: '#fb923c' },
+                    { Icon: FileText, bg: 'rgba(245,158,11,0.18)',  fg: '#fcd34d' },
+                  ]).map(({ Icon, bg, fg }, i) => {
+                    const floatCls = i % 2 === 0 ? 'hero-avatar-float-alt' : 'hero-avatar-float';
+                    return (
+                      <div key={`an-r-${i}`} className={`hero-avatar-shell ${floatCls}`}
+                        style={{ marginLeft: i === 0 ? 0 : 'clamp(-10px,-1.5vw,-14px)', zIndex: i, animationDelay: `${0.3 + i * 0.1}s, ${i * 0.5}s` }}>
+                        <div className="rounded-full overflow-hidden flex items-center justify-center"
+                          style={{ width: 'clamp(28px,4vw,40px)', height: 'clamp(28px,4vw,40px)', background: bg, border: '1.5px solid rgba(8,8,11,1)', boxShadow: '0 2px 8px rgba(0,0,0,0.55)', color: fg }}>
+                          <Icon style={{ width: 'clamp(11px,1.3vw,15px)', height: 'clamp(11px,1.3vw,15px)' }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Title */}
+                <div className="relative z-[2] mx-auto flex flex-col items-center justify-center pointer-events-none px-4">
+                  <h3
+                    className="relative whitespace-nowrap text-center leading-[1.05] text-white/95"
+                    style={{ fontSize: 'clamp(15px,2vw,24px)', fontWeight: 200, letterSpacing: '-0.022em', textShadow: '0 2px 14px rgba(0,0,0,0.55)' }}
+                  >
+                    <span style={{ position: 'relative', display: 'inline-block' }}>
+                      Apply
+                      <span aria-hidden="true" className="hero-title-sheen">Apply</span>
+                    </span>
+                    {' '}
+                    <span style={{ background: 'linear-gradient(135deg,#fb923c 0%,#f97316 60%,#fdba74 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontWeight: 300 }}>Now</span>
+                  </h3>
+                  <span className="hero-cta mt-[3px] inline-flex items-center gap-1 text-white/40"
+                    style={{ fontSize: 'clamp(9px,0.85vw,11px)', fontWeight: 300, letterSpacing: '0.05em' }}>
+                    {liveGigs.length > 0 ? `${liveGigs.length} live opportunities` : 'Browse opportunities'} <ArrowRight className="h-2.5 w-2.5" />
+                  </span>
+                </div>
+              </Link>
+
+              {/* ── Banner 2: Post a Gig ── */}
+              <button
+                type="button"
+                onClick={() => onPublishClick('gig')}
+                className="hero-banner group relative flex items-center overflow-hidden rounded-[16px] transition-all duration-500 hover:-translate-y-[1px] text-left"
+                style={{
+                  height: 'clamp(78px, 11vw, 116px)',
+                  background: 'rgba(8,8,11,0.82)',
+                  backdropFilter: 'blur(28px) saturate(1.6)',
+                  WebkitBackdropFilter: 'blur(28px) saturate(1.6)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  boxShadow: '0 6px 22px rgba(0,0,0,0.50), inset 0 1px 0 rgba(255,255,255,0.05)',
+                  cursor: 'pointer',
+                }}
+                aria-label="Post a Gig"
+              >
+                <div className="absolute inset-0 pointer-events-none hero-glow-pulse"
+                  style={{ background: 'radial-gradient(ellipse 55% 80% at 50% 50%, rgba(251,146,60,0.08), transparent 70%)' }} />
+
+                {/* Left cluster — mixed skill icons */}
+                <div className="absolute left-3 sm:left-4 inset-y-0 flex items-center pointer-events-none">
+                  {([
+                    { Icon: Briefcase, bg: 'rgba(16,185,129,0.18)', fg: '#6ee7b7' },
+                    { Icon: Sparkles,  bg: 'rgba(202,138,4,0.18)',   fg: '#fde68a' },
+                    { Icon: Wand2,     bg: 'rgba(147,51,234,0.18)',  fg: '#d8b4fe' },
+                  ]).map(({ Icon, bg, fg }, idx) => {
+                    const floatCls = idx % 2 === 0 ? 'hero-avatar-float' : 'hero-avatar-float-alt';
+                    return (
+                      <div key={`pg-l-${idx}`} className={`hero-avatar-shell ${floatCls}`}
+                        style={{ marginLeft: idx === 0 ? 0 : 'clamp(-10px,-1.5vw,-14px)', zIndex: 3 - idx, animationDelay: `${idx * 0.1}s, ${idx * 0.5}s` }}>
+                        <div className="rounded-full overflow-hidden flex items-center justify-center"
+                          style={{ width: 'clamp(28px,4vw,40px)', height: 'clamp(28px,4vw,40px)', background: bg, border: '1.5px solid rgba(8,8,11,1)', boxShadow: '0 2px 8px rgba(0,0,0,0.55)', color: fg }}>
+                          <Icon style={{ width: 'clamp(11px,1.3vw,15px)', height: 'clamp(11px,1.3vw,15px)' }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Right cluster */}
+                <div className="absolute right-3 sm:right-4 inset-y-0 flex items-center pointer-events-none">
+                  {([
+                    { Icon: Activity,   bg: 'rgba(220,38,38,0.18)',  fg: '#fca5a5' },
+                    { Icon: TrendingUp, bg: 'rgba(14,165,233,0.18)', fg: '#7dd3fc' },
+                  ]).map(({ Icon, bg, fg }, i) => {
+                    const floatCls = i % 2 === 0 ? 'hero-avatar-float-alt' : 'hero-avatar-float';
+                    return (
+                      <div key={`pg-r-${i}`} className={`hero-avatar-shell ${floatCls}`}
+                        style={{ marginLeft: i === 0 ? 0 : 'clamp(-10px,-1.5vw,-14px)', zIndex: i, animationDelay: `${0.3 + i * 0.1}s, ${i * 0.5}s` }}>
+                        <div className="rounded-full overflow-hidden flex items-center justify-center"
+                          style={{ width: 'clamp(28px,4vw,40px)', height: 'clamp(28px,4vw,40px)', background: bg, border: '1.5px solid rgba(8,8,11,1)', boxShadow: '0 2px 8px rgba(0,0,0,0.55)', color: fg }}>
+                          <Icon style={{ width: 'clamp(11px,1.3vw,15px)', height: 'clamp(11px,1.3vw,15px)' }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Title */}
+                <div className="relative z-[2] mx-auto flex flex-col items-center justify-center pointer-events-none px-4">
+                  <h3
+                    className="relative whitespace-nowrap text-center leading-[1.05] text-white/95"
+                    style={{ fontSize: 'clamp(15px,2vw,24px)', fontWeight: 200, letterSpacing: '-0.022em', textShadow: '0 2px 14px rgba(0,0,0,0.55)' }}
+                  >
+                    <span style={{ position: 'relative', display: 'inline-block' }}>
+                      Post a
+                      <span aria-hidden="true" className="hero-title-sheen">Post a</span>
+                    </span>
+                    {' '}
+                    <span style={{ background: 'linear-gradient(135deg,#fb923c 0%,#f97316 60%,#fdba74 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontWeight: 300 }}>Gig</span>
+                  </h3>
+                  <span className="hero-cta mt-[3px] inline-flex items-center gap-1 text-white/40"
+                    style={{ fontSize: 'clamp(9px,0.85vw,11px)', fontWeight: 300, letterSpacing: '0.05em' }}>
+                    Hire in minutes <ArrowRight className="h-2.5 w-2.5" />
+                  </span>
+                </div>
               </button>
-            ))}
+            </section>
+          );
+        })()}
+
+        {/* ── Row 3: Live Gigs — auto-smooth slider ──────────────── */}
+        <section className="-mx-3 sm:mx-0">
+          <div className="relative">
+            <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-14 sm:w-28"
+              style={{ background: 'linear-gradient(to right, rgb(13,13,15) 0%, rgba(13,13,15,0.98) 5%, rgba(13,13,15,0.95) 10%, rgba(13,13,15,0.90) 16%, rgba(13,13,15,0.83) 23%, rgba(13,13,15,0.74) 31%, rgba(13,13,15,0.63) 40%, rgba(13,13,15,0.51) 49%, rgba(13,13,15,0.40) 58%, rgba(13,13,15,0.28) 67%, rgba(13,13,15,0.18) 75%, rgba(13,13,15,0.09) 83%, rgba(13,13,15,0.03) 91%, transparent 100%)' }} />
+            <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-14 sm:w-28"
+              style={{ background: 'linear-gradient(to left, rgb(13,13,15) 0%, rgba(13,13,15,0.98) 5%, rgba(13,13,15,0.95) 10%, rgba(13,13,15,0.90) 16%, rgba(13,13,15,0.83) 23%, rgba(13,13,15,0.74) 31%, rgba(13,13,15,0.63) 40%, rgba(13,13,15,0.51) 49%, rgba(13,13,15,0.40) 58%, rgba(13,13,15,0.28) 67%, rgba(13,13,15,0.18) 75%, rgba(13,13,15,0.09) 83%, rgba(13,13,15,0.03) 91%, transparent 100%)' }} />
+          <div
+            id="gigs-slider"
+            data-auto-slider="true"
+            data-auto-speed="0.5"
+            data-auto-loop="sets"
+            data-auto-sets="2"
+            className="no-scrollbar flex gap-2 sm:gap-2.5 overflow-x-auto pb-0.5 px-3 sm:px-0"
+            style={{ scrollbarWidth: 'none' }}
+          >
+            {[...Array(2)].flatMap((_, copyIdx) => {
+              const gigsSource = liveGigs.length > 0 ? liveGigs.slice(0, 12) : GIGS_DATA.slice(0, 6);
+              return gigsSource.map((gig, i) => {
+                const isLive = liveGigs.length > 0;
+                const title = isLive ? (gig as NHCLiveGig).title : (gig as typeof GIGS_DATA[0]).title;
+                const org = isLive ? (gig as NHCLiveGig).organizationName : (gig as typeof GIGS_DATA[0]).company;
+                const budget = isLive ? (gig as NHCLiveGig).budgetLabel : (gig as typeof GIGS_DATA[0]).budget;
+                const loc = isLive ? ((gig as NHCLiveGig).locationPreference === 'remote' ? '🌐 Remote' : '📍 On-site') : (gig as typeof GIGS_DATA[0]).location;
+                const skills = isLive ? (gig as NHCLiveGig).skills.slice(0, 3) : [...(gig as typeof GIGS_DATA[0]).skills].slice(0, 3);
+                const engType = isLive ? (gig as NHCLiveGig).engagementType : 'contract';
+                const connects = isLive ? (gig as NHCLiveGig).connectCount : 0;
+                const isUrgent = isLive && !!(gig as NHCLiveGig).urgentUntil && new Date((gig as NHCLiveGig).urgentUntil!).getTime() > Date.now();
+                const createdAt = isLive ? (gig as NHCLiveGig).createdAt : '';
+                const gigHref = isLive ? `/gigs/${(gig as NHCLiveGig).slug}` : '/gigs';
+                const daysAgo = createdAt ? Math.floor((Date.now() - new Date(createdAt).getTime()) / 86400000) : null;
+                const ageLabel = daysAgo === null ? '' : daysAgo === 0 ? 'Today' : daysAgo === 1 ? '1d ago' : `${daysAgo}d ago`;
+
+                const TAG_PALETTE = [
+                  { bg: 'rgba(99,102,241,0.09)',  border: 'rgba(99,102,241,0.18)',  text: 'rgba(165,180,252,0.65)' },
+                  { bg: 'rgba(52,211,153,0.08)',  border: 'rgba(52,211,153,0.16)',  text: 'rgba(110,231,183,0.62)' },
+                  { bg: 'rgba(251,146,60,0.08)',  border: 'rgba(251,146,60,0.18)',  text: 'rgba(253,215,170,0.62)' },
+                  { bg: 'rgba(217,70,239,0.07)',  border: 'rgba(217,70,239,0.16)',  text: 'rgba(240,171,252,0.60)' },
+                  { bg: 'rgba(14,165,233,0.08)',  border: 'rgba(14,165,233,0.17)',  text: 'rgba(125,211,252,0.62)' },
+                ];
+
+                const tc0 = TAG_PALETTE[i % TAG_PALETTE.length];
+                return (
+                  <Link
+                    key={`${copyIdx}-gig-${i}`}
+                    href={gigHref}
+                    className="group relative shrink-0 flex flex-col overflow-hidden rounded-[16px] transition-all duration-300 hover:-translate-y-0.5"
+                    style={{
+                      width: 'clamp(148px,40vw,220px)',
+                      background: 'rgba(12,12,18,0.86)',
+                      backdropFilter: 'blur(28px) saturate(1.4)',
+                      WebkitBackdropFilter: 'blur(28px) saturate(1.4)',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      boxShadow: '0 2px 16px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.05)',
+                    }}
+                  >
+                    {/* 2px colour accent top */}
+                    <div className="h-[2px] w-full shrink-0"
+                      style={{ background: `linear-gradient(90deg,${tc0.text}55,transparent 70%)` }} />
+
+                    <div className="flex flex-1 flex-col px-3 pt-2.5 pb-3 gap-2">
+
+                      {/* Header: org initial + age */}
+                      <div className="flex items-center justify-between gap-1">
+                        <div className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[6px] text-[8.5px] font-bold"
+                          style={{ background: tc0.bg, border: `1px solid ${tc0.border}55`, color: tc0.text }}>
+                          {(org || 'G').slice(0, 1).toUpperCase()}
+                        </div>
+                        {isUrgent ? (
+                          <span className="rounded-full px-1.5 py-[1.5px] text-[7px] font-bold uppercase tracking-[0.04em]"
+                            style={{ background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.18)', color: 'rgba(252,165,165,0.80)' }}>
+                            Urgent
+                          </span>
+                        ) : ageLabel ? (
+                          <span className="text-[8.5px]" style={{ color: 'rgba(255,255,255,0.24)' }}>{ageLabel}</span>
+                        ) : null}
+                      </div>
+
+                      {/* Title */}
+                      <div className="text-[11px] font-medium leading-snug line-clamp-2 flex-1"
+                        style={{ color: 'rgba(255,255,255,0.72)' }}>{title}</div>
+
+                      {/* Org name */}
+                      <div className="text-[8.5px] truncate" style={{ color: 'rgba(255,255,255,0.28)' }}>{org}</div>
+
+                      {/* One skill tag */}
+                      {skills[0] && (
+                        <span className="self-start rounded-full px-2 py-[2px] text-[8px] font-medium"
+                          style={{ background: tc0.bg, border: `1px solid ${tc0.border}55`, color: tc0.text }}>
+                          {skills[0]}
+                        </span>
+                      )}
+
+                      {/* Footer */}
+                      <div className="flex items-center justify-between pt-2 mt-auto border-t"
+                        style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+                        <span className="text-[11px] font-semibold"
+                          style={{ color: 'rgba(255,255,255,0.60)' }}>{budget}</span>
+                        <span className="flex items-center gap-1 text-[8.5px] font-medium"
+                          style={{ color: 'rgba(255,255,255,0.38)' }}>
+                          Apply <ArrowRight className="h-2 w-2" />
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              });
+            })}
           </div>
+          </div>
+        </section>
+
+        {/* ── Row 3.5: Publish heading + content discovery ─────── */}
+        <div className="flex flex-col" style={{ gap: 14 }}>
+          <PublishHeading onPublish={() => onPublishClick()} />
+          <ContentDiscoveryStrip />
+        </div>
+
+        {/* ── Row 4: Feeds — auto-smooth slider ────── */}
+        <section className="-mx-3 sm:mx-0">
           {/* Auto-smooth scrolling feed cards */}
           <div className="relative">
-            <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 sm:w-16 bg-gradient-to-r from-[#0d0e11] via-[#0d0e11]/55 to-transparent" />
-            <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 sm:w-16 bg-gradient-to-l from-[#0d0e11] via-[#0d0e11]/55 to-transparent" />
+            <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-14 sm:w-28"
+              style={{ background: 'linear-gradient(to right, rgb(13,13,15) 0%, rgba(13,13,15,0.98) 5%, rgba(13,13,15,0.95) 10%, rgba(13,13,15,0.90) 16%, rgba(13,13,15,0.83) 23%, rgba(13,13,15,0.74) 31%, rgba(13,13,15,0.63) 40%, rgba(13,13,15,0.51) 49%, rgba(13,13,15,0.40) 58%, rgba(13,13,15,0.28) 67%, rgba(13,13,15,0.18) 75%, rgba(13,13,15,0.09) 83%, rgba(13,13,15,0.03) 91%, transparent 100%)' }} />
+            <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-14 sm:w-28"
+              style={{ background: 'linear-gradient(to left, rgb(13,13,15) 0%, rgba(13,13,15,0.98) 5%, rgba(13,13,15,0.95) 10%, rgba(13,13,15,0.90) 16%, rgba(13,13,15,0.83) 23%, rgba(13,13,15,0.74) 31%, rgba(13,13,15,0.63) 40%, rgba(13,13,15,0.51) 49%, rgba(13,13,15,0.40) 58%, rgba(13,13,15,0.28) 67%, rgba(13,13,15,0.18) 75%, rgba(13,13,15,0.09) 83%, rgba(13,13,15,0.03) 91%, transparent 100%)' }} />
           <div
+            key={feedSliderKey}
             id="feeds-slider"
             data-auto-slider="true"
             data-auto-speed="0.45"
             data-auto-loop="sets"
             data-auto-sets="2"
-            className="no-scrollbar flex gap-2.5 sm:gap-3 overflow-x-auto pb-0.5"
+            className="no-scrollbar flex gap-2 sm:gap-2.5 overflow-x-auto pb-0.5 px-3 sm:px-0"
             style={{ scrollbarWidth: 'none' }}
           >
             {[...Array(2)].flatMap((_, copyIdx) =>
               displayFeeds.map((feed, i) => {
-                const href = (feed as NHCLiveFeed).href ?? '/file-directory';
+                const href = (feed as NHCLiveFeed).href ?? '/published';
+                const thumbUrl = (feed as NHCLiveFeed).thumbnailUrl;
+                const mime = (feed as NHCLiveFeed).mimeType || '';
+                const isImage = mime.startsWith('image/');
+                const isFeatured = (feed as NHCLiveFeed).featured;
+                const createdAt = (feed as NHCLiveFeed).createdAt;
+                const daysAgo = createdAt ? Math.floor((Date.now() - new Date(createdAt).getTime()) / 86400000) : null;
+                const ageLabel = daysAgo === null ? '' : daysAgo === 0 ? 'Today' : daysAgo === 1 ? '1d ago' : `${daysAgo}d ago`;
+
+                /* Cover: real thumbnail if image, else category gradient */
+                const FEED_COVER_GRADIENTS: Record<string, string> = {
+                  Design: 'linear-gradient(135deg,#1a0a1f 0%,#2d0550 100%)',
+                  Development: 'linear-gradient(135deg,#0a1a0d 0%,#0a3a1a 100%)',
+                  Writing: 'linear-gradient(135deg,#0a0d1f 0%,#0d1f4a 100%)',
+                  Marketing: 'linear-gradient(135deg,#1a0a1a 0%,#3a0a3a 100%)',
+                  Productivity: 'linear-gradient(135deg,#0a1a1a 0%,#0a2a3a 100%)',
+                  'AI Tools': 'linear-gradient(135deg,#1a150a 0%,#3a2508 100%)',
+                  Career: 'linear-gradient(135deg,#1a0a0d 0%,#3a0a15 100%)',
+                };
+                const coverGrad = FEED_COVER_GRADIENTS[feed.category] || 'linear-gradient(135deg,#0d0e11,#1a1a1a)';
+
+                const CAT_ACCENT: Record<string, string> = {
+                  Design: '#f472b6', Development: '#34d399', Writing: '#60a5fa',
+                  'AI Tools': '#fbbf24', Marketing: '#c084fc', Productivity: '#67e8f9', Career: '#fb923c',
+                };
+                const accent = CAT_ACCENT[feed.category] || 'rgba(255,255,255,0.20)';
+
                 return (
                   <Link
                     key={`${copyIdx}-feed-${feed.id}-${i}`}
                     href={href}
-                    className="group shrink-0 flex w-[min(200px,58vw)] sm:w-[210px] flex-col overflow-hidden rounded-[14px] border border-white/[0.07] bg-white/[0.04] backdrop-blur-xl transition hover:bg-white/[0.08] hover:-translate-y-0.5 hover:border-white/[0.13]"
+                    className="group relative shrink-0 flex flex-col overflow-hidden rounded-[18px] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_10px_36px_rgba(0,0,0,0.60)]"
+                    style={{
+                      width: 'clamp(148px,40vw,220px)',
+                      background: 'rgba(10,10,16,0.86)',
+                      backdropFilter: 'blur(28px) saturate(1.6)',
+                      WebkitBackdropFilter: 'blur(28px) saturate(1.6)',
+                      border: '1px solid rgba(255,255,255,0.07)',
+                      boxShadow: '0 4px 24px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05)',
+                    }}
                   >
-                    {/* Illustration */}
-                    <div className="relative flex h-[88px] sm:h-[96px] items-center justify-center overflow-hidden bg-[#0f1013]">
-                      <FeedIllustration kind={feed.ilk} />
-                      <span className={`absolute top-2 left-2 rounded-full border px-2 py-0.5 text-[9.5px] font-bold ${feed.catCls}`}>
-                        {feed.category}
-                      </span>
-                    </div>
-                    {/* Content */}
-                    <div className="flex flex-1 flex-col p-3">
-                      <div className="text-[12px] font-bold leading-snug text-white line-clamp-2">{feed.title}</div>
-                      <div className="mt-1 flex-1 text-[10.5px] leading-relaxed text-white/40 line-clamp-2">{feed.description}</div>
-                      <div className="mt-2.5 flex items-center gap-1.5">
-                        <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${feed.authorBg} text-[8px] font-bold text-white`}>
-                          {feed.authorAv}
+                    {/* Top accent stripe */}
+                    <div aria-hidden="true" style={{ position:'absolute', top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${accent}60,transparent 72%)`, borderRadius:'18px 18px 0 0', zIndex:3 }} />
+
+                    {/* ── Cover ── */}
+                    <div className="relative overflow-hidden shrink-0" style={{ height: 88 }}>
+                      {thumbUrl && isImage ? (
+                        <img src={thumbUrl} alt={feed.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]" />
+                      ) : thumbUrl ? (
+                        <img src={thumbUrl} alt={feed.title} className="absolute inset-0 w-full h-full object-cover opacity-55 transition-transform duration-500 group-hover:scale-[1.04]" />
+                      ) : (
+                        <div className="absolute inset-0" style={{ background: coverGrad }}>
+                          <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 22% 50%,rgba(255,255,255,0.10) 0%,transparent 55%),radial-gradient(circle at 78% 20%,rgba(255,255,255,0.06) 0%,transparent 45%)' }} />
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <FeedIllustration kind={feed.ilk} />
+                          </div>
                         </div>
-                        <span className="flex-1 truncate text-[10px] font-medium text-white/40">{feed.author}</span>
+                      )}
+                      {/* Gradient overlay */}
+                      <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom,rgba(0,0,0,0.02) 0%,rgba(0,0,0,0.68) 100%)' }} />
+                      {/* Category badge */}
+                      <div className="absolute top-2 left-2 z-10 flex items-center gap-1">
+                        <span className="rounded-full px-1.5 py-[2.5px] text-[7.5px] font-medium leading-none backdrop-blur-sm"
+                          style={{ color: accent, background: `${accent}18`, border: `1px solid ${accent}2e` }}>
+                          {feed.category}
+                        </span>
+                        {isFeatured && <span style={{ color: '#fcd34d', fontSize: 8, lineHeight: 1 }}>✦</span>}
                       </div>
-                      <div className="mt-2 flex items-center gap-2.5 border-t border-white/[0.05] pt-2">
-                        <span className="flex items-center gap-0.5 text-[10.5px] text-white/30">
-                          <Heart className="h-2.5 w-2.5" /> {feed.likes}
+                      {/* Age badge */}
+                      {ageLabel && (
+                        <span className="absolute bottom-2 right-2 rounded-full px-1.5 py-[2px] text-[7.5px] leading-none"
+                          style={{ background: 'rgba(0,0,0,0.52)', color: 'rgba(255,255,255,0.36)', backdropFilter: 'blur(8px)' }}>
+                          {ageLabel}
                         </span>
-                        <span className="flex items-center gap-0.5 text-[10.5px] text-white/30">
-                          <MessageCircle className="h-2.5 w-2.5" /> {feed.comments}
+                      )}
+                    </div>
+
+                    {/* ── Body ── */}
+                    <div className="flex flex-1 flex-col px-3 pt-2.5 pb-3" style={{ gap: 8 }}>
+                      <div className="text-[11px] font-medium leading-snug line-clamp-2 flex-1 transition-colors"
+                        style={{ color: 'rgba(255,255,255,0.78)' }}>
+                        {feed.title}
+                      </div>
+                      {/* Footer */}
+                      <div className="flex items-center justify-between pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <div className={`flex h-[14px] w-[14px] shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${feed.authorBg} text-[6px] font-bold text-white`}>
+                            {feed.authorAv}
+                          </div>
+                          <span className="truncate text-[8.5px]" style={{ color: 'rgba(255,255,255,0.28)', fontWeight: 400 }}>{feed.author}</span>
+                        </div>
+                        <span className="shrink-0 flex items-center gap-0.5" style={{ color: 'rgba(255,255,255,0.22)', fontSize: 8 }}>
+                          <Heart className="h-2 w-2" /><span className="tabular-nums">{feed.likes}</span>
                         </span>
-                        <Bookmark className="ml-auto h-2.5 w-2.5 text-white/20" />
                       </div>
                     </div>
                   </Link>
@@ -3494,32 +5670,101 @@ function NewHomepageContent({
           </div>
         </section>
 
-        {/* ── Row 5: Live Platform Metrics + CTA ──────────────────── */}
-        <div className="grid grid-cols-1 min-[440px]:grid-cols-2 gap-2.5 sm:gap-3">
-          {/* Real Metrics */}
-          <div className="rounded-[14px] border border-white/[0.07] bg-white/[0.03] p-4 sm:p-5 backdrop-blur-xl">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/30 mb-3.5">
-              Platform activity
-            </p>
-            <div className="grid grid-cols-2 gap-x-3 gap-y-3.5">
-              {[
-                { key: 'publishes', Icon: FileText, color: 'text-blue-400', bg: 'bg-blue-500/10' },
-                { key: 'people', Icon: Users, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-                { key: 'upraises', Icon: Sparkles, color: 'text-amber-400', bg: 'bg-amber-500/10' },
-                { key: 'gigs', Icon: Briefcase, color: 'text-violet-400', bg: 'bg-violet-500/10' },
-              ].map(({ key, Icon, color, bg }) => {
-                const m = liveMetrics?.[key as keyof typeof liveMetrics];
+        {/* ── Row 5.5: Premium Product Banner Slider ───────────── */}
+        <div className="-mx-3 sm:mx-0">
+          <PremiumProductSlider
+            onPdfClick={onPdfClick}
+            onScratchpadClick={onScratchpadClick}
+            onDocSheetClick={onDocSheetClick}
+          />
+        </div>
+
+        {/* ── Row 5.6: Product Showcase — grid on desktop, slider on mobile ── */}
+        <section className="-mx-3 sm:mx-0">
+          <style dangerouslySetInnerHTML={{ __html: `
+            @keyframes ps-badge-in { from { opacity:0; transform:translateX(-6px); } to { opacity:1; transform:none; } }
+            @keyframes ps-title-in  { from { opacity:0; transform:translateY(5px); }  to { opacity:1; transform:none; } }
+            .ps-card { transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.22s ease; }
+            .ps-card:hover { transform: scale(1.018) translateY(-2px); }
+            .ps-card:active { transform: scale(0.978); transition-duration:0.10s; }
+            .ps-card .ps-cta { transition: opacity 0.18s ease, transform 0.18s cubic-bezier(0.34,1.56,0.64,1); opacity:0; transform:translateY(4px); }
+            .ps-card:hover .ps-cta { opacity:1; transform:translateY(0); }
+          ` }} />
+          <div className="relative">
+            {/* Left fade — mobile only */}
+            <div className="sm:hidden pointer-events-none absolute inset-y-0 left-0 z-10 w-14"
+              style={{ background: 'linear-gradient(to right, #08080c 0%, transparent 100%)' }} />
+            {/* Right fade — mobile only */}
+            <div className="sm:hidden pointer-events-none absolute inset-y-0 right-0 z-10 w-14"
+              style={{ background: 'linear-gradient(to left, #08080c 0%, transparent 100%)' }} />
+            {/* Cards: flex scroll on mobile / 4-col grid on desktop */}
+            <div
+              className="no-scrollbar flex gap-3 overflow-x-auto px-3 sm:grid sm:grid-cols-4 sm:gap-4 sm:overflow-visible sm:px-0"
+              style={{ scrollbarWidth: 'none' }}
+            >
+              {PRODUCT_SCREENSHOTS.map(p => {
+                const handleClick = () => {
+                  if (p.modal === 'pdf')        { onPdfClick();        return; }
+                  if (p.modal === 'scratchpad') { onScratchpadClick(); return; }
+                  if (p.modal === 'docsheets')  { onDocSheetClick();   return; }
+                  if (p.href) window.location.href = p.href;
+                };
                 return (
-                  <div key={key} className="flex items-center gap-2.5">
-                    <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] ${bg}`}>
-                      <Icon className={`h-3.5 w-3.5 ${color}`} />
+                  <div
+                    key={p.id}
+                    className="ps-card shrink-0 relative overflow-hidden cursor-pointer rounded-[12px] sm:rounded-[16px] w-[clamp(260px,72vw,320px)] sm:w-auto"
+                    style={{ aspectRatio: '16/9', background: '#0a0a0f', border: `1px solid ${p.accentDim}` }}
+                    onClick={handleClick}
+                  >
+                    {/* Mockup fills entire card */}
+                    <div className="absolute inset-0 overflow-hidden" style={{ pointerEvents: 'none' }}>
+                      <p.Mockup />
                     </div>
-                    <div>
-                      <div className="text-[15px] font-bold text-white leading-none">
-                        {m ? m.value : '—'}
-                      </div>
-                      <div className="mt-0.5 text-[9.5px] font-medium text-white/35 leading-none capitalize">
-                        {m ? m.label : key}
+                    {/* Gradient — thin top vignette + heavier bottom only */}
+                    <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(6,6,10,0.78) 0%, rgba(6,6,10,0.08) 38%, transparent 58%)', pointerEvents: 'none' }} />
+                    {/* Accent bar — top edge */}
+                    <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: `linear-gradient(to right, ${p.accent}, transparent 70%)` }} />
+                    {/* Icon badge — top-left, no text */}
+                    <div className="absolute top-3 left-3" style={{
+                      width: 28, height: 28, borderRadius: 9,
+                      background: 'rgba(0,0,0,0.52)',
+                      border: `1px solid ${p.accent}44`,
+                      backdropFilter: 'blur(10px)',
+                      WebkitBackdropFilter: 'blur(10px)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      animation: 'ps-badge-in 0.32s 0.05s cubic-bezier(0.22,1,0.36,1) both',
+                    }}>
+                      <p.Icon style={{ width: 13, height: 13, color: p.accent }} />
+                    </div>
+                    {/* Bottom frosted bar — name + CTA button */}
+                    <div className="absolute bottom-0 left-0 right-0" style={{ padding: '0 10px 10px', animation: 'ps-title-in 0.28s 0.10s cubic-bezier(0.22,1,0.36,1) both' }}>
+                      <div style={{
+                        background: 'rgba(12,12,18,0.60)',
+                        backdropFilter: 'blur(20px) saturate(1.8)',
+                        WebkitBackdropFilter: 'blur(20px) saturate(1.8)',
+                        border: '1px solid rgba(255,255,255,0.10)',
+                        borderRadius: 12,
+                        padding: '8px 9px 8px 12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 10,
+                      }}>
+                        <div style={{ fontSize: 12.5, fontWeight: 700, color: '#fff', letterSpacing: '-0.01em', lineHeight: 1 }}>{p.name}</div>
+                        <div style={{
+                          background: p.accent,
+                          borderRadius: 8,
+                          padding: '5px 13px',
+                          fontSize: 10.5,
+                          fontWeight: 700,
+                          color: p.id === 'docsheets' ? '#021a0e' : '#fff',
+                          whiteSpace: 'nowrap',
+                          flexShrink: 0,
+                          letterSpacing: '0.01em',
+                          boxShadow: `0 0 14px ${p.accent}55`,
+                        }}>
+                          Open →
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -3527,31 +5772,7 @@ function NewHomepageContent({
               })}
             </div>
           </div>
-          {/* CTA */}
-          <div className="flex flex-col justify-between rounded-[14px] border border-white/[0.07] bg-white/[0.03] p-4 sm:p-5 backdrop-blur-xl">
-            <div>
-              <p className="text-[14px] font-bold text-white leading-snug">Build your professional presence</p>
-              <p className="mt-1.5 text-[11.5px] leading-relaxed text-white/40">
-                Publish your work, showcase skills, and get discovered by top opportunities.
-              </p>
-            </div>
-            <div className="mt-3.5 flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={onPublishClick}
-                className="flex items-center justify-between rounded-[10px] border border-white/[0.12] bg-white px-4 py-2.5 text-[12.5px] font-bold text-[#0d0e11] transition hover:bg-white/90 active:scale-95 shadow-[0_4px_16px_rgba(0,0,0,0.3)]"
-              >
-                Publish something <Send className="h-3.5 w-3.5" />
-              </button>
-              <Link
-                href="/people"
-                className="flex items-center justify-between rounded-[10px] border border-white/[0.08] bg-white/[0.04] px-4 py-2 text-[12px] font-semibold text-white/60 transition hover:bg-white/[0.08] hover:text-white/85 active:scale-95"
-              >
-                Explore professionals <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </div>
-          </div>
-        </div>
+        </section>
 
         {/* ── Row 6: Live Multi-Leaderboards ──────────────────────── */}
         <LiveLeaderboards />
@@ -3611,18 +5832,51 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
   const [chatHistoryQuery, setChatHistoryQuery] = useState('');
   const [headlineIndex, setHeadlineIndex] = useState(0);
   const [showPublishModal, setShowPublishModal] = useState(false);
+  const [publishInitialCategory, setPublishInitialCategory] = useState<string | undefined>(undefined);
+  const openPublishModal = (category?: string) => {
+    setPublishInitialCategory(category);
+    setShowPublishModal(true);
+  };
   const [showScratchpad, setShowScratchpad] = useState(false);
+  const [showDocSheet, setShowDocSheet] = useState(false);
+  const [docSheetHistory, setDocSheetHistory] = useState<DocumentHistory[]>([]);
   const [secureSharingOpen, setSecureSharingOpen] = useState(false);
   const [pdfStudioOpen, setPdfStudioOpen] = useState(false);
   const [formsStudioOpen, setFormsStudioOpen] = useState(false);
   const [showVisualizerModal, setShowVisualizerModal] = useState(false);
   const [eSignStudioOpen, setESignStudioOpen] = useState(false);
-  const [searchSuggestions, setSearchSuggestions] = useState<Array<{ kind: 'ask' | 'file' | 'resume'; label: string; href?: string; meta?: string }>>([]);
+  const [fileDriveOpen, setFileDriveOpen]     = useState(false);
+
+  /* ── Dock: recently-used quick actions (localStorage-persisted) ── */
+  const [recentDockIds, setRecentDockIds] = useState<string[]>([]);
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem('homepage:recent-dock-actions');
+      if (!stored) return;
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) {
+        setRecentDockIds(parsed.filter((x) => typeof x === 'string').slice(0, 12));
+      }
+    } catch {}
+  }, []);
+  const trackDockUsage = (id: string) => {
+    setRecentDockIds((prev) => {
+      const next = [id, ...prev.filter((x) => x !== id)].slice(0, 12);
+      try { window.localStorage.setItem('homepage:recent-dock-actions', JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
+  const [searchSuggestions, setSearchSuggestions] = useState<Array<{
+    id: string; title: string; description: string; href: string;
+    badge?: string; category: string; scope?: string;
+  }>>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   /* ── Live homepage data ─────────────────────────────────────── */
   type LiveProfile = {
     id: string; name: string; accountType: string; createdAt: string; docrudGo: boolean;
-    profile: { headline?: string; bio?: string; location?: string; avatarUrl?: string; skills?: string[]; openToWork?: boolean };
+    profile: { headline?: string; bio?: string; location?: string; avatarUrl?: string; bannerUrl?: string; coverGradient?: string; coverPosition?: string; skills?: string[]; openToWork?: boolean };
     stats: { followers: number; following: number; gigsCount: number };
     upraiseCount: number;
   };
@@ -3662,7 +5916,12 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
         }
         if (gRes.ok) {
           const d = await gRes.json() as { gigs?: LiveGig[] };
-          if (Array.isArray(d.gigs)) setLiveGigs(d.gigs.filter((g) => g.status === 'published'));
+          if (Array.isArray(d.gigs)) {
+            const published = d.gigs.filter((g) => g.status === 'published');
+            // Most recent first
+            published.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            setLiveGigs(published);
+          }
         }
         if (mRes.ok) {
           const d = await mRes.json() as LiveMetrics;
@@ -3693,69 +5952,70 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
   ];
 
   const searchAbortRef = useRef<AbortController | null>(null);
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Client-side result cache: query → { results, ts }
+  const searchClientCache = useRef(new Map<string, { results: typeof searchSuggestions; ts: number }>());
   const topSearchInputRef = useRef<HTMLInputElement | null>(null);
   const [showTopSuggestions, setShowTopSuggestions] = useState(false);
   const [showBottomSuggestions, setShowBottomSuggestions] = useState(false);
 
   const handleSearchChange = (val: string, source: 'top' | 'bottom') => {
     const query = val.trim();
+
     if (query.length <= 1) {
       if (source === 'top') setShowTopSuggestions(false);
       else setShowBottomSuggestions(false);
       setSearchSuggestions([]);
+      setSearchLoading(false);
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+      searchAbortRef.current?.abort();
       return;
     }
 
-    if (source === 'top') {
-      setShowTopSuggestions(true);
-      setShowBottomSuggestions(false);
+    if (source === 'top') { setShowTopSuggestions(true); setShowBottomSuggestions(false); }
+    else { setShowBottomSuggestions(true); setShowTopSuggestions(false); }
+
+    // Show cached results immediately (stale-while-revalidate)
+    const cacheKey = query.toLowerCase();
+    const hit = searchClientCache.current.get(cacheKey);
+    if (hit && Date.now() - hit.ts < 30_000) {
+      setSearchSuggestions(hit.results);
+      setSearchLoading(false);
+      return; // fresh enough — skip network call
+    }
+    if (hit) {
+      // Stale: show immediately while fetching fresh
+      setSearchSuggestions(hit.results);
     } else {
-      setShowBottomSuggestions(true);
-      setShowTopSuggestions(false);
+      setSearchLoading(true);
     }
 
-    searchAbortRef.current?.abort();
-    const controller = new AbortController();
-    searchAbortRef.current = controller;
+    // Debounce the network call
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      searchAbortRef.current?.abort();
+      const controller = new AbortController();
+      searchAbortRef.current = controller;
+      setSearchLoading(true);
 
-    void (async () => {
-      try {
-        const [dirRes, resumeRes] = await Promise.all([
-          fetch(`/api/public/file-directory/search?query=${encodeURIComponent(query)}`, { signal: controller.signal }),
-          fetch(`/api/resumes?q=${encodeURIComponent(query)}&limit=6`, { signal: controller.signal }),
-        ]);
-        const dirPayload = dirRes.ok ? await dirRes.json().catch(() => null) as any : null;
-        const resumePayload = resumeRes.ok ? await resumeRes.json().catch(() => null) as any : null;
-        const dirResults = Array.isArray(dirPayload?.results) ? dirPayload.results : [];
-        const resumeResults = Array.isArray(resumePayload?.entries) ? resumePayload.entries : [];
-
-        const merged: Array<{ kind: 'ask' | 'file' | 'resume'; label: string; href?: string; meta?: string }> = [];
-        merged.push({ kind: 'ask', label: `Ask: ${query}` });
-
-        for (const entry of dirResults.slice(0, 6)) {
-          merged.push({
-            kind: 'file',
-            label: String(entry.title || entry.fileName || 'File'),
-            href: String(entry.linkHref || ''),
-            meta: `${String(entry.visibility || 'public')} · ${String(entry.fileName || '').slice(-28)}`,
-          });
-        }
-
-        for (const entry of resumeResults.slice(0, 6)) {
-          merged.push({
-            kind: 'resume',
-            label: String(entry.displayName || entry.slug || 'Resume'),
-            href: entry.slug ? `/talent/${String(entry.slug)}` : '/talent',
-            meta: entry.headline ? String(entry.headline) : 'Talent',
-          });
-        }
-
-        setSearchSuggestions(merged.slice(0, 14));
-      } catch (e) {
-        if (e instanceof DOMException && e.name === 'AbortError') return;
-        setSearchSuggestions([{ kind: 'ask', label: `Ask: ${query}` }]);
-      }
-    })();
+      void fetch(`/api/search?q=${encodeURIComponent(query)}&limit=30`, { signal: controller.signal })
+        .then((r) => r.ok ? r.json() : Promise.reject(r))
+        .then((payload: { results?: Array<{ id: string; title: string; description: string; href: string; badge?: string; category: string; scope?: string }> }) => {
+          const results = payload.results ?? [];
+          setSearchSuggestions(results);
+          searchClientCache.current.set(cacheKey, { results, ts: Date.now() });
+          // Evict oldest entries if cache > 50
+          if (searchClientCache.current.size > 50) {
+            const first = searchClientCache.current.keys().next().value;
+            if (first) searchClientCache.current.delete(first);
+          }
+        })
+        .catch((e) => {
+          if (e instanceof DOMException && e.name === 'AbortError') return;
+          setSearchSuggestions([]);
+        })
+        .finally(() => setSearchLoading(false));
+    }, 150);
   };
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -4132,6 +6392,16 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  /* ── Auto-open Drive when email action-button deep-link is detected ── */
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('drive-open') || params.has('drive-import')) {
+      setFileDriveOpen(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const toggleVoice = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -4355,7 +6625,7 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
       </div>
 
       {/* Nav body */}
-      <div className="flex-1 overflow-y-auto px-3 pb-2 pt-3 scrollbar-minimal">
+      <div className="flex-1 min-h-0 overflow-y-auto px-3 pb-2 pt-3 scrollbar-minimal touch-scroll">
         {guestMode ? (
           /* Guest mode: show only AI Chat */
           <div className="mb-5">
@@ -4622,8 +6892,9 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
       />
       <PublishAnythingDialog
         open={showPublishModal}
-        onOpenChange={setShowPublishModal}
+        onOpenChange={(o) => { setShowPublishModal(o); if (!o) setPublishInitialCategory(undefined); }}
         isAuthenticated={isAuthenticated}
+        initialCategory={publishInitialCategory as never}
       />
 
       {/* E-Sign Studio fullscreen modal */}
@@ -4632,6 +6903,97 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
           open={eSignStudioOpen}
           onClose={() => setESignStudioOpen(false)}
         />
+      )}
+
+      {/* File Drive Center */}
+      <FileDriveCenter
+        open={fileDriveOpen}
+        onClose={() => setFileDriveOpen(false)}
+      />
+
+      {/* DocSheets Studio fullscreen overlay */}
+      {showDocSheet && (
+        <div
+          className="fixed inset-0 flex flex-col"
+          style={{
+            zIndex: 999,
+            background: '#08090a',
+            animation: 'docSheetSlideIn 0.38s cubic-bezier(0.22,1,0.36,1) both',
+          }}
+        >
+          <style>{`
+            @keyframes docSheetSlideIn {
+              0%   { opacity: 0; transform: translateY(18px) scale(0.992); filter: blur(6px); }
+              100% { opacity: 1; transform: translateY(0)    scale(1);     filter: blur(0);   }
+            }
+            @keyframes docSheetSlideOut {
+              0%   { opacity: 1; transform: translateY(0)    scale(1);     filter: blur(0);   }
+              100% { opacity: 0; transform: translateY(18px) scale(0.992); filter: blur(6px); }
+            }
+          `}</style>
+
+          {/* Header — mirrors the homepage nav */}
+          <div
+            className="shrink-0 flex items-center justify-between gap-3 px-4"
+            style={{
+              height: 56,
+              borderBottom: '1px solid rgba(255,255,255,0.06)',
+              background: 'rgba(8,9,10,0.92)',
+              backdropFilter: 'blur(40px)',
+              WebkitBackdropFilter: 'blur(40px)',
+              boxShadow: '0 1px 0 rgba(255,255,255,0.04)',
+            }}
+          >
+            {/* Left — icon + title */}
+            <div className="flex items-center gap-2.5">
+              <div
+                style={{
+                  width: 30, height: 30, borderRadius: 9,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: 'rgba(16,185,129,0.12)',
+                  border: '1px solid rgba(16,185,129,0.22)',
+                }}
+              >
+                <Sheet style={{ width: 15, height: 15, color: '#34d399' }} />
+              </div>
+              <div>
+                <p style={{ fontSize: 13.5, fontWeight: 600, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1 }}>
+                  DocSheets Studio
+                </p>
+                <p style={{ fontSize: 10, fontWeight: 400, color: 'rgba(255,255,255,0.35)', marginTop: 2, letterSpacing: '0.01em' }}>
+                  Spreadsheets · Workbooks · Formulas
+                </p>
+              </div>
+            </div>
+
+            {/* Right — close */}
+            <button
+              type="button"
+              onClick={() => setShowDocSheet(false)}
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.04] text-white/50 transition hover:bg-white/[0.09] hover:text-white active:scale-95"
+              aria-label="Close DocSheets Studio"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          {/* Body — DocSheetCenter fills remaining height */}
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <DocSheetCenter
+              history={docSheetHistory}
+              onHistoryRefresh={async () => {
+                try {
+                  const r = await fetch('/api/history');
+                  if (r.ok) {
+                    const d = await r.json().catch(() => []);
+                    setDocSheetHistory(Array.isArray(d) ? d : []);
+                  }
+                } catch { /* silent */ }
+              }}
+              layout="module"
+            />
+          </div>
+        </div>
       )}
 
       {/* Scratchpad fullscreen overlay */}
@@ -4702,7 +7064,19 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
         softwareName={softwareName}
         accentLabel={accentLabel}
         onPublishClick={guestMode ? undefined : () => setShowPublishModal(true)}
+        onESignClick={() => setESignStudioOpen(true)}
         onScratchpadClick={() => setShowScratchpad(true)}
+        onDocSheetClick={async () => {
+          setShowDocSheet(true);
+          try {
+            const r = await fetch('/api/history');
+            if (r.ok) {
+              const d = await r.json().catch(() => []);
+              setDocSheetHistory(Array.isArray(d) ? d : []);
+            }
+          } catch { /* silent */ }
+        }}
+        onFileDriveClick={() => setFileDriveOpen(true)}
         onMobileMenuClick={() => setMobileSidebarOpen(true)}
         guestMode={guestMode}
       />
@@ -4756,7 +7130,7 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
 
           <aside
             className={[
-              'absolute inset-y-0 left-0 flex w-[82vw] max-w-[300px] flex-col',
+              'absolute inset-y-0 left-0 h-full flex w-[82vw] max-w-[300px] flex-col overflow-hidden',
               'border-r border-white/[0.08] bg-[#07080a]/90 backdrop-blur-[80px]',
               'shadow-[4px_0_80px_rgba(0,0,0,0.9),1px_0_0_rgba(255,255,255,0.06),inset_0_1px_0_rgba(255,255,255,0.04)]',
               'transform-gpu transition-transform duration-300 ease-out will-change-transform',
@@ -4776,6 +7150,10 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
               <div className="absolute inset-0 bg-[radial-gradient(1200px_700px_at_20%_10%,rgba(148,163,184,0.08),transparent_60%)]" />
               <div className="absolute inset-0 bg-[radial-gradient(900px_700px_at_78%_22%,rgba(226,232,240,0.06),transparent_55%)]" />
               <div className="absolute inset-0 bg-[radial-gradient(900px_700px_at_50%_90%,rgba(148,163,184,0.05),transparent_60%)]" />
+              {/* Orange ambient glow — warm pool at bottom-center */}
+              <div className="absolute inset-0 bg-[radial-gradient(1000px_650px_at_52%_90%,rgba(251,146,60,0.055),transparent_65%)]" />
+              {/* Orange warmth — right mid accent */}
+              <div className="absolute inset-0 bg-[radial-gradient(650px_520px_at_84%_62%,rgba(249,115,22,0.032),transparent_60%)]" />
               <div className="absolute inset-0 opacity-60 [background-image:repeating-linear-gradient(135deg,rgba(148,163,184,0.08)_0,rgba(148,163,184,0.08)_120px,rgba(0,0,0,0)_120px,rgba(0,0,0,0)_260px)]" />
               <div className="absolute inset-0 bg-[radial-gradient(1200px_900px_at_50%_50%,transparent_50%,rgba(0,0,0,0.70)_100%)]" />
               <div className="absolute inset-0 bg-futuristic-grid opacity-30 mix-blend-overlay" />
@@ -4788,6 +7166,9 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
                 <div className="absolute left-[18%] top-[55%] h-[380px] w-[380px] rounded-full bg-slate-400/[0.04] blur-[110px] motion-safe:animate-[docrudBlob_19s_ease-in-out_infinite_2.5s]" />
                 <div className="absolute right-[12%] top-[22%] h-[320px] w-[320px] rounded-full bg-white/[0.025] blur-[100px] motion-safe:animate-[docrudBlob_23s_ease-in-out_infinite_1s]" />
                 <div className="absolute bottom-[10%] right-[30%] h-[280px] w-[280px] rounded-full bg-slate-300/[0.03] blur-[90px] motion-safe:animate-[docrudBlob_17s_ease-in-out_infinite_4s]" />
+                {/* Orange glow blobs */}
+                <div className="absolute left-[42%] bottom-[6%] h-[580px] w-[580px] -translate-x-1/2 rounded-full bg-orange-400/[0.055] blur-[160px] motion-safe:animate-[docrudBlob_22s_ease-in-out_infinite_1.8s]" />
+                <div className="absolute right-[6%] top-[52%] h-[380px] w-[380px] rounded-full bg-orange-500/[0.038] blur-[130px] motion-safe:animate-[docrudBlob_29s_ease-in-out_infinite_5s]" />
               </div>
 
               {!hasAnyChat ? (
@@ -4798,7 +7179,20 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
                   setDraft={setDraft}
                   inputRef={inputRef}
                   welcomeScrollRef={welcomeScrollRef}
-                  onPublishClick={() => setShowPublishModal(true)}
+                  onPublishClick={openPublishModal}
+                  onESignClick={() => setESignStudioOpen(true)}
+                  onScratchpadClick={() => setShowScratchpad(true)}
+                  onPdfClick={() => setPdfStudioOpen(true)}
+                  onDocSheetClick={async () => {
+                    setShowDocSheet(true);
+                    try {
+                      const r = await fetch('/api/history');
+                      if (r.ok) {
+                        const d = await r.json().catch(() => []);
+                        setDocSheetHistory(Array.isArray(d) ? d : []);
+                      }
+                    } catch { /* silent */ }
+                  }}
                   liveProfiles={liveProfiles}
                   liveGigs={liveGigs}
                   liveMetrics={liveMetrics}
@@ -4957,17 +7351,183 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
               )}
             </div>
 
+            {/* ── Premium Glass Dock (desktop) ── replaces the old "Ask me anything" composer */}
+            {(() => {
+              // Fixed-order dock — positions never change between renders.
+              const dockItems: Array<{ id: string; label: string; Icon: React.ElementType; href?: string; onClick?: () => void }> = [
+                ...(isAuthenticated && !guestMode
+                  ? [{ id: 'publish', label: 'Publish', Icon: Plus, onClick: () => setShowPublishModal(true) }]
+                  : []),
+                { id: 'people',  label: 'People',  Icon: Users,     href: '/people' },
+                { id: 'gigs',    label: 'Gigs',    Icon: Briefcase, href: '/gigs' },
+                { id: 'feed',    label: 'Feed',    Icon: Newspaper, href: '/published' },
+                { id: 'pricing', label: 'Pricing', Icon: Package,   href: '/pricing' },
+                isAuthenticated
+                  ? { id: 'workspace', label: 'Workspace', Icon: Briefcase, href: '/workspace' }
+                  : { id: 'signup',    label: 'Sign Up',   Icon: UserPlus,  href: '/signup' },
+              ];
+              const ordered = dockItems;
+
+              return (
+                <div
+                  className="flex"
+                  style={{
+                    position: 'fixed',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    bottom: 22,
+                    zIndex: 9999,
+                    pointerEvents: composerHidden ? 'none' : 'auto',
+                    opacity: composerHidden ? 0 : 1,
+                    transition: 'opacity 0.32s cubic-bezier(0.4,0,0.2,1)',
+                  }}
+                >
+                  <style dangerouslySetInnerHTML={{ __html: `
+                    @keyframes dockSlideIn {
+                      from { opacity: 0; transform: translateY(28px) scale(0.94); filter: blur(8px); }
+                      to   { opacity: 1; transform: translateY(0) scale(1);    filter: blur(0); }
+                    }
+                    @keyframes dockItemPop {
+                      from { opacity: 0; transform: translateY(10px) scale(0.85); }
+                      to   { opacity: 1; transform: translateY(0)    scale(1);    }
+                    }
+                    .dock-shell {
+                      animation: dockSlideIn 0.62s cubic-bezier(0.22, 1, 0.36, 1) both;
+                    }
+                    .dock-item {
+                      position: relative;
+                      display: flex; align-items: center; justify-content: center;
+                      width: 46px; height: 46px; border-radius: 14px;
+                      background: rgba(255,255,255,0.035);
+                      border: 1px solid rgba(255,255,255,0.06);
+                      color: #fff;
+                      cursor: pointer; text-decoration: none;
+                      flex-shrink: 0;
+                      will-change: transform;
+                      transition:
+                        transform 0.42s cubic-bezier(0.22, 1.4, 0.36, 1),
+                        background 0.28s ease,
+                        box-shadow 0.32s ease,
+                        border-color 0.28s ease;
+                      animation: dockItemPop 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+                    }
+                    .dock-item:hover {
+                      transform: translateY(-10px) scale(1.18);
+                      background: rgba(255,255,255,0.10);
+                      border-color: rgba(255,255,255,0.18);
+                      box-shadow:
+                        0 18px 42px rgba(0,0,0,0.65),
+                        inset 0 1px 0 rgba(255,255,255,0.08);
+                    }
+                    .dock-item:active { transform: translateY(-4px) scale(1.04); }
+                    .dock-tip {
+                      position: absolute; left: 50%; bottom: calc(100% + 14px);
+                      transform: translateX(-50%) translateY(6px);
+                      padding: 6px 11px; border-radius: 10px;
+                      background: rgba(8,8,11,0.96);
+                      border: 1px solid rgba(255,255,255,0.10);
+                      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+                      font-size: 11.5px; font-weight: 600; color: #fff;
+                      white-space: nowrap; pointer-events: none;
+                      opacity: 0;
+                      letter-spacing: 0.01em;
+                      box-shadow: 0 8px 24px rgba(0,0,0,0.55);
+                      transition: opacity 0.18s ease, transform 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+                    }
+                    .dock-item:hover .dock-tip {
+                      opacity: 1;
+                      transform: translateX(-50%) translateY(0);
+                    }
+                    .dock-dot {
+                      position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+                      width: 3px; height: 3px; border-radius: 999px;
+                      background: rgba(255,255,255,0.85);
+                      box-shadow: 0 0 8px rgba(255,255,255,0.6);
+                    }
+                  ` }} />
+                  <div
+                    className="dock-shell"
+                    style={{
+                      position: 'relative',
+                      borderRadius: 22,
+                      padding: '1.5px',
+                      background: 'linear-gradient(135deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.04) 30%, rgba(255,255,255,0.02) 60%, rgba(255,255,255,0.12) 100%)',
+                      boxShadow: '0 28px 70px rgba(0,0,0,0.75), 0 8px 22px rgba(0,0,0,0.50)',
+                    }}
+                  >
+                    <div style={{
+                      position: 'relative',
+                      display: 'flex', alignItems: 'flex-end', gap: 8,
+                      padding: '10px 14px', borderRadius: 21,
+                      background: 'rgba(8,8,11,0.82)',
+                      backdropFilter: 'blur(28px) saturate(1.6)',
+                      WebkitBackdropFilter: 'blur(28px) saturate(1.6)',
+                      border: '1px solid rgba(255,255,255,0.06)',
+                    }}>
+                      {ordered.map((item, idx) => {
+                        const Icon = item.Icon;
+                        const isRecent = recentDockIds.includes(item.id);
+                        const iconEl = (
+                          <>
+                            <Icon style={{ width: 20, height: 20, color: '#fff', strokeWidth: 1.75, position: 'relative', zIndex: 1 }} />
+                            {isRecent && <span className="dock-dot" />}
+                            <span className="dock-tip">{item.label}</span>
+                          </>
+                        );
+                        if (item.href) {
+                          return (
+                            <Link
+                              key={item.id}
+                              href={item.href}
+                              className="dock-item"
+                              style={{ animationDelay: `${idx * 35}ms` }}
+                              title={item.label}
+                              onClick={() => trackDockUsage(item.id)}
+                            >
+                              {iconEl}
+                            </Link>
+                          );
+                        }
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            className="dock-item"
+                            style={{ animationDelay: `${idx * 35}ms` }}
+                            title={item.label}
+                            onClick={() => { trackDockUsage(item.id); item.onClick?.(); }}
+                          >
+                            {iconEl}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* ── Legacy composer (kept hidden to preserve refs & search infra) ── */}
             <div
-              className={[
-                'hidden sm:block fixed inset-x-0 bottom-0 z-30 pt-12 pb-6 sm:pb-4 transition-all duration-300',
-                composerHidden ? 'translate-y-[calc(100%-64px)]' : 'translate-y-0',
-              ].join(' ')}
+              className="hidden"
+              aria-hidden="true"
             >
               <div className="mx-auto max-w-5xl px-3 sm:px-6 md:px-8">
-                <div className={`relative rounded-3xl border border-white/[0.10] bg-[#0D0D0F]/80 p-3 sm:p-4 shadow-[0_-1px_0_rgba(255,255,255,0.04),0_24px_60px_rgba(0,0,0,0.55)] backdrop-blur-2xl ${composerHidden ? 'pointer-events-none opacity-0' : 'pointer-events-auto opacity-100'}`}>
-                  <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-3xl" aria-hidden="true">
-                    <div className="absolute -inset-4 bg-gradient-to-r from-slate-900/10 via-slate-500/5 to-slate-900/10 blur-2xl dark:from-white/10 dark:via-transparent dark:to-white/10" />
-                  </div>
+                <div className={`relative ${composerHidden ? 'pointer-events-none opacity-0' : 'pointer-events-auto opacity-100'}`}
+                  style={{
+                    borderRadius: 28,
+                    padding: '3px',
+                    background: 'linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.025) 50%, rgba(255,255,255,0.06) 100%)',
+                    boxShadow: '0 -1px 0 rgba(255,255,255,0.04), 0 32px 80px rgba(0,0,0,0.65), 0 8px 24px rgba(0,0,0,0.35)',
+                  }}>
+                  {/* Inner glass layer */}
+                  <div style={{
+                    borderRadius: 26,
+                    padding: '12px 16px 12px 12px',
+                    background: 'rgba(8,8,10,0.72)',
+                    backdropFilter: 'blur(48px) saturate(1.8)',
+                    WebkitBackdropFilter: 'blur(48px) saturate(1.8)',
+                  }}>
                   {attachedDocument ? (
                     <div className="mb-3 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200/70 bg-slate-50/70 px-3 py-2 text-sm text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">
                       <Paperclip className="h-4 w-4" aria-hidden="true" />
@@ -5008,7 +7568,7 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
                       </button>
                     </div>
                   ) : null}
-                  <div className="flex items-center gap-1 sm:gap-2 rounded-[20px] border border-white/[0.09] bg-white/[0.05] p-1 pl-2 sm:pl-3 shadow-inner backdrop-blur-xl">
+                  <div className="flex items-center gap-1 sm:gap-2" style={{ borderRadius: 18, border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.04)', padding: '4px 4px 4px 10px' }}>
                     <div className="flex shrink-0 items-center gap-1">
                       <button
                         type="button"
@@ -5088,7 +7648,7 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
                         }
                       }}
                       placeholder={attachedDocument ? 'Ask about your document...' : 'Ask me anything...'}
-                      className="min-h-[38px] flex-1 resize-none bg-transparent py-2.5 text-[13.5px] sm:text-sm text-white placeholder:text-white/35 focus:outline-none"
+                      className="min-h-[38px] flex-1 resize-none bg-transparent py-2.5 text-[13.5px] sm:text-sm text-white/90 placeholder:text-white/22 focus:outline-none"
                     />
 
                     <div className="flex shrink-0 items-center gap-1.5 pr-1">
@@ -5113,44 +7673,161 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
                     </div>
                   </div>
 
-                  {/* Minimalist Glass Suggestions (Lowercase & White) */}
-                  {showBottomSuggestions && searchSuggestions.length > 0 && draft.trim().length > 1 && (
-                    <div className="absolute bottom-full left-0 mb-4 w-full overflow-hidden rounded-[24px] border border-slate-200 bg-white/95 shadow-2xl backdrop-blur-3xl dark:border-white/10 dark:bg-black/90 animate-in fade-in slide-in-from-bottom-2 duration-200">
-                      <div className="px-5 py-3 text-[10px] font-bold lowercase tracking-wider text-slate-400 dark:text-slate-500">
-                        suggestions
-                      </div>
-                      <div className="max-h-[360px] overflow-y-auto px-2 pb-2 scrollbar-minimal">
-                        <div className="grid grid-cols-1 gap-0.5">
-                          {searchSuggestions.map((item) => (
-                            <button
-                              key={`${item.kind}-${item.href || item.label}`}
-                              onClick={() => {
-                                if (item.kind === 'ask') {
-                                  void sendMessage({ message: draft });
-                                } else if (item.href) {
-                                  window.location.assign(safeHref(item.href));
-                                }
-                                setDraft('');
-                                setShowBottomSuggestions(false);
-                              }}
-                              className="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-left transition-all hover:bg-slate-100 dark:hover:bg-white/5"
-                            >
-                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-400 group-hover:bg-white group-hover:text-slate-900 dark:bg-white/5 dark:text-slate-500 dark:group-hover:bg-white dark:group-hover:text-black">
-                                {item.kind === 'file' ? <FileText className="h-4 w-4" /> :
-                                  item.kind === 'resume' ? <User className="h-4 w-4" /> :
-                                    <Search className="h-4 w-4" />}
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="truncate text-[13px] font-medium lowercase text-slate-700 transition-colors group-hover:text-slate-950 dark:text-white/90 dark:group-hover:text-white">{item.label}</div>
-                                {item.meta && <div className="mt-0.5 truncate text-[10px] lowercase text-slate-400 dark:text-slate-500">{item.meta}</div>}
-                              </div>
-                              <ArrowRight className="h-3.5 w-3.5 text-slate-300 opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100" />
-                            </button>
-                          ))}
+                  {/* ── Search Results Dropdown ── */}
+                  {showBottomSuggestions && draft.trim().length > 1 && (searchLoading || searchSuggestions.length > 0) && (() => {
+                    // Category config: badge → { label, icon, accent, bg, border }
+                    const CAT: Record<string, { label: string; accent: string; bg: string; border: string; dot: string }> = {
+                      GIG:     { label: 'Gigs',        accent: '#fb923c', bg: 'rgba(251,146,60,0.12)',  border: 'rgba(251,146,60,0.25)',  dot: '#fb923c' },
+                      RESUME:  { label: 'Talent',      accent: '#38bdf8', bg: 'rgba(56,189,248,0.12)',  border: 'rgba(56,189,248,0.25)',  dot: '#38bdf8' },
+                      DOC:     { label: 'Documents',   accent: '#60a5fa', bg: 'rgba(96,165,250,0.12)',  border: 'rgba(96,165,250,0.25)',  dot: '#60a5fa' },
+                      SIGNED:  { label: 'Documents',   accent: '#34d399', bg: 'rgba(52,211,153,0.12)',  border: 'rgba(52,211,153,0.25)',  dot: '#34d399' },
+                      TPL:     { label: 'Templates',   accent: '#a78bfa', bg: 'rgba(167,139,250,0.12)', border: 'rgba(167,139,250,0.25)', dot: '#a78bfa' },
+                      KB:      { label: 'Knowledge',   accent: '#c084fc', bg: 'rgba(192,132,252,0.12)', border: 'rgba(192,132,252,0.25)', dot: '#c084fc' },
+                      BLOG:    { label: 'Blog',        accent: '#2dd4bf', bg: 'rgba(45,212,191,0.12)',  border: 'rgba(45,212,191,0.25)',  dot: '#2dd4bf' },
+                      SOURCE:  { label: 'Web',         accent: '#818cf8', bg: 'rgba(129,140,248,0.12)', border: 'rgba(129,140,248,0.25)', dot: '#818cf8' },
+                      PUBLIC:  { label: 'Files',       accent: '#94a3b8', bg: 'rgba(148,163,184,0.10)', border: 'rgba(148,163,184,0.20)', dot: '#94a3b8' },
+                      PRIVATE: { label: 'Files',       accent: '#f87171', bg: 'rgba(248,113,113,0.10)', border: 'rgba(248,113,113,0.20)', dot: '#f87171' },
+                      FILE:    { label: 'Files',       accent: '#94a3b8', bg: 'rgba(148,163,184,0.10)', border: 'rgba(148,163,184,0.20)', dot: '#94a3b8' },
+                      FREE:    { label: 'Features',    accent: '#34d399', bg: 'rgba(52,211,153,0.10)',  border: 'rgba(52,211,153,0.20)',  dot: '#34d399' },
+                      NEW:     { label: 'New',         accent: '#f472b6', bg: 'rgba(244,114,182,0.10)', border: 'rgba(244,114,182,0.20)', dot: '#f472b6' },
+                      PERSON:  { label: 'People',      accent: '#34d399', bg: 'rgba(52,211,153,0.12)',  border: 'rgba(52,211,153,0.25)',  dot: '#34d399' },
+                      SVC:     { label: 'Services',    accent: '#fbbf24', bg: 'rgba(251,191,36,0.12)',  border: 'rgba(251,191,36,0.25)',  dot: '#fbbf24' },
+                      DEFAULT: { label: 'Result',      accent: '#94a3b8', bg: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.08)', dot: '#64748b' },
+                    };
+                    const getCat = (badge?: string) => CAT[(badge ?? '').toUpperCase()] ?? CAT.DEFAULT;
+
+                    // Group results by category label
+                    type GroupedResult = typeof searchSuggestions[0];
+                    const groups: Record<string, GroupedResult[]> = {};
+                    for (const r of searchSuggestions) {
+                      const cat = getCat(r.badge);
+                      (groups[cat.label] ??= []).push(r);
+                    }
+                    const groupOrder = ['Gigs', 'Services', 'Talent', 'People', 'Documents', 'Templates', 'Knowledge', 'Blog', 'Files', 'Web', 'Features', 'New', 'Result'];
+                    const orderedGroups = groupOrder.filter((k) => groups[k]).map((k) => ({ label: k, items: groups[k] }));
+
+                    return (
+                      <div
+                        style={{
+                          position: 'absolute', bottom: 'calc(100% + 12px)', left: 0, right: 0,
+                          zIndex: 60, borderRadius: 22, padding: '1.5px',
+                          background: 'linear-gradient(135deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.02) 60%, rgba(255,255,255,0.07) 100%)',
+                          boxShadow: '0 -8px 40px rgba(0,0,0,0.60), 0 -2px 12px rgba(0,0,0,0.30)',
+                          animation: 'searchDropIn 0.18s cubic-bezier(0.4,0,0.2,1)',
+                        }}
+                      >
+                        <style>{`@keyframes searchDropIn{from{opacity:0;transform:translateY(8px) scale(0.99)}to{opacity:1;transform:translateY(0) scale(1)}}`}</style>
+                        <div style={{ borderRadius: 21, overflow: 'hidden', background: 'rgba(8,8,11,0.94)', backdropFilter: 'blur(48px) saturate(1.8)', WebkitBackdropFilter: 'blur(48px) saturate(1.8)' }}>
+
+                          {/* Header */}
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px 10px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              {searchLoading
+                                ? <Loader2 style={{ width: 12, height: 12, color: 'rgba(255,255,255,0.30)', animation: 'spin 1s linear infinite' }} />
+                                : <Search style={{ width: 12, height: 12, color: 'rgba(255,255,255,0.20)' }} />}
+                              <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.28)', textTransform: 'uppercase' }}>
+                                {searchLoading ? 'Searching…' : `${searchSuggestions.length} result${searchSuggestions.length !== 1 ? 's' : ''} for "${draft.trim()}"`}
+                              </span>
+                            </div>
+                            <button type="button" onClick={() => setShowBottomSuggestions(false)}
+                              style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.20)', background: 'none', border: 'none', cursor: 'pointer', letterSpacing: '0.08em', padding: '2px 6px', borderRadius: 6, transition: 'color 0.15s' }}
+                              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.50)'; }}
+                              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.20)'; }}
+                            >ESC</button>
+                          </div>
+
+                          {/* Loading skeleton */}
+                          {searchLoading && searchSuggestions.length === 0 && (
+                            <div style={{ padding: '10px 12px 12px' }}>
+                              {[80, 65, 72, 55].map((w, i) => (
+                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 4px' }}>
+                                  <div style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(255,255,255,0.05)', flexShrink: 0, animation: 'pulse 1.5s ease-in-out infinite' }} />
+                                  <div style={{ flex: 1 }}>
+                                    <div style={{ height: 11, width: `${w}%`, borderRadius: 6, background: 'rgba(255,255,255,0.06)', marginBottom: 5, animation: 'pulse 1.5s ease-in-out infinite' }} />
+                                    <div style={{ height: 8, width: `${w * 0.6}%`, borderRadius: 6, background: 'rgba(255,255,255,0.04)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* No results */}
+                          {!searchLoading && searchSuggestions.length === 0 && (
+                            <div style={{ padding: '32px 20px', textAlign: 'center' }}>
+                              <Search style={{ width: 24, height: 24, color: 'rgba(255,255,255,0.10)', margin: '0 auto 10px' }} />
+                              <p style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.35)', margin: 0 }}>No results found</p>
+                              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.18)', marginTop: 4 }}>Try different keywords or search by skill, name, or category</p>
+                            </div>
+                          )}
+
+                          {/* Grouped results */}
+                          {!searchLoading && orderedGroups.length > 0 && (
+                            <div style={{ maxHeight: 420, overflowY: 'auto', padding: '8px 10px 12px', scrollbarWidth: 'none' }}>
+                              {orderedGroups.map(({ label, items }) => {
+                                const cat = getCat(items[0]?.badge);
+                                return (
+                                  <div key={label} style={{ marginBottom: 12 }}>
+                                    {/* Group header */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 4px 6px' }}>
+                                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: cat.dot, flexShrink: 0 }} />
+                                      <span style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: '0.22em', color: cat.accent, textTransform: 'uppercase', opacity: 0.85 }}>{label}</span>
+                                      <div style={{ flex: 1, height: 1, background: `linear-gradient(90deg, ${cat.border} 0%, transparent 100%)` }} />
+                                      <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.18)', fontWeight: 600 }}>{items.length}</span>
+                                    </div>
+                                    {/* Items */}
+                                    {items.map((r) => (
+                                      <a
+                                        key={r.id}
+                                        href={safeHref(r.href)}
+                                        onClick={() => { setShowBottomSuggestions(false); setDraft(''); }}
+                                        style={{
+                                          display: 'flex', alignItems: 'center', gap: 10,
+                                          padding: '8px 10px', borderRadius: 12, marginBottom: 2,
+                                          textDecoration: 'none', transition: 'background 0.12s',
+                                          cursor: 'pointer',
+                                        }}
+                                        onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = cat.bg; }}
+                                        onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = 'transparent'; }}
+                                      >
+                                        {/* Icon */}
+                                        <div style={{ width: 32, height: 32, borderRadius: 10, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: cat.bg, border: `1px solid ${cat.border}` }}>
+                                          {(r.badge ?? '').toUpperCase() === 'GIG'    ? <Briefcase style={{ width: 14, height: 14, color: cat.accent }} /> :
+                                           (r.badge ?? '').toUpperCase() === 'RESUME' ? <User       style={{ width: 14, height: 14, color: cat.accent }} /> :
+                                           (r.badge ?? '').toUpperCase() === 'PERSON' ? <User       style={{ width: 14, height: 14, color: cat.accent }} /> :
+                                           (r.badge ?? '').toUpperCase() === 'SVC'    ? <Briefcase  style={{ width: 14, height: 14, color: cat.accent }} /> :
+                                           (r.badge ?? '').toUpperCase() === 'KB' || (r.badge ?? '').toUpperCase() === 'BLOG' ? <BookOpen style={{ width: 14, height: 14, color: cat.accent }} /> :
+                                           (r.badge ?? '').toUpperCase() === 'SOURCE' ? <Globe      style={{ width: 14, height: 14, color: cat.accent }} /> :
+                                           (r.badge ?? '').toUpperCase() === 'TPL'    ? <Sparkles   style={{ width: 14, height: 14, color: cat.accent }} /> :
+                                                                                        <FileText   style={{ width: 14, height: 14, color: cat.accent }} />}
+                                        </div>
+                                        {/* Text */}
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                          <p style={{ margin: 0, fontSize: 12.5, fontWeight: 600, color: 'rgba(255,255,255,0.82)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.title}</p>
+                                          <p style={{ margin: 0, fontSize: 10.5, color: 'rgba(255,255,255,0.30)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 1 }}>{r.description}</p>
+                                        </div>
+                                        {/* Badge pill */}
+                                        {r.badge && (
+                                          <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.10em', textTransform: 'uppercase', color: cat.accent, background: cat.bg, border: `1px solid ${cat.border}`, borderRadius: 6, padding: '2px 7px', flexShrink: 0 }}>{r.badge}</span>
+                                        )}
+                                        <ArrowRight style={{ width: 12, height: 12, color: 'rgba(255,255,255,0.15)', flexShrink: 0 }} />
+                                      </a>
+                                    ))}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {/* Footer hint */}
+                          {!searchLoading && searchSuggestions.length > 0 && (
+                            <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.18)' }}>Searching across gigs, talent, docs, templates, files & knowledge</span>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   {assistantStatusLabel || uploadStatusLabel ? (
                     <div className="ml-auto flex items-center gap-2 rounded-2xl bg-slate-950 px-3 py-2 text-xs font-semibold text-white dark:bg-white/10">
@@ -5163,10 +7840,11 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
                       {assistantStatusLabel || uploadStatusLabel}
                     </div>
                   ) : null}
-                </div>
+                  </div>{/* /inner glass */}
+                </div>{/* /gradient border */}
               </div>
 
-             
+
             </div>
           </div>
         </div>
@@ -5606,17 +8284,21 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
         <div
           style={{
             position: 'fixed', left: 10, right: 10, bottom: 160, zIndex: 9998,
-            borderRadius: 24,
-            background: '#0D0D0F',
-            border: '1px solid rgba(255,255,255,0.09)',
-            boxShadow: '0 32px 80px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.03)',
-            overflow: 'hidden',
+            borderRadius: 26, padding: '1.5px',
+            background: 'linear-gradient(135deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.02) 50%, rgba(255,255,255,0.07) 100%)',
+            boxShadow: '0 32px 80px rgba(0,0,0,0.85), 0 8px 24px rgba(0,0,0,0.50)',
             opacity: mobileNavSearchOpen ? 1 : 0,
-            transform: mobileNavSearchOpen ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.98)',
+            transform: mobileNavSearchOpen ? 'translateY(0) scale(1)' : 'translateY(16px) scale(0.97)',
             pointerEvents: mobileNavSearchOpen ? 'auto' : 'none',
             transition: 'opacity 0.26s cubic-bezier(0.4,0,0.2,1), transform 0.26s cubic-bezier(0.4,0,0.2,1)',
           }}
         >
+        <div style={{
+          borderRadius: 25, overflow: 'hidden',
+          background: 'rgba(8,8,10,0.88)',
+          backdropFilter: 'blur(48px) saturate(1.8)',
+          WebkitBackdropFilter: 'blur(48px) saturate(1.8)',
+        }}>
           {/* Search input */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 16px 12px' }}>
             <div style={{
@@ -5642,9 +8324,8 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
               placeholder="Ask me anything…"
               style={{
                 flex: 1, background: 'transparent', border: 'none', outline: 'none',
-                fontSize: 15, color: '#fff', fontWeight: 500,
-                caretColor: '#fff',
-                fontFamily: 'inherit',
+                fontSize: 15, color: 'rgba(255,255,255,0.88)', fontWeight: 500,
+                caretColor: '#fff', fontFamily: 'inherit',
               }}
             />
             <button
@@ -5706,150 +8387,9 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
               </a>
             ))}
           </div>
-        </div>
+        </div>{/* /inner glass */}
+        </div>{/* /gradient border */}
 
-        {/* ── Mobile compact chat bar (xs only, above bottom nav) ── */}
-        <div
-          className="sm:hidden"
-          style={{ position: 'fixed', left: 10, right: 10, bottom: 80, zIndex: 9998 }}
-        >
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            borderRadius: 22, padding: '6px 8px',
-            background: 'rgba(13,13,15,0.92)',
-            border: '1px solid rgba(255,255,255,0.10)',
-            boxShadow: '0 16px 50px rgba(0,0,0,0.75), 0 2px 10px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.06)',
-            backdropFilter: 'blur(40px)',
-            WebkitBackdropFilter: 'blur(40px)',
-          }}>
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: '50%', color: 'rgba(255,255,255,0.40)', flexShrink: 0, background: 'transparent', border: 'none', cursor: 'pointer' }}
-            >
-              <Paperclip style={{ width: 14, height: 14 }} />
-            </button>
-            <button
-              type="button"
-              onClick={toggleVoice}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: '50%', color: voiceActive ? 'rgba(255,255,255,0.90)' : 'rgba(255,255,255,0.40)', flexShrink: 0, background: voiceActive ? 'rgba(255,255,255,0.08)' : 'transparent', border: 'none', cursor: 'pointer' }}
-            >
-              <Mic style={{ width: 14, height: 14 }} />
-            </button>
-            <button
-              type="button"
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: '50%', color: 'rgba(255,255,255,0.40)', flexShrink: 0, background: 'transparent', border: 'none', cursor: 'pointer' }}
-            >
-              <Sparkles style={{ width: 14, height: 14, color: 'rgba(255,255,255,0.55)' }} />
-            </button>
-            <textarea
-              value={draft}
-              onChange={(e) => { setDraft(e.target.value); }}
-              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void sendMessage(); } }}
-              placeholder="Ask me anything..."
-              rows={1}
-              style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'rgba(255,255,255,0.90)', fontSize: 13, resize: 'none', minHeight: 32, padding: '6px 0', lineHeight: '1.45' }}
-            />
-            <button
-              type="button"
-              onClick={() => void sendMessage()}
-              disabled={sending || (!draft.trim() && !attachedDocument)}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: 32, height: 32, borderRadius: 12, flexShrink: 0,
-                background: 'rgba(255,255,255,0.90)', color: '#0D0D0F', border: 'none', cursor: 'pointer',
-                opacity: (sending || (!draft.trim() && !attachedDocument)) ? 0.35 : 1,
-                transition: 'opacity 0.2s, transform 0.15s',
-              }}
-            >
-              <Send style={{ width: 13, height: 13 }} />
-            </button>
-          </div>
-        </div>
-
-        {/* ── Bottom nav bar ── */}
-        <nav
-          className="sm:hidden"
-          aria-label="Mobile navigation"
-          style={{ position: 'fixed', left: 10, right: 10, bottom: 12, zIndex: 9999 }}
-        >
-          {/* Pill */}
-          <div style={{
-            position: 'relative', display: 'flex', alignItems: 'center',
-            borderRadius: 26, padding: '5px 6px',
-            background: '#0D0D0F',
-            border: '1px solid rgba(255,255,255,0.09)',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.80), 0 4px 16px rgba(0,0,0,0.50), inset 0 1px 0 rgba(255,255,255,0.06)',
-            backdropFilter: 'blur(40px)',
-            WebkitBackdropFilter: 'blur(40px)',
-          }}>
-            {([
-              { label: 'Home',     href: '/',          Icon: LayoutGrid, isSearch: false, isPublish: false },
-              { label: 'People',   href: '/people',    Icon: Users,      isSearch: false, isPublish: false },
-              { label: 'Search',   href: '#',          Icon: Search,     isSearch: true,  isPublish: false },
-              { label: 'Feed',     href: '/published', Icon: Newspaper,  isSearch: false, isPublish: false },
-              ...(isAuthenticated
-                ? [{ label: 'Publish', href: '#', Icon: Plus,  isSearch: false, isPublish: true  }]
-                : [{ label: 'Sign Up', href: '/signup', Icon: User, isSearch: false, isPublish: false }]
-              ),
-            ] as Array<{ label: string; href: string; Icon: React.ElementType; isSearch: boolean; isPublish: boolean }>).map((item) => (
-              <a
-                key={item.label}
-                href={(item.isSearch || item.isPublish) ? undefined : item.href}
-                onClick={
-                  item.isSearch
-                    ? (e) => { e.preventDefault(); setMobileNavSearchOpen(true); setMobileNavSearchQuery(''); }
-                    : item.isPublish
-                    ? (e) => { e.preventDefault(); setShowPublishModal(true); }
-                    : undefined
-                }
-                style={{
-                  flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                  padding: '8px 2px', borderRadius: 14, textDecoration: 'none', cursor: 'pointer',
-                  color: 'rgba(255,255,255,0.35)',
-                  border: '1px solid transparent',
-                  minWidth: 44,
-                  WebkitTapHighlightColor: 'transparent',
-                  transition: 'background 0.20s ease, color 0.20s ease, border-color 0.20s ease, box-shadow 0.20s ease',
-                }}
-                onMouseEnter={(e) => {
-                  const el = e.currentTarget as HTMLAnchorElement;
-                  el.style.background = 'rgba(255,255,255,0.08)';
-                  el.style.borderColor = 'rgba(255,255,255,0.10)';
-                  el.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.10), 0 2px 8px rgba(0,0,0,0.25)';
-                  el.style.color = 'rgba(255,255,255,0.92)';
-                }}
-                onMouseLeave={(e) => {
-                  const el = e.currentTarget as HTMLAnchorElement;
-                  el.style.background = 'transparent';
-                  el.style.borderColor = 'transparent';
-                  el.style.boxShadow = 'none';
-                  el.style.color = 'rgba(255,255,255,0.35)';
-                }}
-                onTouchStart={(e) => {
-                  const el = e.currentTarget as HTMLAnchorElement;
-                  el.style.background = 'rgba(255,255,255,0.08)';
-                  el.style.borderColor = 'rgba(255,255,255,0.10)';
-                  el.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.10), 0 2px 8px rgba(0,0,0,0.25)';
-                  el.style.color = 'rgba(255,255,255,0.92)';
-                }}
-                onTouchEnd={(e) => {
-                  const el = e.currentTarget as HTMLAnchorElement;
-                  setTimeout(() => {
-                    if (!el) return;
-                    el.style.background = 'transparent';
-                    el.style.borderColor = 'transparent';
-                    el.style.boxShadow = 'none';
-                    el.style.color = 'rgba(255,255,255,0.35)';
-                  }, 240);
-                }}
-              >
-                <item.Icon style={{ width: 18, height: 18, flexShrink: 0 }} />
-                <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', lineHeight: 1 }}>{item.label}</span>
-              </a>
-            ))}
-          </div>
-        </nav>
       </>,
       document.body
     )}

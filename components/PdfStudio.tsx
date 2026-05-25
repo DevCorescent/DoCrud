@@ -41,9 +41,13 @@ import {
   X,
   ZoomIn,
   ZoomOut,
+  Users,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
+import { getDriveHandoffFile } from '@/lib/driveHandoff';
+import { useCollabEngine } from '@/lib/collabEngine';
+import CollabBar from '@/components/CollabBar';
 
 /* ── types ── */
 interface PdfPage {
@@ -168,6 +172,21 @@ export default function PdfStudio({ onClose, darkMode = false }: PdfStudioProps)
   const [findResults, setFindResults] = useState<{ pageIdx: number; count: number }[]>([]);
   // Expanded tool sections
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const [collabOpen, setCollabOpen] = useState(false);
+
+  /* ── Real-time Collaboration ── */
+  // Use a session-scoped token stored in sessionStorage so the same PDF session
+  // is shared across tabs opened from the same browser window.
+  const collabToken = useRef((() => {
+    if (typeof window === 'undefined') return null;
+    const key = 'docrud_pdf_collab_token';
+    const stored = sessionStorage.getItem(key);
+    if (stored) return stored;
+    const next = `pdf_${Math.random().toString(36).slice(2, 14)}`;
+    sessionStorage.setItem(key, next);
+    return next;
+  })()).current;
+  const collabEngine = useCollabEngine(collabToken, 'PDF User');
 
   const fileRef = useRef<HTMLInputElement>(null);
   const mergeRef = useRef<HTMLInputElement>(null);
@@ -378,6 +397,20 @@ export default function PdfStudio({ onClose, darkMode = false }: PdfStudioProps)
   }, [previewIdx, pages.length, openPreview]);
 
   /* Auto-render edit page when switching to Edit tab or when pages first load */
+  /* ── Drive handoff: auto-load PDF passed from the Universal File Viewer ── */
+  useEffect(() => {
+    const handoff = getDriveHandoffFile();
+    if (!handoff) return;
+    const ext = handoff.name.split('.').pop()?.toLowerCase();
+    if (ext !== 'pdf') return;
+    const virtualFile = new File([handoff.blob], handoff.name, {
+      type: handoff.mimeType || 'application/pdf',
+      lastModified: Date.now(),
+    });
+    void loadPdf(virtualFile);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (activeTab === 'edit' && pages.length > 0 && !editPageDataUrl && !editPageRendering) {
       void selectEditPage(editPageIdx);
@@ -804,6 +837,28 @@ export default function PdfStudio({ onClose, darkMode = false }: PdfStudioProps)
           <button type="button" disabled={toolLoading} onClick={() => void exportPdf()} className={cn(btnPrimary, toolLoading ? 'cursor-not-allowed opacity-60' : '')}>
             {toolLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
             Export PDF
+          </button>
+          {/* Live collab */}
+          <button
+            type="button"
+            onClick={() => setCollabOpen(v => !v)}
+            className={cn(
+              'flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-[12px] font-medium transition-all',
+              collabOpen
+                ? 'border-violet-400/60 bg-violet-500/20 text-violet-300'
+                : isLight
+                  ? 'border-slate-200/90 bg-white text-slate-600 hover:border-violet-200 hover:bg-violet-50 hover:text-violet-600'
+                  : 'border-white/[0.08] bg-white/[0.04] text-slate-300 hover:bg-violet-500/10 hover:text-violet-300',
+            )}
+            title="Live collaboration"
+          >
+            <Users className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Live</span>
+            {collabEngine.users.length > 1 && (
+              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-violet-100 px-1 text-[10px] font-bold text-violet-700">
+                {collabEngine.users.length}
+              </span>
+            )}
           </button>
         </div>
 
@@ -1504,6 +1559,14 @@ export default function PdfStudio({ onClose, darkMode = false }: PdfStudioProps)
           </div>
         </div>
       )}
+
+      {/* ── Real-time CollabBar ── */}
+      {collabOpen ? (
+        <CollabBar
+          engine={collabEngine}
+          content={docSummary || fileName}
+        />
+      ) : null}
     </>
   );
 }

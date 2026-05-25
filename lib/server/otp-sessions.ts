@@ -4,10 +4,13 @@ import { isValidEmail, normalizeEmail } from '@/lib/server/security';
 
 type BusinessSignupOtpSession = {
   id: string;
-  purpose: 'business_signup' | 'document_signing';
+  purpose: 'business_signup' | 'document_signing' | 'account_action';
   email: string;
   historyId?: string;
   signerKey?: string;
+  /** For account_action purpose */
+  action?: 'deactivate' | 'delete';
+  userId?: string;
   otpHash: string;
   otpSalt: string;
   createdAt: string;
@@ -268,4 +271,95 @@ export async function assertDocumentSigningOtpVerified(sessionId: string, emailR
   }
   if (!session.verifiedAt) throw new Error('Please verify your email with the OTP before continuing.');
   return { verifiedAt: session.verifiedAt, expiresAt: session.expiresAt };
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   Account action OTP  (deactivation / deletion)
+───────────────────────────────────────────────────────────────────── */
+
+export async function createAccountActionOtp(input: {
+  email: string;
+  userId: string;
+  action: 'deactivate' | 'delete';
+}) {
+  const email = normalizeEmail(input.email || '');
+  if (!isValidEmail(email)) throw new Error('Invalid email address.');
+
+  const now = nowIso();
+  const store = pruneExpiredSessions(await readStore(), Date.now());
+
+  // Throttle: 45 s between resends per user+action
+  const recent = store.sessions
+    .filter((s) => s.purpose === 'account_action' && s.userId === input.userId && s.action === input.action)
+    .sort((a, b) => +new Date(b.lastSentAt) - +new Date(a.lastSentAt))[0];
+  if (recent) {
+    const diffMs = Date.now() - new Date(recent.lastSentAt).getTime();
+    if (Number.isFinite(diffMs) && diffMs < 45_000) {
+      throw new Error('OTP already sent. Please wait 45 seconds before requesting again.');
+    }
+  }
+
+  const otp = generateOtp();
+  const otpSalt = crypto.randomBytes(16).toString('hex');
+  const otpHash = sha256Hex(`${otpSalt}:${otp}`);
+
+  const session: BusinessSignupOtpSession = {
+    id: generateSessionId(),
+    purpose: 'account_action',
+    email,
+    userId: input.userId,
+    action: input.action,
+    otpHash,
+    otpSalt,
+    createdAt: now,
+    lastSentAt: now,
+    expiresAt: addMinutes(now, 10),
+    attempts: 0,
+  };
+
+  store.sessions.unshift(session);
+  await writeStore(store);
+  return { sessionId: session.id, otp, expiresAt: session.expiresAt };
+}
+
+export async function verifyAccountActionOtp(input: {
+  sessionId: string;
+  email: string;
+  userId: string;
+  action: 'deactivate' | 'delete';
+  otp: string;
+}) {
+  const email = normalizeEmail(input.email || '');
+  const code  = String(input.otp || '').trim();
+
+  if (!input.sessionId || input.sessionId.length < 10) throw new Error('OTP session expired. Please request a new OTP.');
+  if (!isValidEmail(email)) throw new Error('Invalid email.');
+  if (!/^\d{6}$/.test(code)) throw new Error('Enter the 6-digit OTP.');
+
+  const store = pruneExpiredSessions(await readStore(), Date.now());
+  const idx = store.sessions.findIndex(
+    (s) => s.id === input.sessionId && s.purpose === 'account_action'
+      && s.userId === input.userId && s.action === input.action,
+  );
+  if (idx < 0) throw new Error('OTP session expired or not found. Please request a new OTP.');
+
+  const session = store.sessions[idx];
+  if (session.email !== email) throw new Error('OTP session does not match your email.');
+  if (session.verifiedAt) return { verified: true, verifiedAt: session.verifiedAt };
+  if (session.attempts >= 5) throw new Error('Too many incorrect attempts. Request a new OTP.');
+
+  const attemptHash = sha256Hex(`${session.otpSalt}:${code}`);
+  session.attempts += 1;
+
+  if (!safeEq(attemptHash, session.otpHash)) {
+    store.sessions[idx] = session;
+    await writeStore(store);
+    const left = 5 - session.attempts;
+    throw new Error(`Incorrect OTP. ${left > 0 ? `${left} attempt${left !== 1 ? 's' : ''} remaining.` : 'No attempts remaining.'}`);
+  }
+
+  session.verifiedAt = nowIso();
+  store.sessions[idx] = session;
+  await writeStore(store);
+  return { verified: true, verifiedAt: session.verifiedAt };
 }
