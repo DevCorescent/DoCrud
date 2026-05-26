@@ -1,8 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/server/auth';
 import { publicFaceApplicationsPath, readJsonFile } from '@/lib/server/storage';
 import type { PublicFaceApplication } from '@/types/document';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {

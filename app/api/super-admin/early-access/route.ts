@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { getSuperAdminSessionFromRequest, appendSuperAdminAudit } from '@/lib/server/super-admin-auth';
 import {
   getEarlyAccessFeatures,
@@ -7,6 +7,8 @@ import {
   getFeatureWishes,
   type EarlyAccessFeature,
 } from '@/lib/server/early-access';
+
+export const dynamic = 'force-dynamic';
 
 function guard(req: NextRequest) {
   const s = getSuperAdminSessionFromRequest(req);

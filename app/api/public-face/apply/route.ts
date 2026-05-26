@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/server/auth';
 import {
@@ -14,6 +14,8 @@ import {
 } from '@/lib/server/public-face-emails';
 import { getPublicAppBaseUrl } from '@/lib/url';
 import type { PublicFaceApplication, PublicFaceCategory } from '@/types/document';
+
+export const dynamic = 'force-dynamic';
 
 interface OtpRecord {
   id: string;

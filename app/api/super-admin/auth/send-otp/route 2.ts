@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSuperAdminOtpSession, getSuperAdminEmail } from '@/lib/server/super-admin-auth';
 import { sendTrackedMail } from '@/lib/server/mailer';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     const { email } = await req.json();

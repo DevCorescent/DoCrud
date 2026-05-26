@@ -1,9 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { getSuperAdminSessionFromRequest, appendSuperAdminAudit } from '@/lib/server/super-admin-auth';
 import { getMailCampaigns } from '@/lib/server/mail-campaigns';
 import { getEmailOutbox } from '@/lib/server/email-outbox';
 import { sendTrackedMail } from '@/lib/server/mailer';
 import { getStoredUsers } from '@/lib/server/auth';
+
+export const dynamic = 'force-dynamic';
 
 function guard(req: NextRequest) {
   const s = getSuperAdminSessionFromRequest(req);

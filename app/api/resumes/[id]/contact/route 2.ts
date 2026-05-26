@@ -4,6 +4,8 @@ import { getPublicResumeById, requestResumeContact } from '@/lib/server/resume-d
 import { consumeResumeConnectCredit, hasResumeConnectAccess, RESUME_CONNECT_PRICING } from '@/lib/server/resume-connect';
 import { upsertResumeLeadOnUnlock } from '@/lib/server/resume-leads';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: Request, context: { params: { id: string } }) {
   try {
     const session = await getAuthSession();

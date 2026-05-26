@@ -74,8 +74,9 @@ import { buildAbsoluteAppUrl, buildQrImageUrl } from '@/lib/url';
 import { useCollabEngine } from '@/lib/collabEngine';
 import CollabBar from '@/components/CollabBar';
 import { DocWordAccessGroup, DocWordBlock, DocWordDocument, DocWordSelectionComment, DocWordTrackedChange, FileDirectoryLocker, SecureFileTransfer } from '@/types/document';
-import PdfStudio from '@/components/PdfStudio';
-import ScratchpadCenter from '@/components/ScratchpadCenter';
+import dynamic from 'next/dynamic';
+const PdfStudio        = dynamic(() => import('@/components/PdfStudio'),        { ssr: false, loading: () => null });
+const ScratchpadCenter = dynamic(() => import('@/components/ScratchpadCenter'), { ssr: false, loading: () => null });
 import { getDriveHandoffFile } from '@/lib/driveHandoff';
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';

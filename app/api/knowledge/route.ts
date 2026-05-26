@@ -1,7 +1,9 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/server/auth';
 import { createKnowledgeBaseEntry, listKnowledgeBaseEntries } from '@/lib/server/knowledge-base';
 import { generateAiText, isAiConfigured, parseStructuredJson } from '@/lib/server/ai';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);

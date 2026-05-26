@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { recordResumeView } from '@/lib/server/resume-directory';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(_request: Request, context: { params: { id: string } }) {
   try {
     await recordResumeView(context.params.id);

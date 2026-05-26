@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { appendSuperAdminAudit, revokeSuperAdminSession } from '@/lib/server/super-admin-auth';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   const token = req.cookies.get('sa_session')?.value || '';
   if (token) {

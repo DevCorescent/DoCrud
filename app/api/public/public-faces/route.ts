@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import {
   publicFaceApplicationsPath,
   userProfilesPath,
@@ -7,6 +7,8 @@ import {
   readJsonFile,
 } from '@/lib/server/storage';
 import type { PublicFaceApplication } from '@/types/document';
+
+export const dynamic = 'force-dynamic';
 
 interface UserProfile {
   headline?: string;

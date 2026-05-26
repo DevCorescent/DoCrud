@@ -1,9 +1,11 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { generateAiText, isAiConfigured, parseStructuredJson } from '@/lib/server/ai';
 import { getAuthSession } from '@/lib/server/auth';
 import { searchWebSources } from '@/lib/server/web-sources';
 import { getSearchingNow, recordRealtimeSearch } from '@/lib/server/realtime-search';
 import { runGlobalSearch } from '@/lib/server/global-search';
+
+export const dynamic = 'force-dynamic';
 
 type AiSearchPayload = {
   query: string;

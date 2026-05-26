@@ -70,20 +70,24 @@ import {
   X,
   Zap,
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import HomepageNav from '@/components/HomepageNav';
 import { AssistantResultCardView } from '@/components/home-chat/AssistantResultCard';
-import QuickFileEditorDialog from '@/components/QuickFileEditorDialog';
-import PublishAnythingDialog from '@/components/PublishAnythingDialog';
-import FileTransferCenter from '@/components/FileTransferCenter';
-import PdfStudio from '@/components/PdfStudio';
-import FormsCenter from '@/components/FormsCenter';
-import ScratchpadCenter from '@/components/ScratchpadCenter';
-import DocSheetCenter from '@/components/DocSheetCenter';
 import type { DocumentHistory } from '@/types/document';
-import DocumentVisualizerModal from '@/components/DocumentVisualizerModal';
-import ESignStudioModal from '@/components/ESignStudioModal';
-import FileDriveCenter from '@/components/FileDriveCenter';
 import type { AssistantResultCard, DocumentQuickAction, UploadedDocument } from '@/types/doc-assistant';
+
+// Heavy panels — loaded only when the user opens them
+const PanelFallback = () => null;
+const QuickFileEditorDialog  = dynamic(() => import('@/components/QuickFileEditorDialog'),  { ssr: false, loading: PanelFallback });
+const PublishAnythingDialog  = dynamic(() => import('@/components/PublishAnythingDialog'),  { ssr: false, loading: PanelFallback });
+const FileTransferCenter     = dynamic(() => import('@/components/FileTransferCenter'),     { ssr: false, loading: PanelFallback });
+const PdfStudio              = dynamic(() => import('@/components/PdfStudio'),              { ssr: false, loading: PanelFallback });
+const FormsCenter            = dynamic(() => import('@/components/FormsCenter'),            { ssr: false, loading: PanelFallback });
+const ScratchpadCenter       = dynamic(() => import('@/components/ScratchpadCenter'),       { ssr: false, loading: PanelFallback });
+const DocSheetCenter         = dynamic(() => import('@/components/DocSheetCenter'),         { ssr: false, loading: PanelFallback });
+const DocumentVisualizerModal= dynamic(() => import('@/components/DocumentVisualizerModal'),{ ssr: false, loading: PanelFallback });
+const ESignStudioModal       = dynamic(() => import('@/components/ESignStudioModal'),       { ssr: false, loading: PanelFallback });
+const FileDriveCenter        = dynamic(() => import('@/components/FileDriveCenter'),        { ssr: false, loading: PanelFallback });
 
 interface PublicHomepageProps {
   softwareName: string;

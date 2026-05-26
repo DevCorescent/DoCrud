@@ -1,5 +1,7 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { getEarlyAccessFeatures } from '@/lib/server/early-access';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {

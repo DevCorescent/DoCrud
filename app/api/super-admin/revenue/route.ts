@@ -1,8 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { getSuperAdminSessionFromRequest } from '@/lib/server/super-admin-auth';
 import { getBillingTransactions } from '@/lib/server/billing';
 import { getStoredUsers } from '@/lib/server/auth';
 import { getSaasPlans } from '@/lib/server/saas';
+
+export const dynamic = 'force-dynamic';
 
 function guard(req: NextRequest) {
   const s = getSuperAdminSessionFromRequest(req);

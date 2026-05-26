@@ -1,6 +1,8 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/server/auth';
 import { getWebSourcesMeta, ingestWebSources, listWebSources } from '@/lib/server/web-sources';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   try {

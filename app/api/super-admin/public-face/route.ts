@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import {
   publicFaceApplicationsPath,
@@ -11,6 +11,8 @@ import {
   sendPublicFaceRejectedEmail,
 } from '@/lib/server/public-face-emails';
 import type { PublicFaceApplication, PublicFaceBadgeInfo } from '@/types/document';
+
+export const dynamic = 'force-dynamic';
 
 async function verifySuperAdmin() {
   const cookieStore = await cookies();

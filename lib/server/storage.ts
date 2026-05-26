@@ -84,13 +84,38 @@ export async function ensureDirectory(filePath: string) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
 }
 
+// ── In-process read cache (per server instance, 30s TTL) ──────────────────────
+// Cuts repeated file/db reads on hot API routes. writeJsonFile always clears the entry.
+const _readCache = new Map<string, { value: unknown; expiresAt: number }>();
+const READ_CACHE_TTL = 30_000; // 30 seconds
+
+function _cacheGet<T>(key: string): T | undefined {
+  const entry = _readCache.get(key);
+  if (!entry) return undefined;
+  if (Date.now() > entry.expiresAt) { _readCache.delete(key); return undefined; }
+  return entry.value as T;
+}
+
+function _cacheSet(key: string, value: unknown) {
+  _readCache.set(key, { value, expiresAt: Date.now() + READ_CACHE_TTL });
+}
+
+export function invalidateReadCache(filePath: string) {
+  _readCache.delete(getAppStateKey(filePath));
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 export async function readJsonFile<T>(filePath: string, fallback: T): Promise<T> {
   const appStateKey = getAppStateKey(filePath);
+
+  const cached = _cacheGet<T>(appStateKey);
+  if (cached !== undefined) return cached;
 
   if (isDatabaseConfigured()) {
     try {
       const databaseValue = await readAppState<T>(appStateKey);
       if (databaseValue !== null) {
+        _cacheSet(appStateKey, databaseValue);
         return databaseValue;
       }
     } catch (error) {
@@ -101,6 +126,7 @@ export async function readJsonFile<T>(filePath: string, fallback: T): Promise<T>
   try {
     const content = await fs.readFile(filePath, 'utf8');
     const parsed = JSON.parse(content) as T;
+    _cacheSet(appStateKey, parsed);
 
     if (isDatabaseConfigured()) {
       try {
@@ -117,6 +143,7 @@ export async function readJsonFile<T>(filePath: string, fallback: T): Promise<T>
 }
 
 export async function writeJsonFile<T>(filePath: string, data: T) {
+  invalidateReadCache(filePath);
   if (isDatabaseConfigured()) {
     try {
       await writeAppState(getAppStateKey(filePath), data);

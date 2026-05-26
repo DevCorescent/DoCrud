@@ -3,6 +3,8 @@ import { getSuperAdminSessionFromRequest } from '@/lib/server/super-admin-auth';
 import { getAdminUserBehaviour } from '@/lib/server/admin-users';
 import { getStoredUsers } from '@/lib/server/auth';
 
+export const dynamic = 'force-dynamic';
+
 function guard(req: NextRequest) {
   const s = getSuperAdminSessionFromRequest(req);
   return s.valid ? s : null;
