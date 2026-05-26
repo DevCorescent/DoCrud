@@ -78,6 +78,7 @@ export const serviceAnalyticsPath = path.join(dataDir, 'service-analytics.json')
 export const catalogueSettingsPath = path.join(dataDir, 'catalogue-settings.json');
 export const publicFaceApplicationsPath = path.join(dataDir, 'public-face-applications.json');
 export const publicFaceOtpsPath = path.join(dataDir, 'public-face-otps.json');
+export const sharesPath = path.join(dataDir, 'shares.json');
 
 export async function ensureDirectory(filePath: string) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });

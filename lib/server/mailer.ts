@@ -82,6 +82,7 @@ export async function sendTrackedMail(input: SendTrackedMailInput) {
     port: Number(smtp.port) || 465,
     secure: Boolean(smtp.secure),
     auth: smtp.requireAuth ? { user: smtp.username, pass: smtp.password } : undefined,
+    tls: { rejectUnauthorized: false },
   });
 
   const trackedText = rewriteLinksForTracking(input.origin, outboxId, text);

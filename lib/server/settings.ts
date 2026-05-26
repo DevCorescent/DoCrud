@@ -5,7 +5,7 @@ import { getDbPool } from '@/lib/server/database';
 import { getSettingsValueFromRepository, saveSettingsValueToRepository } from '@/lib/server/repositories';
 
 export const defaultMailSettings: MailSettings = {
-  host: 'smtp.titan.email',
+  host: 'smtp.secureserver.net',
   port: 465,
   secure: true,
   requireAuth: true,

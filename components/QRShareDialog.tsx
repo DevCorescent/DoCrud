@@ -8,7 +8,7 @@ import {
   ChevronDown, Globe, Lock, Plus,
 } from 'lucide-react';
 import {
-  createShare, listSharesForItem, revokeShare, formatExpiry,
+  formatExpiry,
   PERMISSION_LABELS, PERMISSION_DESCRIPTIONS, PERMISSION_COLOR,
   type SharePermission, type ShareableKind, type ShareRecord,
 } from '@/lib/shareStore';
@@ -73,13 +73,21 @@ export default function QRShareDialog({ open, onClose, target, baseUrl }: QRShar
   const [qrLoaded,    setQrLoaded]    = useState(false);
   const [expiryOpen,  setExpiryOpen]  = useState(false);
 
+  /* Load existing shares from server */
+  const loadExisting = useCallback((itemId: string) => {
+    fetch(`/api/v1/shares?itemId=${encodeURIComponent(itemId)}`)
+      .then(r => r.json())
+      .then(j => { if (j.ok) setExistingShares(j.data); })
+      .catch(() => {});
+  }, []);
+
   /* Reset on open */
   useEffect(() => {
     if (!open || !target) return;
     setPermission('read'); setExpiryMs(86_400_000); setPassword('');
     setActiveShare(null); setQrLoaded(false); setActiveTab('create');
-    setExistingShares(listSharesForItem(target.id));
-  }, [open, target]);
+    loadExisting(target.id);
+  }, [open, target, loadExisting]);
 
   /* keyboard */
   useEffect(() => {
@@ -94,16 +102,24 @@ export default function QRShareDialog({ open, onClose, target, baseUrl }: QRShar
   const handleGenerate = useCallback(() => {
     if (!target) return;
     setGenerating(true); setQrLoaded(false);
-    setTimeout(() => {
-      const rec = createShare(
-        target.kind, target.id, target.name, target.fileKind,
-        { permission, expiresIn: expiryMs || undefined, password: password || undefined },
-      );
-      setActiveShare(rec);
-      setExistingShares(listSharesForItem(target.id));
-      setGenerating(false);
-    }, 320);
-  }, [target, permission, expiryMs, password]);
+    fetch('/api/v1/shares', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        kind: target.kind, itemId: target.id, itemName: target.name, fileKind: target.fileKind,
+        permission, expiresIn: expiryMs || undefined, password: password || undefined,
+      }),
+    })
+      .then(r => r.json())
+      .then(j => {
+        if (j.ok) {
+          setActiveShare(j.data);
+          loadExisting(target.id);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setGenerating(false));
+  }, [target, permission, expiryMs, password, loadExisting]);
 
   const handleCopy = useCallback(() => {
     if (!activeUrl) return;
@@ -121,10 +137,17 @@ export default function QRShareDialog({ open, onClose, target, baseUrl }: QRShar
   }, [activeShare, base]);
 
   const handleRevoke = useCallback((token: string) => {
-    revokeShare(token);
-    if (activeShare?.token === token) setActiveShare(null);
-    if (target) setExistingShares(listSharesForItem(target.id));
-  }, [activeShare, target]);
+    fetch(`/api/v1/shares/${token}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ revoke: true }),
+    })
+      .then(() => {
+        if (activeShare?.token === token) setActiveShare(null);
+        if (target) loadExisting(target.id);
+      })
+      .catch(() => {});
+  }, [activeShare, target, loadExisting]);
 
   const expiryLabel = EXPIRY_OPTIONS.find(e => e.ms === expiryMs)?.label ?? 'Custom';
 

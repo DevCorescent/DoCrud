@@ -119,6 +119,7 @@ export async function POST(request: NextRequest) {
             pass: settings.password,
           }
         : undefined,
+      tls: { rejectUnauthorized: false },
     });
 
     const trackedText = rewriteLinksForTracking(origin, outboxId, baseText);

@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
             pass: settings.password,
           }
         : undefined,
+      tls: { rejectUnauthorized: false },
     });
 
     await transporter.verify();

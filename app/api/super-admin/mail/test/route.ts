@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
     port: Number(settings.port),
     secure: settings.secure,
     auth: settings.requireAuth ? { user: settings.username, pass: settings.password } : undefined,
+    tls: { rejectUnauthorized: false },
     connectionTimeout: 10_000,
     greetingTimeout: 10_000,
     socketTimeout: 15_000,

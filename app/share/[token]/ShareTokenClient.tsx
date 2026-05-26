@@ -19,7 +19,7 @@ import {
   ExternalLink, Loader2, ArrowLeft,
 } from 'lucide-react';
 import {
-  getShare, recordAccess, markAddedToScan, formatExpiry,
+  formatExpiry,
   type ShareRecord, type SharePermission,
   PERMISSION_LABELS, PERMISSION_DESCRIPTIONS, PERMISSION_COLOR,
 } from '@/lib/shareStore';
@@ -55,29 +55,35 @@ export default function ShareTokenClient({ token }: { token: string }) {
   const collabToken = joinCollab ? token : null;
   const collab      = useCollabSession(collabToken, 'Guest');
 
-  /* ── load share on mount ── */
+  /* ── load share from server on mount ── */
   useEffect(() => {
-    // tiny delay so localStorage is available after hydration
-    const t = setTimeout(() => {
-      const rec = getShare(token);
-      if (!rec) {
-        setStage('invalid');
-        return;
-      }
-      if (rec.expiresAt && Date.now() > rec.expiresAt) {
-        setStage('expired');
-        return;
-      }
-      recordAccess(token);
-      setShare(rec);
-      if (rec.password) {
-        setStage('locked');
-      } else {
-        setUnlocked(true);
-        setStage('ready');
-      }
-    }, 120);
-    return () => clearTimeout(t);
+    fetch(`/api/v1/shares/${token}`)
+      .then(r => r.json())
+      .then((j: { ok: boolean; data?: ShareRecord; error?: string }) => {
+        if (!j.ok || !j.data) {
+          setStage('invalid');
+          return;
+        }
+        const rec = j.data;
+        if (rec.expiresAt && Date.now() > rec.expiresAt) {
+          setStage('expired');
+          return;
+        }
+        // record access in background
+        fetch(`/api/v1/shares/${token}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ recordAccess: true }),
+        }).catch(() => {});
+        setShare(rec);
+        if (rec.password) {
+          setStage('locked');
+        } else {
+          setUnlocked(true);
+          setStage('ready');
+        }
+      })
+      .catch(() => setStage('invalid'));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
@@ -96,9 +102,7 @@ export default function ShareTokenClient({ token }: { token: string }) {
   /* ── add to drive ── */
   function handleAddToDrive() {
     if (!share) return;
-    markAddedToScan(token, 'web-visitor');
     setAddingMsg('Opening your Drive…');
-    // Navigate to drive root; the file appears via shared-files panel
     setTimeout(() => {
       router.push(`/?share=${token}`);
     }, 800);
