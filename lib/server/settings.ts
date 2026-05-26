@@ -5,9 +5,9 @@ import { getDbPool } from '@/lib/server/database';
 import { getSettingsValueFromRepository, saveSettingsValueToRepository } from '@/lib/server/repositories';
 
 export const defaultMailSettings: MailSettings = {
-  host: 'smtp.secureserver.net',
-  port: 465,
-  secure: true,
+  host: 'smtpout.secureserver.net',
+  port: 587,
+  secure: false,
   requireAuth: true,
   username: 'support@docrud.com',
   password: 'Docrud@2026',

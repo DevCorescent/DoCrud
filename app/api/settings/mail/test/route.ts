@@ -22,6 +22,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'SMTP settings are incomplete' }, { status: 400 });
     }
 
+    console.log(`[mail/test] config — host=${settings.host} port=${settings.port} secure=${settings.secure} requireAuth=${settings.requireAuth} from=${settings.fromEmail} user=${settings.username}`);
+
     const transporter = nodemailer.createTransport({
       host: settings.host,
       port: Number(settings.port),
@@ -33,26 +35,33 @@ export async function POST(request: NextRequest) {
           }
         : undefined,
       tls: { rejectUnauthorized: false },
-    });
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 15_000,
+    } as Parameters<typeof nodemailer.createTransport>[0]);
 
+    console.log('[mail/test] verifying connection...');
     await transporter.verify();
+    console.log('[mail/test] verify ok');
 
     if (testRecipient) {
       if (!isValidEmail(testRecipient)) {
         return NextResponse.json({ error: 'Valid test recipient required' }, { status: 400 });
       }
 
+      console.log(`[mail/test] sending test mail to ${testRecipient}`);
       await transporter.sendMail({
         from: `"${settings.fromName}" <${settings.fromEmail}>`,
         to: testRecipient,
-        subject: 'Corescent Technologies SMTP Test',
-        text: 'This is a successful SMTP connectivity test from the Corescent document platform.',
+        subject: 'Docrud SMTP Test',
+        text: 'This is a successful SMTP connectivity test from Docrud.',
         html: buildEmailChrome({
           origin: request.nextUrl.origin,
-          subject: 'Corescent Technologies SMTP Test',
-          bodyHtml: `<div style="font-size:14px; color:#0f172a;">${escapeHtmlLite('This is a successful SMTP connectivity test from the Corescent document platform.')}</div>`,
+          subject: 'Docrud SMTP Test',
+          bodyHtml: `<div style="font-size:14px; color:#0f172a;">${escapeHtmlLite('This is a successful SMTP connectivity test from Docrud.')}</div>`,
         }),
       });
+      console.log(`[mail/test] sent ok to ${testRecipient}`);
     }
 
     try {
@@ -74,7 +83,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ message: testRecipient ? 'SMTP test mail sent successfully' : 'SMTP connection verified successfully' });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: 'SMTP test failed' }, { status: 500 });
+    const e = error as NodeJS.ErrnoException & { code?: string; command?: string; response?: string; responseCode?: number };
+    console.error(`[mail/test] FAILED — code=${e.code} command=${e.command} responseCode=${e.responseCode} response="${e.response}" message="${e.message}"`);
+    const msg = error instanceof Error ? error.message : 'SMTP test failed';
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

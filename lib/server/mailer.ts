@@ -39,6 +39,7 @@ export async function sendTrackedMail(input: SendTrackedMailInput) {
 
   const policies = await getMailPolicies();
   if (!policies[input.policyKey]) {
+    console.log(`[mailer] policy "${input.policyKey}" disabled — skipping mail to ${to}`);
     const outboxId = createOutboundEmailId('skip');
     await appendEmailOutboxEvent({
       id: outboxId,
@@ -58,7 +59,10 @@ export async function sendTrackedMail(input: SendTrackedMailInput) {
   }
 
   const smtp = await getMailSettings();
+  console.log(`[mailer] smtp config — host=${smtp.host} port=${smtp.port} secure=${smtp.secure} requireAuth=${smtp.requireAuth} from=${smtp.fromEmail} user=${smtp.username}`);
+
   if (!smtp.host || !smtp.fromEmail) {
+    console.error('[mailer] mail not configured — host or fromEmail missing');
     throw new Error('Mail settings are not configured.');
   }
 
@@ -84,6 +88,8 @@ export async function sendTrackedMail(input: SendTrackedMailInput) {
     auth: smtp.requireAuth ? { user: smtp.username, pass: smtp.password } : undefined,
     tls: { rejectUnauthorized: false },
   });
+
+  console.log(`[mailer] sending "${subject}" → ${to} (outboxId=${outboxId})`);
 
   const trackedText = rewriteLinksForTracking(input.origin, outboxId, text);
   const baseBody = (input.html && input.html.trim())
@@ -111,6 +117,7 @@ export async function sendTrackedMail(input: SendTrackedMailInput) {
         : undefined,
     });
 
+    console.log(`[mailer] sent ok — messageId=${info.messageId}`);
     await updateEmailOutboxEvent(outboxId, (ev) => ({
       ...ev,
       status: 'sent',
@@ -121,6 +128,8 @@ export async function sendTrackedMail(input: SendTrackedMailInput) {
 
     return { skipped: false, messageId: info.messageId, outboxId };
   } catch (err) {
+    const e = err as NodeJS.ErrnoException & { code?: string; command?: string; response?: string; responseCode?: number };
+    console.error(`[mailer] sendMail FAILED — code=${e.code} command=${e.command} responseCode=${e.responseCode} response="${e.response}" message="${e.message}"`);
     await updateEmailOutboxEvent(outboxId, (ev) => ({
       ...ev,
       status: 'failed',
