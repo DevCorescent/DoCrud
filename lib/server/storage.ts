@@ -94,7 +94,7 @@ export async function readJsonFile<T>(filePath: string, fallback: T): Promise<T>
         return databaseValue;
       }
     } catch (error) {
-      console.error(`Failed to read app state from database for ${appStateKey}`, error);
+      console.error(`Failed to read app state from database for ${appStateKey}:`, (error as Error)?.message ?? error);
     }
   }
 
@@ -106,7 +106,7 @@ export async function readJsonFile<T>(filePath: string, fallback: T): Promise<T>
       try {
         await writeAppState(appStateKey, parsed);
       } catch (error) {
-        console.error(`Failed to seed app state into database for ${appStateKey}`, error);
+        console.error(`Failed to seed app state into database for ${appStateKey}:`, (error as Error)?.message ?? error);
       }
     }
 
@@ -122,7 +122,9 @@ export async function writeJsonFile<T>(filePath: string, data: T) {
       await writeAppState(getAppStateKey(filePath), data);
       return;
     } catch (error) {
-      console.error(`Failed to write app state to database for ${getAppStateKey(filePath)}`, error);
+      console.error(`Failed to write app state to database for ${getAppStateKey(filePath)}`, (error as Error)?.message ?? error);
+      // During Next.js build the DB may be unreachable — fall through to file write.
+      if (process.env.NEXT_PHASE === 'phase-production-build') return;
       throw error;
     }
   }
