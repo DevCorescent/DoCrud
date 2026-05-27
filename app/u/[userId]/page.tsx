@@ -1,11 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Script from 'next/script';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
 import VerifiedBadge from '@/components/VerifiedBadge';
+import PublicFaceBadge, { PublicFaceStarIcon, PUBLIC_FACE_CATEGORY_LABELS } from '@/components/PublicFaceBadge';
+import PublicFaceApplicationForm from '@/components/PublicFaceApplicationForm';
 import FeaturePostPanel from '@/components/FeaturePostPanel';
 import {
   ArrowLeft,
@@ -44,10 +46,21 @@ import {
   CreditCard,
   Heart,
   Move,
+  Laptop,
+  Palette,
   Receipt,
+  RefreshCw,
   Rocket,
+  Save,
+  Settings2,
+  Smartphone,
   Star,
   ThumbsUp,
+  AlertTriangle,
+  CheckCircle,
+  Mail,
+  PauseCircle,
+  Trash2,
 } from 'lucide-react';
 
 /* ─── types ─────────────────────────────────────────────────────────── */
@@ -63,6 +76,7 @@ interface UserProfileData {
   website?: string;
   avatarUrl?: string;
   avatarPosition?: string;
+  bannerUrl?: string;
   coverGradient?: string;
   coverPosition?: string;
   skills?: string[];
@@ -81,6 +95,10 @@ interface UserProfileData {
   updatedAt?: string;
   docrudGo?: boolean;
   docrudGoPurchasedAt?: string;
+  publicFace?: {
+    category: string;
+    approvedAt: string;
+  };
 }
 
 interface ProfileStats {
@@ -148,145 +166,499 @@ function getInitials(name: string) {
 }
 
 /* ─── publisher tracking panel ──────────────────────────────────────── */
+const APP_STATUS_ORDER = ['applied', 'pending', 'shortlisted', 'hired', 'rejected'] as const;
+type AppStatus = typeof APP_STATUS_ORDER[number];
+
+const STATUS_META: Record<string, { label: string; color: string; dot: string; pillBg: string; pillText: string; icon: string }> = {
+  applied:     { label: 'Applied',      color: 'text-blue-400',    dot: 'bg-blue-400',    pillBg: 'rgba(59,130,246,0.12)',  pillText: '#60a5fa', icon: '📨' },
+  pending:     { label: 'Under Review', color: 'text-amber-400',   dot: 'bg-amber-400',   pillBg: 'rgba(245,158,11,0.12)',  pillText: '#fbbf24', icon: '⏳' },
+  shortlisted: { label: 'Shortlisted',  color: 'text-violet-400',  dot: 'bg-violet-400',  pillBg: 'rgba(139,92,246,0.12)', pillText: '#a78bfa', icon: '⭐' },
+  hired:       { label: 'Hired! 🎉',    color: 'text-emerald-400', dot: 'bg-emerald-400', pillBg: 'rgba(16,185,129,0.12)', pillText: '#34d399', icon: '🎉' },
+  rejected:    { label: 'Not Selected', color: 'text-rose-400',    dot: 'bg-rose-400',    pillBg: 'rgba(244,63,94,0.10)',  pillText: '#fb7185', icon: '✕' },
+};
+
+const CAT_ICON: Record<string, string> = {
+  event: '📅', hackathon: '💻', job: '💼', article: '📄', document: '📋',
+  portfolio: '🖼️', product: '🛍️', announcement: '📢', news: '📰',
+  post: '📝', poll: '📊', survey: '📋', video: '🎥', resume: '👤',
+  milestone: '🏆', tutorial: '📚', thread: '💬', chart: '📈',
+};
+
 function PublisherTrackingPanel() {
-  const [subTab, setSubTab] = useState<'published' | 'registrations' | 'applications' | 'cta'>('published');
+  type SubTab = 'overview' | 'registrations' | 'applications' | 'bookmarks' | 'cta';
+  const [subTab, setSubTab] = useState<SubTab>('overview');
   const [registrations, setRegistrations] = useState<Array<{itemId: string; title: string; category: string; registeredAt: number}>>([]);
-  const [applications, setApplications] = useState<Array<{itemId: string; title: string; appliedAt: number; url: string}>>([]);
+  const [applications, setApplications] = useState<Array<{itemId: string; title: string; appliedAt: number; url: string; status?: string}>>([]);
   const [ctaData, setCtaData] = useState<Record<string, Record<string, number>>>({});
+  const [bookmarks, setBookmarks] = useState<Record<string, {category: string; savedAt: number}>>({});
+  const [appStatuses, setAppStatuses] = useState<Record<string, AppStatus>>({});
+  const [appNotes, setAppNotes] = useState<Record<string, string>>({});
+  const [expandedApp, setExpandedApp] = useState<string | null>(null);
 
   useEffect(() => {
     try { setRegistrations(JSON.parse(localStorage.getItem('pub_registrations') || '[]')); } catch {}
     try { setApplications(JSON.parse(localStorage.getItem('pub_job_applications') || '[]')); } catch {}
     try { setCtaData(JSON.parse(localStorage.getItem('pub_cta_analytics') || '{}')); } catch {}
+    try { setBookmarks(JSON.parse(localStorage.getItem('pub_bookmarks') || '{}')); } catch {}
+    try { setAppStatuses(JSON.parse(localStorage.getItem('pub_app_statuses') || '{}')); } catch {}
+    try { setAppNotes(JSON.parse(localStorage.getItem('pub_app_notes') || '{}')); } catch {}
   }, []);
 
-  const totalCta = Object.values(ctaData).flatMap(Object.values).reduce((a, b) => a + b, 0);
+  const updateAppStatus = (itemId: string, status: AppStatus) => {
+    const next = { ...appStatuses, [itemId]: status };
+    setAppStatuses(next);
+    try { localStorage.setItem('pub_app_statuses', JSON.stringify(next)); } catch {}
+  };
 
-  const subTabs = [
-    { id: 'registrations' as const, label: 'My Registrations', emoji: '🎟️', count: registrations.length },
-    { id: 'applications' as const, label: 'My Applications', emoji: '💼', count: applications.length },
-    { id: 'cta' as const, label: 'CTA Activity', emoji: '📊', count: totalCta },
+  const updateAppNote = (itemId: string, note: string) => {
+    const next = { ...appNotes, [itemId]: note };
+    setAppNotes(next);
+    try { localStorage.setItem('pub_app_notes', JSON.stringify(next)); } catch {}
+  };
+
+  const removeRegistration = (itemId: string) => {
+    const next = registrations.filter(r => r.itemId !== itemId);
+    setRegistrations(next);
+    try { localStorage.setItem('pub_registrations', JSON.stringify(next)); } catch {}
+  };
+
+  const removeApplication = (itemId: string) => {
+    const next = applications.filter(a => a.itemId !== itemId);
+    setApplications(next);
+    try { localStorage.setItem('pub_job_applications', JSON.stringify(next)); } catch {}
+  };
+
+  const totalCta = Object.values(ctaData).flatMap(Object.values).reduce((a, b) => a + b, 0);
+  const bookmarkList = Object.entries(bookmarks).sort((a, b) => b[1].savedAt - a[1].savedAt);
+  const hirings = applications.filter(a => (appStatuses[a.itemId] || 'applied') === 'hired').length;
+  const shortlisted = applications.filter(a => (appStatuses[a.itemId] || 'applied') === 'shortlisted').length;
+
+  const subTabs: { id: SubTab; label: string; icon: string; count: number; color: string }[] = [
+    { id: 'overview',       label: 'Overview',       icon: '⚡', count: 0,                    color: 'text-white/60' },
+    { id: 'registrations',  label: 'Registrations',  icon: '🎟️', count: registrations.length,  color: 'text-emerald-400' },
+    { id: 'applications',   label: 'Applications',   icon: '💼', count: applications.length,   color: 'text-blue-400' },
+    { id: 'bookmarks',      label: 'Saved Items',    icon: '🔖', count: bookmarkList.length,   color: 'text-amber-400' },
+    { id: 'cta',            label: 'Activity Log',   icon: '📊', count: totalCta,              color: 'text-violet-400' },
   ];
 
+  const fmt = (ms: number) => new Date(ms).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  const fmtRel = (ms: number) => {
+    const d = Math.floor((Date.now() - ms) / 86400000);
+    if (d === 0) return 'Today';
+    if (d === 1) return 'Yesterday';
+    if (d < 7) return `${d}d ago`;
+    if (d < 30) return `${Math.floor(d / 7)}w ago`;
+    return fmt(ms);
+  };
+
   return (
-    <div className="rounded-[20px] border border-white/[0.08] bg-white/[0.02] overflow-hidden">
-      {/* header */}
-      <div className="border-b border-white/[0.06] bg-gradient-to-r from-white/[0.04] to-transparent px-5 py-4">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-gradient-to-br from-violet-500/20 to-indigo-500/20 border border-white/[0.08]">
-            <TrendingUp className="h-4 w-4 text-violet-400" />
-          </div>
-          <div>
-            <p className="text-[13.5px] font-bold text-white/80">My Published Engagement</p>
-            <p className="text-[10.5px] text-white/30">Track your registrations, applications & interactions</p>
-          </div>
+    <div className="rounded-[22px] border border-white/[0.07] overflow-hidden" style={{ background: 'linear-gradient(180deg,rgba(139,92,246,0.04) 0%,rgba(0,0,0,0) 60%)' }}>
+
+      {/* ── Panel header ── */}
+      <div className="flex items-center gap-3.5 px-5 py-4 border-b border-white/[0.06]">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px]" style={{ background: 'linear-gradient(135deg,rgba(139,92,246,0.25),rgba(99,102,241,0.25))', border: '1px solid rgba(139,92,246,0.25)', boxShadow: '0 4px 16px rgba(139,92,246,0.12)' }}>
+          <TrendingUp className="h-4.5 w-4.5 text-violet-400" />
         </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[14px] font-black text-white/90" style={{ letterSpacing: '-0.01em' }}>My Engagement Tracker</p>
+          <p className="text-[11px] text-white/30 mt-0.5">Registrations · Applications · Saved items · Activity</p>
+        </div>
+        <a href="/published" target="_blank" rel="noopener noreferrer"
+          className="hidden sm:flex items-center gap-1.5 h-7 px-3 rounded-[9px] text-[11px] font-semibold transition hover:bg-white/[0.08]"
+          style={{ border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.35)' }}>
+          <ExternalLink className="h-3 w-3" /> Published Feed
+        </a>
       </div>
 
-      {/* sub-tabs */}
-      <div className="flex gap-1 border-b border-white/[0.06] px-4 pt-3 pb-0 overflow-x-auto [scrollbar-width:none]">
+      {/* ── Sub-tabs ── */}
+      <div className="flex overflow-x-auto [scrollbar-width:none] border-b border-white/[0.05]">
         {subTabs.map(t => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setSubTab(t.id)}
-            className={`flex shrink-0 items-center gap-1.5 rounded-t-xl px-3.5 py-2 text-[11.5px] font-semibold transition border-b-2 ${
-              subTab === t.id
-                ? 'border-white/60 text-white bg-white/[0.05]'
-                : 'border-transparent text-white/35 hover:text-white/60'
-            }`}
-          >
-            <span>{t.emoji}</span> {t.label}
-            {t.count > 0 && <span className={`rounded-full px-1.5 py-0.5 text-[9.5px] font-bold tabular-nums ${subTab === t.id ? 'bg-white/20 text-white/70' : 'bg-white/[0.08] text-white/30'}`}>{t.count}</span>}
+          <button key={t.id} type="button" onClick={() => setSubTab(t.id)}
+            className={`relative flex shrink-0 items-center gap-1.5 px-4 py-2.5 text-[11.5px] font-semibold whitespace-nowrap transition-colors ${
+              subTab === t.id ? 'text-white' : 'text-white/32 hover:text-white/60'
+            }`}>
+            <span className="text-[13px]">{t.icon}</span>
+            <span>{t.label}</span>
+            {t.count > 0 && (
+              <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold tabular-nums ${
+                subTab === t.id ? 'bg-white/12 text-white/60' : 'bg-white/[0.06] text-white/25'
+              }`}>{t.count}</span>
+            )}
+            {subTab === t.id && <span className="absolute bottom-0 left-2 right-2 h-[2px] rounded-full bg-violet-400" />}
           </button>
         ))}
       </div>
 
+      {/* ── Content ── */}
       <div className="p-4">
-        {/* Registrations tab */}
+
+        {/* ═══ OVERVIEW ═══ */}
+        {subTab === 'overview' && (
+          <div className="space-y-4">
+            {/* Stat cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {[
+                { label: 'Registrations', value: registrations.length, icon: '🎟️', sub: `${registrations.filter(r => r.registeredAt > Date.now() - 30*86400000).length} this month`, accent: '#10b981', onClick: () => setSubTab('registrations') },
+                { label: 'Applications', value: applications.length, icon: '💼', sub: hirings > 0 ? `${hirings} hired!` : shortlisted > 0 ? `${shortlisted} shortlisted` : 'Track status', accent: '#3b82f6', onClick: () => setSubTab('applications') },
+                { label: 'Saved Items', value: bookmarkList.length, icon: '🔖', sub: 'Bookmarked posts', accent: '#f59e0b', onClick: () => setSubTab('bookmarks') },
+                { label: 'CTA Actions', value: totalCta, icon: '📊', sub: `${Object.keys(ctaData).length} categories`, accent: '#8b5cf6', onClick: () => setSubTab('cta') },
+              ].map(s => (
+                <button key={s.label} type="button" onClick={s.onClick}
+                  className="text-left rounded-[16px] border border-white/[0.06] bg-white/[0.02] p-4 hover:bg-white/[0.04] transition group">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[18px]">{s.icon}</span>
+                    <ExternalLink className="h-3 w-3 text-white/15 group-hover:text-white/40 transition" />
+                  </div>
+                  <p className="text-[24px] font-black tabular-nums text-white/85" style={{ letterSpacing: '-0.03em' }}>{s.value}</p>
+                  <p className="text-[11px] font-semibold text-white/40 mt-0.5">{s.label}</p>
+                  <p className="text-[10px] text-white/22 mt-0.5">{s.sub}</p>
+                  <div className="mt-3 h-0.5 rounded-full" style={{ background: `${s.accent}30` }}>
+                    <div className="h-full rounded-full transition-all" style={{ background: s.accent, width: s.value > 0 ? '100%' : '0%' }} />
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            {/* Application pipeline */}
+            {applications.length > 0 && (
+              <div className="rounded-[16px] border border-white/[0.06] bg-white/[0.02] p-4">
+                <p className="text-[11px] font-black uppercase tracking-[0.14em] text-white/30 mb-3">Application Pipeline</p>
+                <div className="flex items-center gap-1 mb-2">
+                  {APP_STATUS_ORDER.filter(s => s !== 'rejected').map((s, i) => {
+                    const count = applications.filter(a => (appStatuses[a.itemId] || 'applied') === s).length;
+                    const pct = applications.length > 0 ? (count / applications.length) * 100 : 0;
+                    const meta = STATUS_META[s];
+                    return (
+                      <div key={s} className="relative flex-1 group/bar" title={`${meta.label}: ${count}`}>
+                        <div className="h-6 rounded-[6px] flex items-center justify-center text-[9px] font-bold tabular-nums transition-all"
+                          style={{ background: count > 0 ? meta.pillBg : 'rgba(255,255,255,0.03)', color: count > 0 ? meta.pillText : 'rgba(255,255,255,0.15)', border: `1px solid ${count > 0 ? meta.pillText + '25' : 'rgba(255,255,255,0.05)'}` }}>
+                          {count > 0 ? count : '—'}
+                        </div>
+                        <p className="text-center text-[8.5px] text-white/20 mt-1 font-semibold">{meta.label.replace('! 🎉','')}</p>
+                      </div>
+                    );
+                  })}
+                  <div className="relative flex-1">
+                    {(() => { const count = applications.filter(a => (appStatuses[a.itemId] || 'applied') === 'rejected').length; return (
+                      <div>
+                        <div className="h-6 rounded-[6px] flex items-center justify-center text-[9px] font-bold tabular-nums"
+                          style={{ background: count > 0 ? 'rgba(244,63,94,0.10)' : 'rgba(255,255,255,0.03)', color: count > 0 ? '#fb7185' : 'rgba(255,255,255,0.15)', border: `1px solid ${count > 0 ? 'rgba(251,113,133,0.2)' : 'rgba(255,255,255,0.05)'}` }}>
+                          {count > 0 ? count : '—'}
+                        </div>
+                        <p className="text-center text-[8.5px] text-white/20 mt-1 font-semibold">Not Sel.</p>
+                      </div>
+                    ); })()}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Recent activity list */}
+            {registrations.length === 0 && applications.length === 0 && bookmarkList.length === 0 && totalCta === 0 && (
+              <div className="py-10 text-center">
+                <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-white/[0.03]">
+                  <TrendingUp className="h-6 w-6 text-white/15" />
+                </div>
+                <p className="text-[13px] font-semibold text-white/25">No activity yet</p>
+                <p className="text-[11px] text-white/15 mt-1.5 max-w-[220px] mx-auto leading-relaxed">
+                  Visit the Published Feed to register for events, apply to jobs, and interact with content — it all tracks here.
+                </p>
+                <a href="/published" className="mt-4 inline-flex items-center gap-1.5 h-8 px-4 rounded-[10px] text-[11.5px] font-semibold text-white/50 hover:text-white/80 transition border border-white/[0.08] bg-white/[0.04]">
+                  Go to Published Feed <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+            )}
+
+            {/* Recent items quick list */}
+            {(registrations.length > 0 || applications.length > 0) && (
+              <div className="space-y-1.5">
+                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/25 px-1">Recent</p>
+                {[
+                  ...registrations.slice(0, 3).map(r => ({ type: 'reg' as const, title: r.title, cat: r.category, ms: r.registeredAt, id: r.itemId })),
+                  ...applications.slice(0, 3).map(a => ({ type: 'app' as const, title: a.title, cat: 'job', ms: a.appliedAt, id: a.itemId })),
+                ].sort((a,b) => b.ms - a.ms).slice(0, 5).map((item, i) => (
+                  <div key={i} className="flex items-center gap-3 rounded-[12px] border border-white/[0.04] bg-white/[0.015] px-3.5 py-2.5">
+                    <span className="text-[15px] shrink-0">{CAT_ICON[item.cat] || '📄'}</span>
+                    <p className="flex-1 min-w-0 text-[12px] font-semibold text-white/65 truncate">{item.title}</p>
+                    <span className={`shrink-0 text-[9.5px] font-bold rounded-full px-2 py-0.5 ${item.type === 'reg' ? 'text-emerald-400 bg-emerald-500/10' : 'text-blue-400 bg-blue-500/10'}`}>
+                      {item.type === 'reg' ? 'Registered' : 'Applied'}
+                    </span>
+                    <span className="shrink-0 text-[9.5px] text-white/20 tabular-nums">{fmtRel(item.ms)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ═══ REGISTRATIONS ═══ */}
         {subTab === 'registrations' && (
           registrations.length === 0 ? (
-            <div className="py-8 text-center">
-              <span className="text-3xl">🎟️</span>
-              <p className="mt-2 text-[12px] text-white/30">No registrations yet.</p>
-              <p className="text-[11px] text-white/20 mt-1">Register for events or hackathons from the Published page.</p>
+            <div className="py-12 text-center">
+              <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-white/[0.03]"><span className="text-3xl">🎟️</span></div>
+              <p className="text-[14px] font-semibold text-white/30">No registrations yet</p>
+              <p className="text-[11px] text-white/18 mt-1.5">Register for events or hackathons from the Published page.</p>
+              <a href="/published" className="mt-4 inline-flex items-center gap-1.5 h-8 px-4 rounded-[10px] text-[11.5px] font-semibold text-white/50 hover:text-white/80 transition border border-white/[0.08] bg-white/[0.04]">
+                Browse Published Feed <ExternalLink className="h-3 w-3" />
+              </a>
             </div>
           ) : (
             <div className="space-y-2">
-              {registrations.slice(0, 20).map((r, i) => (
-                <div key={i} className="flex items-center gap-3 rounded-[14px] border border-white/[0.05] bg-white/[0.02] px-3.5 py-3">
-                  <span className="text-[18px]">{r.category === 'hackathon' ? '💻' : '🎟️'}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-semibold text-white/70 truncate">{r.title}</p>
-                    <p className="text-[10px] text-white/25 mt-0.5">{new Date(r.registeredAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} · {r.category}</p>
-                  </div>
-                  <span className="shrink-0 rounded-lg bg-emerald-500/10 px-2 py-0.5 text-[9.5px] font-bold text-emerald-400">Registered</span>
-                </div>
-              ))}
-            </div>
-          )
-        )}
-
-        {/* Applications tab */}
-        {subTab === 'applications' && (
-          applications.length === 0 ? (
-            <div className="py-8 text-center">
-              <span className="text-3xl">💼</span>
-              <p className="mt-2 text-[12px] text-white/30">No job applications tracked yet.</p>
-              <p className="text-[11px] text-white/20 mt-1">Apply to jobs from the Published page to track them here.</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {applications.slice(0, 20).map((a, i) => (
-                <div key={i} className="flex items-center gap-3 rounded-[14px] border border-white/[0.05] bg-white/[0.02] px-3.5 py-3">
-                  <span className="text-[18px]">💼</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-semibold text-white/70 truncate">{a.title}</p>
-                    <p className="text-[10px] text-white/25 mt-0.5">{new Date(a.appliedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
-                  </div>
-                  {a.url && (
-                    <a href={a.url} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded-lg bg-white/[0.06] border border-white/[0.08] px-2 py-0.5 text-[9.5px] font-semibold text-white/40 hover:text-white/70 transition">
-                      View
-                    </a>
-                  )}
-                  <span className="shrink-0 rounded-lg bg-blue-500/10 px-2 py-0.5 text-[9.5px] font-bold text-blue-400">Applied</span>
-                </div>
-              ))}
-            </div>
-          )
-        )}
-
-        {/* CTA Activity tab */}
-        {subTab === 'cta' && (
-          totalCta === 0 ? (
-            <div className="py-8 text-center">
-              <span className="text-3xl">📊</span>
-              <p className="mt-2 text-[12px] text-white/30">No CTA activity yet.</p>
-              <p className="text-[11px] text-white/20 mt-1">Interact with content on the Published page to see stats.</p>
-            </div>
-          ) : (
-            <div className="space-y-3 max-h-64 overflow-y-auto [scrollbar-width:none]">
-              {Object.entries(ctaData).filter(([, v]) => Object.values(v).some(n => n > 0)).map(([cat, actions]) => {
-                const catTotal = Object.values(actions).reduce((a, b) => a + b, 0);
+              {/* Column header */}
+              <div className="hidden sm:grid grid-cols-[1fr_90px_90px_80px] gap-3 px-4 pb-1">
+                {['Event / Hackathon', 'Category', 'Date', 'Status'].map(h => (
+                  <span key={h} className="text-[9px] font-black uppercase tracking-[0.16em] text-white/22">{h}</span>
+                ))}
+              </div>
+              {registrations.slice().reverse().map((r, i) => {
+                const isUpcoming = r.registeredAt > Date.now();
+                const catIcon = CAT_ICON[r.category] || '🎟️';
                 return (
-                  <div key={cat} className="rounded-[14px] border border-white/[0.05] bg-white/[0.02] px-3.5 py-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[11px] font-bold text-white/50 capitalize">{cat}</span>
-                      <span className="text-[9.5px] text-white/25 tabular-nums">{catTotal} actions</span>
+                  <div key={i} className="group flex items-center gap-3 rounded-[14px] border border-white/[0.05] bg-white/[0.02] px-4 py-3 hover:bg-white/[0.04] transition-colors">
+                    {/* serial */}
+                    <span className="shrink-0 w-5 text-[10px] font-bold tabular-nums text-white/20">{i + 1}</span>
+                    {/* icon */}
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-white/[0.05] text-[15px]">{catIcon}</div>
+                    {/* title */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[12.5px] font-semibold text-white/80 truncate">{r.title}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[10px] capitalize text-white/28">{r.category}</span>
+                        <span className="text-white/12">·</span>
+                        <span className="text-[10px] text-white/28">{fmt(r.registeredAt)}</span>
+                      </div>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      {Object.entries(actions).sort((a, b) => b[1] - a[1]).map(([action, count]) => (
-                        <span key={action} className="flex items-center gap-1 rounded-lg bg-white/[0.06] px-2 py-0.5 text-[9.5px] font-semibold text-white/40">
-                          <span className="tabular-nums font-bold text-white/60">{count}</span> {action.replace(/_/g, ' ')}
-                        </span>
-                      ))}
-                    </div>
+                    {/* status */}
+                    {isUpcoming
+                      ? <span className="shrink-0 rounded-[8px] px-2.5 py-1 text-[9.5px] font-bold" style={{ background: 'rgba(245,158,11,0.12)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.2)' }}>⏰ Upcoming</span>
+                      : <span className="shrink-0 rounded-[8px] px-2.5 py-1 text-[9.5px] font-bold" style={{ background: 'rgba(16,185,129,0.10)', color: '#34d399', border: '1px solid rgba(52,211,153,0.2)' }}>✓ Registered</span>
+                    }
+                    {/* remove */}
+                    <button type="button" onClick={() => removeRegistration(r.itemId)}
+                      className="shrink-0 opacity-0 group-hover:opacity-100 flex h-6 w-6 items-center justify-center rounded-full border border-white/[0.08] text-white/25 hover:text-rose-400 hover:border-rose-500/30 transition-all">
+                      <X className="h-3 w-3" />
+                    </button>
                   </div>
                 );
               })}
             </div>
           )
         )}
+
+        {/* ═══ APPLICATIONS ═══ */}
+        {subTab === 'applications' && (
+          applications.length === 0 ? (
+            <div className="py-12 text-center">
+              <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-white/[0.03]"><span className="text-3xl">💼</span></div>
+              <p className="text-[14px] font-semibold text-white/30">No applications tracked yet</p>
+              <p className="text-[11px] text-white/18 mt-1.5">Apply to jobs from the Published page to track them here.</p>
+              <a href="/published" className="mt-4 inline-flex items-center gap-1.5 h-8 px-4 rounded-[10px] text-[11.5px] font-semibold text-white/50 hover:text-white/80 transition border border-white/[0.08] bg-white/[0.04]">
+                Browse Jobs <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {applications.slice().reverse().map((a, i) => {
+                const statusKey: AppStatus = (appStatuses[a.itemId] || 'applied') as AppStatus;
+                const meta = STATUS_META[statusKey] || STATUS_META.applied;
+                const isExpanded = expandedApp === a.itemId;
+                const note = appNotes[a.itemId] || '';
+                return (
+                  <div key={i} className="rounded-[16px] border border-white/[0.05] bg-white/[0.02] overflow-hidden transition-colors hover:border-white/[0.08]">
+                    {/* Main row */}
+                    <div className="flex items-center gap-3 px-4 py-3">
+                      <span className="shrink-0 w-5 text-[10px] font-bold tabular-nums text-white/20">{i + 1}</span>
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-white/[0.05] text-[15px]">💼</div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[12.5px] font-semibold text-white/80 truncate">{a.title}</p>
+                        <p className="text-[10px] text-white/28 mt-0.5">Applied {fmtRel(a.appliedAt)} · {fmt(a.appliedAt)}</p>
+                      </div>
+                      {/* Status select */}
+                      <select
+                        value={statusKey}
+                        onChange={e => updateAppStatus(a.itemId, e.target.value as AppStatus)}
+                        className="shrink-0 rounded-[9px] border px-2.5 py-1.5 text-[10.5px] font-bold outline-none cursor-pointer transition-colors appearance-none"
+                        style={{ background: meta.pillBg, color: meta.pillText, border: `1px solid ${meta.pillText}22` }}
+                      >
+                        <option value="applied">📨 Applied</option>
+                        <option value="pending">⏳ Under Review</option>
+                        <option value="shortlisted">⭐ Shortlisted</option>
+                        <option value="hired">🎉 Hired!</option>
+                        <option value="rejected">✕ Not Selected</option>
+                      </select>
+                      {/* Actions */}
+                      <div className="flex items-center gap-1 shrink-0">
+                        {a.url && (
+                          <a href={a.url} target="_blank" rel="noopener noreferrer"
+                            className="flex h-7 w-7 items-center justify-center rounded-[8px] border border-white/[0.07] text-white/25 hover:text-white/70 hover:bg-white/[0.06] transition">
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        )}
+                        <button type="button" onClick={() => setExpandedApp(isExpanded ? null : a.itemId)}
+                          className={`flex h-7 w-7 items-center justify-center rounded-[8px] border border-white/[0.07] transition ${isExpanded ? 'bg-white/[0.08] text-white/60' : 'text-white/25 hover:text-white/60 hover:bg-white/[0.05]'}`}>
+                          <svg className={`h-3 w-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <button type="button" onClick={() => removeApplication(a.itemId)}
+                          className="flex h-7 w-7 items-center justify-center rounded-[8px] border border-white/[0.07] text-white/20 hover:text-rose-400 hover:border-rose-500/30 hover:bg-rose-500/[0.06] transition">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Progress track */}
+                    <div className="px-4 pb-3">
+                      <div className="flex items-center gap-1">
+                        {APP_STATUS_ORDER.filter(s => s !== 'rejected').map((s, idx) => {
+                          const order = APP_STATUS_ORDER.filter(s => s !== 'rejected');
+                          const curIdx = order.indexOf(statusKey as typeof order[number]);
+                          const stepIdx = order.indexOf(s);
+                          const isActive = s === statusKey;
+                          const isPast = statusKey !== 'rejected' && stepIdx < curIdx;
+                          return (
+                            <React.Fragment key={s}>
+                              <div className={`flex items-center justify-center h-5 w-5 rounded-full text-[8px] font-bold shrink-0 transition-all ${
+                                isActive ? '' : isPast ? 'bg-white/20 text-white/50' : 'bg-white/[0.05] text-white/20'
+                              }`} style={isActive ? { background: meta.pillBg, color: meta.pillText, boxShadow: `0 0 8px ${meta.pillText}30` } : {}}>
+                                {isPast ? '✓' : idx + 1}
+                              </div>
+                              {idx < order.length - 1 && (
+                                <div className="flex-1 h-[2px] rounded-full" style={{ background: isPast || isActive ? `${meta.pillText}30` : 'rgba(255,255,255,0.05)' }} />
+                              )}
+                            </React.Fragment>
+                          );
+                        })}
+                        {statusKey === 'rejected' && (
+                          <div className="ml-2 text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(244,63,94,0.10)', color: '#fb7185' }}>Not Selected</div>
+                        )}
+                      </div>
+                      <div className="flex gap-1 mt-1">
+                        {APP_STATUS_ORDER.filter(s => s !== 'rejected').map(s => (
+                          <span key={s} className="flex-1 text-center text-[8px] text-white/18 font-semibold">{STATUS_META[s].label.replace('! 🎉','')}</span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Expanded: notes */}
+                    {isExpanded && (
+                      <div className="border-t border-white/[0.05] px-4 py-3">
+                        <label className="block text-[9px] font-black uppercase tracking-[0.16em] text-white/25 mb-1.5">Notes</label>
+                        <textarea
+                          value={note}
+                          onChange={e => updateAppNote(a.itemId, e.target.value)}
+                          rows={2}
+                          placeholder="Add your notes, interview dates, contacts…"
+                          className="w-full rounded-[10px] border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-[12px] text-white/70 placeholder:text-white/18 outline-none focus:border-violet-500/30 focus:ring-1 focus:ring-violet-500/[0.10] transition resize-none"
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )
+        )}
+
+        {/* ═══ BOOKMARKS ═══ */}
+        {subTab === 'bookmarks' && (
+          bookmarkList.length === 0 ? (
+            <div className="py-12 text-center">
+              <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-white/[0.03]"><span className="text-3xl">🔖</span></div>
+              <p className="text-[14px] font-semibold text-white/30">No saved items yet</p>
+              <p className="text-[11px] text-white/18 mt-1.5">Bookmark posts on the Published page to save them here.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="hidden sm:grid grid-cols-[1fr_100px_90px] gap-3 px-4 pb-1">
+                {['Saved Item', 'Category', 'Saved On'].map(h => (
+                  <span key={h} className="text-[9px] font-black uppercase tracking-[0.16em] text-white/22">{h}</span>
+                ))}
+              </div>
+              {bookmarkList.map(([id, bm], i) => (
+                <div key={id} className="group flex items-center gap-3 rounded-[14px] border border-white/[0.05] bg-white/[0.02] px-4 py-3 hover:bg-white/[0.04] transition-colors">
+                  <span className="shrink-0 w-5 text-[10px] font-bold tabular-nums text-white/20">{i + 1}</span>
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-white/[0.05] text-[15px]">{CAT_ICON[bm.category] || '📄'}</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[12px] font-semibold text-white/60 truncate font-mono">{id.slice(0, 8)}…</p>
+                    <p className="text-[10px] text-white/25 mt-0.5 capitalize">{bm.category} · {fmt(bm.savedAt)}</p>
+                  </div>
+                  <span className="shrink-0 text-[9.5px] font-bold rounded-full px-2.5 py-1 capitalize" style={{ background: 'rgba(245,158,11,0.10)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.18)' }}>
+                    {bm.category}
+                  </span>
+                  <a href={`/published/${id}`} target="_blank" rel="noopener noreferrer"
+                    className="shrink-0 flex h-7 w-7 items-center justify-center rounded-[8px] border border-white/[0.07] text-white/25 hover:text-white/70 hover:bg-white/[0.06] transition">
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+              ))}
+            </div>
+          )
+        )}
+
+        {/* ═══ CTA ACTIVITY ═══ */}
+        {subTab === 'cta' && (
+          totalCta === 0 ? (
+            <div className="py-12 text-center">
+              <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-white/[0.03]"><span className="text-3xl">📊</span></div>
+              <p className="text-[14px] font-semibold text-white/30">No activity logged yet</p>
+              <p className="text-[11px] text-white/18 mt-1.5">Interact with posts on the Published Feed — likes, shares, views — all tracked here.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Summary */}
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { label: 'Total Actions', value: totalCta, color: '#8b5cf6' },
+                  { label: 'Categories', value: Object.keys(ctaData).length, color: '#6366f1' },
+                  { label: 'Action Types', value: Object.values(ctaData).flatMap(Object.keys).filter((v,i,a)=>a.indexOf(v)===i).length, color: '#a78bfa' },
+                ].map(s => (
+                  <div key={s.label} className="rounded-[14px] border border-white/[0.06] bg-white/[0.02] px-3.5 py-3">
+                    <p className="text-[22px] font-black tabular-nums" style={{ color: s.color, letterSpacing: '-0.03em' }}>{s.value}</p>
+                    <p className="text-[10px] font-semibold text-white/30 mt-0.5">{s.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Per-category breakdown */}
+              <div className="space-y-2">
+                {Object.entries(ctaData)
+                  .filter(([, v]) => Object.values(v).some(n => n > 0))
+                  .sort((a, b) => Object.values(b[1]).reduce((x,y)=>x+y,0) - Object.values(a[1]).reduce((x,y)=>x+y,0))
+                  .map(([cat, actions]) => {
+                    const catTotal = Object.values(actions).reduce((a, b) => a + b, 0);
+                    const catTextClass = CAT_TEXT[cat] || 'text-white/50';
+                    const maxCount = Math.max(...Object.values(actions));
+                    return (
+                      <div key={cat} className="rounded-[16px] border border-white/[0.05] bg-white/[0.02] px-4 py-3.5">
+                        {/* Category header */}
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[16px]">{CAT_ICON[cat] || '📄'}</span>
+                            <span className={`text-[12.5px] font-bold capitalize ${catTextClass}`}>{cat}</span>
+                          </div>
+                          <span className="text-[10px] tabular-nums text-white/30 font-semibold">{catTotal} total</span>
+                        </div>
+                        {/* Action rows */}
+                        <div className="space-y-2">
+                          {Object.entries(actions)
+                            .sort((a, b) => b[1] - a[1])
+                            .map(([action, count]) => (
+                              <div key={action} className="flex items-center gap-2.5">
+                                <span className="w-3 shrink-0 text-[10px] font-bold tabular-nums text-white/35">{count}</span>
+                                <div className="relative flex-1 h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
+                                  <div className="absolute inset-y-0 left-0 rounded-full transition-all" style={{ width: `${(count / maxCount) * 100}%`, background: CAT_COLORS[cat] ? undefined : 'rgba(139,92,246,0.5)', backgroundImage: CAT_COLORS[cat] ? undefined : undefined, backgroundColor: 'rgba(139,92,246,0.45)' }} />
+                                </div>
+                                <span className="shrink-0 text-[10.5px] text-white/35 truncate max-w-[150px] text-right">{CTA_LABELS[action] || action.replace(/_/g, ' ')}</span>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )
+        )}
+
       </div>
     </div>
   );
@@ -551,10 +923,21 @@ function StatItem({
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-start gap-0.5 ${onClick ? 'cursor-pointer hover:opacity-80 transition-opacity' : 'cursor-default'}`}
+      className={`group flex flex-col items-center shrink-0 px-3 sm:px-4 first:pl-0 last:pr-0 py-1 ${onClick ? 'cursor-pointer' : 'cursor-default'}`}
+      style={{ borderRight: '1px solid rgba(255,255,255,0.055)' }}
     >
-      <span className="text-xl font-bold tracking-tight text-white">{value.toLocaleString()}</span>
-      <span className="text-xs text-white/40 uppercase tracking-[0.12em]">{label}</span>
+      <span
+        className="tabular-nums font-bold tracking-tight leading-none text-white transition-colors"
+        style={{ fontSize: 'clamp(15px,3.8vw,20px)' }}
+      >
+        {value.toLocaleString()}
+      </span>
+      <span
+        className="mt-[3px] font-semibold uppercase whitespace-nowrap text-white/30 transition-colors group-hover:text-white/50"
+        style={{ fontSize: 'clamp(8px,2vw,10px)', letterSpacing: '0.10em' }}
+      >
+        {label}
+      </span>
     </button>
   );
 }
@@ -562,7 +945,7 @@ function StatItem({
 /* ─── skills chip ────────────────────────────────────────────────────── */
 function SkillChip({ label }: { label: string }) {
   return (
-    <span className="px-3 py-1 rounded-full border border-white/[0.10] bg-white/[0.05] text-sm text-white/70">
+    <span className="px-3 py-1.5 rounded-full border border-white/[0.09] bg-white/[0.04] text-[12.5px] font-medium text-white/65 hover:border-white/[0.15] hover:bg-white/[0.07] transition-colors">
       {label}
     </span>
   );
@@ -594,8 +977,8 @@ function DocrudGoBadge({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
 /* ─── section card ───────────────────────────────────────────────────── */
 function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-[20px] border border-white/[0.06] bg-white/[0.03] p-6">
-      <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-white/40 mb-4">{title}</h3>
+    <div className="rounded-[22px] border border-white/[0.07] bg-white/[0.025] p-5 md:p-6">
+      <h3 className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-white/30 mb-5">{title}</h3>
       {children}
     </div>
   );
@@ -1321,16 +1704,19 @@ function profileStrength(profile: UserProfileData): number {
 }
 
 /* ─── main page ──────────────────────────────────────────────────────── */
-type TabId = 'about' | 'skills' | 'gigs' | 'activity' | 'insights' | 'billing' | 'connections';
+type TabId = 'published' | 'about' | 'skills' | 'gigs' | 'services' | 'activity' | 'insights' | 'billing' | 'connections' | 'settings';
 
 const TABS: { id: TabId; label: string }[] = [
+  { id: 'published', label: 'Published' },
   { id: 'about', label: 'About' },
   { id: 'skills', label: 'Work & Skills' },
   { id: 'gigs', label: 'Gigs' },
+  { id: 'services', label: 'Services' },
   { id: 'activity', label: 'Activity' },
   { id: 'connections', label: 'Connections' },
   { id: 'insights', label: 'Insights' },
   { id: 'billing', label: 'Billing' },
+  { id: 'settings', label: 'Settings' },
 ];
 
 export default function UserProfilePage() {
@@ -1358,12 +1744,230 @@ export default function UserProfilePage() {
   const [connectionsFollowingIds, setConnectionsFollowingIds] = useState<Set<string>>(new Set());
   interface SharedLinkEntry { id: string; templateName: string; uploadedPdfFileName?: string; documentSourceType?: string; shareId?: string; sharePassword?: string; shareAccessPolicy?: string; shareExpiresAt?: string; openCount?: number; recipientSignedAt?: string; generatedAt: string; }
   const [sharedLinks, setSharedLinks] = useState<SharedLinkEntry[]>([]);
+
+  /* ── Account management (deactivate / delete) ─────────────────── */
+  type AccountModalAction = 'deactivate' | 'delete';
+  type AccountModalStep   = 'choose' | 'duration' | 'otp' | 'confirming' | 'done';
+  const [accountModal, setAccountModal]         = useState(false);
+  const [acctAction, setAcctAction]             = useState<AccountModalAction>('deactivate');
+  const [acctStep, setAcctStep]                 = useState<AccountModalStep>('choose');
+  const [acctDuration, setAcctDuration]         = useState<number | null>(30); // days, null = indefinite
+  const [acctCustomDays, setAcctCustomDays]     = useState('');
+  const [acctSessionId, setAcctSessionId]       = useState('');
+  const [acctOtp, setAcctOtp]                   = useState('');
+  const [acctOtpExpiry, setAcctOtpExpiry]       = useState('');
+  const [acctSending, setAcctSending]           = useState(false);
+  const [acctError, setAcctError]               = useState('');
+  const [acctResendCooldown, setAcctResendCooldown] = useState(0);
+
+  // Cooldown timer
+  useEffect(() => {
+    if (acctResendCooldown <= 0) return;
+    const id = setInterval(() => setAcctResendCooldown((c) => Math.max(0, c - 1)), 1000);
+    return () => clearInterval(id);
+  }, [acctResendCooldown]);
+
+  function openAccountModal(action: AccountModalAction) {
+    setAcctAction(action);
+    setAcctStep('choose');
+    setAcctDuration(30);
+    setAcctCustomDays('');
+    setAcctSessionId('');
+    setAcctOtp('');
+    setAcctOtpExpiry('');
+    setAcctError('');
+    setAcctSending(false);
+    setAcctResendCooldown(0);
+    setAccountModal(true);
+  }
+
+  async function acctSendOtp() {
+    setAcctSending(true);
+    setAcctError('');
+    try {
+      const res  = await fetch('/api/account/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: acctAction }),
+      });
+      const data = await res.json() as { sessionId?: string; expiresAt?: string; error?: string };
+      if (!res.ok || data.error) throw new Error(data.error || 'Failed to send OTP');
+      setAcctSessionId(data.sessionId!);
+      setAcctOtpExpiry(data.expiresAt!);
+      setAcctStep('otp');
+      setAcctResendCooldown(45);
+    } catch (e) {
+      setAcctError(e instanceof Error ? e.message : 'Failed to send OTP');
+    } finally {
+      setAcctSending(false);
+    }
+  }
+
+  async function acctConfirm() {
+    setAcctSending(true);
+    setAcctError('');
+    try {
+      const effectiveDuration = acctAction === 'deactivate'
+        ? (acctDuration ?? (acctCustomDays ? parseInt(acctCustomDays, 10) : null))
+        : null;
+
+      let res: Response;
+      if (acctAction === 'deactivate') {
+        res = await fetch('/api/account/deactivate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId: acctSessionId, otp: acctOtp, durationDays: effectiveDuration }),
+        });
+      } else {
+        res = await fetch('/api/account/delete', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId: acctSessionId, otp: acctOtp }),
+        });
+      }
+      const data = await res.json() as { success?: boolean; error?: string };
+      if (!res.ok || data.error) throw new Error(data.error || 'Action failed');
+      setAcctStep('done');
+      // Sign out after 2.5 s
+      setTimeout(() => void signOut({ callbackUrl: '/login' }), 2500);
+    } catch (e) {
+      setAcctError(e instanceof Error ? e.message : 'Failed. Please try again.');
+    } finally {
+      setAcctSending(false);
+    }
+  }
   const [sharedLinksCopied, setSharedLinksCopied] = useState<string | null>(null);
   const [upraiseCount, setUpraisedCount] = useState(0);
   const [hasUpraised, setHasUpraised] = useState(false);
   const [upraiseLoading, setUpraisedLoading] = useState(false);
 
+  // Services tab state
+  interface ServiceItem {
+    id: string; title: string; tagline: string; description: string; category: string;
+    pricingModel: string; basePrice: number; currency: string;
+    packages?: Array<{ name: string; description: string; price: number; deliveryTime: number; deliveryUnit: string; features: string[] }>;
+    deliveryTime?: number; deliveryUnit?: string; tags: string[];
+    imageUrl?: string; faqs?: Array<{ question: string; answer: string }>;
+    isActive: boolean; featured: boolean; bookingCount: number; rating: number; reviewCount: number; createdAt: string;
+  }
+  interface ServiceBookingItem {
+    id: string; serviceId: string; serviceTitle: string; clientName: string; clientEmail: string;
+    clientPhone?: string; clientMessage: string; packageName?: string; price?: number; currency: string;
+    status: 'pending' | 'confirmed' | 'completed' | 'cancelled'; scheduledDate?: string; createdAt: string;
+  }
+  const [profileServices, setProfileServices] = useState<ServiceItem[]>([]);
+  const [servicesLoading, setServicesLoading] = useState(false);
+  const [serviceBookings, setServiceBookings] = useState<ServiceBookingItem[]>([]);
+  const [bookingsLoading, setBookingsLoading] = useState(false);
+  const [serviceForm, setServiceForm] = useState<Partial<ServiceItem> | null>(null);
+  const [serviceFormSaving, setServiceFormSaving] = useState(false);
+  const [serviceFormError, setServiceFormError] = useState('');
+  const [bookingServiceId, setBookingServiceId] = useState<string | null>(null);
+  const [bookingForm, setBookingForm] = useState({ clientName: '', clientEmail: '', clientPhone: '', clientMessage: '', packageName: '', scheduledDate: '' });
+  const [bookingSubmitting, setBookingSubmitting] = useState(false);
+  const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [bookingError, setBookingError] = useState('');
+  const [servicesSubTab, setServicesSubTab] = useState<'catalogue' | 'bookings' | 'analytics'>('catalogue');
+  const [serviceTagInput, setServiceTagInput] = useState('');
+
+  // Service analytics state
+  interface SvcAnalyticsSummary {
+    serviceId: string; serviceTitle: string;
+    views: number; uniqueViews: number; detailOpens: number; bookClicks: number;
+    bookingsSubmitted: number; bookingsConfirmed: number; bookingsCompleted: number;
+    reviews: number; avgRating: number; estimatedRevenue: number; currency: string;
+    clickThroughRate: number; bookClickRate: number; conversionRate: number; completionRate: number;
+    trend7d: number[];
+  }
+  interface ProviderAnalyticsData {
+    totalViews: number; totalUniqueViews: number; totalBookClicks: number;
+    totalBookings: number; totalCompleted: number; totalRevenue: number;
+    avgRating: number; totalReviews: number; overallConversionRate: number;
+    trend30d: number[]; services: SvcAnalyticsSummary[]; topService: SvcAnalyticsSummary | null;
+    peakHour: number; sourceBreakdown: { profile: number; catalogue: number; direct: number };
+  }
+  const [analyticsData, setAnalyticsData] = useState<ProviderAnalyticsData | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsLastUpdated, setAnalyticsLastUpdated] = useState<Date | null>(null);
+  const [analyticsSecondsAgo, setAnalyticsSecondsAgo] = useState(0);
+  const analyticsIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const analyticsTickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Catalogue editor state
+  interface CatalogueSettingsLocal {
+    headline?: string; subheadline?: string;
+    accentColor?: string; accentColorSecondary?: string;
+    gridColumns?: 2 | 3 | 4;
+    showBio?: boolean; showWhyBook?: boolean; showStats?: boolean;
+    ctaText?: string;
+    catalogueBannerUrl?: string;
+    catalogueAvatarUrl?: string;
+  }
+  const ACCENT_PRESETS_LOCAL = [
+    { label: 'Indigo', a: '#6366f1', b: '#8b5cf6' },
+    { label: 'Violet', a: '#8b5cf6', b: '#a78bfa' },
+    { label: 'Blue', a: '#3b82f6', b: '#60a5fa' },
+    { label: 'Cyan', a: '#06b6d4', b: '#22d3ee' },
+    { label: 'Emerald', a: '#10b981', b: '#34d399' },
+    { label: 'Rose', a: '#f43f5e', b: '#fb7185' },
+    { label: 'Amber', a: '#f59e0b', b: '#fbbf24' },
+    { label: 'Pink', a: '#ec4899', b: '#f472b6' },
+  ];
+  const [showCatalogueEditor, setShowCatalogueEditor] = useState(false);
+  const [catalogueSettings, setCatalogueSettings] = useState<CatalogueSettingsLocal>({});
+  const [catalogueDraft, setCatalogueDraft] = useState<CatalogueSettingsLocal>({});
+  const [catalogueSaving, setCatalogueSaving] = useState(false);
+  const [catalogueSettingsLoaded, setCatalogueSettingsLoaded] = useState(false);
+  const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop');
+  const [previewKey, setPreviewKey] = useState(0);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+
+  // Reviews state
+  interface ServiceReviewItem {
+    id: string; serviceId: string; bookingId: string; reviewerId: string;
+    reviewerName: string; reviewerAvatar?: string;
+    rating: number; headline: string; body: string; testimonial?: string; createdAt: string;
+  }
+  const [serviceReviews, setServiceReviews] = useState<Record<string, ServiceReviewItem[]>>({});
+  const [reviewServiceId, setReviewServiceId] = useState<string | null>(null);
+  const [reviewForm, setReviewForm] = useState({ rating: 5, headline: '', body: '', testimonial: '' });
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewError, setReviewError] = useState('');
+  const [reviewSuccess, setReviewSuccess] = useState(false);
+  // client bookings (to check if current user can review)
+  const [myServiceBookings, setMyServiceBookings] = useState<Array<{ serviceId: string; status: string }>>([]);
+
   // Docrud Go upgrade / referral state (own basic profiles only)
+  const [emailPrefs, setEmailPrefs] = useState<Record<string, boolean>>({});
+  const [emailPrefsSaving, setEmailPrefsSaving] = useState(false);
+
+  // ── Public Face application state ──────────────────────────────────
+  const [showPFForm, setShowPFForm] = useState(false);
+  const [pfApplication, setPfApplication] = useState<{ status: string; category?: string; submittedAt?: string; adminNote?: string } | null | undefined>(undefined);
+  const [pfLoading, setPfLoading] = useState(false);
+
+  // Load Public Face status when settings tab opens
+  useEffect(() => {
+    if (tab !== 'settings' || !data?.isOwnProfile || pfApplication !== undefined) return;
+    setPfLoading(true);
+    fetch('/api/public-face/status')
+      .then(r => r.ok ? r.json() : { application: null })
+      .then((d: { application: typeof pfApplication }) => setPfApplication(d.application))
+      .catch(() => setPfApplication(null))
+      .finally(() => setPfLoading(false));
+  }, [tab, data?.isOwnProfile, pfApplication]);
+
+  // Load email preferences when settings tab opens
+  useEffect(() => {
+    if (tab !== 'settings' || !data?.isOwnProfile) return;
+    fetch('/api/account/email-preferences')
+      .then((r) => r.ok ? r.json() : null)
+      .then((d: { emailPreferences?: Record<string, boolean> } | null) => {
+        if (d?.emailPreferences) setEmailPrefs(d.emailPreferences);
+      })
+      .catch(() => {});
+  }, [tab, data?.isOwnProfile]);
+
   const [goUpgradePhase, setGoUpgradePhase] = useState<'idle' | 'paying' | 'refer'>('idle');
   const [goUpgradeErr, setGoUpgradeErr] = useState('');
   const [refLink, setRefLink] = useState('');
@@ -1374,6 +1978,14 @@ export default function UserProfilePage() {
   const [refSending, setRefSending] = useState(false);
   const [refSentMsg, setRefSentMsg] = useState('');
   const [refSendErr, setRefSendErr] = useState('');
+
+  // Publish modal state
+  const [publishModalOpen, setPublishModalOpen] = useState(false);
+  const [publishForm, setPublishForm] = useState({ title: '', category: 'document', tags: [] as string[], notes: '', tagInput: '' });
+  const [publishFile, setPublishFile] = useState<File | null>(null);
+  const [publishSubmitting, setPublishSubmitting] = useState(false);
+  const [publishError, setPublishError] = useState('');
+  const [publishSuccess, setPublishSuccess] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
@@ -1436,6 +2048,93 @@ export default function UserProfilePage() {
       }
     }).catch(() => {});
   }, [data?.isOwnProfile, userId]);
+
+  // Real-time analytics polling (30s) when analytics sub-tab is active
+  useEffect(() => {
+    const active = tab === 'services' && servicesSubTab === 'analytics' && !!data?.isOwnProfile;
+    if (!active) {
+      if (analyticsIntervalRef.current) { clearInterval(analyticsIntervalRef.current); analyticsIntervalRef.current = null; }
+      if (analyticsTickRef.current) { clearInterval(analyticsTickRef.current); analyticsTickRef.current = null; }
+      return;
+    }
+    const doFetch = (showSpinner = false) => {
+      if (showSpinner) setAnalyticsLoading(true);
+      fetch('/api/services/analytics')
+        .then(r => r.ok ? r.json() : null)
+        .then((d: { analytics?: ProviderAnalyticsData } | null) => {
+          if (d?.analytics) { setAnalyticsData(d.analytics); setAnalyticsLastUpdated(new Date()); setAnalyticsSecondsAgo(0); }
+        })
+        .catch(() => {})
+        .finally(() => { if (showSpinner) setAnalyticsLoading(false); });
+    };
+    doFetch(true);
+    analyticsIntervalRef.current = setInterval(() => doFetch(false), 30000);
+    analyticsTickRef.current = setInterval(() => setAnalyticsSecondsAgo(s => s + 1), 1000);
+    return () => {
+      if (analyticsIntervalRef.current) { clearInterval(analyticsIntervalRef.current); analyticsIntervalRef.current = null; }
+      if (analyticsTickRef.current) { clearInterval(analyticsTickRef.current); analyticsTickRef.current = null; }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, servicesSubTab, data?.isOwnProfile]);
+
+  // Load catalogue settings when editor is opened (once)
+  useEffect(() => {
+    if (!showCatalogueEditor || catalogueSettingsLoaded || !userId) return;
+    fetch(`/api/services/catalogue?userId=${userId}`)
+      .then(r => r.ok ? r.json() : { settings: {} })
+      .then((d: { settings?: CatalogueSettingsLocal }) => {
+        const s = d.settings ?? {};
+        setCatalogueSettings(s);
+        setCatalogueDraft(s);
+        setCatalogueSettingsLoaded(true);
+      }).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showCatalogueEditor, userId]);
+
+  // Load services when services tab is active
+  useEffect(() => {
+    if (tab !== 'services' || !userId) return;
+    setServicesLoading(true);
+    fetch(`/api/services/public?userId=${userId}`)
+      .then(r => r.ok ? r.json() : { services: [] })
+      .then((d: { services?: ServiceItem[] }) => {
+        const svcs = d.services ?? [];
+        setProfileServices(svcs);
+        // Fetch reviews + track profile views for visitors
+        const vid = (() => { try { let v = sessionStorage.getItem('svc_vid'); if (!v) { v = `v_${Date.now()}_${Math.random().toString(36).slice(2,8)}`; sessionStorage.setItem('svc_vid', v); } return v; } catch { return `v_${Date.now()}`; } })();
+        svcs.forEach(svc => {
+          fetch(`/api/services/reviews?serviceId=${svc.id}`)
+            .then(r => r.ok ? r.json() : { reviews: [] })
+            .then((rd: { reviews?: ServiceReviewItem[] }) => {
+              setServiceReviews(prev => ({ ...prev, [svc.id]: rd.reviews ?? [] }));
+            }).catch(() => {});
+          if (!data?.isOwnProfile) {
+            fetch('/api/services/analytics/track', {
+              method: 'POST', headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ serviceId: svc.id, type: 'view', visitorId: vid, source: 'profile' }),
+            }).catch(() => {});
+          }
+        });
+      })
+      .catch(() => {})
+      .finally(() => setServicesLoading(false));
+    // If own profile, also load provider bookings
+    if (data?.isOwnProfile) {
+      setBookingsLoading(true);
+      fetch('/api/services/bookings?role=provider')
+        .then(r => r.ok ? r.json() : { bookings: [] })
+        .then((d: { bookings?: ServiceBookingItem[] }) => setServiceBookings(d.bookings ?? []))
+        .catch(() => {})
+        .finally(() => setBookingsLoading(false));
+    } else if (session) {
+      // Load client's own bookings to know which services they can review
+      fetch('/api/services/bookings?role=client')
+        .then(r => r.ok ? r.json() : { bookings: [] })
+        .then((d: { bookings?: Array<{ serviceId: string; status: string }> }) => setMyServiceBookings(d.bookings ?? []))
+        .catch(() => {});
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, userId, data?.isOwnProfile]);
 
   async function handleFollow() {
     if (!session) { router.push('/login'); return; }
@@ -1540,10 +2239,15 @@ export default function UserProfilePage() {
   }
 
   const { user, profile, stats, isOwnProfile, recentGigs } = data;
-  const coverIsImage = !!profile.coverGradient?.startsWith('data:');
+  // bannerUrl = permanent uploaded image (from onboarding or profile upload API)
+  // coverGradient = legacy: either a CSS gradient string or a data: URL (from profile editor)
+  // Ignore stale blob: URLs (they only live in the uploading browser tab)
+  const safeBannerUrl = profile.bannerUrl && !profile.bannerUrl.startsWith('blob:') ? profile.bannerUrl : null;
+  const coverImageUrl = safeBannerUrl || (profile.coverGradient?.startsWith('data:') ? profile.coverGradient : null);
+  const coverIsImage = !!coverImageUrl;
   const coverBgStyle: React.CSSProperties = coverIsImage
     ? {
-        backgroundImage: `url(${profile.coverGradient})`,
+        backgroundImage: `url(${coverImageUrl})`,
         backgroundSize: 'cover',
         backgroundPosition: profile.coverPosition ?? '50% 50%',
       }
@@ -1559,6 +2263,20 @@ export default function UserProfilePage() {
     youtube: <Youtube className="h-4 w-4" />,
   };
 
+  async function toggleEmailPref(key: string, value: boolean) {
+    setEmailPrefs((prev) => ({ ...prev, [key]: value }));
+    setEmailPrefsSaving(true);
+    try {
+      await fetch('/api/account/email-preferences', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [key]: value }),
+      });
+    } catch { /* silent */ } finally {
+      setEmailPrefsSaving(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#0D0D0F] text-white">
       {/* Razorpay — only loaded when this profile is own + not Go */}
@@ -1566,7 +2284,7 @@ export default function UserProfilePage() {
         <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
       )}
       {/* ─── sticky header ─── */}
-      <header className="sticky top-0 z-40 bg-[#0D0D0F]/80 backdrop-blur-xl border-b border-white/[0.05] h-14 flex items-center px-4 md:px-8 gap-3">
+      <header className="sticky top-0 z-40 bg-[#0D0D0F]/80 backdrop-blur-xl border-b border-white/[0.05] h-14 flex items-center px-4 sm:px-6 lg:px-8 gap-3">
         <button
           onClick={() => router.back()}
           className="h-8 w-8 rounded-full border border-white/[0.08] bg-white/[0.04] flex items-center justify-center hover:bg-white/[0.08] transition-colors shrink-0"
@@ -1580,25 +2298,469 @@ export default function UserProfilePage() {
           )}
         </div>
         <div className="shrink-0 flex items-center gap-2">
+          {/* ── Docrud Go header pill — own non-Go profiles only ── */}
+          {isOwnProfile && !profile.docrudGo && (
+            <div className="flex items-center gap-1.5">
+              {/* Earn Free ghost link */}
+              <button
+                type="button"
+                onClick={() => {
+                  setGoUpgradePhase('refer');
+                  if (!refLink) {
+                    setRefLinkLoading(true);
+                    fetch('/api/referrals/stats')
+                      .then(r => r.json())
+                      .then((d: { link?: string; code?: string }) => { setRefLink(d.link || ''); setRefCode(d.code || ''); })
+                      .catch(() => {})
+                      .finally(() => setRefLinkLoading(false));
+                  }
+                }}
+                className="hidden sm:flex items-center h-7 px-2.5 rounded-[8px] text-[11px] font-semibold transition-all hover:bg-white/[0.06] active:scale-[0.97]"
+                style={{ color: 'rgba(232,204,122,0.70)', border: '1px solid rgba(201,168,76,0.20)' }}
+              >
+                Earn Free
+              </button>
+              {/* Get Go gold pill */}
+              <button
+                type="button"
+                disabled={goUpgradePhase === 'paying'}
+                onClick={async () => {
+                  setGoUpgradeErr('');
+                  setGoUpgradePhase('paying');
+                  try {
+                    const res = await fetch('/api/docrud-go/create-order', { method: 'POST' });
+                    const d = await res.json() as { orderId?: string; amount?: number; currency?: string; keyId?: string; userName?: string; userEmail?: string; error?: string };
+                    if (!res.ok || !d.orderId) { setGoUpgradeErr(d.error ?? 'Could not start payment.'); setGoUpgradePhase('idle'); return; }
+                    const win = window as typeof window & { Razorpay?: new (o: Record<string, unknown>) => { open(): void } };
+                    if (!win.Razorpay) { setGoUpgradeErr('Payment gateway not loaded. Refresh and retry.'); setGoUpgradePhase('idle'); return; }
+                    const rz = new win.Razorpay({
+                      key: d.keyId, amount: d.amount, currency: d.currency || 'INR',
+                      name: 'Docrud', description: 'Docrud Go — Verified Badge', order_id: d.orderId,
+                      prefill: { name: d.userName || '', email: d.userEmail || '' },
+                      theme: { color: '#C9A84C' }, modal: { backdropclose: false },
+                      handler: async (resp: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
+                        const vRes = await fetch('/api/docrud-go/verify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(resp) });
+                        const vData = await vRes.json() as { success?: boolean };
+                        if (vData.success) window.location.reload();
+                        else { setGoUpgradeErr('Payment verified but activation failed. Contact support.'); setGoUpgradePhase('idle'); }
+                      },
+                      'modal.ondismiss': () => setGoUpgradePhase('idle'),
+                    });
+                    rz.open();
+                  } catch { setGoUpgradeErr('Something went wrong. Please retry.'); setGoUpgradePhase('idle'); }
+                }}
+                className="relative flex items-center gap-1.5 h-8 px-3 rounded-[10px] text-[12px] font-black transition-all active:scale-[0.97] disabled:opacity-70 overflow-hidden"
+                style={{ background: 'linear-gradient(135deg,#C9A84C,#E8CC7A 55%,#C9A84C)', color: '#1a1208', boxShadow: '0 2px 12px rgba(201,168,76,0.40), inset 0 1px 0 rgba(255,255,255,0.25)' }}
+              >
+                {/* shimmer sweep */}
+                <span className="pointer-events-none absolute inset-0" style={{ background: 'linear-gradient(105deg,transparent 30%,rgba(255,255,255,0.22) 50%,transparent 70%)', animation: 'goShimmer 2.8s ease-in-out infinite' }} />
+                {goUpgradePhase === 'paying'
+                  ? <><div className="h-3 w-3 rounded-full border-2 border-[#1a1208]/30 border-t-[#1a1208] animate-spin" /><span className="relative">Processing…</span></>
+                  : <><span className="relative">✦ Get Go</span><span className="relative hidden sm:inline"> — ₹99</span></>
+                }
+              </button>
+            </div>
+          )}
+
           {!isOwnProfile && session && (
-            <button
-              onClick={handleFollow}
-              disabled={followLoading}
-              className={`flex items-center gap-2 h-8 px-3 rounded-[10px] text-xs font-medium transition-colors disabled:opacity-60 ${
-                followingState
-                  ? 'border border-white/[0.10] bg-white/[0.04] text-white/70 hover:bg-white/[0.08]'
-                  : 'bg-white text-[#0D0D0F] hover:bg-white/90'
-              }`}
-            >
-              {followingState ? <UserCheck className="h-3 w-3" /> : <UserPlus className="h-3 w-3" />}
-              {followingState ? 'Following' : 'Follow'}
-            </button>
+            <>
+              <button
+                onClick={handleFollow}
+                disabled={followLoading}
+                className={`flex items-center gap-2 h-8 px-3 rounded-[10px] text-xs font-medium transition-colors disabled:opacity-60 ${
+                  followingState
+                    ? 'border border-white/[0.10] bg-white/[0.04] text-white/70 hover:bg-white/[0.08]'
+                    : 'bg-white text-[#0D0D0F] hover:bg-white/90'
+                }`}
+              >
+                {followingState ? <UserCheck className="h-3 w-3" /> : <UserPlus className="h-3 w-3" />}
+                {followingState ? 'Following' : 'Follow'}
+              </button>
+              {/* Public Faces cannot be messaged — their inbox is private */}
+              {!profile.publicFace && (
+                <Link
+                  href={`/messages?user=${user.id}`}
+                  className="flex items-center gap-1.5 h-8 px-3 rounded-[10px] border border-blue-500/30 bg-blue-500/[0.08] text-blue-400 text-xs font-medium hover:bg-blue-500/[0.16] transition-colors"
+                  title="Message"
+                >
+                  <MessageSquare className="h-3 w-3" />
+                  <span className="hidden sm:inline">Message</span>
+                </Link>
+              )}
+            </>
           )}
         </div>
       </header>
 
+      {/* ── Go payment error toast ── */}
+      {goUpgradeErr && isOwnProfile && !profile.docrudGo && (
+        <div className="sticky top-14 z-30 flex items-center justify-between gap-3 px-4 py-2.5 bg-rose-950/90 backdrop-blur border-b border-rose-500/20">
+          <p className="text-[12px] text-rose-300">{goUpgradeErr}</p>
+          <button onClick={() => setGoUpgradeErr('')} className="shrink-0 text-rose-400/60 hover:text-rose-300 transition">
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* ── Go shimmer keyframe ── */}
+      <style>{`@keyframes goShimmer{0%{transform:translateX(-100%)}60%,100%{transform:translateX(200%)}}`}</style>
+
+      {/* ── Referral modal (shown when goUpgradePhase === 'refer') ── */}
+      {isOwnProfile && !profile.docrudGo && goUpgradePhase === 'refer' && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+          style={{ background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(6px)' }}
+          onClick={() => setGoUpgradePhase('idle')}
+        >
+          <div
+            className="relative w-full sm:max-w-md rounded-t-[24px] sm:rounded-[24px] overflow-hidden p-[1.5px]"
+            style={{ background: 'linear-gradient(135deg,#C9A84C55,#F0D87840,#C9A84C55)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="relative rounded-t-[22.5px] sm:rounded-[22.5px] bg-[#100d06] px-5 pt-5 pb-6">
+              {/* ambient */}
+              <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse 80% 50% at 50% -5%,rgba(232,204,122,0.10) 0%,transparent 60%)' }} />
+
+              {/* Header */}
+              <div className="relative flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-[11px]" style={{ background: 'linear-gradient(135deg,#C9A84C,#F0D878)', boxShadow: '0 3px 14px rgba(201,168,76,0.45)' }}>
+                    <svg className="h-4.5 w-4.5 text-[#1a1208]" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-[14px] font-black text-white leading-tight">Refer &amp; Earn Docrud Go Free</p>
+                    <p className="text-[11px] text-white/35 mt-0.5">One referral that activates = your Go badge, free</p>
+                  </div>
+                </div>
+                <button type="button" onClick={() => setGoUpgradePhase('idle')} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/[0.10] bg-white/[0.04] text-white/30 hover:text-white/70 transition-colors">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+
+              {/* Steps */}
+              <div className="relative grid grid-cols-3 gap-2 mb-5">
+                {[{ n: '1', label: 'Share your link' }, { n: '2', label: 'Friend signs up' }, { n: '3', label: 'Go badge unlocks' }].map(({ n, label }) => (
+                  <div key={n} className="flex flex-col items-center gap-1.5 rounded-[10px] py-3 px-2" style={{ background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.12)' }}>
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-black" style={{ background: 'linear-gradient(135deg,#C9A84C,#F0D878)', color: '#1a1208' }}>{n}</span>
+                    <span className="text-[10px] font-semibold text-white/50 text-center leading-tight">{label}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Link copy */}
+              <div className="relative mb-4 rounded-[13px] border border-white/[0.08] bg-white/[0.03] p-3.5">
+                <p className="mb-2 text-[9px] font-black uppercase tracking-[0.22em]" style={{ color: '#C9A84C' }}>Your Referral Link</p>
+                {refLinkLoading ? (
+                  <div className="h-9 animate-pulse rounded-[10px] bg-white/[0.06]" />
+                ) : (
+                  <div className="flex gap-2">
+                    <div className="flex-1 truncate rounded-[10px] border border-white/[0.08] bg-white/[0.04] px-3 py-2 font-mono text-[11px] text-white/60">
+                      {refLink || '—'}
+                    </div>
+                    <button
+                      type="button"
+                      disabled={!refLink}
+                      onClick={() => {
+                        if (!refLink) return;
+                        navigator.clipboard.writeText(refLink).then(() => { setRefCopied(true); setTimeout(() => setRefCopied(false), 2200); });
+                      }}
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-white/[0.12] bg-white/[0.06] transition hover:bg-white/[0.12] disabled:opacity-30"
+                    >
+                      {refCopied
+                        ? <svg className="h-3.5 w-3.5 text-emerald-400" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                        : <Copy className="h-3.5 w-3.5 text-white/50" />
+                      }
+                    </button>
+                  </div>
+                )}
+                {refCopied && <p className="mt-1.5 text-[10.5px] font-semibold text-emerald-400">✓ Copied to clipboard!</p>}
+                {refCode && <p className="mt-1 text-[9px] text-white/22">Code: <span className="font-mono font-bold text-white/40">{refCode}</span></p>}
+              </div>
+
+              {/* Email invite */}
+              <div className="relative mb-4">
+                <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-white/28">Send a direct invite</p>
+                <div className="flex gap-2">
+                  <input
+                    type="email"
+                    value={refInviteEmail}
+                    onChange={(e) => setRefInviteEmail(e.target.value)}
+                    placeholder="colleague@company.com"
+                    className="h-9 flex-1 rounded-[11px] border border-white/[0.08] bg-white/[0.04] px-3 text-[12px] text-white placeholder:text-white/20 outline-none transition focus:border-amber-500/25 focus:ring-1 focus:ring-amber-500/[0.08]"
+                  />
+                  <button
+                    type="button"
+                    disabled={refSending || !refInviteEmail.trim()}
+                    onClick={() => {
+                      setRefSendErr(''); setRefSentMsg(''); setRefSending(true);
+                      fetch('/api/referrals/invite', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: refInviteEmail.trim() }) })
+                        .then(r => r.json())
+                        .then((d: { success?: boolean; error?: string }) => {
+                          if (d.success) { setRefSentMsg(`Sent to ${refInviteEmail.trim()} ✓`); setRefInviteEmail(''); }
+                          else throw new Error(d.error || 'Failed');
+                        })
+                        .catch((err: unknown) => setRefSendErr(err instanceof Error ? err.message : 'Failed to send.'))
+                        .finally(() => setRefSending(false));
+                    }}
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] border border-amber-500/25 bg-amber-500/[0.10] transition hover:bg-amber-500/[0.18] disabled:opacity-40"
+                  >
+                    {refSending
+                      ? <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-amber-300/30 border-t-amber-300" />
+                      : <svg className="h-3.5 w-3.5 text-amber-300" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
+                    }
+                  </button>
+                </div>
+                {refSentMsg && <p className="mt-1.5 text-[10.5px] text-emerald-400">{refSentMsg}</p>}
+                {refSendErr && <p className="mt-1.5 text-[10.5px] text-rose-400">{refSendErr}</p>}
+              </div>
+
+              <p className="relative text-center text-[9px] text-white/18 leading-4">
+                Referrals can be sent to multiple people. Docrud Go activates <strong className="text-white/30">once per referrer</strong> the moment a referred profile is created.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Publish modal ── */}
+      {/* ── Public Face application modal ─────────────────────────── */}
+      {showPFForm && isOwnProfile && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+          style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)' }}
+          onClick={() => setShowPFForm(false)}
+        >
+          <div
+            className="relative w-full sm:max-w-xl rounded-t-[28px] sm:rounded-[28px] overflow-hidden"
+            style={{ background: '#0a0614', border: '1px solid rgba(168,85,247,0.2)', boxShadow: '0 24px 80px rgba(0,0,0,0.6)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <PublicFaceApplicationForm
+              onClose={() => setShowPFForm(false)}
+              onSuccess={() => {
+                setShowPFForm(false);
+                // Reload PF status
+                setPfApplication(undefined);
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {publishModalOpen && isOwnProfile && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+          style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)' }}
+          onClick={() => !publishSubmitting && setPublishModalOpen(false)}
+        >
+          <div
+            className="relative w-full sm:max-w-lg rounded-t-[26px] sm:rounded-[26px] overflow-hidden"
+            style={{ background: '#0f0f12', border: '1px solid rgba(255,255,255,0.07)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-[10px]" style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', boxShadow: '0 3px 12px rgba(99,102,241,0.35)' }}>
+                  <Share2 className="h-3.5 w-3.5 text-white" />
+                </div>
+                <div>
+                  <p className="text-[14px] font-black text-white">Publish to Feed</p>
+                  <p className="text-[10.5px] text-white/30">Share with the Docrud community</p>
+                </div>
+              </div>
+              <button type="button" onClick={() => !publishSubmitting && setPublishModalOpen(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.04] text-white/30 hover:text-white/70 transition-colors">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+
+            <div className="px-5 py-5 space-y-4 max-h-[70vh] overflow-y-auto [scrollbar-width:none]">
+              {publishSuccess ? (
+                <div className="py-10 text-center">
+                  <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10">
+                    <CheckCircle2 className="h-7 w-7 text-emerald-400" />
+                  </div>
+                  <p className="text-[16px] font-black text-white">Published!</p>
+                  <p className="text-[12px] text-white/35 mt-1.5">Your post is now live on the feed.</p>
+                  <div className="mt-5 flex gap-2 justify-center">
+                    <a href="/published" className="flex h-9 items-center gap-1.5 rounded-[11px] border border-white/[0.09] bg-white/[0.04] px-4 text-[12px] font-semibold text-white/60 hover:text-white/85 transition">
+                      <ExternalLink className="h-3.5 w-3.5" /> View Feed
+                    </a>
+                    <button type="button" onClick={() => { setPublishModalOpen(false); window.location.reload(); }}
+                      className="flex h-9 items-center gap-2 rounded-[11px] px-4 text-[12px] font-bold text-white transition"
+                      style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}>
+                      Done
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Title */}
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-[0.18em] text-white/35 mb-1.5">Title</label>
+                    <input
+                      type="text"
+                      value={publishForm.title}
+                      onChange={e => setPublishForm(f => ({ ...f, title: e.target.value }))}
+                      placeholder="Give your post a descriptive title…"
+                      className="w-full h-10 rounded-[11px] border border-white/[0.08] bg-white/[0.04] px-3.5 text-[13px] text-white placeholder:text-white/20 outline-none focus:border-indigo-500/40 focus:ring-1 focus:ring-indigo-500/[0.12] transition"
+                    />
+                  </div>
+
+                  {/* Category */}
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-[0.18em] text-white/35 mb-2">Category</label>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {(['document','article','portfolio','announcement','job','event','hackathon','product'] as const).map(cat => (
+                        <button key={cat} type="button"
+                          onClick={() => setPublishForm(f => ({ ...f, category: cat }))}
+                          className={`rounded-[10px] border py-2 text-[10px] font-bold capitalize transition ${
+                            publishForm.category === cat
+                              ? 'border-indigo-500/40 bg-indigo-500/[0.12] text-indigo-300'
+                              : 'border-white/[0.06] bg-white/[0.03] text-white/40 hover:bg-white/[0.06] hover:text-white/65'
+                          }`}>
+                          {cat === 'announcement' ? 'Announce' : cat === 'hackathon' ? 'Hack' : cat === 'portfolio' ? 'Portfolio' : cat}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* File upload */}
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-[0.18em] text-white/35 mb-1.5">File <span className="text-white/20 normal-case font-normal">(PDF, image, or doc — max 15 MB)</span></label>
+                    <label className={`flex flex-col items-center justify-center w-full rounded-[14px] border-2 border-dashed py-6 cursor-pointer transition ${
+                      publishFile ? 'border-indigo-500/30 bg-indigo-500/[0.05]' : 'border-white/[0.08] bg-white/[0.02] hover:border-white/[0.14] hover:bg-white/[0.04]'
+                    }`}>
+                      <input type="file" className="hidden" accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.gif,.webp,.svg"
+                        onChange={e => { const f = e.target.files?.[0]; if (f) setPublishFile(f); }} />
+                      {publishFile ? (
+                        <div className="text-center">
+                          <FileText className="h-6 w-6 text-indigo-400 mx-auto mb-1.5" />
+                          <p className="text-[12px] font-semibold text-indigo-300">{publishFile.name}</p>
+                          <p className="text-[10px] text-white/30 mt-0.5">{(publishFile.size / 1024).toFixed(0)} KB · click to change</p>
+                        </div>
+                      ) : (
+                        <div className="text-center">
+                          <Plus className="h-6 w-6 text-white/20 mx-auto mb-1.5" />
+                          <p className="text-[12px] font-semibold text-white/30">Click to upload file</p>
+                          <p className="text-[10px] text-white/18 mt-0.5">PDF · Images · Docs</p>
+                        </div>
+                      )}
+                    </label>
+                  </div>
+
+                  {/* Notes */}
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-[0.18em] text-white/35 mb-1.5">Description <span className="text-white/20 normal-case font-normal">(optional)</span></label>
+                    <textarea
+                      value={publishForm.notes}
+                      onChange={e => setPublishForm(f => ({ ...f, notes: e.target.value }))}
+                      rows={3}
+                      placeholder="Add context, key points, or a summary…"
+                      className="w-full rounded-[11px] border border-white/[0.08] bg-white/[0.04] px-3.5 py-2.5 text-[13px] text-white placeholder:text-white/20 outline-none focus:border-indigo-500/40 focus:ring-1 focus:ring-indigo-500/[0.12] transition resize-none"
+                    />
+                  </div>
+
+                  {/* Tags */}
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-[0.18em] text-white/35 mb-1.5">Tags <span className="text-white/20 normal-case font-normal">(optional)</span></label>
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {publishForm.tags.map((tag, i) => (
+                        <span key={i} className="flex items-center gap-1 rounded-full border border-white/[0.09] bg-white/[0.05] px-2.5 py-1 text-[11px] font-semibold text-white/60">
+                          {tag}
+                          <button type="button" onClick={() => setPublishForm(f => ({ ...f, tags: f.tags.filter((_, j) => j !== i) }))} className="text-white/30 hover:text-white/70 ml-0.5">×</button>
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={publishForm.tagInput}
+                        onChange={e => setPublishForm(f => ({ ...f, tagInput: e.target.value }))}
+                        onKeyDown={e => {
+                          if ((e.key === 'Enter' || e.key === ',') && publishForm.tagInput.trim()) {
+                            e.preventDefault();
+                            setPublishForm(f => ({ ...f, tags: [...f.tags, f.tagInput.trim()], tagInput: '' }));
+                          }
+                        }}
+                        placeholder="Type a tag and press Enter"
+                        className="flex-1 h-9 rounded-[10px] border border-white/[0.08] bg-white/[0.04] px-3 text-[12px] text-white placeholder:text-white/20 outline-none focus:border-indigo-500/30 transition"
+                      />
+                      <button type="button"
+                        onClick={() => { if (publishForm.tagInput.trim()) setPublishForm(f => ({ ...f, tags: [...f.tags, f.tagInput.trim()], tagInput: '' })); }}
+                        className="h-9 px-3 rounded-[10px] border border-white/[0.08] bg-white/[0.04] text-[11px] font-semibold text-white/40 hover:text-white/70 transition">
+                        Add
+                      </button>
+                    </div>
+                  </div>
+
+                  {publishError && <p className="text-[12px] text-rose-400 font-medium">{publishError}</p>}
+                </>
+              )}
+            </div>
+
+            {!publishSuccess && (
+              <div className="px-5 py-4 border-t border-white/[0.06] flex items-center justify-between gap-3">
+                <p className="text-[10.5px] text-white/25">Your post will be visible on the community feed.</p>
+                <button
+                  type="button"
+                  disabled={publishSubmitting || !publishFile || !publishForm.title.trim()}
+                  onClick={async () => {
+                    if (!publishFile || !publishForm.title.trim()) return;
+                    setPublishSubmitting(true);
+                    setPublishError('');
+                    try {
+                      const reader = new FileReader();
+                      const dataUrl = await new Promise<string>((res, rej) => {
+                        reader.onload = () => res(reader.result as string);
+                        reader.onerror = rej;
+                        reader.readAsDataURL(publishFile);
+                      });
+                      const res = await fetch('/api/public/file-directory/publish', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          title: publishForm.title.trim(),
+                          fileName: publishFile.name,
+                          mimeType: publishFile.type || 'application/octet-stream',
+                          dataUrl,
+                          sizeInBytes: publishFile.size,
+                          notes: publishForm.notes.trim() || undefined,
+                          directoryCategory: publishForm.category,
+                          directoryTags: publishForm.tags,
+                          directoryVisibility: 'public',
+                          authMode: 'public',
+                        }),
+                      });
+                      const d = await res.json() as { transfer?: { id: string }; error?: string };
+                      if (!res.ok || !d.transfer) throw new Error(d.error || 'Publish failed.');
+                      setPublishSuccess(true);
+                    } catch (e) {
+                      setPublishError(e instanceof Error ? e.message : 'Something went wrong.');
+                    } finally {
+                      setPublishSubmitting(false);
+                    }
+                  }}
+                  className="flex items-center gap-2 h-9 px-5 rounded-[11px] text-[12.5px] font-bold transition-all active:scale-[0.97] disabled:opacity-50"
+                  style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', boxShadow: publishSubmitting ? 'none' : '0 3px 14px rgba(99,102,241,0.35)' }}
+                >
+                  {publishSubmitting ? (
+                    <><div className="h-3.5 w-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Publishing…</>
+                  ) : (
+                    <><Share2 className="h-3.5 w-3.5" /> Publish Post</>
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ─── cover ─── */}
-      <div className="relative h-44 md:h-60 lg:h-72 w-full overflow-hidden" style={coverBgStyle}>
+      <div className="relative h-48 md:h-64 lg:h-80 w-full overflow-hidden" style={coverBgStyle}>
         <div className="absolute inset-0 bg-gradient-to-t from-[#0D0D0F] via-[#0D0D0F]/25 to-transparent" />
         {!coverIsImage && (
           <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.02%22%3E%3Cpath%20d%3D%22M36%2034v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6%2034v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6%204V0H4v4H0v2h4v4h2V6h4V4H6z%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-25" />
@@ -1615,19 +2777,19 @@ export default function UserProfilePage() {
       </div>
 
       {/* ─── profile hero ─── */}
-      <div className="max-w-5xl mx-auto px-4 md:px-8 pb-24">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-28">
 
         {/* Avatar + identity + actions */}
-        <div className="-mt-12 md:-mt-16 flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-5 mb-6">
+        <div className="-mt-14 md:-mt-20 flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-6 mb-7">
 
           {/* Avatar */}
           <div
-            className="relative shrink-0 z-10 h-24 w-24 md:h-32 md:w-32 rounded-[22px] md:rounded-[26px] overflow-visible"
+            className="relative shrink-0 z-10 h-28 w-28 md:h-36 md:w-36 rounded-[24px] md:rounded-[28px] overflow-visible"
           >
             <div
-              className={`h-full w-full rounded-[22px] md:rounded-[26px] overflow-hidden border-[3px] border-[#0D0D0F] bg-[#18181b] flex items-center justify-center text-2xl md:text-3xl font-bold text-white/70 ${
+              className={`h-full w-full rounded-[24px] md:rounded-[28px] overflow-hidden border-[3px] border-[#0D0D0F] bg-[#18181b] flex items-center justify-center text-3xl md:text-4xl font-bold text-white/70 shadow-[0_8px_32px_rgba(0,0,0,0.6)] ${
                 profile.docrudGo
-                  ? 'shadow-[0_0_0_2px_rgba(201,168,76,0.50),0_0_24px_rgba(201,168,76,0.15)]'
+                  ? 'shadow-[0_0_0_2.5px_rgba(201,168,76,0.55),0_8px_32px_rgba(201,168,76,0.18)]'
                   : ''
               }`}
             >
@@ -1637,9 +2799,14 @@ export default function UserProfilePage() {
                 getInitials(user.name)
               )}
             </div>
-            {profile.docrudGo && (
+            {profile.docrudGo && !profile.publicFace && (
               <div className="absolute -bottom-1.5 -right-1.5 z-10">
                 <DocrudGoBadge size="sm" />
+              </div>
+            )}
+            {profile.publicFace && (
+              <div className="absolute -bottom-1.5 -right-1.5 z-10">
+                <PublicFaceStarIcon size={20} />
               </div>
             )}
           </div>
@@ -1647,15 +2814,18 @@ export default function UserProfilePage() {
           {/* Identity */}
           <div className="flex-1 min-w-0 relative z-10 flex flex-col justify-end sm:pb-1">
             <div className="flex flex-wrap items-center gap-2 mb-1">
-              <h1 className="text-[22px] md:text-[28px] font-bold tracking-tight leading-tight text-white">{user.name}</h1>
+              <h1 className="text-[24px] md:text-[32px] font-extrabold tracking-tight leading-none text-white">{user.name}</h1>
               {credits?.verified && <VerifiedBadge size="lg" />}
               {profile.docrudGo && <DocrudGoBadge size="md" />}
+              {profile.publicFace && (
+                <PublicFaceBadge category={profile.publicFace.category as import('@/types/document').PublicFaceCategory} size="md" />
+              )}
               {profile.pronouns && (
                 <span className="text-xs text-white/30 font-normal">{profile.pronouns}</span>
               )}
             </div>
             {profile.headline && (
-              <p className="text-white/60 text-[14.5px] md:text-[15px] leading-snug mb-2 max-w-xl">{profile.headline}</p>
+              <p className="text-white/55 text-[15px] md:text-[16px] leading-snug mb-3 max-w-2xl">{profile.headline}</p>
             )}
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-white/35">
               {profile.location && (
@@ -1732,261 +2902,57 @@ export default function UserProfilePage() {
                   {followingState ? <UserCheck className="h-3.5 w-3.5" /> : <UserPlus className="h-3.5 w-3.5" />}
                   {followingState ? 'Following' : 'Follow'}
                 </button>
-                <Link
-                  href={`/internal-mailbox?to=${user.id}`}
-                  className="flex items-center gap-2 h-9 px-3 rounded-[12px] border border-white/[0.10] bg-white/[0.04] text-white/70 text-sm hover:bg-white/[0.08] transition-colors"
-                  title="Message"
-                >
-                  <MessageSquare className="h-3.5 w-3.5" />
-                </Link>
+                {/* Public Faces cannot receive direct messages */}
+                {!profile.publicFace && (
+                  <Link
+                    href={`/messages?user=${user.id}`}
+                    className="flex items-center gap-2 h-9 px-3.5 rounded-[12px] border border-blue-500/30 bg-blue-500/[0.08] text-blue-400 text-sm font-medium hover:bg-blue-500/[0.16] transition-colors active:scale-95"
+                    title="Message"
+                  >
+                    <MessageSquare className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Message</span>
+                  </Link>
+                )}
               </>
             ) : null}
           </div>
         </div>
 
-        {/* Stats row */}
-        <div className="flex flex-wrap gap-6 md:gap-10 pt-1 pb-5 md:pb-6 mb-5 md:mb-7 border-b border-white/[0.06]">
-          <StatItem label="Followers" value={followersCount} onClick={() => { setTab('connections'); loadConnections(); }} />
-          <StatItem label="Following" value={stats.following} onClick={() => { setTab('connections'); loadConnections(); }} />
-          <StatItem label="Upraised" value={upraiseCount} />
-          <StatItem label="Gigs" value={stats.gigsCount} onClick={() => setTab('gigs')} />
-          <StatItem label="Published" value={stats.publishedCount} onClick={() => setTab('activity')} />
-          {isOwnProfile && (
-            <StatItem label="Total views" value={analytics ? analytics.totalViews : Math.floor(followersCount * 3.2 + stats.publishedCount * 8 + 47)} onClick={() => setTab('insights')} />
-          )}
-          {isOwnProfile && (
-            <StatItem label="Total likes" value={analytics?.totalLikes ?? 0} onClick={() => setTab('activity')} />
-          )}
-        </div>
+        {/* Stats row — single scrollable line on all screen sizes */}
+        <style>{`.__stats-row::-webkit-scrollbar{display:none}`}</style>
+        <div className="relative pt-2 pb-5 md:pb-6 mb-5 md:mb-7 border-b border-white/[0.05]">
+          {/* Right-edge fade — hints at horizontal scroll on mobile */}
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-10 sm:hidden z-10"
+            style={{ background: 'linear-gradient(to right, transparent, var(--bg-base, #0D0D0F))' }} />
 
-        {/* ── Docrud Go upgrade banner — own basic profiles only ── */}
-        {isOwnProfile && !profile.docrudGo && (
-          <div className="mb-6">
-            {goUpgradePhase !== 'refer' ? (
-              /* ── Compact upgrade strip ── */
-              <div
-                className="relative overflow-hidden rounded-[18px] p-[1.5px]"
-                style={{ background: 'linear-gradient(135deg,#C9A84C,#F0D878 40%,#C9A84C 70%,#A07830)' }}
-              >
-                <div className="relative overflow-hidden rounded-[17px] bg-[#100d06] px-4 py-3.5 sm:px-5">
-                  {/* ambient glow */}
-                  <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse 80% 60% at 50% -10%,rgba(232,204,122,0.10) 0%,transparent 60%)' }} />
-
-                  <div className="relative flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-                    {/* Icon + text */}
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px]" style={{ background: 'linear-gradient(135deg,#C9A84C,#F0D878)', boxShadow: '0 4px 16px rgba(201,168,76,0.40)' }}>
-                        <svg className="h-5 w-5 text-[#1a1208]" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
-                        </svg>
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-[13px] font-black text-white leading-tight" style={{ letterSpacing: '-0.02em' }}>
-                            Unlock Docrud Go <span style={{ color: '#E8CC7A' }}>✦</span>
-                          </p>
-                          <span className="rounded-full px-2 py-0.5 text-[8.5px] font-black uppercase tracking-[0.1em]" style={{ background: 'rgba(201,168,76,0.15)', color: '#E8CC7A', border: '1px solid rgba(201,168,76,0.25)' }}>
-                            Gold Badge
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-white/40 mt-0.5">Verified badge · 3× more profile views · priority search ranking</p>
-                      </div>
-                    </div>
-
-                    {/* CTAs */}
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        type="button"
-                        disabled={goUpgradePhase === 'paying'}
-                        onClick={async () => {
-                          setGoUpgradeErr('');
-                          setGoUpgradePhase('paying');
-                          try {
-                            const res = await fetch('/api/docrud-go/create-order', { method: 'POST' });
-                            const d = await res.json() as { orderId?: string; amount?: number; currency?: string; keyId?: string; userName?: string; userEmail?: string; error?: string };
-                            if (!res.ok || !d.orderId) { setGoUpgradeErr(d.error ?? 'Could not start payment.'); setGoUpgradePhase('idle'); return; }
-                            const win = window as typeof window & { Razorpay?: new (o: Record<string, unknown>) => { open(): void } };
-                            if (!win.Razorpay) { setGoUpgradeErr('Payment gateway not loaded. Refresh and retry.'); setGoUpgradePhase('idle'); return; }
-                            const rz = new win.Razorpay({
-                              key: d.keyId, amount: d.amount, currency: d.currency || 'INR',
-                              name: 'Docrud', description: 'Docrud Go — Verified Badge', order_id: d.orderId,
-                              prefill: { name: d.userName || '', email: d.userEmail || '' },
-                              theme: { color: '#C9A84C' }, modal: { backdropclose: false },
-                              handler: async (resp: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
-                                const vRes = await fetch('/api/docrud-go/verify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(resp) });
-                                const vData = await vRes.json() as { success?: boolean };
-                                if (vData.success) window.location.reload();
-                                else { setGoUpgradeErr('Payment verified but activation failed. Contact support.'); setGoUpgradePhase('idle'); }
-                              },
-                              'modal.ondismiss': () => setGoUpgradePhase('idle'),
-                            });
-                            rz.open();
-                          } catch { setGoUpgradeErr('Something went wrong. Please retry.'); setGoUpgradePhase('idle'); }
-                        }}
-                        className="flex h-9 items-center gap-1.5 rounded-[11px] px-3.5 text-[12px] font-black transition-all active:scale-[0.97] disabled:opacity-60"
-                        style={{ background: 'linear-gradient(135deg,#C9A84C,#E8CC7A)', color: '#1a1208', boxShadow: '0 3px 14px rgba(201,168,76,0.45)' }}
-                      >
-                        {goUpgradePhase === 'paying'
-                          ? <><div className="h-3.5 w-3.5 rounded-full border-2 border-[#1a1208]/30 border-t-[#1a1208] animate-spin" />Processing…</>
-                          : <>✦ Get Go — ₹99</>
-                        }
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setGoUpgradePhase('refer');
-                          if (!refLink) {
-                            setRefLinkLoading(true);
-                            fetch('/api/referrals/stats')
-                              .then(r => r.json())
-                              .then((d: { link?: string; code?: string }) => { setRefLink(d.link || ''); setRefCode(d.code || ''); })
-                              .catch(() => {})
-                              .finally(() => setRefLinkLoading(false));
-                          }
-                        }}
-                        className="flex h-9 items-center gap-1.5 rounded-[11px] border px-3 text-[12px] font-semibold transition-all hover:bg-white/[0.06] active:scale-[0.97]"
-                        style={{ borderColor: 'rgba(201,168,76,0.28)', color: 'rgba(232,204,122,0.85)' }}
-                      >
-                        <svg className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                        </svg>
-                        Earn Free
-                      </button>
-                    </div>
-                  </div>
-
-                  {goUpgradeErr && (
-                    <p className="relative mt-2 text-[11px] text-rose-400">{goUpgradeErr}</p>
-                  )}
-                </div>
-              </div>
-            ) : (
-              /* ── Referral panel (expanded) ── */
-              <div
-                className="relative overflow-hidden rounded-[18px] p-[1.5px]"
-                style={{ background: 'linear-gradient(135deg,#C9A84C55,#F0D87840,#C9A84C55)' }}
-              >
-                <div className="relative overflow-hidden rounded-[17px] bg-[#100d06] px-4 py-4 sm:px-5">
-                  <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse 80% 50% at 50% -5%,rgba(232,204,122,0.08) 0%,transparent 60%)' }} />
-
-                  {/* Header */}
-                  <div className="relative flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-[10px]" style={{ background: 'linear-gradient(135deg,#C9A84C,#F0D878)', boxShadow: '0 3px 12px rgba(201,168,76,0.40)' }}>
-                        <svg className="h-4 w-4 text-[#1a1208]" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                        </svg>
-                      </div>
-                      <div>
-                        <p className="text-[13px] font-black text-white leading-tight">Refer &amp; Earn Docrud Go Free</p>
-                        <p className="text-[10.5px] text-white/35 mt-0.5">One referral that activates = your Go badge, zero payment</p>
-                      </div>
-                    </div>
-                    <button type="button" onClick={() => setGoUpgradePhase('idle')} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/[0.10] bg-white/[0.04] text-white/30 hover:text-white/70 transition">
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-
-                  {/* How it works */}
-                  <div className="relative grid grid-cols-3 gap-2 mb-4">
-                    {[
-                      { n: '1', label: 'Share your link' },
-                      { n: '2', label: 'Friend signs up' },
-                      { n: '3', label: 'Go badge unlocks' },
-                    ].map(({ n, label }) => (
-                      <div key={n} className="flex flex-col items-center gap-1.5 rounded-[10px] py-2.5 px-1.5" style={{ background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.12)' }}>
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-black" style={{ background: 'linear-gradient(135deg,#C9A84C,#F0D878)', color: '#1a1208' }}>{n}</span>
-                        <span className="text-[9.5px] font-semibold text-white/50 text-center leading-tight">{label}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Link copy */}
-                  <div className="relative mb-3 rounded-[12px] border border-white/[0.08] bg-white/[0.03] p-3">
-                    <p className="mb-1.5 text-[9px] font-black uppercase tracking-[0.22em]" style={{ color: '#C9A84C' }}>Your Referral Link</p>
-                    {refLinkLoading ? (
-                      <div className="h-8 animate-pulse rounded-lg bg-white/[0.06]" />
-                    ) : (
-                      <div className="flex gap-2">
-                        <div className="flex-1 truncate rounded-lg border border-white/[0.08] bg-white/[0.04] px-2.5 py-1.5 font-mono text-[10px] text-white/60">
-                          {refLink || '—'}
-                        </div>
-                        <button
-                          type="button"
-                          disabled={!refLink}
-                          onClick={() => {
-                            if (!refLink) return;
-                            navigator.clipboard.writeText(refLink).then(() => { setRefCopied(true); setTimeout(() => setRefCopied(false), 2200); });
-                          }}
-                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/[0.12] bg-white/[0.06] transition hover:bg-white/[0.12] disabled:opacity-30"
-                        >
-                          {refCopied
-                            ? <svg className="h-3.5 w-3.5 text-emerald-400" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                            : <Copy className="h-3.5 w-3.5 text-white/50" />
-                          }
-                        </button>
-                      </div>
-                    )}
-                    {refCopied && <p className="mt-1 text-[10px] font-semibold text-emerald-400">✓ Copied to clipboard!</p>}
-                    {refCode && <p className="mt-1 text-[9px] text-white/22">Code: <span className="font-mono font-bold text-white/40">{refCode}</span></p>}
-                  </div>
-
-                  {/* Email invite */}
-                  <div className="relative">
-                    <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-white/28">Send a direct invite</p>
-                    <div className="flex gap-2">
-                      <input
-                        type="email"
-                        value={refInviteEmail}
-                        onChange={(e) => setRefInviteEmail(e.target.value)}
-                        placeholder="colleague@company.com"
-                        className="h-9 flex-1 rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 text-[12px] text-white placeholder:text-white/20 outline-none transition focus:border-amber-500/25 focus:ring-1 focus:ring-amber-500/[0.08]"
-                      />
-                      <button
-                        type="button"
-                        disabled={refSending || !refInviteEmail.trim()}
-                        onClick={() => {
-                          setRefSendErr(''); setRefSentMsg(''); setRefSending(true);
-                          fetch('/api/referrals/invite', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: refInviteEmail.trim() }) })
-                            .then(r => r.json())
-                            .then((d: { success?: boolean; error?: string }) => {
-                              if (d.success) { setRefSentMsg(`Sent to ${refInviteEmail.trim()} ✓`); setRefInviteEmail(''); }
-                              else throw new Error(d.error || 'Failed');
-                            })
-                            .catch((err: unknown) => setRefSendErr(err instanceof Error ? err.message : 'Failed to send.'))
-                            .finally(() => setRefSending(false));
-                        }}
-                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-amber-500/25 bg-amber-500/[0.10] transition hover:bg-amber-500/[0.18] disabled:opacity-40"
-                      >
-                        {refSending
-                          ? <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-amber-300/30 border-t-amber-300" />
-                          : <svg className="h-3.5 w-3.5 text-amber-300" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
-                        }
-                      </button>
-                    </div>
-                    {refSentMsg && <p className="mt-1.5 text-[10.5px] text-emerald-400">{refSentMsg}</p>}
-                    {refSendErr && <p className="mt-1.5 text-[10.5px] text-rose-400">{refSendErr}</p>}
-                  </div>
-
-                  <p className="relative mt-3 text-center text-[9px] text-white/18 leading-4">
-                    Referrals can be sent to multiple people. Docrud Go activates <strong className="text-white/30">once per referrer</strong> the moment a referred profile is created.
-                  </p>
-                </div>
-              </div>
+          <div
+            className="__stats-row flex items-stretch overflow-x-auto"
+            style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
+          >
+            <StatItem label="Followers" value={followersCount} onClick={() => { setTab('connections'); loadConnections(); }} />
+            <StatItem label="Following" value={stats.following} onClick={() => { setTab('connections'); loadConnections(); }} />
+            <StatItem label="Upraised" value={upraiseCount} />
+            <StatItem label="Gigs" value={stats.gigsCount} onClick={() => setTab('gigs')} />
+            <StatItem label="Published" value={stats.publishedCount} onClick={() => setTab('activity')} />
+            {isOwnProfile && (
+              <StatItem label="Total views" value={analytics ? analytics.totalViews : Math.floor(followersCount * 3.2 + stats.publishedCount * 8 + 47)} onClick={() => setTab('insights')} />
+            )}
+            {isOwnProfile && (
+              <StatItem label="Total likes" value={analytics?.totalLikes ?? 0} onClick={() => setTab('activity')} />
             )}
           </div>
-        )}
+        </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 mb-7 md:mb-8 overflow-x-auto scrollbar-none -mx-1 px-1">
-          {TABS.filter((t) => (t.id !== 'insights' && t.id !== 'billing') || isOwnProfile).map((t) => (
+        <div className="relative flex gap-0 mb-7 md:mb-9 overflow-x-auto [scrollbar-width:none] border-b border-white/[0.06]">
+          {TABS.filter((t) => (t.id !== 'insights' && t.id !== 'billing' && t.id !== 'settings') || isOwnProfile).map((t) => (
             <button
               key={t.id}
               onClick={() => { setTab(t.id); if (t.id === 'connections') loadConnections(); }}
-              className={`shrink-0 h-8 md:h-9 px-3 md:px-4 rounded-[10px] text-[13px] md:text-sm font-medium transition-all ${
+              className={`shrink-0 relative h-10 md:h-11 px-3.5 md:px-5 text-[13px] md:text-[13.5px] font-medium transition-all whitespace-nowrap ${
                 tab === t.id
-                  ? 'bg-white text-[#0D0D0F]'
-                  : 'text-white/40 hover:text-white/70 hover:bg-white/[0.05]'
+                  ? 'text-white after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-white after:rounded-full'
+                  : 'text-white/35 hover:text-white/65 hover:bg-white/[0.03]'
               }`}
             >
               {t.label}
@@ -1995,6 +2961,131 @@ export default function UserProfilePage() {
         </div>
 
         {/* ─── tab content ─── */}
+
+        {/* ─── Published tab ─── */}
+        {tab === 'published' && (
+          <div className="space-y-5">
+            {/* Header row */}
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h3 className="text-[15px] font-bold text-white/85">
+                  {isOwnProfile ? 'Your Published Posts' : `${user.name}'s Posts`}
+                </h3>
+                <p className="text-[11.5px] text-white/30 mt-0.5">
+                  {publishedPosts.length > 0 ? `${publishedPosts.length} post${publishedPosts.length !== 1 ? 's' : ''} published` : 'Nothing published yet'}
+                </p>
+              </div>
+              {isOwnProfile && (
+                <button
+                  type="button"
+                  onClick={() => { setPublishModalOpen(true); setPublishError(''); setPublishSuccess(false); setPublishFile(null); setPublishForm({ title: '', category: 'document', tags: [], notes: '', tagInput: '' }); }}
+                  className="flex items-center gap-2 h-9 px-4 rounded-[11px] text-[12.5px] font-bold transition-all active:scale-[0.97]"
+                  style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', boxShadow: '0 3px 14px rgba(99,102,241,0.35)' }}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Publish
+                </button>
+              )}
+            </div>
+
+            {/* Posts grid */}
+            {publishedPosts.length === 0 ? (
+              <div className="rounded-[20px] border border-white/[0.06] bg-white/[0.02] py-16 text-center">
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-white/[0.04]">
+                  <Share2 className="h-6 w-6 text-white/20" />
+                </div>
+                <p className="text-[14px] font-semibold text-white/30">
+                  {isOwnProfile ? 'No posts published yet' : 'Nothing here yet'}
+                </p>
+                {isOwnProfile && (
+                  <p className="text-[12px] text-white/18 mt-1.5">
+                    Hit <span className="font-bold text-white/30">Publish</span> to share your first post with the community.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {publishedPosts.map((post) => {
+                  const isActive = post.featured && post.featuredUntil && new Date(post.featuredUntil) > new Date();
+                  const daysLeft = isActive ? Math.ceil((new Date(post.featuredUntil!).getTime() - Date.now()) / 86400000) : 0;
+                  return (
+                    <div key={post.id} className="group rounded-[20px] border border-white/[0.07] bg-white/[0.025] p-5 transition hover:bg-white/[0.045] hover:border-white/[0.11]">
+                      <div className="flex items-start gap-4">
+                        {/* Icon */}
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] border border-white/[0.07] bg-white/[0.05]">
+                          <FileText className="h-5 w-5 text-white/35" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            {isActive && (
+                              <span className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider ${
+                                post.featuredPlan === 'prime' ? 'bg-amber-500/15 text-amber-300 border border-amber-500/25' :
+                                post.featuredPlan === 'boost' ? 'bg-violet-500/15 text-violet-300 border border-violet-500/25' :
+                                'bg-sky-500/15 text-sky-300 border border-sky-500/25'
+                              }`}>
+                                {post.featuredPlan === 'prime' ? '👑 Prime' : post.featuredPlan === 'boost' ? '🚀 Boost' : '⚡ Spotlight'} · {daysLeft}d left
+                              </span>
+                            )}
+                          </div>
+                          <h4 className="text-[14px] font-semibold text-white/85 truncate leading-snug">{post.title || post.fileName}</h4>
+                          <p className="text-[11px] text-white/28 mt-0.5">
+                            {new Date(post.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </p>
+                        </div>
+                        {/* Actions */}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <a href={`/transfer/${post.shareId}`} target="_blank" rel="noopener noreferrer"
+                            className="flex h-8 w-8 items-center justify-center rounded-[10px] border border-white/[0.08] bg-white/[0.04] text-white/35 hover:text-white/75 hover:bg-white/[0.08] transition">
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                          {isOwnProfile && (
+                            <button type="button"
+                              onClick={() => setFeaturePanelPost({ id: post.id, title: post.title || post.fileName })}
+                              className={`flex items-center gap-1.5 h-8 rounded-[10px] border px-3 text-[11px] font-semibold transition ${
+                                isActive
+                                  ? 'border-amber-500/25 bg-amber-500/[0.08] text-amber-400 hover:bg-amber-500/[0.14]'
+                                  : 'border-white/[0.09] bg-white/[0.03] text-white/40 hover:bg-white/[0.08] hover:text-white/70'
+                              }`}>
+                              <Rocket className="h-3 w-3" />
+                              {isActive ? 'Featured' : 'Feature'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      {/* Stats row */}
+                      <div className="mt-4 flex items-center gap-5 pl-[60px]">
+                        <span className="flex items-center gap-1.5 text-[11.5px] text-white/30">
+                          <Heart className="h-3.5 w-3.5" />
+                          <span className="tabular-nums font-semibold">{post.likesCount}</span>
+                          <span className="text-white/20">likes</span>
+                        </span>
+                        <span className="flex items-center gap-1.5 text-[11.5px] text-white/30">
+                          <Eye className="h-3.5 w-3.5" />
+                          <span className="tabular-nums font-semibold">{post.viewCount}</span>
+                          <span className="text-white/20">views</span>
+                        </span>
+                        <span className="flex items-center gap-1.5 text-[11.5px] text-white/30">
+                          <MessageSquare className="h-3.5 w-3.5" />
+                          <span className="tabular-nums font-semibold">{post.commentsCount}</span>
+                          <span className="text-white/20">comments</span>
+                        </span>
+                        {/* Engagement rate */}
+                        {post.viewCount > 0 && (
+                          <span className="ml-auto text-[10.5px] font-semibold text-white/20">
+                            {(((post.likesCount + post.commentsCount) / post.viewCount) * 100).toFixed(1)}% eng.
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Engagement tracker — own profile only */}
+            {isOwnProfile && <PublisherTrackingPanel />}
+          </div>
+        )}
 
         {/* About tab */}
         {tab === 'about' && (
@@ -2184,6 +3275,964 @@ export default function UserProfilePage() {
           </div>
         )}
 
+        {/* Services tab */}
+        {tab === 'services' && (() => {
+          const SERVICE_CATEGORIES: Record<string, { label: string; color: string; icon: string }> = {
+            design: { label: 'Design', color: 'text-pink-400 bg-pink-500/10 border-pink-500/20', icon: '🎨' },
+            development: { label: 'Development', color: 'text-blue-400 bg-blue-500/10 border-blue-500/20', icon: '💻' },
+            writing: { label: 'Writing', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', icon: '✍️' },
+            marketing: { label: 'Marketing', color: 'text-orange-400 bg-orange-500/10 border-orange-500/20', icon: '📣' },
+            consulting: { label: 'Consulting', color: 'text-violet-400 bg-violet-500/10 border-violet-500/20', icon: '🧠' },
+            photography: { label: 'Photography', color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20', icon: '📸' },
+            video: { label: 'Video', color: 'text-red-400 bg-red-500/10 border-red-500/20', icon: '🎬' },
+            music: { label: 'Music', color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20', icon: '🎵' },
+            business: { label: 'Business', color: 'text-amber-400 bg-amber-500/10 border-amber-500/20', icon: '📊' },
+            legal: { label: 'Legal', color: 'text-slate-400 bg-slate-500/10 border-slate-500/20', icon: '⚖️' },
+            finance: { label: 'Finance', color: 'text-teal-400 bg-teal-500/10 border-teal-500/20', icon: '💰' },
+            coaching: { label: 'Coaching', color: 'text-sky-400 bg-sky-500/10 border-sky-500/20', icon: '🏆' },
+            education: { label: 'Education', color: 'text-lime-400 bg-lime-500/10 border-lime-500/20', icon: '🎓' },
+            health: { label: 'Health', color: 'text-rose-400 bg-rose-500/10 border-rose-500/20', icon: '❤️' },
+            other: { label: 'Other', color: 'text-white/50 bg-white/[0.06] border-white/[0.10]', icon: '⭐' },
+          };
+
+          function formatPrice(service: ServiceItem) {
+            if (service.pricingModel === 'contact') return 'Contact for price';
+            const sym = service.currency === 'INR' ? '₹' : service.currency === 'EUR' ? '€' : '$';
+            const prefix = service.pricingModel === 'starting_from' ? 'From ' : service.pricingModel === 'hourly' ? '' : '';
+            const suffix = service.pricingModel === 'hourly' ? '/hr' : '';
+            return `${prefix}${sym}${service.basePrice.toLocaleString()}${suffix}`;
+          }
+
+          function StarRow({ rating, size = 'sm' }: { rating: number; size?: 'sm' | 'md' }) {
+            const dim = size === 'md' ? 'h-4 w-4' : 'h-3 w-3';
+            return (
+              <div className="flex items-center gap-0.5">
+                {[1,2,3,4,5].map(n => (
+                  <Star key={n} className={`${dim} ${n <= Math.round(rating) ? 'text-amber-400 fill-amber-400' : 'text-white/15'}`} />
+                ))}
+              </div>
+            );
+          }
+
+          function ServiceCard({ svc }: { svc: ServiceItem }) {
+            const cat = SERVICE_CATEGORIES[svc.category] ?? SERVICE_CATEGORIES.other;
+            const reviews = serviceReviews[svc.id] ?? [];
+            const canReview = !isOwnProfile && session && myServiceBookings.some(b => b.serviceId === svc.id && b.status === 'completed');
+            const [showReviews, setShowReviews] = useState(false);
+            return (
+              <div className="group relative rounded-[22px] border border-white/[0.07] bg-gradient-to-b from-white/[0.04] to-white/[0.02] overflow-hidden hover:border-white/[0.14] hover:shadow-[0_8px_40px_rgba(0,0,0,0.5)] transition-all duration-300">
+                {svc.featured && (
+                  <div className="absolute top-3 right-3 z-10 flex items-center gap-1 rounded-full px-2.5 py-1 text-[9.5px] font-black uppercase tracking-wider" style={{ background: 'linear-gradient(135deg,#C9A84C,#F0D878)', color: '#1a1208' }}>
+                    <Star className="h-2.5 w-2.5" /> Featured
+                  </div>
+                )}
+                {/* Service image / gradient header */}
+                <div className="relative h-36 overflow-hidden">
+                  {svc.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={svc.imageUrl} alt={svc.title} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  ) : (
+                    <div className="h-full w-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0f0c29 0%, #302b63 60%, #24243e 100%)' }}>
+                      <span className="text-5xl opacity-60">{cat.icon}</span>
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0D0D0F]/80 to-transparent" />
+                </div>
+
+                <div className="p-5">
+                  {/* Category badge + rating */}
+                  <div className="flex items-center justify-between mb-3">
+                    <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${cat.color}`}>
+                      {cat.icon} {cat.label}
+                    </span>
+                    {svc.reviewCount > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <StarRow rating={svc.rating} />
+                        <span className="text-[10px] text-white/35">{svc.rating} ({svc.reviewCount})</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <h3 className="font-bold text-white/90 text-[15px] leading-snug mb-1.5 group-hover:text-white transition-colors line-clamp-2">{svc.title}</h3>
+                  {svc.tagline && <p className="text-[12px] text-white/45 mb-3 line-clamp-2">{svc.tagline}</p>}
+
+                  {/* Tags */}
+                  {svc.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-4">
+                      {svc.tags.slice(0, 3).map((t) => (
+                        <span key={t} className="rounded-full border border-white/[0.07] bg-white/[0.04] px-2 py-0.5 text-[10px] text-white/40">{t}</span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Testimonial highlight */}
+                  {reviews.find(r => r.testimonial) && !showReviews && (
+                    <div className="mb-3 rounded-[12px] border border-amber-500/15 bg-amber-500/[0.06] px-3 py-2.5">
+                      <p className="text-[11px] text-amber-200/70 italic line-clamp-2">&quot;{reviews.find(r => r.testimonial)!.testimonial}&quot;</p>
+                      <p className="text-[10px] text-white/30 mt-1">— {reviews.find(r => r.testimonial)!.reviewerName}</p>
+                    </div>
+                  )}
+
+                  {/* Price & delivery */}
+                  <div className="flex items-center justify-between pt-3 border-t border-white/[0.06]">
+                    <div>
+                      <p className="text-[13px] font-black text-white/90">{formatPrice(svc)}</p>
+                      {svc.deliveryTime && (
+                        <p className="text-[10px] text-white/35 mt-0.5 flex items-center gap-1">
+                          <Clock className="h-2.5 w-2.5" /> {svc.deliveryTime} {svc.deliveryUnit ?? 'days'} delivery
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {svc.bookingCount > 0 && (
+                        <span className="text-[10px] text-white/30">{svc.bookingCount} booked</span>
+                      )}
+                      {!isOwnProfile && (
+                        <button
+                          type="button"
+                          onClick={() => { setBookingServiceId(svc.id); setBookingForm({ clientName: '', clientEmail: '', clientPhone: '', clientMessage: '', packageName: '', scheduledDate: '' }); setBookingSuccess(false); setBookingError(''); fetch('/api/services/analytics/track',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({serviceId:svc.id,type:'book_click',source:'profile'})}).catch(()=>{}); }}
+                          className="flex items-center gap-1.5 rounded-[10px] px-3 py-1.5 text-[11.5px] font-bold transition-all active:scale-95"
+                          style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', boxShadow: '0 3px 12px rgba(99,102,241,0.35)' }}
+                        >
+                          Book Now
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Reviews expand row */}
+                  {(reviews.length > 0 || canReview) && (
+                    <div className="mt-3 pt-3 border-t border-white/[0.05] flex items-center gap-2 flex-wrap">
+                      {reviews.length > 0 && (
+                        <button type="button" onClick={() => setShowReviews(v => !v)}
+                          className="text-[11px] font-semibold text-white/40 hover:text-white/70 transition flex items-center gap-1">
+                          {showReviews ? '▲ Hide' : '▼ Show'} {reviews.length} review{reviews.length !== 1 ? 's' : ''}
+                        </button>
+                      )}
+                      {canReview && (
+                        <button type="button" onClick={() => { setReviewServiceId(svc.id); setReviewForm({ rating: 5, headline: '', body: '', testimonial: '' }); setReviewSuccess(false); setReviewError(''); }}
+                          className="ml-auto flex items-center gap-1 rounded-[8px] border border-amber-500/25 bg-amber-500/10 px-2.5 py-1 text-[10.5px] font-bold text-amber-400 hover:bg-amber-500/20 transition">
+                          <Star className="h-2.5 w-2.5" /> Leave Review
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Expanded reviews */}
+                  {showReviews && reviews.length > 0 && (
+                    <div className="mt-3 space-y-3 max-h-72 overflow-y-auto [scrollbar-width:none]">
+                      {reviews.map(rev => (
+                        <div key={rev.id} className="rounded-[14px] border border-white/[0.06] bg-white/[0.02] p-3.5">
+                          <div className="flex items-start gap-2.5 mb-2">
+                            <div className="h-7 w-7 shrink-0 rounded-full overflow-hidden bg-white/[0.08] flex items-center justify-center ring-1 ring-white/[0.08]">
+                              {rev.reviewerAvatar ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={rev.reviewerAvatar} alt={rev.reviewerName} className="h-full w-full object-cover" />
+                              ) : (
+                                <span className="text-[10px] font-bold text-white/50">{rev.reviewerName.charAt(0).toUpperCase()}</span>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[11.5px] font-bold text-white/75">{rev.reviewerName}</p>
+                              <StarRow rating={rev.rating} />
+                            </div>
+                            <span className="text-[9.5px] text-white/25 shrink-0">{new Date(rev.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                          </div>
+                          <p className="text-[12px] font-semibold text-white/70 mb-1">{rev.headline}</p>
+                          <p className="text-[11px] text-white/45 leading-relaxed">{rev.body}</p>
+                          {rev.testimonial && (
+                            <div className="mt-2 rounded-[10px] border border-amber-500/15 bg-amber-500/[0.06] px-2.5 py-2">
+                              <p className="text-[10.5px] text-amber-200/65 italic">&quot;{rev.testimonial}&quot;</p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          }
+
+          const bookingTarget = bookingServiceId ? profileServices.find(s => s.id === bookingServiceId) : null;
+
+          return (
+            <div>
+              {/* Header with actions */}
+              <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
+                <div>
+                  <h2 className="text-[17px] font-bold text-white/90">
+                    {isOwnProfile ? 'My Services' : `Services by ${data?.user.name}`}
+                  </h2>
+                  <p className="text-[12px] text-white/35 mt-0.5">
+                    {profileServices.length} service{profileServices.length !== 1 ? 's' : ''} available
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {isOwnProfile && (
+                    <>
+                      {/* Sub tabs for own profile */}
+                      <div className="flex gap-1 p-1 rounded-[12px] bg-white/[0.05] border border-white/[0.07]">
+                        {([
+                          { id: 'catalogue', label: 'Catalogue' },
+                          { id: 'bookings', label: `Bookings${serviceBookings.length > 0 ? ` (${serviceBookings.length})` : ''}` },
+                          { id: 'analytics', label: '📊 Analytics' },
+                        ] as const).map(st => (
+                          <button key={st.id} type="button" onClick={() => setServicesSubTab(st.id)}
+                            className={`px-3 py-1.5 rounded-[9px] text-[11.5px] font-semibold transition-all ${servicesSubTab === st.id ? 'bg-white/[0.12] text-white' : 'text-white/40 hover:text-white/70'}`}>
+                            {st.label}
+                          </button>
+                        ))}
+                      </div>
+                      {/* Open catalogue button */}
+                      <Link
+                        href={`/services/${userId}`}
+                        target="_blank"
+                        className="flex items-center gap-1.5 rounded-[10px] border border-white/[0.09] bg-white/[0.04] px-2.5 py-1.5 text-[11.5px] font-semibold text-white/45 hover:text-white hover:bg-white/[0.08] transition-all"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        <span className="hidden sm:inline">View Catalogue</span>
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => { setServiceForm({ title: '', tagline: '', description: '', category: 'design', tags: [], pricingModel: 'fixed', basePrice: 0, currency: 'USD', isActive: true, featured: false, deliveryTime: 3, deliveryUnit: 'days' }); setServiceFormError(''); }}
+                        className="flex items-center gap-1.5 rounded-[11px] px-3.5 py-2 text-[12px] font-bold transition-all active:scale-95"
+                        style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', boxShadow: '0 3px 12px rgba(99,102,241,0.35)' }}
+                      >
+                        <Plus className="h-3.5 w-3.5" /> Add Service
+                      </button>
+                    </>
+                  )}
+                  {!isOwnProfile && profileServices.length > 0 && (
+                    <Link
+                      href={`/services/${userId}`}
+                      className="flex items-center gap-1.5 rounded-[11px] border border-white/[0.10] bg-white/[0.05] px-3.5 py-2 text-[12px] font-semibold text-white/60 hover:text-white hover:bg-white/[0.08] transition-all"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" /> Full Catalogue
+                    </Link>
+                  )}
+                </div>
+              </div>
+
+              {/* Bookings sub-tab (own profile only) */}
+              {isOwnProfile && servicesSubTab === 'bookings' && (
+                <div>
+                  {bookingsLoading ? (
+                    <div className="space-y-3">
+                      {[1,2,3].map(i => <div key={i} className="h-20 rounded-[18px] animate-pulse bg-white/[0.04]" />)}
+                    </div>
+                  ) : serviceBookings.length === 0 ? (
+                    <div className="rounded-[20px] border border-white/[0.06] bg-white/[0.03] p-16 text-center">
+                      <div className="h-12 w-12 rounded-[14px] border border-white/[0.08] bg-white/[0.04] flex items-center justify-center mx-auto mb-4">
+                        <Briefcase className="h-5 w-5 text-white/30" />
+                      </div>
+                      <p className="text-white/40 text-sm">No bookings yet.</p>
+                      <p className="text-[11px] text-white/25 mt-1">Bookings will appear here once clients book your services.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {serviceBookings.map((bkg) => {
+                        const statusColors: Record<string, string> = {
+                          pending: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+                          confirmed: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+                          completed: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+                          cancelled: 'bg-red-500/10 text-red-400 border-red-500/20',
+                        };
+                        return (
+                          <div key={bkg.id} className="rounded-[18px] border border-white/[0.06] bg-white/[0.02] p-4 flex flex-col gap-3">
+                            {/* Top row: service + status */}
+                            <div className="flex items-start justify-between gap-3 flex-wrap">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap mb-1">
+                                  <p className="text-[13.5px] font-bold text-white/85 truncate">{bkg.serviceTitle}</p>
+                                  {bkg.packageName && <span className="rounded-full bg-white/[0.07] border border-white/[0.09] px-2 py-0.5 text-[9.5px] font-semibold text-white/40">{bkg.packageName}</span>}
+                                </div>
+                                <p className="text-[12px] font-semibold text-white/65">{bkg.clientName}</p>
+                                {bkg.clientMessage && <p className="text-[11px] text-white/30 mt-1 line-clamp-2">{bkg.clientMessage}</p>}
+                                <p className="text-[10px] text-white/25 mt-1">{new Date(bkg.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}{bkg.scheduledDate && ` · Preferred: ${new Date(bkg.scheduledDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`}</p>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                {bkg.price != null && (
+                                  <span className="text-[13px] font-black text-white/70">{bkg.currency === 'INR' ? '₹' : '$'}{bkg.price.toLocaleString()}</span>
+                                )}
+                                <span className={`rounded-full border px-2.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wide ${statusColors[bkg.status] ?? statusColors.pending}`}>{bkg.status}</span>
+                              </div>
+                            </div>
+                            {/* Contact row */}
+                            <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-white/[0.04]">
+                              <a href={`mailto:${bkg.clientEmail}`}
+                                className="flex items-center gap-1.5 rounded-[9px] border border-blue-500/25 bg-blue-500/10 px-3 py-1.5 text-[11px] font-semibold text-blue-400 hover:bg-blue-500/20 transition-all">
+                                <MessageSquare className="h-3 w-3" /> Email
+                              </a>
+                              {bkg.clientPhone && (
+                                <a href={`tel:${bkg.clientPhone}`}
+                                  className="flex items-center gap-1.5 rounded-[9px] border border-emerald-500/25 bg-emerald-500/10 px-3 py-1.5 text-[11px] font-semibold text-emerald-400 hover:bg-emerald-500/20 transition-all">
+                                  <Zap className="h-3 w-3" /> Call {bkg.clientPhone}
+                                </a>
+                              )}
+                              <span className="text-[10.5px] text-white/30 ml-1">{bkg.clientEmail}</span>
+                              <div className="ml-auto flex items-center gap-2">
+                                {bkg.status === 'pending' && (
+                                  <button type="button" onClick={() => {
+                                    fetch('/api/services/bookings', { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ bookingId: bkg.id, status: 'confirmed' }) })
+                                      .then(r => r.ok ? r.json() : null)
+                                      .then((d: { booking?: ServiceBookingItem } | null) => { if (d?.booking) setServiceBookings(prev => prev.map(b => b.id === bkg.id ? d.booking! : b)); })
+                                      .catch(() => {});
+                                  }} className="rounded-[9px] bg-emerald-500/15 border border-emerald-500/25 px-3 py-1.5 text-[10.5px] font-bold text-emerald-400 hover:bg-emerald-500/25 transition">Confirm</button>
+                                )}
+                                {bkg.status === 'confirmed' && (
+                                  <button type="button" onClick={() => {
+                                    fetch('/api/services/bookings', { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ bookingId: bkg.id, status: 'completed' }) })
+                                      .then(r => r.ok ? r.json() : null)
+                                      .then((d: { booking?: ServiceBookingItem } | null) => { if (d?.booking) setServiceBookings(prev => prev.map(b => b.id === bkg.id ? d.booking! : b)); })
+                                      .catch(() => {});
+                                  }} className="rounded-[9px] bg-violet-500/15 border border-violet-500/25 px-3 py-1.5 text-[10.5px] font-bold text-violet-400 hover:bg-violet-500/25 transition">Mark Complete</button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Analytics sub-tab (own profile only) */}
+              {isOwnProfile && servicesSubTab === 'analytics' && (() => {
+                if (analyticsLoading) return (
+                  <div className="space-y-4">
+                    {[1,2,3].map(i => <div key={i} className="h-24 rounded-[18px] animate-pulse bg-white/[0.04]" />)}
+                  </div>
+                );
+                if (!analyticsData) return (
+                  <div className="rounded-[20px] border border-white/[0.06] bg-white/[0.03] p-16 text-center">
+                    <div className="h-12 w-12 rounded-[14px] border border-white/[0.08] bg-white/[0.04] flex items-center justify-center mx-auto mb-4">
+                      <BarChart3 className="h-5 w-5 text-white/30" />
+                    </div>
+                    <p className="text-white/40 text-sm">No analytics data yet.</p>
+                    <p className="text-[11px] text-white/25 mt-1">Analytics will appear once your services start getting views.</p>
+                  </div>
+                );
+                const a = analyticsData;
+                const maxTrend = Math.max(...a.trend30d, 1);
+                const fmtN = (n: number) => n >= 1000 ? `${(n/1000).toFixed(1)}k` : String(n);
+                const totalSrc = (a.sourceBreakdown.profile + a.sourceBreakdown.catalogue + a.sourceBreakdown.direct) || 1;
+                const updatedLabel = analyticsLastUpdated
+                  ? analyticsSecondsAgo < 5 ? 'just now' : analyticsSecondsAgo < 60 ? `${analyticsSecondsAgo}s ago` : `${Math.floor(analyticsSecondsAgo/60)}m ago`
+                  : null;
+                return (
+                  <div className="space-y-5">
+                    {/* Live header */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                        </span>
+                        <span className="text-[11px] font-semibold text-emerald-400">Live</span>
+                        {updatedLabel && <span className="text-[10.5px] text-white/25">· Updated {updatedLabel}</span>}
+                      </div>
+                      <button type="button" onClick={() => {
+                        setAnalyticsLoading(true);
+                        fetch('/api/services/analytics')
+                          .then(r => r.ok ? r.json() : null)
+                          .then((d: { analytics?: ProviderAnalyticsData } | null) => {
+                            if (d?.analytics) { setAnalyticsData(d.analytics); setAnalyticsLastUpdated(new Date()); setAnalyticsSecondsAgo(0); }
+                          })
+                          .catch(() => {})
+                          .finally(() => setAnalyticsLoading(false));
+                      }} className="flex items-center gap-1.5 text-[11px] font-semibold text-white/30 hover:text-white/60 transition">
+                        <RefreshCw className="h-3 w-3" /> Refresh now
+                      </button>
+                    </div>
+
+                    {/* KPI Cards */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {[
+                        { label: 'Total Views', value: fmtN(a.totalViews), sub: `${fmtN(a.totalUniqueViews)} unique`, icon: '👁️', color: 'from-blue-500/10 to-blue-600/5' },
+                        { label: 'Book Clicks', value: fmtN(a.totalBookClicks), sub: `${a.overallConversionRate.toFixed(1)}% CTR`, icon: '🖱️', color: 'from-violet-500/10 to-violet-600/5' },
+                        { label: 'Bookings', value: fmtN(a.totalBookings), sub: `${fmtN(a.totalCompleted)} completed`, icon: '📋', color: 'from-emerald-500/10 to-emerald-600/5' },
+                        { label: 'Revenue', value: `₹${fmtN(a.totalRevenue)}`, sub: `${a.totalReviews} reviews · ⭐ ${a.avgRating.toFixed(1)}`, icon: '💰', color: 'from-amber-500/10 to-amber-600/5' },
+                      ].map(kpi => (
+                        <div key={kpi.label} className={`rounded-[18px] border border-white/[0.07] bg-gradient-to-br ${kpi.color} p-4`}>
+                          <div className="text-xl mb-2">{kpi.icon}</div>
+                          <div className="text-[20px] font-black text-white leading-none">{kpi.value}</div>
+                          <div className="text-[11px] text-white/40 mt-1 font-medium">{kpi.label}</div>
+                          <div className="text-[10px] text-white/25 mt-0.5">{kpi.sub}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* 30-day Trend Chart */}
+                    <div className="rounded-[18px] border border-white/[0.07] bg-white/[0.02] p-5">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <p className="text-[13px] font-bold text-white/80">30-Day Views Trend</p>
+                          <p className="text-[11px] text-white/30 mt-0.5">Daily view count over the past month</p>
+                        </div>
+                        <span className="text-[11px] font-semibold text-white/40 bg-white/[0.05] rounded-[8px] px-2.5 py-1">{fmtN(a.totalViews)} total</span>
+                      </div>
+                      <div className="flex items-end gap-1 h-20">
+                        {a.trend30d.map((v, i) => (
+                          <div key={i} className="flex-1 flex flex-col items-center gap-0.5 group relative">
+                            <div
+                              className="w-full rounded-[3px] bg-gradient-to-t from-violet-500/60 to-violet-400/30 group-hover:from-violet-500/80 group-hover:to-violet-400/50 transition-all cursor-default"
+                              style={{ height: `${Math.max(4, Math.round((v / maxTrend) * 72))}px` }}
+                              title={`Day ${i+1}: ${v} views`}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex justify-between mt-2">
+                        <span className="text-[9.5px] text-white/20">30 days ago</span>
+                        <span className="text-[9.5px] text-white/20">Today</span>
+                      </div>
+                    </div>
+
+                    {/* Conversion Funnel + Source Breakdown */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Funnel */}
+                      <div className="rounded-[18px] border border-white/[0.07] bg-white/[0.02] p-5">
+                        <p className="text-[13px] font-bold text-white/80 mb-4">Conversion Funnel</p>
+                        {[
+                          { label: 'Views', value: a.totalViews, color: 'bg-blue-500/50', pct: 100 },
+                          { label: 'Detail Opens', value: a.services.reduce((s,sv) => s + sv.detailOpens, 0), color: 'bg-indigo-500/50', pct: a.totalViews > 0 ? (a.services.reduce((s,sv) => s + sv.detailOpens, 0) / a.totalViews) * 100 : 0 },
+                          { label: 'Book Clicks', value: a.totalBookClicks, color: 'bg-violet-500/50', pct: a.totalViews > 0 ? (a.totalBookClicks / a.totalViews) * 100 : 0 },
+                          { label: 'Bookings', value: a.totalBookings, color: 'bg-emerald-500/50', pct: a.totalViews > 0 ? (a.totalBookings / a.totalViews) * 100 : 0 },
+                          { label: 'Completed', value: a.totalCompleted, color: 'bg-teal-500/50', pct: a.totalViews > 0 ? (a.totalCompleted / a.totalViews) * 100 : 0 },
+                        ].map(step => (
+                          <div key={step.label} className="mb-2.5">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-[11px] text-white/50 font-medium">{step.label}</span>
+                              <span className="text-[11px] font-bold text-white/70">{fmtN(step.value)} <span className="text-white/30 font-normal">({step.pct.toFixed(1)}%)</span></span>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                              <div className={`h-full rounded-full ${step.color} transition-all`} style={{ width: `${Math.max(1, step.pct)}%` }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Source Breakdown + Peak Hour */}
+                      <div className="space-y-4">
+                        <div className="rounded-[18px] border border-white/[0.07] bg-white/[0.02] p-5">
+                          <p className="text-[13px] font-bold text-white/80 mb-4">Traffic Sources</p>
+                          {[
+                            { label: 'Profile Page', value: a.sourceBreakdown.profile, icon: '👤', color: 'bg-blue-500/50' },
+                            { label: 'Catalogue', value: a.sourceBreakdown.catalogue, icon: '📂', color: 'bg-violet-500/50' },
+                            { label: 'Direct', value: a.sourceBreakdown.direct, icon: '🔗', color: 'bg-emerald-500/50' },
+                          ].map(src => {
+                            const pct = (src.value / totalSrc) * 100;
+                            return (
+                              <div key={src.label} className="mb-3">
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-[11px] text-white/50">{src.icon} {src.label}</span>
+                                  <span className="text-[11px] font-bold text-white/70">{fmtN(src.value)} <span className="text-white/30">({pct.toFixed(0)}%)</span></span>
+                                </div>
+                                <div className="h-1.5 rounded-full bg-white/[0.06]">
+                                  <div className={`h-full rounded-full ${src.color}`} style={{ width: `${pct}%` }} />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div className="rounded-[18px] border border-white/[0.07] bg-white/[0.02] p-5 flex items-center gap-4">
+                          <div className="h-12 w-12 rounded-[14px] bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-xl shrink-0">⏰</div>
+                          <div>
+                            <p className="text-[11px] text-white/40 font-medium uppercase tracking-wide">Peak Hour</p>
+                            <p className="text-[18px] font-black text-white/85 leading-tight">
+                              {a.peakHour === 0 ? '12 AM' : a.peakHour < 12 ? `${a.peakHour} AM` : a.peakHour === 12 ? '12 PM' : `${a.peakHour - 12} PM`}
+                            </p>
+                            <p className="text-[10px] text-white/25 mt-0.5">Most views arrive around this time</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Top Service Highlight */}
+                    {a.topService && (
+                      <div className="rounded-[18px] border border-amber-500/20 bg-amber-500/5 p-5">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-base">🏆</span>
+                          <p className="text-[12px] font-bold text-amber-400 uppercase tracking-wide">Top Performing Service</p>
+                        </div>
+                        <div className="flex items-start justify-between gap-4 flex-wrap">
+                          <div>
+                            <p className="text-[15px] font-bold text-white/85">{a.topService.serviceTitle}</p>
+                            <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                              <span className="text-[11px] text-white/40">{fmtN(a.topService.views)} views</span>
+                              <span className="text-[11px] text-white/40">{fmtN(a.topService.bookingsSubmitted)} bookings</span>
+                              {a.topService.avgRating > 0 && <span className="text-[11px] text-amber-400/70">⭐ {a.topService.avgRating.toFixed(1)}</span>}
+                              {a.topService.estimatedRevenue > 0 && <span className="text-[11px] text-emerald-400/70">₹{fmtN(a.topService.estimatedRevenue)} revenue</span>}
+                            </div>
+                          </div>
+                          <div className="flex items-end gap-0.5 h-10 shrink-0">
+                            {a.topService.trend7d.map((v, i) => {
+                              const mx = Math.max(...a.topService!.trend7d, 1);
+                              return <div key={i} className="w-4 rounded-[2px] bg-amber-500/40" style={{ height: `${Math.max(3, Math.round((v/mx)*36))}px` }} />;
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Per-service breakdown table */}
+                    {a.services.length > 0 && (
+                      <div className="rounded-[18px] border border-white/[0.07] bg-white/[0.02] overflow-hidden">
+                        <div className="px-5 py-4 border-b border-white/[0.05]">
+                          <p className="text-[13px] font-bold text-white/80">Per-Service Breakdown</p>
+                        </div>
+                        <div className="divide-y divide-white/[0.04]">
+                          {a.services.map(sv => {
+                            const mx7 = Math.max(...sv.trend7d, 1);
+                            return (
+                              <div key={sv.serviceId} className="px-5 py-4 flex items-center gap-4 hover:bg-white/[0.02] transition-colors">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-[12.5px] font-semibold text-white/80 truncate">{sv.serviceTitle}</p>
+                                  <div className="flex items-center gap-3 mt-1 flex-wrap">
+                                    <span className="text-[10.5px] text-white/35">{fmtN(sv.views)} views</span>
+                                    <span className="text-[10.5px] text-white/35">{fmtN(sv.bookingsSubmitted)} bookings</span>
+                                    <span className="text-[10.5px] text-white/35">{sv.conversionRate.toFixed(1)}% conv.</span>
+                                    {sv.avgRating > 0 && <span className="text-[10.5px] text-amber-400/60">⭐ {sv.avgRating.toFixed(1)}</span>}
+                                  </div>
+                                </div>
+                                {/* 7-day sparkline */}
+                                <div className="flex items-end gap-0.5 h-8 shrink-0">
+                                  {sv.trend7d.map((v, i) => (
+                                    <div key={i} className="w-3 rounded-[2px] bg-violet-500/35" style={{ height: `${Math.max(2, Math.round((v/mx7)*28))}px` }} />
+                                  ))}
+                                </div>
+                                <div className="text-right shrink-0 min-w-[64px]">
+                                  {sv.estimatedRevenue > 0 && <p className="text-[12px] font-bold text-emerald-400/70">₹{fmtN(sv.estimatedRevenue)}</p>}
+                                  <p className="text-[10px] text-white/25">{sv.reviews} reviews</p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Auto-refresh note */}
+                    <p className="text-center text-[10px] text-white/15">Analytics refresh automatically every 30 seconds while this tab is open.</p>
+                  </div>
+                );
+              })()}
+
+              {/* Catalogue sub-tab */}
+              {(!isOwnProfile || servicesSubTab === 'catalogue') && (
+                <>
+                  {servicesLoading ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {[1,2,3].map(i => <div key={i} className="h-64 rounded-[22px] animate-pulse bg-white/[0.04]" />)}
+                    </div>
+                  ) : profileServices.length === 0 ? (
+                    <div className="rounded-[20px] border border-white/[0.06] bg-white/[0.03] p-16 text-center">
+                      <div className="h-12 w-12 rounded-[14px] border border-white/[0.08] bg-white/[0.04] flex items-center justify-center mx-auto mb-4">
+                        <Briefcase className="h-5 w-5 text-white/30" />
+                      </div>
+                      <p className="text-white/40 text-sm">{isOwnProfile ? 'No services listed yet.' : 'No services available.'}</p>
+                      {isOwnProfile && (
+                        <button type="button" onClick={() => { setServiceForm({ title: '', tagline: '', description: '', category: 'design', tags: [], pricingModel: 'fixed', basePrice: 0, currency: 'USD', isActive: true, featured: false, deliveryTime: 3, deliveryUnit: 'days' }); setServiceFormError(''); }}
+                          className="inline-flex items-center gap-1.5 mt-4 text-[13px] font-semibold text-violet-400 hover:text-violet-300 transition">
+                          <Plus className="h-4 w-4" /> Add your first service
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {profileServices.map(svc => (
+                        <div key={svc.id} className="relative">
+                          <ServiceCard svc={svc} />
+                          {isOwnProfile && (
+                            <div className="absolute top-3 left-3 flex gap-1.5">
+                              <button type="button" onClick={() => { setServiceForm(svc); setServiceFormError(''); }}
+                                className="flex items-center gap-1 rounded-[8px] border border-white/[0.12] bg-black/60 backdrop-blur-sm px-2.5 py-1 text-[10px] font-semibold text-white/60 hover:text-white transition">
+                                <Edit2 className="h-2.5 w-2.5" /> Edit
+                              </button>
+                              <button type="button" onClick={async () => {
+                                if (!confirm('Delete this service?')) return;
+                                await fetch(`/api/services/${svc.id}`, { method: 'DELETE' });
+                                setProfileServices(prev => prev.filter(s => s.id !== svc.id));
+                              }} className="flex items-center gap-1 rounded-[8px] border border-red-500/20 bg-red-500/10 backdrop-blur-sm px-2.5 py-1 text-[10px] font-semibold text-red-400 hover:bg-red-500/20 transition">
+                                <X className="h-2.5 w-2.5" /> Del
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* ── Booking modal ── */}
+              {bookingTarget && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                  <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setBookingServiceId(null)} />
+                  <div className="relative z-10 w-full max-w-lg bg-[#111113] border border-white/[0.09] rounded-[24px] overflow-hidden shadow-[0_32px_80px_rgba(0,0,0,0.9)]">
+                    <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.07]">
+                      <div>
+                        <h3 className="font-bold text-white text-[15px]">Book: {bookingTarget.title}</h3>
+                        <p className="text-[11px] text-white/35 mt-0.5">Fill in your details and we&apos;ll get back to you</p>
+                      </div>
+                      <button onClick={() => setBookingServiceId(null)} className="h-8 w-8 rounded-full bg-white/[0.06] flex items-center justify-center hover:bg-white/[0.10] transition-colors">
+                        <X className="h-4 w-4 text-white/60" />
+                      </button>
+                    </div>
+                    <div className="px-5 py-5 space-y-4 max-h-[70vh] overflow-y-auto [scrollbar-width:none]">
+                      {bookingSuccess ? (
+                        <div className="py-10 text-center">
+                          <div className="h-14 w-14 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: 'linear-gradient(135deg,#10b981,#059669)' }}>
+                            <Check className="h-7 w-7 text-white" />
+                          </div>
+                          <p className="font-bold text-white text-[16px]">Booking Sent!</p>
+                          <p className="text-[12px] text-white/40 mt-1">The service provider will reach out to you shortly.</p>
+                          <button type="button" onClick={() => setBookingServiceId(null)} className="mt-5 rounded-[12px] bg-white/[0.08] border border-white/[0.10] px-5 py-2 text-[13px] font-semibold text-white/70 hover:text-white transition">Done</button>
+                        </div>
+                      ) : (
+                        <form onSubmit={async (e) => {
+                          e.preventDefault();
+                          setBookingSubmitting(true);
+                          setBookingError('');
+                          try {
+                            const res = await fetch('/api/services/bookings', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ serviceId: bookingTarget.id, ...bookingForm }) });
+                            const d = await res.json() as { error?: string };
+                            if (!res.ok) { setBookingError(d.error ?? 'Failed to submit'); return; }
+                            fetch('/api/services/analytics/track',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({serviceId:bookingTarget.id,type:'booking_submitted',source:'profile'})}).catch(()=>{});
+                            setBookingSuccess(true);
+                          } catch { setBookingError('Network error. Please try again.'); }
+                          finally { setBookingSubmitting(false); }
+                        }} className="space-y-4">
+                          {bookingTarget.packages && bookingTarget.packages.length > 0 && (
+                            <div>
+                              <label className="block text-[11.5px] font-semibold text-white/50 mb-2 uppercase tracking-[0.10em]">Select Package</label>
+                              <div className="grid grid-cols-1 gap-2">
+                                {bookingTarget.packages.map(pkg => (
+                                  <button key={pkg.name} type="button" onClick={() => setBookingForm(f => ({ ...f, packageName: pkg.name }))}
+                                    className={`text-left rounded-[14px] border px-4 py-3 transition-all ${bookingForm.packageName === pkg.name ? 'border-violet-500/50 bg-violet-500/10' : 'border-white/[0.07] bg-white/[0.03] hover:border-white/[0.12]'}`}>
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-[13px] font-bold text-white/85">{pkg.name}</span>
+                                      <span className="text-[13px] font-black text-white/80">{bookingTarget.currency === 'INR' ? '₹' : '$'}{pkg.price.toLocaleString()}</span>
+                                    </div>
+                                    <p className="text-[11px] text-white/40 line-clamp-2">{pkg.description}</p>
+                                    <p className="text-[10px] text-white/25 mt-1">{pkg.deliveryTime} {pkg.deliveryUnit} delivery</p>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          <div>
+                            <label className="block text-[11.5px] font-semibold text-white/50 mb-1.5 uppercase tracking-[0.10em]">Your Name *</label>
+                            <input value={bookingForm.clientName} onChange={e => setBookingForm(f => ({ ...f, clientName: e.target.value }))} required placeholder="Full name"
+                              className="w-full rounded-[12px] border border-white/[0.09] bg-white/[0.04] px-4 py-2.5 text-[13px] text-white placeholder-white/25 outline-none focus:border-violet-500/50 focus:bg-violet-500/5 transition-all" />
+                          </div>
+                          <div>
+                            <label className="block text-[11.5px] font-semibold text-white/50 mb-1.5 uppercase tracking-[0.10em]">Email *</label>
+                            <input type="email" value={bookingForm.clientEmail} onChange={e => setBookingForm(f => ({ ...f, clientEmail: e.target.value }))} required placeholder="you@example.com"
+                              className="w-full rounded-[12px] border border-white/[0.09] bg-white/[0.04] px-4 py-2.5 text-[13px] text-white placeholder-white/25 outline-none focus:border-violet-500/50 focus:bg-violet-500/5 transition-all" />
+                          </div>
+                          <div>
+                            <label className="block text-[11.5px] font-semibold text-white/50 mb-1.5 uppercase tracking-[0.10em]">Phone Number</label>
+                            <input type="tel" value={bookingForm.clientPhone} onChange={e => setBookingForm(f => ({ ...f, clientPhone: e.target.value }))} placeholder="+91 98765 43210"
+                              className="w-full rounded-[12px] border border-white/[0.09] bg-white/[0.04] px-4 py-2.5 text-[13px] text-white placeholder-white/25 outline-none focus:border-violet-500/50 focus:bg-violet-500/5 transition-all" />
+                          </div>
+                          <div>
+                            <label className="block text-[11.5px] font-semibold text-white/50 mb-1.5 uppercase tracking-[0.10em]">Preferred Date</label>
+                            <input type="date" value={bookingForm.scheduledDate} onChange={e => setBookingForm(f => ({ ...f, scheduledDate: e.target.value }))}
+                              className="w-full rounded-[12px] border border-white/[0.09] bg-white/[0.04] px-4 py-2.5 text-[13px] text-white/70 outline-none focus:border-violet-500/50 transition-all" />
+                          </div>
+                          <div>
+                            <label className="block text-[11.5px] font-semibold text-white/50 mb-1.5 uppercase tracking-[0.10em]">Message</label>
+                            <textarea rows={3} value={bookingForm.clientMessage} onChange={e => setBookingForm(f => ({ ...f, clientMessage: e.target.value }))} placeholder="Describe what you need…"
+                              className="w-full rounded-[12px] border border-white/[0.09] bg-white/[0.04] px-4 py-2.5 text-[13px] text-white placeholder-white/25 outline-none focus:border-violet-500/50 transition-all resize-none" />
+                          </div>
+                          {bookingError && <p className="text-[12px] text-rose-400">{bookingError}</p>}
+                          <div className="flex gap-3 pt-1">
+                            <button type="button" onClick={() => setBookingServiceId(null)} className="flex-1 h-10 rounded-[12px] border border-white/[0.08] text-white/55 text-sm hover:bg-white/[0.05] transition-colors">Cancel</button>
+                            <button type="submit" disabled={bookingSubmitting} className="flex-1 h-10 rounded-[12px] font-bold text-sm text-white transition-all active:scale-[0.98] disabled:opacity-60" style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', boxShadow: '0 3px 16px rgba(99,102,241,0.4)' }}>
+                              {bookingSubmitting ? 'Sending…' : 'Send Booking Request'}
+                            </button>
+                          </div>
+                        </form>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ── Leave a Review modal ── */}
+              {reviewServiceId && !isOwnProfile && (() => {
+                const targetSvc = profileServices.find(s => s.id === reviewServiceId);
+                return (
+                  <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/75 backdrop-blur-md" onClick={() => setReviewServiceId(null)} />
+                    <div className="relative z-10 w-full max-w-lg bg-[#0E0E10] border border-white/[0.09] rounded-[28px] overflow-hidden shadow-[0_40px_100px_rgba(0,0,0,0.95)]">
+                      {/* Header */}
+                      <div className="relative overflow-hidden px-6 py-5 border-b border-white/[0.07]" style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.12) 0%, rgba(217,119,6,0.06) 100%)' }}>
+                        <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(245,158,11,0.15) 0%, transparent 70%)' }} />
+                        <div className="relative flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-amber-400/70 mb-1">Leave a Review</p>
+                            <h2 className="font-bold text-white text-[16px] leading-tight">{targetSvc?.title ?? 'Service Review'}</h2>
+                            <p className="text-[11px] text-white/35 mt-0.5">Share your experience to help others make informed decisions</p>
+                          </div>
+                          <button onClick={() => setReviewServiceId(null)} className="shrink-0 h-8 w-8 rounded-full border border-white/[0.10] bg-white/[0.06] flex items-center justify-center hover:bg-white/[0.12] transition-colors">
+                            <X className="h-4 w-4 text-white/60" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="px-6 py-5 max-h-[72vh] overflow-y-auto [scrollbar-width:none]">
+                        {reviewSuccess ? (
+                          <div className="py-12 text-center">
+                            <div className="h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-5 shadow-[0_0_30px_rgba(245,158,11,0.4)]" style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)' }}>
+                              <Star className="h-8 w-8 text-white fill-white" />
+                            </div>
+                            <p className="font-black text-white text-[18px] mb-2">Review Submitted!</p>
+                            <p className="text-[13px] text-white/40 leading-relaxed">Thank you for your feedback. It helps others choose the right service.</p>
+                            <button onClick={() => setReviewServiceId(null)} className="mt-6 rounded-[14px] border border-white/[0.10] bg-white/[0.06] px-6 py-2.5 text-[13px] font-semibold text-white/70 hover:text-white hover:bg-white/[0.10] transition-all">Close</button>
+                          </div>
+                        ) : (
+                          <form onSubmit={async (e) => {
+                            e.preventDefault();
+                            setReviewSubmitting(true);
+                            setReviewError('');
+                            try {
+                              const res = await fetch('/api/services/reviews', {
+                                method: 'POST',
+                                headers: { 'content-type': 'application/json' },
+                                body: JSON.stringify({ serviceId: reviewServiceId, ...reviewForm }),
+                              });
+                              const d = await res.json() as { review?: ServiceReviewItem; error?: string };
+                              if (!res.ok) { setReviewError(d.error ?? 'Failed to submit.'); return; }
+                              if (d.review) {
+                                setServiceReviews(prev => ({ ...prev, [reviewServiceId]: [d.review!, ...(prev[reviewServiceId] ?? [])] }));
+                                setProfileServices(prev => prev.map(s => s.id === reviewServiceId
+                                  ? { ...s, reviewCount: s.reviewCount + 1, rating: Math.round(((s.rating * s.reviewCount) + reviewForm.rating) / (s.reviewCount + 1) * 10) / 10 }
+                                  : s));
+                              }
+                              setReviewSuccess(true);
+                            } catch { setReviewError('Network error. Please try again.'); }
+                            finally { setReviewSubmitting(false); }
+                          }} className="space-y-5">
+
+                            {/* Star Rating */}
+                            <div>
+                              <label className="block text-[10.5px] font-bold uppercase tracking-[0.14em] text-white/40 mb-3">Overall Rating *</label>
+                              <div className="flex items-center gap-2">
+                                {[1,2,3,4,5].map(n => (
+                                  <button key={n} type="button" onClick={() => setReviewForm(f => ({ ...f, rating: n }))}
+                                    className="transition-transform hover:scale-110 active:scale-95">
+                                    <Star className={`h-8 w-8 transition-colors ${n <= reviewForm.rating ? 'text-amber-400 fill-amber-400' : 'text-white/15 hover:text-amber-400/50'}`} />
+                                  </button>
+                                ))}
+                                <span className="ml-2 text-[13px] font-bold text-white/50">
+                                  {['','Poor','Fair','Good','Great','Excellent!'][reviewForm.rating]}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-[10.5px] font-bold uppercase tracking-[0.14em] text-white/40 mb-1.5">Review Headline *</label>
+                              <input value={reviewForm.headline} onChange={e => setReviewForm(f => ({ ...f, headline: e.target.value }))} required maxLength={100}
+                                placeholder="Summarise your experience in one line"
+                                className="w-full rounded-[12px] border border-white/[0.09] bg-white/[0.04] px-4 py-2.5 text-[13px] text-white placeholder-white/20 outline-none focus:border-amber-500/40 focus:bg-amber-500/[0.04] transition-all" />
+                            </div>
+
+                            <div>
+                              <label className="block text-[10.5px] font-bold uppercase tracking-[0.14em] text-white/40 mb-1.5">Detailed Review *</label>
+                              <textarea rows={4} value={reviewForm.body} onChange={e => setReviewForm(f => ({ ...f, body: e.target.value }))} required maxLength={1000}
+                                placeholder="Describe the quality of work, communication, and delivery…"
+                                className="w-full rounded-[12px] border border-white/[0.09] bg-white/[0.04] px-4 py-2.5 text-[13px] text-white placeholder-white/20 outline-none focus:border-amber-500/40 transition-all resize-none" />
+                              <p className="text-[10px] text-white/20 mt-1 text-right">{reviewForm.body.length}/1000</p>
+                            </div>
+
+                            <div>
+                              <label className="block text-[10.5px] font-bold uppercase tracking-[0.14em] text-white/40 mb-1.5">
+                                Testimonial Quote <span className="text-white/25 normal-case tracking-normal font-normal">(optional — shown publicly on the service card)</span>
+                              </label>
+                              <textarea rows={2} value={reviewForm.testimonial} onChange={e => setReviewForm(f => ({ ...f, testimonial: e.target.value }))} maxLength={200}
+                                placeholder={'A short quote that can be featured publicly, e.g. "Delivered beyond expectations!"'}
+                                className="w-full rounded-[12px] border border-amber-500/20 bg-amber-500/[0.04] px-4 py-2.5 text-[13px] text-white placeholder-white/20 outline-none focus:border-amber-500/40 transition-all resize-none" />
+                            </div>
+
+                            {reviewError && (
+                              <p className="text-[12px] text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-[10px] px-3 py-2">{reviewError}</p>
+                            )}
+
+                            <div className="flex gap-3 pt-1">
+                              <button type="button" onClick={() => setReviewServiceId(null)} className="flex-1 h-11 rounded-[13px] border border-white/[0.09] text-white/55 text-[13px] font-semibold hover:bg-white/[0.05] transition-all">Cancel</button>
+                              <button type="submit" disabled={reviewSubmitting}
+                                className="flex-1 h-11 rounded-[13px] font-black text-[13px] text-white transition-all active:scale-[0.98] disabled:opacity-60"
+                                style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)', boxShadow: '0 4px 20px rgba(245,158,11,0.35)' }}>
+                                {reviewSubmitting ? (
+                                  <span className="flex items-center justify-center gap-2">
+                                    <div className="h-3.5 w-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                                    Submitting…
+                                  </span>
+                                ) : 'Submit Review'}
+                              </button>
+                            </div>
+                          </form>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* ── Service Form modal (own profile) ── */}
+              {isOwnProfile && serviceForm !== null && (() => {
+                const isEdit = !!serviceForm.id;
+                const categories = ['design','development','writing','marketing','consulting','photography','video','music','business','legal','finance','coaching','education','health','other'];
+                const tagInput = serviceTagInput;
+                const setTagInput = setServiceTagInput;
+                return (
+                  <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setServiceForm(null)} />
+                    <div className="relative z-10 w-full max-w-2xl bg-[#111113] border border-white/[0.09] rounded-[24px] overflow-hidden shadow-[0_32px_80px_rgba(0,0,0,0.9)]">
+                      <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.07]">
+                        <div>
+                          <h3 className="font-bold text-white text-[15px]">{isEdit ? 'Edit Service' : 'Add New Service'}</h3>
+                          <p className="text-[11px] text-white/35 mt-0.5">Build your service listing</p>
+                        </div>
+                        <button onClick={() => setServiceForm(null)} className="h-8 w-8 rounded-full bg-white/[0.06] flex items-center justify-center hover:bg-white/[0.10] transition-colors">
+                          <X className="h-4 w-4 text-white/60" />
+                        </button>
+                      </div>
+                      <div className="px-6 py-5 space-y-5 max-h-[75vh] overflow-y-auto [scrollbar-width:none]">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="sm:col-span-2">
+                            <label className="block text-[11px] font-semibold text-white/45 mb-1.5 uppercase tracking-[0.12em]">Title *</label>
+                            <input value={serviceForm.title ?? ''} onChange={e => setServiceForm(f => ({ ...f!, title: e.target.value }))} placeholder="e.g. Professional Logo Design"
+                              className="w-full rounded-[12px] border border-white/[0.09] bg-white/[0.04] px-4 py-2.5 text-[13px] text-white placeholder-white/25 outline-none focus:border-violet-500/50 transition-all" />
+                          </div>
+                          <div className="sm:col-span-2">
+                            <label className="block text-[11px] font-semibold text-white/45 mb-1.5 uppercase tracking-[0.12em]">Tagline</label>
+                            <input value={serviceForm.tagline ?? ''} onChange={e => setServiceForm(f => ({ ...f!, tagline: e.target.value }))} placeholder="A short punchy one-liner"
+                              className="w-full rounded-[12px] border border-white/[0.09] bg-white/[0.04] px-4 py-2.5 text-[13px] text-white placeholder-white/25 outline-none focus:border-violet-500/50 transition-all" />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold text-white/45 mb-1.5 uppercase tracking-[0.12em]">Category *</label>
+                            <select value={serviceForm.category ?? 'design'} onChange={e => setServiceForm(f => ({ ...f!, category: e.target.value as ServiceItem['category'] }))}
+                              className="w-full rounded-[12px] border border-white/[0.09] bg-[#111113] px-4 py-2.5 text-[13px] text-white outline-none focus:border-violet-500/50 transition-all">
+                              {categories.map(c => <option key={c} value={c}>{SERVICE_CATEGORIES[c]?.label ?? c}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold text-white/45 mb-1.5 uppercase tracking-[0.12em]">Pricing Model</label>
+                            <select value={serviceForm.pricingModel ?? 'fixed'} onChange={e => setServiceForm(f => ({ ...f!, pricingModel: e.target.value as ServiceItem['pricingModel'] }))}
+                              className="w-full rounded-[12px] border border-white/[0.09] bg-[#111113] px-4 py-2.5 text-[13px] text-white outline-none focus:border-violet-500/50 transition-all">
+                              <option value="fixed">Fixed Price</option>
+                              <option value="hourly">Hourly Rate</option>
+                              <option value="starting_from">Starting From</option>
+                              <option value="contact">Contact for Price</option>
+                            </select>
+                          </div>
+                          {serviceForm.pricingModel !== 'contact' && (
+                            <div>
+                              <label className="block text-[11px] font-semibold text-white/45 mb-1.5 uppercase tracking-[0.12em]">Base Price</label>
+                              <input type="number" min={0} value={serviceForm.basePrice ?? 0} onChange={e => setServiceForm(f => ({ ...f!, basePrice: +e.target.value }))}
+                                className="w-full rounded-[12px] border border-white/[0.09] bg-white/[0.04] px-4 py-2.5 text-[13px] text-white outline-none focus:border-violet-500/50 transition-all" />
+                            </div>
+                          )}
+                          <div>
+                            <label className="block text-[11px] font-semibold text-white/45 mb-1.5 uppercase tracking-[0.12em]">Currency</label>
+                            <select value={serviceForm.currency ?? 'USD'} onChange={e => setServiceForm(f => ({ ...f!, currency: e.target.value }))}
+                              className="w-full rounded-[12px] border border-white/[0.09] bg-[#111113] px-4 py-2.5 text-[13px] text-white outline-none focus:border-violet-500/50 transition-all">
+                              <option value="USD">USD ($)</option>
+                              <option value="INR">INR (₹)</option>
+                              <option value="EUR">EUR (€)</option>
+                              <option value="GBP">GBP (£)</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold text-white/45 mb-1.5 uppercase tracking-[0.12em]">Delivery Time</label>
+                            <input type="number" min={1} value={serviceForm.deliveryTime ?? 3} onChange={e => setServiceForm(f => ({ ...f!, deliveryTime: +e.target.value }))}
+                              className="w-full rounded-[12px] border border-white/[0.09] bg-white/[0.04] px-4 py-2.5 text-[13px] text-white outline-none focus:border-violet-500/50 transition-all" />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold text-white/45 mb-1.5 uppercase tracking-[0.12em]">Delivery Unit</label>
+                            <select value={serviceForm.deliveryUnit ?? 'days'} onChange={e => setServiceForm(f => ({ ...f!, deliveryUnit: e.target.value as ServiceItem['deliveryUnit'] }))}
+                              className="w-full rounded-[12px] border border-white/[0.09] bg-[#111113] px-4 py-2.5 text-[13px] text-white outline-none focus:border-violet-500/50 transition-all">
+                              <option value="hours">Hours</option>
+                              <option value="days">Days</option>
+                              <option value="weeks">Weeks</option>
+                              <option value="months">Months</option>
+                            </select>
+                          </div>
+                          <div className="sm:col-span-2">
+                            <label className="block text-[11px] font-semibold text-white/45 mb-1.5 uppercase tracking-[0.12em]">Description *</label>
+                            <textarea rows={4} value={serviceForm.description ?? ''} onChange={e => setServiceForm(f => ({ ...f!, description: e.target.value }))} placeholder="Describe what you offer, your process, and what clients get…"
+                              className="w-full rounded-[12px] border border-white/[0.09] bg-white/[0.04] px-4 py-2.5 text-[13px] text-white placeholder-white/25 outline-none focus:border-violet-500/50 transition-all resize-none" />
+                          </div>
+                          <div className="sm:col-span-2">
+                            <label className="block text-[11px] font-semibold text-white/45 mb-1.5 uppercase tracking-[0.12em]">Tags</label>
+                            <div className="flex flex-wrap gap-1.5 mb-2">
+                              {(serviceForm.tags ?? []).map(t => (
+                                <span key={t} className="flex items-center gap-1 rounded-full border border-violet-500/30 bg-violet-500/10 px-2.5 py-0.5 text-[11px] text-violet-300">
+                                  {t}
+                                  <button type="button" onClick={() => setServiceForm(f => ({ ...f!, tags: (f!.tags ?? []).filter(x => x !== t) }))} className="text-violet-400/60 hover:text-violet-300"><X className="h-2.5 w-2.5" /></button>
+                                </span>
+                              ))}
+                            </div>
+                            <div className="flex gap-2">
+                              <input value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={e => { if ((e.key === 'Enter' || e.key === ',') && tagInput.trim()) { e.preventDefault(); const t = tagInput.trim().replace(/,$/, ''); if (!(serviceForm.tags ?? []).includes(t)) setServiceForm(f => ({ ...f!, tags: [...(f!.tags ?? []), t] })); setTagInput(''); } }}
+                                placeholder="Type a tag and press Enter"
+                                className="flex-1 rounded-[12px] border border-white/[0.09] bg-white/[0.04] px-4 py-2.5 text-[13px] text-white placeholder-white/25 outline-none focus:border-violet-500/50 transition-all" />
+                              <button type="button" onClick={() => { if (tagInput.trim()) { const t = tagInput.trim(); if (!(serviceForm.tags ?? []).includes(t)) setServiceForm(f => ({ ...f!, tags: [...(f!.tags ?? []), t] })); setTagInput(''); } }}
+                                className="rounded-[12px] border border-white/[0.09] bg-white/[0.06] px-3 text-[12px] font-semibold text-white/50 hover:text-white transition">Add</button>
+                            </div>
+                          </div>
+                          <div className="sm:col-span-2 flex items-center gap-3">
+                            <label className="flex items-center gap-2.5 cursor-pointer">
+                              <div onClick={() => setServiceForm(f => ({ ...f!, isActive: !f!.isActive }))} className={`relative h-5 w-9 rounded-full transition-colors ${serviceForm.isActive ? 'bg-violet-500' : 'bg-white/[0.10]'}`}>
+                                <div className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${serviceForm.isActive ? 'left-4' : 'left-0.5'}`} />
+                              </div>
+                              <span className="text-[12px] text-white/60">{serviceForm.isActive ? 'Visible' : 'Hidden'}</span>
+                            </label>
+                            <label className="flex items-center gap-2.5 cursor-pointer">
+                              <div onClick={() => setServiceForm(f => ({ ...f!, featured: !f!.featured }))} className={`relative h-5 w-9 rounded-full transition-colors ${serviceForm.featured ? 'bg-amber-500' : 'bg-white/[0.10]'}`}>
+                                <div className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${serviceForm.featured ? 'left-4' : 'left-0.5'}`} />
+                              </div>
+                              <span className="text-[12px] text-white/60">Featured</span>
+                            </label>
+                          </div>
+                        </div>
+                        {serviceFormError && <p className="text-[12px] text-rose-400">{serviceFormError}</p>}
+                        <div className="flex gap-3 pt-1 border-t border-white/[0.06]">
+                          <button type="button" onClick={() => setServiceForm(null)} className="flex-1 h-10 rounded-[12px] border border-white/[0.08] text-white/55 text-sm hover:bg-white/[0.05] transition-colors">Cancel</button>
+                          <button type="button" disabled={serviceFormSaving} onClick={async () => {
+                            if (!serviceForm.title?.trim()) { setServiceFormError('Title is required.'); return; }
+                            if (!serviceForm.description?.trim()) { setServiceFormError('Description is required.'); return; }
+                            setServiceFormSaving(true); setServiceFormError('');
+                            try {
+                              const method = isEdit ? 'PUT' : 'POST';
+                              const url = isEdit ? `/api/services/${serviceForm.id}` : '/api/services';
+                              const res = await fetch(url, { method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(serviceForm) });
+                              const d = await res.json() as { service?: ServiceItem; error?: string };
+                              if (!res.ok) { setServiceFormError(d.error ?? 'Failed to save'); return; }
+                              if (d.service) {
+                                setProfileServices(prev => isEdit ? prev.map(s => s.id === d.service!.id ? d.service! : s) : [d.service!, ...prev]);
+                              }
+                              setServiceForm(null);
+                            } catch { setServiceFormError('Network error.'); }
+                            finally { setServiceFormSaving(false); }
+                          }} className="flex-1 h-10 rounded-[12px] font-bold text-sm text-white transition-all active:scale-[0.98] disabled:opacity-60" style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', boxShadow: '0 3px 16px rgba(99,102,241,0.4)' }}>
+                            {serviceFormSaving ? 'Saving…' : isEdit ? 'Save Changes' : 'Create Service'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          );
+        })()}
+
         {/* Activity tab */}
         {tab === 'activity' && (
           <div className="space-y-4">
@@ -2274,10 +4323,6 @@ export default function UserProfilePage() {
                       <p className="text-[10.5px] text-white/30">{sharedLinks.length} link{sharedLinks.length !== 1 ? 's' : ''} tracked</p>
                     </div>
                   </div>
-                  <a href="/workspace?tab=esign" className="flex h-7 items-center gap-1.5 rounded-[10px] border border-white/[0.09] bg-white/[0.04] px-3 text-[11px] font-semibold text-white/40 hover:text-white/70 hover:bg-white/[0.08] transition">
-                    <ExternalLink className="h-3 w-3" />
-                    Create link
-                  </a>
                 </div>
                 {sharedLinks.length === 0 ? (
                   <div className="py-8 text-center">
@@ -2590,23 +4635,6 @@ export default function UserProfilePage() {
                 </div>
               </div>
 
-              {/* Danger zone */}
-              <div className="rounded-[20px] border border-rose-500/[0.12] bg-rose-500/[0.04] p-6">
-                <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-rose-400/60 mb-4">Session</h3>
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-[13px] text-white/60 font-medium">Sign out of your account</p>
-                    <p className="text-[11px] text-white/30 mt-0.5">You will be redirected to the login page</p>
-                  </div>
-                  <button
-                    onClick={() => void signOut({ callbackUrl: '/onboarding' })}
-                    className="flex items-center gap-2 h-9 px-4 rounded-[12px] border border-rose-500/20 bg-rose-500/[0.08] text-rose-400 text-sm font-medium hover:bg-rose-500/[0.16] transition-colors shrink-0"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Sign out
-                  </button>
-                </div>
-              </div>
             </div>
           );
         })()}
@@ -2721,6 +4749,555 @@ export default function UserProfilePage() {
           </div>
         )}
 
+        {/* ── Settings tab ──────────────────────────────────────────── */}
+        {tab === 'settings' && isOwnProfile && (
+          <div className="space-y-4">
+
+            {/* Account overview card */}
+            <div className="rounded-[20px] border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+              {/* Header strip */}
+              <div className="flex items-center gap-3 px-6 py-4 border-b border-white/[0.05]">
+                <div className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-white/[0.06] border border-white/[0.08]">
+                  <Settings2 className="h-4 w-4 text-white/50" />
+                </div>
+                <div>
+                  <p className="text-[13px] font-bold text-white/80">Account</p>
+                  <p className="text-[11px] text-white/35">Your profile and login details</p>
+                </div>
+              </div>
+              <div className="divide-y divide-white/[0.04]">
+                {[
+                  { label: 'Name', value: user.name || session?.user?.name || '—' },
+                  { label: 'Email', value: session?.user?.email || '—' },
+                  { label: 'Account type', value: user.accountType === 'business' ? 'Business' : 'Individual' },
+                  { label: 'Member since', value: user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : '—' },
+                  { label: 'Profile ID', value: `@${userId}` },
+                ].map(({ label, value }) => (
+                  <div key={label} className="flex items-center justify-between gap-4 px-6 py-3.5">
+                    <span className="text-[12px] text-white/35 font-medium shrink-0">{label}</span>
+                    <span className="text-[12.5px] text-white/65 font-medium text-right truncate max-w-[200px] sm:max-w-none">{value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Privacy & visibility */}
+            <div className="rounded-[20px] border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+              <div className="flex items-center gap-3 px-6 py-4 border-b border-white/[0.05]">
+                <div className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-white/[0.06] border border-white/[0.08]">
+                  <Shield className="h-4 w-4 text-white/50" />
+                </div>
+                <div>
+                  <p className="text-[13px] font-bold text-white/80">Privacy</p>
+                  <p className="text-[11px] text-white/35">Control your visibility and profile data</p>
+                </div>
+              </div>
+              <div className="divide-y divide-white/[0.04]">
+                {[
+                  { label: 'Profile visibility', value: 'Public', note: 'Your profile is visible to everyone on Docrud' },
+                  { label: 'Open to work', value: (profile as { openToWork?: boolean }).openToWork ? 'Enabled' : 'Off', note: 'Shown as a badge on your profile card' },
+                  { label: 'Show location', value: profile.location ? 'Visible' : 'Hidden', note: profile.location || 'No location set' },
+                ].map(({ label, value, note }) => (
+                  <div key={label} className="flex items-start justify-between gap-4 px-6 py-3.5">
+                    <div className="min-w-0">
+                      <p className="text-[12.5px] text-white/65 font-medium">{label}</p>
+                      <p className="text-[11px] text-white/30 mt-0.5 truncate">{note}</p>
+                    </div>
+                    <span className="shrink-0 text-[11.5px] font-semibold px-2.5 py-1 rounded-full border"
+                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.45)' }}>
+                      {value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Email notification preferences */}
+            <div className="rounded-[20px] border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+              <div className="flex items-center gap-3 px-6 py-4 border-b border-white/[0.05]">
+                <div className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-white/[0.06] border border-white/[0.08]">
+                  <Mail className="h-4 w-4 text-white/50" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-bold text-white/80">Email Notifications</p>
+                  <p className="text-[11px] text-white/35">Choose which alerts to receive by email</p>
+                </div>
+                {emailPrefsSaving && <span className="text-[10px] text-white/25 animate-pulse">Saving&hellip;</span>}
+              </div>
+              <div className="divide-y divide-white/[0.04]">
+                {([
+                  { key: 'follows',    label: 'New followers',       desc: 'When someone follows you' },
+                  { key: 'likes',      label: 'Likes & reactions',   desc: 'When someone likes your post' },
+                  { key: 'comments',   label: 'Comments',            desc: 'When someone comments on your content' },
+                  { key: 'mentions',   label: 'Mentions',            desc: "When you're tagged or mentioned" },
+                  { key: 'gig_applied', label: 'Gig applications',   desc: 'When someone applies to your gig' },
+                  { key: 'messages',   label: 'Direct messages',     desc: 'When you receive a new message' },
+                  { key: 'billing',    label: 'Billing alerts',      desc: 'Plan usage and billing updates' },
+                  { key: 'system',     label: 'System updates',      desc: 'Account and platform announcements' },
+                ] as { key: string; label: string; desc: string }[]).map(({ key, label, desc }) => {
+                  const enabled = key in emailPrefs ? emailPrefs[key] : true;
+                  return (
+                    <div key={key} className="flex items-center justify-between gap-4 px-6 py-3.5">
+                      <div className="min-w-0">
+                        <p className="text-[12.5px] text-white/65 font-medium">{label}</p>
+                        <p className="text-[11px] text-white/30 mt-0.5">{desc}</p>
+                      </div>
+                      {/* Toggle switch */}
+                      <button
+                        type="button"
+                        onClick={() => toggleEmailPref(key, !enabled)}
+                        className={`relative shrink-0 flex h-5 w-9 cursor-pointer rounded-full transition-colors duration-200 focus:outline-none ${enabled ? 'bg-emerald-500/80' : 'bg-white/[0.10]'}`}
+                        role="switch"
+                        aria-checked={enabled}
+                        aria-label={label}
+                      >
+                        <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform duration-200 ${enabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Linked accounts */}
+            <div className="rounded-[20px] border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+              <div className="flex items-center gap-3 px-6 py-4 border-b border-white/[0.05]">
+                <div className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-white/[0.06] border border-white/[0.08]">
+                  <Link2 className="h-4 w-4 text-white/50" />
+                </div>
+                <div>
+                  <p className="text-[13px] font-bold text-white/80">Linked profiles</p>
+                  <p className="text-[11px] text-white/35">Your connected social accounts</p>
+                </div>
+              </div>
+              <div className="px-6 py-4 flex flex-wrap gap-2">
+                {[
+                  { key: 'linkedinUrl', Icon: Linkedin, label: 'LinkedIn', color: '#0a66c2' },
+                  { key: 'githubUrl',   Icon: Github,   label: 'GitHub',   color: '#e6edf3' },
+                  { key: 'twitterUrl', Icon: Twitter,  label: 'Twitter',  color: '#1da1f2' },
+                  { key: 'websiteUrl', Icon: Globe,    label: 'Website',  color: '#a78bfa' },
+                ].map(({ key, Icon, label, color }) => {
+                  const url = (profile as Record<string, string | undefined>)[key];
+                  return (
+                    <div key={key}
+                      className="flex items-center gap-2 px-3 py-2 rounded-[12px] border"
+                      style={{ background: url ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.02)', border: `1px solid ${url ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.05)'}` }}>
+                      <Icon className="h-3.5 w-3.5 shrink-0" style={{ color: url ? color : 'rgba(255,255,255,0.20)' }} />
+                      <span className="text-[12px] font-medium" style={{ color: url ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.22)' }}>{label}</span>
+                      {url
+                        ? <CheckCircle className="h-3 w-3 text-emerald-400/70" />
+                        : <span className="text-[10px] text-white/20">Not linked</span>}
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="px-6 pb-4">
+                <button type="button" onClick={() => setEditOpen(true)}
+                  className="flex items-center gap-1.5 text-[12px] text-indigo-400/70 hover:text-indigo-400 transition-colors">
+                  <Edit2 className="h-3 w-3" />
+                  Edit profile to update links
+                </button>
+              </div>
+            </div>
+
+            {/* Session */}
+            <div className="rounded-[20px] border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+              <div className="flex items-center gap-3 px-6 py-4 border-b border-white/[0.05]">
+                <div className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-white/[0.06] border border-white/[0.08]">
+                  <LogOut className="h-4 w-4 text-white/50" />
+                </div>
+                <div>
+                  <p className="text-[13px] font-bold text-white/80">Session</p>
+                  <p className="text-[11px] text-white/35">Manage your active login session</p>
+                </div>
+              </div>
+              <div className="px-6 py-5 flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-[13px] text-white/65 font-medium">Sign out of Docrud</p>
+                  <p className="text-[11.5px] text-white/30 mt-0.5">You&apos;ll be redirected to the login page</p>
+                </div>
+                <button
+                  onClick={() => void signOut({ callbackUrl: '/onboarding' })}
+                  className="shrink-0 flex items-center gap-2 h-9 px-4 rounded-[12px] border border-white/[0.08] bg-white/[0.04] text-white/50 text-[12.5px] font-medium hover:bg-white/[0.09] hover:text-white/80 transition-colors"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                  Sign out
+                </button>
+              </div>
+            </div>
+
+            {/* ── Public Face ────────────────────────────────────────── */}
+            <div className="rounded-[20px] overflow-hidden"
+              style={{ background: 'linear-gradient(135deg,rgba(124,58,237,0.08),rgba(217,70,239,0.05))', border: '1px solid rgba(168,85,247,0.2)' }}>
+              <div className="flex items-center gap-3 px-6 py-4 border-b border-white/[0.05]">
+                <div className="flex h-9 w-9 items-center justify-center rounded-[12px]"
+                  style={{ background: 'linear-gradient(135deg,rgba(124,58,237,0.25),rgba(217,70,239,0.25))', border: '1px solid rgba(168,85,247,0.35)' }}>
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                    <defs><linearGradient id="pfset" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#7c3aed"/><stop offset="50%" stopColor="#d946ef"/><stop offset="100%" stopColor="#7c3aed"/></linearGradient></defs>
+                    <circle cx="10" cy="10" r="9" fill="url(#pfset)"/>
+                    <path d="M10 4.5l1.4 3.1 3.4.3-2.5 2.2.8 3.3L10 11.8l-3.1 1.6.8-3.3-2.5-2.2 3.4-.3z" fill="white" opacity="0.95"/>
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-bold text-white/80">Public Face</p>
+                  <p className="text-[11px] text-white/35">Verified public figure badge &amp; directory listing</p>
+                </div>
+              </div>
+
+              <div className="px-6 py-5">
+                {pfLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-violet-500/50 animate-pulse" />
+                    <span className="text-[12px] text-white/30">Checking status…</span>
+                  </div>
+                ) : profile.publicFace ? (
+                  /* ── Already a Public Face ── */
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 rounded-full px-3 py-1.5"
+                        style={{ background: 'linear-gradient(135deg,rgba(124,58,237,0.2),rgba(217,70,239,0.2))', border: '1px solid rgba(168,85,247,0.35)' }}>
+                        <span className="text-[13px]">{['🎭','🎵','🏆','✨','🎬','📱','🏛️','💼','📖','🔬','📺','😄','✊','👨‍🍳','👗','📷','🎮','📰','⭐'][Object.keys({actor_actress:0,singer_musician:1,athlete_sportsperson:2,model:3,content_creator:4,influencer:5,politician:6,entrepreneur_ceo:7,author_writer:8,academic_scientist:9,tv_personality:10,comedian:11,social_activist:12,chef_culinary:13,fashion_designer:14,photographer_videographer:15,game_streamer:16,journalist:17,other:18}).indexOf(profile.publicFace.category)] || 0}</span>
+                        <span className="text-[11.5px] font-bold" style={{ background: 'linear-gradient(90deg,#c084fc,#f0abfc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                          {PUBLIC_FACE_CATEGORY_LABELS[profile.publicFace.category as import('@/types/document').PublicFaceCategory] || 'Public Figure'}
+                        </span>
+                      </div>
+                      <span className="text-[11px] font-bold text-emerald-400">✓ Approved</span>
+                    </div>
+                    <p className="text-[12px] text-white/35 leading-relaxed">
+                      Your profile has the Public Face badge. You are featured in the{' '}
+                      <a href="/public-faces" className="text-violet-400 hover:text-violet-300 underline underline-offset-2 transition">Public Faces directory</a>.
+                      Direct messages to your profile are disabled — you can still message anyone.
+                    </p>
+                  </div>
+                ) : pfApplication?.status === 'pending' || pfApplication?.status === 'under_review' ? (
+                  /* ── Application pending ── */
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+                      <span className="text-[12.5px] font-bold text-amber-300">
+                        {pfApplication.status === 'under_review' ? 'Under Review' : 'Application Pending'}
+                      </span>
+                    </div>
+                    <p className="text-[12px] text-white/35 leading-relaxed">
+                      Your application was submitted on{' '}
+                      {pfApplication.submittedAt ? new Date(pfApplication.submittedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'}.
+                      Our team will review it within 3–5 business days and notify you by email.
+                    </p>
+                  </div>
+                ) : pfApplication?.status === 'rejected' ? (
+                  /* ── Rejected — can reapply ── */
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[12.5px] font-bold text-rose-400">Application Not Approved</span>
+                    </div>
+                    {pfApplication.adminNote && (
+                      <p className="text-[11.5px] text-white/40 italic leading-relaxed">&quot;{pfApplication.adminNote}&quot;</p>
+                    )}
+                    <p className="text-[12px] text-white/35 mb-3">You may strengthen your application and reapply.</p>
+                    <button type="button" onClick={() => setShowPFForm(true)}
+                      className="flex items-center gap-2 rounded-[12px] px-4 py-2 text-[12.5px] font-bold transition-all hover:scale-[1.02]"
+                      style={{ background: 'linear-gradient(135deg,#7c3aed,#a855f7)', color: '#fff', boxShadow: '0 4px 14px rgba(124,58,237,0.35)' }}>
+                      <svg width="13" height="13" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" fill="white" fillOpacity="0.2"/><path d="M10 4.5l1.4 3.1 3.4.3-2.5 2.2.8 3.3L10 11.8l-3.1 1.6.8-3.3-2.5-2.2 3.4-.3z" fill="white" opacity="0.9"/></svg>
+                      Reapply for Public Face
+                    </button>
+                  </div>
+                ) : (
+                  /* ── Not applied yet ── */
+                  <div className="space-y-4">
+                    <p className="text-[12.5px] text-white/45 leading-relaxed">
+                      Are you a public figure — an actor, musician, athlete, influencer, entrepreneur, or any recognised personality?
+                      Apply for the <strong className="text-white/70">Public Face</strong> badge to get verified and featured in the exclusive
+                      Public Faces directory.
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 text-[11.5px] text-white/35">
+                      {[
+                        '✨ Premium badge on your profile',
+                        '🌟 Featured in Public Faces directory',
+                        '📩 You can message anyone',
+                        '🔒 Your inbox is kept private',
+                      ].map(b => (
+                        <div key={b} className="flex items-center gap-1.5">{b}</div>
+                      ))}
+                    </div>
+                    <button type="button" onClick={() => setShowPFForm(true)}
+                      className="flex items-center gap-2 rounded-[13px] px-5 py-2.5 text-[13px] font-bold transition-all hover:scale-[1.02] active:scale-95"
+                      style={{ background: 'linear-gradient(135deg,#7c3aed,#a855f7,#d946ef)', color: '#fff', boxShadow: '0 6px 20px rgba(124,58,237,0.4)' }}>
+                      <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" fill="white" fillOpacity="0.2"/><path d="M10 4.5l1.4 3.1 3.4.3-2.5 2.2.8 3.3L10 11.8l-3.1 1.6.8-3.3-2.5-2.2 3.4-.3z" fill="white" opacity="0.9"/></svg>
+                      Apply for Public Face
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Danger zone */}
+            <div className="rounded-[20px] border border-rose-500/[0.15] bg-rose-500/[0.03] overflow-hidden">
+              <div className="flex items-center gap-3 px-6 py-4 border-b border-rose-500/[0.10]">
+                <div className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-rose-500/[0.08] border border-rose-500/[0.15]">
+                  <AlertTriangle className="h-4 w-4 text-rose-400/80" />
+                </div>
+                <div>
+                  <p className="text-[13px] font-bold text-rose-300/80">Danger Zone</p>
+                  <p className="text-[11px] text-white/30">OTP verification required for all actions below</p>
+                </div>
+              </div>
+
+              {/* Deactivate */}
+              <div className="flex items-start justify-between gap-4 px-6 py-5 border-b border-white/[0.04]">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <PauseCircle className="h-3.5 w-3.5 text-amber-400/70 shrink-0" />
+                    <p className="text-[13px] text-white/75 font-semibold">Deactivate account</p>
+                  </div>
+                  <p className="text-[11.5px] text-white/35 leading-relaxed">Temporarily hide your profile. All data is preserved — simply log in anytime to instantly restore everything.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => openAccountModal('deactivate')}
+                  className="shrink-0 flex items-center gap-1.5 h-9 px-4 rounded-[12px] border border-amber-500/20 bg-amber-500/[0.07] text-amber-400 text-[12px] font-semibold hover:bg-amber-500/[0.15] transition-colors"
+                >
+                  Deactivate
+                </button>
+              </div>
+
+              {/* Delete */}
+              <div className="flex items-start justify-between gap-4 px-6 py-5">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Trash2 className="h-3.5 w-3.5 text-rose-400/70 shrink-0" />
+                    <p className="text-[13px] text-rose-400 font-semibold">Delete account permanently</p>
+                  </div>
+                  <p className="text-[11.5px] text-white/35 leading-relaxed">Permanently erase your profile, posts, connections, gigs, and all associated data. This action cannot be undone.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => openAccountModal('delete')}
+                  className="shrink-0 flex items-center gap-1.5 h-9 px-4 rounded-[12px] border border-rose-500/20 bg-rose-500/[0.07] text-rose-400 text-[12px] font-semibold hover:bg-rose-500/[0.18] transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {/* ── Account Management Modal (rendered at root level, always accessible) ── */}
+        {accountModal && isOwnProfile && (
+          <div
+            className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-3 sm:p-4"
+            style={{ background: 'rgba(0,0,0,0.80)', backdropFilter: 'blur(16px)' }}
+            onClick={() => { if (!acctSending && acctStep !== 'done') setAccountModal(false); }}
+          >
+            <div
+              className="relative w-full max-w-md rounded-[24px] border border-white/[0.08] bg-[#0d0e11] shadow-2xl overflow-hidden"
+              style={{ maxHeight: '90dvh', overflowY: 'auto' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Coloured top accent bar */}
+              <div className="h-[3px]" style={{
+                background: acctAction === 'delete'
+                  ? 'linear-gradient(90deg,#ef4444,#dc2626,#ef4444)'
+                  : 'linear-gradient(90deg,#f59e0b,#d97706,#f59e0b)',
+              }} />
+
+              <div className="p-6 sm:p-7">
+                {/* Header row */}
+                <div className="flex items-start justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-[14px] ring-1"
+                      style={{
+                        background: acctAction === 'delete' ? 'rgba(239,68,68,0.10)' : 'rgba(245,158,11,0.10)',
+                        '--tw-ring-color': acctAction === 'delete' ? 'rgba(239,68,68,0.20)' : 'rgba(245,158,11,0.20)',
+                      } as React.CSSProperties}>
+                      {acctAction === 'delete'
+                        ? <Trash2 className="h-5 w-5 text-rose-400" />
+                        : <PauseCircle className="h-5 w-5 text-amber-400" />}
+                    </div>
+                    <div>
+                      <h2 className="text-[15px] font-bold text-white">
+                        {acctAction === 'delete' ? 'Delete Account' : 'Deactivate Account'}
+                      </h2>
+                      <p className="text-[11.5px] text-white/35 mt-0.5">
+                        {acctStep === 'otp' ? 'Enter the OTP sent to your email'
+                          : acctStep === 'done' ? 'All done — signing you out'
+                          : 'Verify your identity to continue'}
+                      </p>
+                    </div>
+                  </div>
+                  {acctStep !== 'done' && (
+                    <button type="button" onClick={() => setAccountModal(false)} disabled={acctSending}
+                      className="flex h-8 w-8 items-center justify-center rounded-full text-white/25 hover:text-white/60 hover:bg-white/[0.06] transition-colors">
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Step: choose / duration */}
+                {acctStep === 'choose' && (
+                  <div className="space-y-4">
+                    {acctAction === 'delete' ? (
+                      <div className="rounded-[14px] border border-rose-500/[0.22] bg-rose-500/[0.06] p-4">
+                        <p className="text-[13px] font-semibold text-rose-300 mb-1.5">⚠️ This cannot be undone</p>
+                        <p className="text-[12.5px] text-white/45 leading-relaxed">
+                          All your data — profile, posts, gigs, connections, documents — will be
+                          <strong className="text-white/70"> permanently and irreversibly deleted</strong>.
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="rounded-[14px] border border-amber-500/[0.20] bg-amber-500/[0.06] p-4">
+                          <p className="text-[13px] font-semibold text-amber-300 mb-1.5">⏸ Temporary deactivation</p>
+                          <p className="text-[12.5px] text-white/45 leading-relaxed">
+                            Your profile will be hidden. All data stays safe.
+                            <strong className="text-white/70"> Log back in anytime</strong> to instantly restore your account.
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[12px] text-white/45 font-medium mb-2.5">How long do you want to be away?</p>
+                          <div className="grid grid-cols-2 gap-2">
+                            {([
+                              { v: 30,   l: '30 days' },
+                              { v: 60,   l: '60 days' },
+                              { v: 90,   l: '3 months' },
+                              { v: null, l: 'Until I return' },
+                            ] as { v: number | null; l: string }[]).map(({ v, l }) => {
+                              const sel = acctDuration === v && !acctCustomDays;
+                              return (
+                                <button key={l} type="button"
+                                  onClick={() => { setAcctDuration(v); setAcctCustomDays(''); }}
+                                  className="rounded-[12px] px-3 py-2.5 text-[12.5px] font-medium border transition-all active:scale-95"
+                                  style={{
+                                    background: sel ? 'rgba(245,158,11,0.12)' : 'rgba(255,255,255,0.03)',
+                                    border:     sel ? '1px solid rgba(245,158,11,0.40)' : '1px solid rgba(255,255,255,0.07)',
+                                    color:      sel ? '#fbbf24' : 'rgba(255,255,255,0.45)',
+                                  }}
+                                >{l}</button>
+                              );
+                            })}
+                          </div>
+                          <input
+                            type="number" min={7} max={365}
+                            placeholder="Or enter custom days (7–365)"
+                            value={acctCustomDays}
+                            onChange={(e) => { setAcctCustomDays(e.target.value); setAcctDuration(null); }}
+                            className="mt-2 w-full rounded-[12px] border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-[13px] text-white placeholder:text-white/20 focus:outline-none focus:border-amber-500/40 focus:bg-white/[0.07] transition"
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {acctError && (
+                      <p className="text-[12px] text-rose-400 rounded-[10px] bg-rose-500/[0.08] px-3 py-2.5 border border-rose-500/15">{acctError}</p>
+                    )}
+
+                    <div className="flex gap-2.5 pt-1">
+                      <button type="button" onClick={() => setAccountModal(false)}
+                        className="flex-1 h-11 rounded-[14px] border border-white/[0.08] bg-white/[0.04] text-[13px] font-medium text-white/45 hover:bg-white/[0.08] hover:text-white/75 transition">
+                        Cancel
+                      </button>
+                      <button type="button" onClick={acctSendOtp}
+                        disabled={acctSending || (acctAction === 'deactivate' && acctDuration === null && !acctCustomDays)}
+                        className="flex-1 h-11 rounded-[14px] text-[13px] font-bold flex items-center justify-center gap-2 transition active:scale-[0.98] disabled:opacity-40"
+                        style={{ background: acctAction === 'delete' ? 'linear-gradient(135deg,#ef4444,#dc2626)' : 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#fff' }}
+                      >
+                        {acctSending
+                          ? <><span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />Sending…</>
+                          : 'Send OTP to my email'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step: OTP */}
+                {acctStep === 'otp' && (
+                  <div className="space-y-5">
+                    <div className="rounded-[14px] border border-white/[0.07] bg-white/[0.03] px-4 py-3.5">
+                      <p className="text-[12.5px] text-white/50 leading-relaxed">
+                        A 6-digit code was sent to{' '}
+                        <strong className="text-white/75">{session?.user?.email}</strong>.
+                        {acctOtpExpiry && (
+                          <> Expires at <strong className="text-white/65">{new Date(acctOtpExpiry).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}</strong>.</>
+                        )}
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10.5px] font-semibold text-white/35 uppercase tracking-[0.14em] mb-2.5">One-Time Password</label>
+                      <input
+                        type="text" inputMode="numeric" pattern="[0-9]*" maxLength={6} autoFocus
+                        value={acctOtp}
+                        onChange={(e) => { setAcctOtp(e.target.value.replace(/\D/g, '').slice(0, 6)); setAcctError(''); }}
+                        placeholder="000000"
+                        className="w-full text-center rounded-[16px] border border-white/[0.08] bg-white/[0.04] px-4 py-4 text-white placeholder:text-white/12 focus:outline-none focus:border-indigo-500/40 focus:bg-white/[0.07] transition"
+                        style={{ fontSize: 32, fontWeight: 900, letterSpacing: '0.28em', fontVariantNumeric: 'tabular-nums' }}
+                      />
+                    </div>
+
+                    {acctError && (
+                      <p className="text-[12px] text-rose-400 rounded-[10px] bg-rose-500/[0.08] px-3 py-2.5 border border-rose-500/15">{acctError}</p>
+                    )}
+
+                    <div className="flex gap-2.5">
+                      <button type="button"
+                        onClick={() => { setAcctStep('choose'); setAcctOtp(''); setAcctError(''); }}
+                        className="h-11 px-4 rounded-[14px] border border-white/[0.08] bg-white/[0.04] text-[13px] text-white/45 hover:bg-white/[0.08] hover:text-white/75 transition">
+                        ← Back
+                      </button>
+                      <button type="button"
+                        onClick={acctConfirm}
+                        disabled={acctSending || acctOtp.length !== 6}
+                        className="flex-1 h-11 rounded-[14px] text-[13px] font-bold flex items-center justify-center gap-2 transition active:scale-[0.98] disabled:opacity-40"
+                        style={{ background: acctAction === 'delete' ? 'linear-gradient(135deg,#ef4444,#dc2626)' : 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#fff' }}
+                      >
+                        {acctSending
+                          ? <><span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />{acctAction === 'delete' ? 'Deleting…' : 'Deactivating…'}</>
+                          : acctAction === 'delete' ? '🗑 Permanently Delete' : '⏸ Deactivate Account'}
+                      </button>
+                    </div>
+
+                    <p className="text-center">
+                      <button type="button" disabled={acctResendCooldown > 0 || acctSending} onClick={acctSendOtp}
+                        className="text-[12px] text-white/28 hover:text-white/55 disabled:opacity-35 transition">
+                        {acctResendCooldown > 0 ? `Resend in ${acctResendCooldown}s` : 'Didn\'t receive it? Resend OTP'}
+                      </button>
+                    </p>
+                  </div>
+                )}
+
+                {/* Step: done */}
+                {acctStep === 'done' && (
+                  <div className="text-center py-6 space-y-5">
+                    <div className="relative inline-flex">
+                      <div className="h-16 w-16 rounded-full flex items-center justify-center"
+                        style={{ background: acctAction === 'delete' ? 'rgba(239,68,68,0.12)' : 'rgba(245,158,11,0.12)' }}>
+                        {acctAction === 'delete'
+                          ? <Trash2 className="h-7 w-7 text-rose-400" />
+                          : <CheckCircle className="h-7 w-7 text-amber-400" />}
+                      </div>
+                      <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white text-[10px]">✓</span>
+                    </div>
+                    <div>
+                      <p className="text-[15px] font-bold text-white">
+                        {acctAction === 'delete' ? 'Account Deleted' : 'Account Deactivated'}
+                      </p>
+                      <p className="text-[12.5px] text-white/38 mt-2 leading-relaxed max-w-[280px] mx-auto">
+                        {acctAction === 'delete'
+                          ? 'All your data has been permanently erased. Redirecting you now…'
+                          : 'Your account is hidden. Log back in anytime to reactivate. Redirecting…'}
+                      </p>
+                    </div>
+                    <div className="h-1 w-full max-w-[160px] mx-auto rounded-full bg-white/[0.06] overflow-hidden">
+                      <div className="h-full rounded-full animate-[progress_2.5s_linear_forwards]"
+                        style={{ background: acctAction === 'delete' ? '#ef4444' : '#f59e0b', width: '100%' }} />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Connections tab */}
         {tab === 'connections' && (() => {
           const sessionId = (session?.user as { id?: string } | undefined)?.id;
@@ -2831,6 +5408,252 @@ export default function UserProfilePage() {
         })()}
 
       </div>
+
+      {/* ── Catalogue Page Editor ── */}
+      {showCatalogueEditor && isOwnProfile && (() => {
+        const grad = `linear-gradient(135deg,${catalogueDraft.accentColor ?? '#6366f1'},${catalogueDraft.accentColorSecondary ?? '#8b5cf6'})`;
+        const inp = 'w-full rounded-[10px] border border-white/[0.09] bg-white/[0.05] px-3 py-2 text-[12.5px] text-white placeholder-white/20 outline-none focus:border-violet-500/40 focus:bg-violet-500/[0.03] transition-all';
+        async function saveCatalogueSettings() {
+          setCatalogueSaving(true);
+          try {
+            const res = await fetch('/api/services/catalogue', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(catalogueDraft) });
+            if (res.ok) { setCatalogueSettings(catalogueDraft); setPreviewKey(k => k + 1); }
+          } catch {}
+          finally { setCatalogueSaving(false); }
+        }
+        return (
+          <div className="fixed inset-0 z-[80] flex flex-col bg-[#0a0a0b]">
+            {/* Top bar */}
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-white/[0.07] bg-[#111113] shrink-0">
+              <div className="flex items-center gap-2">
+                <Palette className="h-4 w-4 text-violet-400" />
+                <span className="font-bold text-white text-[14px]">Edit Catalogue Page</span>
+              </div>
+              <div className="ml-auto flex items-center gap-2">
+                {/* Device toggle */}
+                <div className="flex rounded-[9px] border border-white/[0.09] bg-white/[0.04] overflow-hidden">
+                  <button type="button" onClick={() => setPreviewDevice('desktop')} title="Desktop preview"
+                    className={`flex items-center justify-center px-2.5 py-1.5 transition-all ${previewDevice === 'desktop' ? 'bg-white/[0.12] text-white' : 'text-white/35 hover:text-white/60'}`}>
+                    <Laptop className="h-3.5 w-3.5" />
+                  </button>
+                  <button type="button" onClick={() => setPreviewDevice('mobile')} title="Mobile preview"
+                    className={`flex items-center justify-center px-2.5 py-1.5 transition-all ${previewDevice === 'mobile' ? 'bg-white/[0.12] text-white' : 'text-white/35 hover:text-white/60'}`}>
+                    <Smartphone className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <button type="button" onClick={() => setPreviewKey(k => k + 1)}
+                  className="flex items-center gap-1 rounded-[9px] border border-white/[0.09] bg-white/[0.04] px-2.5 py-1.5 text-[11px] font-semibold text-white/40 hover:text-white/70 transition">
+                  <RefreshCw className="h-3 w-3" /> Refresh preview
+                </button>
+                <button type="button" onClick={() => setCatalogueDraft(catalogueSettings)}
+                  className="rounded-[9px] border border-white/[0.09] bg-white/[0.04] px-3 py-1.5 text-[11.5px] font-semibold text-white/45 hover:text-white/80 transition">
+                  Reset
+                </button>
+                <button type="button" onClick={saveCatalogueSettings} disabled={catalogueSaving}
+                  className="flex items-center gap-1.5 rounded-[9px] px-4 py-1.5 text-[12px] font-bold text-white transition active:scale-[0.98] disabled:opacity-60"
+                  style={{ background: grad }}>
+                  <Save className="h-3.5 w-3.5" /> {catalogueSaving ? 'Saving…' : 'Save & Apply'}
+                </button>
+                <button type="button" onClick={() => setShowCatalogueEditor(false)}
+                  className="h-8 w-8 rounded-full bg-white/[0.07] flex items-center justify-center hover:bg-white/[0.12] transition ml-1">
+                  <X className="h-4 w-4 text-white/60" />
+                </button>
+              </div>
+            </div>
+
+            {/* Body: settings + preview */}
+            <div className="flex flex-1 overflow-hidden">
+
+              {/* ── Left: Settings Panel ── */}
+              <div className="w-72 shrink-0 border-r border-white/[0.07] bg-[#111113] overflow-y-auto [scrollbar-width:none] flex flex-col">
+                <div className="px-4 py-4 space-y-6 flex-1">
+
+                  {/* Banner & Avatar */}
+                  <div>
+                    <p className="text-[9.5px] font-bold text-white/30 uppercase tracking-widest mb-3">Catalogue Banner & Avatar</p>
+                    <p className="text-[10px] text-white/20 mb-3 leading-relaxed">These only apply to your catalogue page — your main profile is not affected.</p>
+                    <div className="space-y-3">
+                      {/* Banner preview + URL */}
+                      <div>
+                        <label className="block text-[10.5px] text-white/40 mb-1.5">Banner image URL</label>
+                        <div className="mb-2 h-20 w-full rounded-[10px] overflow-hidden border border-white/[0.09] bg-white/[0.03] flex items-center justify-center relative">
+                          {catalogueDraft.catalogueBannerUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={catalogueDraft.catalogueBannerUrl} alt="Banner preview" className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                          ) : (
+                            <span className="text-[10px] text-white/20">No custom banner — uses profile banner</span>
+                          )}
+                          {catalogueDraft.catalogueBannerUrl && (
+                            <button type="button" onClick={() => setCatalogueDraft(d => ({ ...d, catalogueBannerUrl: undefined }))}
+                              className="absolute top-1.5 right-1.5 h-5 w-5 rounded-full bg-black/70 flex items-center justify-center hover:bg-red-500/80 transition">
+                              <X className="h-2.5 w-2.5 text-white" />
+                            </button>
+                          )}
+                        </div>
+                        <input value={catalogueDraft.catalogueBannerUrl ?? ''} onChange={e => setCatalogueDraft(d => ({ ...d, catalogueBannerUrl: e.target.value || undefined }))}
+                          placeholder="https://... (paste image URL)" className={inp} />
+                      </div>
+                      {/* Avatar preview + URL */}
+                      <div>
+                        <label className="block text-[10.5px] text-white/40 mb-1.5">Avatar / Profile photo URL</label>
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="h-14 w-14 rounded-[14px] overflow-hidden border border-white/[0.09] bg-white/[0.05] flex items-center justify-center shrink-0">
+                            {catalogueDraft.catalogueAvatarUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={catalogueDraft.catalogueAvatarUrl} alt="Avatar preview" className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                            ) : (
+                              <span className="text-[9px] text-white/20 text-center px-1">Profile photo</span>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-white/25 leading-relaxed">Uses your profile photo by default. Set a different one for the catalogue.</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <input value={catalogueDraft.catalogueAvatarUrl ?? ''} onChange={e => setCatalogueDraft(d => ({ ...d, catalogueAvatarUrl: e.target.value || undefined }))}
+                            placeholder="https://... (paste image URL)" className={`${inp} flex-1`} />
+                          {catalogueDraft.catalogueAvatarUrl && (
+                            <button type="button" onClick={() => setCatalogueDraft(d => ({ ...d, catalogueAvatarUrl: undefined }))}
+                              className="rounded-[10px] border border-red-500/20 bg-red-500/10 px-2.5 text-red-400 hover:bg-red-500/20 transition text-[11px]">
+                              <X className="h-3 w-3" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Page Identity */}
+                  <div>
+                    <p className="text-[9.5px] font-bold text-white/30 uppercase tracking-widest mb-3">Page Identity</p>
+                    <div className="space-y-2.5">
+                      <div>
+                        <label className="block text-[10.5px] text-white/40 mb-1">Page headline</label>
+                        <input value={catalogueDraft.headline ?? ''} onChange={e => setCatalogueDraft(d => ({ ...d, headline: e.target.value || undefined }))}
+                          placeholder={data?.user.name ? `${data.user.name}'s Services` : 'My Services'} className={inp} />
+                      </div>
+                      <div>
+                        <label className="block text-[10.5px] text-white/40 mb-1">Subheadline / tagline</label>
+                        <input value={catalogueDraft.subheadline ?? ''} onChange={e => setCatalogueDraft(d => ({ ...d, subheadline: e.target.value || undefined }))}
+                          placeholder={data?.profile.headline ?? 'What you do'} className={inp} />
+                      </div>
+                      <div>
+                        <label className="block text-[10.5px] text-white/40 mb-1">Book button text</label>
+                        <input value={catalogueDraft.ctaText ?? ''} onChange={e => setCatalogueDraft(d => ({ ...d, ctaText: e.target.value || undefined }))}
+                          placeholder="Book" className={inp} />
+                        {/* Live button preview */}
+                        <div className="mt-2 h-7 rounded-[8px] flex items-center justify-center text-[11px] font-bold text-white" style={{ background: grad }}>
+                          {catalogueDraft.ctaText || 'Book'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Accent Color */}
+                  <div>
+                    <p className="text-[9.5px] font-bold text-white/30 uppercase tracking-widest mb-3">Accent Color</p>
+                    <div className="grid grid-cols-4 gap-1.5 mb-3">
+                      {ACCENT_PRESETS_LOCAL.map(p => (
+                        <button key={p.label} type="button" onClick={() => setCatalogueDraft(d => ({ ...d, accentColor: p.a, accentColorSecondary: p.b }))}
+                          className={`h-8 rounded-[9px] relative transition-all ${catalogueDraft.accentColor === p.a ? 'ring-2 ring-white/70 ring-offset-1 ring-offset-[#111113] scale-105' : 'hover:scale-105'}`}
+                          style={{ background: `linear-gradient(135deg,${p.a},${p.b})` }} title={p.label}>
+                          {catalogueDraft.accentColor === p.a && <Check className="h-3 w-3 text-white absolute inset-0 m-auto drop-shadow" />}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[10px] text-white/30 mb-1">Primary</label>
+                        <input type="color" value={catalogueDraft.accentColor ?? '#6366f1'} onChange={e => setCatalogueDraft(d => ({ ...d, accentColor: e.target.value }))}
+                          className="w-full h-8 rounded-[8px] border border-white/[0.09] bg-white/[0.04] px-1 cursor-pointer" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-white/30 mb-1">Secondary</label>
+                        <input type="color" value={catalogueDraft.accentColorSecondary ?? '#8b5cf6'} onChange={e => setCatalogueDraft(d => ({ ...d, accentColorSecondary: e.target.value }))}
+                          className="w-full h-8 rounded-[8px] border border-white/[0.09] bg-white/[0.04] px-1 cursor-pointer" />
+                      </div>
+                    </div>
+                    {/* Gradient bar preview */}
+                    <div className="mt-2.5 h-6 rounded-[8px]" style={{ background: grad }} />
+                  </div>
+
+                  {/* Layout */}
+                  <div>
+                    <p className="text-[9.5px] font-bold text-white/30 uppercase tracking-widest mb-3">Layout</p>
+                    <div>
+                      <label className="block text-[10.5px] text-white/40 mb-2">Grid columns</label>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {([2, 3, 4] as const).map(n => (
+                          <button key={n} type="button" onClick={() => setCatalogueDraft(d => ({ ...d, gridColumns: n }))}
+                            className={`py-2 rounded-[9px] border text-[12px] font-semibold transition-all ${(catalogueDraft.gridColumns ?? 3) === n ? 'border-violet-500/50 bg-violet-500/15 text-violet-300' : 'border-white/[0.09] bg-white/[0.04] text-white/40 hover:text-white/70'}`}>
+                            {n} cols
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sections visibility */}
+                  <div>
+                    <p className="text-[9.5px] font-bold text-white/30 uppercase tracking-widest mb-3">Sections</p>
+                    <div className="space-y-3">
+                      {[
+                        { key: 'showStats' as const, label: 'Stats bar', desc: 'Reviews, bookings, avg price' },
+                        { key: 'showBio' as const, label: 'About section', desc: 'Bio and skills' },
+                        { key: 'showWhyBook' as const, label: 'Why book strip', desc: 'Fast response, pricing' },
+                      ].map(({ key, label, desc }) => {
+                        const on = catalogueDraft[key] !== false;
+                        return (
+                          <div key={key} className="flex items-center justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="text-[12px] font-medium text-white/65 truncate">{label}</p>
+                              <p className="text-[10px] text-white/25">{desc}</p>
+                            </div>
+                            <button type="button" onClick={() => setCatalogueDraft(d => ({ ...d, [key]: !on }))}
+                              className={`relative h-5 w-9 rounded-full shrink-0 transition-colors ${on ? 'bg-violet-500/70' : 'bg-white/[0.10]'}`}>
+                              <div className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-all ${on ? 'left-[18px]' : 'left-0.5'}`} />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Settings panel footer note */}
+                <div className="px-4 py-3 border-t border-white/[0.06] shrink-0">
+                  <p className="text-[10px] text-white/20 text-center">Click <span className="text-white/40 font-semibold">Save & Apply</span> to publish your changes</p>
+                </div>
+              </div>
+
+              {/* ── Right: Live Preview iframe ── */}
+              <div className="flex-1 flex flex-col bg-[#0a0a0b] overflow-hidden">
+                <div className="flex items-center gap-2 px-4 py-2 border-b border-white/[0.05] shrink-0">
+                  <div className="flex-1 flex items-center gap-2 rounded-[8px] border border-white/[0.07] bg-white/[0.03] px-3 py-1.5">
+                    <span className="text-[10px] text-white/25">Preview:</span>
+                    <span className="text-[11px] text-white/45 font-mono truncate">/services/{userId}</span>
+                  </div>
+                  <span className="text-[10px] text-white/20 shrink-0">{previewDevice === 'mobile' ? '390px' : '100%'}</span>
+                </div>
+                <div className="flex-1 overflow-hidden flex items-start justify-center p-4">
+                  <div className={`h-full bg-white rounded-[12px] overflow-hidden shadow-[0_8px_40px_rgba(0,0,0,0.7)] transition-all duration-300 ${previewDevice === 'mobile' ? 'w-[390px]' : 'w-full'}`}
+                    style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <iframe
+                      key={previewKey}
+                      ref={iframeRef}
+                      src={`/services/${userId}`}
+                      className="w-full h-full border-0"
+                      title="Catalogue preview"
+                    />
+                  </div>
+                </div>
+                {/* Preview note */}
+                <div className="px-4 py-2 border-t border-white/[0.05] shrink-0">
+                  <p className="text-[10px] text-white/20 text-center">Preview shows the saved version — hit <span className="text-white/35 font-semibold">Save & Apply</span> then <span className="text-white/35 font-semibold">Refresh preview</span> to see changes</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Edit modal */}
       {editOpen && isOwnProfile && (

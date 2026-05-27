@@ -1,6 +1,8 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/server/auth';
 import { runGlobalSearch } from '@/lib/server/global-search';
+
+export const dynamic = 'force-dynamic';
 
 function parseCsv(value: string | null) {
   if (!value) return [];

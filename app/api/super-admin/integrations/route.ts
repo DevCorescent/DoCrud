@@ -1,7 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { getSuperAdminSessionFromRequest, appendSuperAdminAudit } from '@/lib/server/super-admin-auth';
 import { getIntegrationsConfig, saveIntegrationsConfig } from '@/lib/server/super-admin-integrations';
 import crypto from 'crypto';
+
+export const dynamic = 'force-dynamic';
 
 function guard(req: NextRequest) {
   const s = getSuperAdminSessionFromRequest(req);
@@ -79,7 +81,7 @@ export async function POST(req: NextRequest) {
       const res = await fetch(cfg.slack.webhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: '✅ docrud super admin: Slack integration test successful!', channel: cfg.slack.channel }),
+        body: JSON.stringify({ text: 'âœ… docrud super admin: Slack integration test successful!', channel: cfg.slack.channel }),
       });
       return NextResponse.json({ success: res.ok, status: res.status });
     }

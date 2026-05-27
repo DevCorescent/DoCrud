@@ -441,5 +441,387 @@
     "docrudGoPurchasedAt": "2026-05-14T11:53:37.303Z",
     "docrudGoReferralGrantedAt": "2026-05-14T11:53:37.303Z",
     "docrudGoGrantedFree": true
+  },
+  "individual-1779101966386": {
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-05-18T11:00:35.856Z",
+    "updatedAt": "2026-05-18T11:00:35.868Z"
+  },
+  "individual-1779102244525": {
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-05-18T11:04:54.823Z",
+    "updatedAt": "2026-05-18T11:04:54.836Z"
+  },
+  "individual-1779102759249": {
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-05-18T11:13:10.755Z",
+    "updatedAt": "2026-05-18T11:17:16.512Z",
+    "headline": "frontend engineer",
+    "bio": "i am a skilled frontend engineer",
+    "location": "jharkhand",
+    "website": "www.corescent.in",
+    "avatarUrl": "",
+    "bannerUrl": "",
+    "openToWork": true,
+    "skills": [
+      "React",
+      "Product Design",
+      "Machine Learning",
+      "Content Writing",
+      "Marketing",
+      "Operations",
+      "Brand Design",
+      "Sales"
+    ],
+    "interests": [
+      "Technology",
+      "Design",
+      "Business",
+      "Marketing",
+      "Legal"
+    ],
+    "onboardingDone": true,
+    "profileSetupDone": true
+  },
+  "individual-1779104110838": {
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-05-18T11:35:41.135Z",
+    "updatedAt": "2026-05-18T11:38:50.375Z",
+    "headline": "I am a skilled developer",
+    "bio": "i am a skilled develper of python and java",
+    "location": "rajasthan",
+    "website": "",
+    "avatarUrl": "",
+    "bannerUrl": "",
+    "openToWork": true,
+    "skills": [
+      "React",
+      "Python",
+      "Marketing",
+      "Data Science"
+    ],
+    "interests": [
+      "Legal",
+      "Engineering",
+      "Product",
+      "Data & AI"
+    ],
+    "onboardingDone": true,
+    "profileSetupDone": true
+  },
+  "individual-1779105706874": {
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-05-18T12:02:13.664Z",
+    "updatedAt": "2026-05-18T12:02:36.857Z",
+    "headline": "ahsdkhaksdj",
+    "bio": "askjdhaskhdkad",
+    "location": "kota",
+    "website": "",
+    "avatarUrl": "",
+    "bannerUrl": "",
+    "openToWork": true,
+    "skills": [
+      "React",
+      "Product Design"
+    ],
+    "interests": [
+      "Data & AI",
+      "Engineering"
+    ],
+    "onboardingDone": true,
+    "profileSetupDone": true
+  },
+  "individual-1779109829969": {
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-05-18T13:10:58.528Z",
+    "updatedAt": "2026-05-19T07:29:53.164Z",
+    "headline": "testing user 01",
+    "bio": "testing user 01",
+    "location": "bengaluru",
+    "website": "https://corescent.in",
+    "avatarUrl": "/uploads/profile/avatar_individual17_32f488cd6456.png",
+    "bannerUrl": "/uploads/profile/banner_individual17_6a2e0af4b756.png",
+    "openToWork": true,
+    "skills": [
+      "Product Design",
+      "Data Science",
+      "Machine Learning"
+    ],
+    "interests": [
+      "Technology",
+      "Design",
+      "Business"
+    ],
+    "onboardingDone": true,
+    "profileSetupDone": true,
+    "socialLinks": {
+      "linkedin": "https://www.linkedin.com/in/kushagrasharma21/"
+    },
+    "experience": [],
+    "education": []
+  },
+  "individual-1779110985090": {
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-05-18T13:30:14.778Z",
+    "updatedAt": "2026-05-18T13:30:14.801Z"
+  },
+  "pf-arjun-kapoor": {
+    "headline": "Bollywood Actor • 3 Filmfare Awards",
+    "bio": "National award-winning actor with 15+ years in Bollywood. Known for roles in 'Dil Se Dil Tak', 'The Last Storm', and 'Bharat Ka Beta'. Brand ambassador for multiple luxury labels. Co-founder of AK Films Production House.",
+    "location": "Mumbai, Maharashtra",
+    "website": "https://arjunkapoor.com",
+    "avatarUrl": "https://randomuser.me/api/portraits/men/32.jpg",
+    "bannerUrl": null,
+    "coverGradient": "linear-gradient(135deg, #1a0a2e 0%, #2d1254 50%, #1a0a2e 100%)",
+    "skills": [
+      "Acting",
+      "Direction",
+      "Brand Endorsements",
+      "Film Production"
+    ],
+    "interests": [
+      "Cinema",
+      "Arts",
+      "Social Causes",
+      "Sports"
+    ],
+    "openToWork": false,
+    "pronouns": "He/Him",
+    "onboardingDone": true,
+    "profileSetupDone": true,
+    "emailVerified": true,
+    "publicFace": {
+      "category": "actor_actress",
+      "approvedAt": "2026-01-15T10:30:00Z"
+    },
+    "updatedAt": "2026-05-18T08:20:00Z"
+  },
+  "pf-priya-sharma": {
+    "headline": "Playback Singer • 2× Grammy Asia Nominee",
+    "bio": "Celebrated playback singer with over 500 songs across Hindi, Tamil, and Telugu cinema. My voice has graced films seen by millions across the globe. Founder of SwarRaga Music Academy, nurturing the next generation of classical vocalists.",
+    "location": "Chennai, Tamil Nadu",
+    "website": "https://priyasharmaofficial.com",
+    "avatarUrl": "https://randomuser.me/api/portraits/women/44.jpg",
+    "bannerUrl": null,
+    "coverGradient": "linear-gradient(135deg, #0d0621 0%, #1e0b4a 45%, #2a0d5e 100%)",
+    "skills": [
+      "Classical Vocals",
+      "Playback Singing",
+      "Music Composition",
+      "Stage Performances"
+    ],
+    "interests": [
+      "Music",
+      "Arts & Culture",
+      "Education",
+      "Spirituality"
+    ],
+    "openToWork": false,
+    "pronouns": "She/Her",
+    "onboardingDone": true,
+    "profileSetupDone": true,
+    "emailVerified": true,
+    "publicFace": {
+      "category": "singer_musician",
+      "approvedAt": "2026-02-02T14:00:00Z"
+    },
+    "updatedAt": "2026-05-17T19:45:00Z"
+  },
+  "pf-rohit-verma": {
+    "headline": "Indian Cricket Team Captain • ICC Test Ranking #2",
+    "bio": "Captaining the Indian national cricket team since 2023. Three-time IPL champion. Scored 10,000+ international runs across formats. BCCI's Brand Ambassador and active supporter of grassroots cricket development programmes.",
+    "location": "Delhi, India",
+    "website": "https://rohitverma.cricket",
+    "avatarUrl": "https://randomuser.me/api/portraits/men/75.jpg",
+    "bannerUrl": null,
+    "coverGradient": "linear-gradient(135deg, #001430 0%, #003470 50%, #001430 100%)",
+    "skills": [
+      "Cricket",
+      "Leadership",
+      "Sports Strategy",
+      "Public Speaking"
+    ],
+    "interests": [
+      "Sports",
+      "Fitness",
+      "Youth Development",
+      "Nutrition"
+    ],
+    "openToWork": false,
+    "pronouns": "He/Him",
+    "onboardingDone": true,
+    "profileSetupDone": true,
+    "emailVerified": true,
+    "publicFace": {
+      "category": "athlete_sportsperson",
+      "approvedAt": "2026-01-28T09:15:00Z"
+    },
+    "updatedAt": "2026-05-19T07:10:00Z"
+  },
+  "pf-ananya-singh": {
+    "headline": "Content Creator • 14M+ Followers Across Platforms",
+    "bio": "Lifestyle, beauty, and travel content creator with a combined following of 14 million. Forbes 30 Under 30 — Asia 2025. Launched my own skincare brand 'Glow by Ananya' in 2024 which sold out in 48 hours. Creating authentic content that resonates.",
+    "location": "Gurgaon, Haryana",
+    "website": "https://ananyasingh.in",
+    "avatarUrl": "https://randomuser.me/api/portraits/women/68.jpg",
+    "bannerUrl": null,
+    "coverGradient": "linear-gradient(135deg, #0f0620 0%, #2b1050 55%, #1a0830 100%)",
+    "skills": [
+      "Content Creation",
+      "Brand Collaborations",
+      "Lifestyle Blogging",
+      "Skincare"
+    ],
+    "interests": [
+      "Fashion",
+      "Travel",
+      "Beauty",
+      "Entrepreneurship",
+      "Wellness"
+    ],
+    "openToWork": false,
+    "pronouns": "She/Her",
+    "onboardingDone": true,
+    "profileSetupDone": true,
+    "emailVerified": true,
+    "publicFace": {
+      "category": "content_creator",
+      "approvedAt": "2026-02-10T16:20:00Z"
+    },
+    "updatedAt": "2026-05-20T06:55:00Z"
+  },
+  "pf-kavitha-nair": {
+    "headline": "Astrophysicist • ISRO Chief Scientist • Padma Shri 2024",
+    "bio": "Lead scientist behind India's Mangalyaan-3 mission and the Chandrayaan-4 lander. TEDx speaker with 8M+ views. Author of 'The Cosmos Within' (bestseller in 14 languages). Passionate about making science accessible to every Indian child.",
+    "location": "Bangalore, Karnataka",
+    "website": "https://kavithanair.science",
+    "avatarUrl": "https://randomuser.me/api/portraits/women/57.jpg",
+    "bannerUrl": null,
+    "coverGradient": "linear-gradient(135deg, #080d25 0%, #0e1a4a 50%, #131f55 100%)",
+    "skills": [
+      "Astrophysics",
+      "Research",
+      "Scientific Writing",
+      "Public Speaking"
+    ],
+    "interests": [
+      "Space Science",
+      "STEM Education",
+      "Climate",
+      "Innovation"
+    ],
+    "openToWork": false,
+    "pronouns": "She/Her",
+    "onboardingDone": true,
+    "profileSetupDone": true,
+    "emailVerified": true,
+    "publicFace": {
+      "category": "academic_scientist",
+      "approvedAt": "2026-01-20T11:00:00Z"
+    },
+    "updatedAt": "2026-05-16T15:30:00Z"
+  },
+  "pf-vikram-malhotra": {
+    "headline": "Founder & CEO, Malhotra Ventures • ₹4,200 Cr Portfolio",
+    "bio": "Serial entrepreneur and venture capitalist. Founded 7 startups — 3 unicorns. Featured on Shark Tank India (Seasons 2 & 3). Chairman of CII's Startup Council. Invested in 60+ early-stage companies across fintech, healthtech, and deep-tech verticals.",
+    "location": "Mumbai, Maharashtra",
+    "website": "https://vikrammalhotra.com",
+    "avatarUrl": "https://randomuser.me/api/portraits/men/52.jpg",
+    "bannerUrl": null,
+    "coverGradient": "linear-gradient(135deg, #050c1a 0%, #0a1f3d 50%, #051530 100%)",
+    "skills": [
+      "Venture Capital",
+      "Entrepreneurship",
+      "Strategy",
+      "Fundraising",
+      "Fintech"
+    ],
+    "interests": [
+      "Startups",
+      "Technology",
+      "Finance",
+      "Policy",
+      "Mentorship"
+    ],
+    "openToWork": false,
+    "pronouns": "He/Him",
+    "onboardingDone": true,
+    "profileSetupDone": true,
+    "emailVerified": true,
+    "docrudGo": true,
+    "publicFace": {
+      "category": "entrepreneur_ceo",
+      "approvedAt": "2026-01-10T08:30:00Z"
+    },
+    "updatedAt": "2026-05-19T11:20:00Z"
+  },
+  "pf-neha-gupta": {
+    "headline": "Fashion Designer • FDCI Nominee • Wills Lifestyle India Fashion Week",
+    "bio": "Indo-fusion couture designer dressing Bollywood royalty and international celebrities. My label 'Neha Gupta Couture' has showcased at Paris, Milan, and FDCI Fashion Week. Sustainable fashion advocate — 70% of my collections use recycled or organic fabric.",
+    "location": "New Delhi, India",
+    "website": "https://nehaguptacouture.com",
+    "avatarUrl": "https://randomuser.me/api/portraits/women/29.jpg",
+    "bannerUrl": null,
+    "coverGradient": "linear-gradient(135deg, #1a0a1e 0%, #3d1050 50%, #1a0a2e 100%)",
+    "skills": [
+      "Couture Design",
+      "Textile Arts",
+      "Brand Building",
+      "Sustainable Fashion"
+    ],
+    "interests": [
+      "Fashion",
+      "Art",
+      "Sustainability",
+      "Culture",
+      "Travel"
+    ],
+    "openToWork": false,
+    "pronouns": "She/Her",
+    "onboardingDone": true,
+    "profileSetupDone": true,
+    "emailVerified": true,
+    "publicFace": {
+      "category": "fashion_designer",
+      "approvedAt": "2026-02-18T13:45:00Z"
+    },
+    "updatedAt": "2026-05-18T13:00:00Z"
+  },
+  "pf-rajan-mehta": {
+    "headline": "Senior Journalist • NDTV • Ramnath Goenka Award 2023",
+    "bio": "Investigative journalist with 22 years across NDTV, Reuters, and The Hindu. Covered 4 elections, 3 conflicts, and the 2024 Himalayan flood relief operations. Ramnath Goenka Excellence in Journalism Award recipient. Author of 'The Ink & The People'. Press Club of India board member.",
+    "location": "New Delhi, India",
+    "website": "https://rajanmehta.press",
+    "avatarUrl": "https://randomuser.me/api/portraits/men/85.jpg",
+    "bannerUrl": null,
+    "coverGradient": "linear-gradient(135deg, #0a0d18 0%, #12183a 50%, #0a0d20 100%)",
+    "skills": [
+      "Investigative Journalism",
+      "Political Analysis",
+      "Documentary",
+      "Writing"
+    ],
+    "interests": [
+      "Journalism",
+      "Politics",
+      "Social Issues",
+      "Democracy",
+      "History"
+    ],
+    "openToWork": false,
+    "pronouns": "He/Him",
+    "onboardingDone": true,
+    "profileSetupDone": true,
+    "emailVerified": true,
+    "publicFace": {
+      "category": "journalist",
+      "approvedAt": "2026-01-05T10:00:00Z"
+    },
+    "updatedAt": "2026-05-20T05:40:00Z"
+  },
+  "individual-1779433563834": {
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-05-22T07:07:01.292Z",
+    "updatedAt": "2026-05-22T07:07:01.307Z"
   }
 }

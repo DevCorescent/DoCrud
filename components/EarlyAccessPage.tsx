@@ -341,9 +341,9 @@ function WaitlistModal({ feature, onClose }: { feature: Feature; onClose: () => 
               <div style={{ width: 60, height: 60, borderRadius: 16, background: 'rgba(134,239,172,0.12)', border: '1px solid rgba(134,239,172,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px' }}>
                 <CheckCircle2 className="w-7 h-7" style={{ color: '#86efac' }} />
               </div>
-              <h2 style={{ fontSize: 21, fontWeight: 700, color: '#fafafa', marginBottom: 10 }}>You're on the list! 🎉</h2>
+              <h2 style={{ fontSize: 21, fontWeight: 700, color: '#fafafa', marginBottom: 10 }}>You&apos;re on the list! 🎉</h2>
               <p style={{ fontSize: 13.5, color: 'rgba(255,255,255,0.42)', lineHeight: 1.65, maxWidth: 300, margin: '0 auto 6px' }}>
-                We'll notify <strong style={{ color: '#fafafa' }}>{email}</strong> the moment <strong style={{ color: '#fafafa' }}>{feature.title}</strong> opens for early access.
+                We&apos;ll notify <strong style={{ color: '#fafafa' }}>{email}</strong> the moment <strong style={{ color: '#fafafa' }}>{feature.title}</strong> opens for early access.
               </p>
               <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.28)', margin: '0 auto 24px' }}>Stay tuned — limited spots.</p>
               <button onClick={onClose} style={{ padding: '10px 28px', borderRadius: 11, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: '#fafafa', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Close</button>
@@ -405,7 +405,7 @@ function WishModal({ feature, onClose }: { feature: Feature; onClose: () => void
                 <Heart className="w-6 h-6" style={{ color: '#f472b6' }} />
               </div>
               <h3 style={{ fontSize: 18, fontWeight: 700, color: '#fafafa', marginBottom: 8 }}>Wish received! ✨</h3>
-              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.42)', lineHeight: 1.65 }}>Our product team reviews every wish. You'll hear from us if we need more details.</p>
+              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.42)', lineHeight: 1.65 }}>Our product team reviews every wish. You&apos;ll hear from us if we need more details.</p>
               <button onClick={onClose} style={{ marginTop: 20, padding: '9px 24px', borderRadius: 10, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: '#fafafa', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Close</button>
             </div>
           ) : (
@@ -643,8 +643,9 @@ export default function EarlyAccessPage() {
   const sidebar = (
     <aside style={{ width: 62, background: '#090a0d', borderRight: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '14px 0', gap: 0, flexShrink: 0, height: '100%' }}>
       {/* Logo */}
-      <Link href="/" style={{ width: 38, height: 38, borderRadius: 11, background: 'linear-gradient(135deg,#1a1a2e,#16213e)', border: '1px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', marginBottom: 18, boxShadow: '0 4px 14px rgba(0,0,0,0.40)' }}>
-        <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', letterSpacing: '-0.05em' }}>D</span>
+      <Link href="/" style={{ display: 'block', textDecoration: 'none', marginBottom: 18, position: 'relative', width: 38, height: 38, borderRadius: 12, flexShrink: 0 }}>
+        <div aria-hidden="true" style={{ position: 'absolute', inset: -1.5, borderRadius: 13.5, background: 'conic-gradient(from 0deg, transparent 0%, transparent 62%, rgba(170,128,40,0.55) 74%, rgba(232,204,122,1.0) 83%, rgba(232,204,122,0.95) 88%, rgba(170,128,40,0.50) 96%, transparent 100%)', animation: 'goldenRingSpin 3.2s linear infinite', zIndex: 0 }} />
+        <img src="/docrud-icon.png" alt="Docrud" width={38} height={38} style={{ borderRadius: 11, display: 'block', position: 'relative', zIndex: 1, width: 38, height: 38, objectFit: 'cover' }} />
       </Link>
       {/* Nav items */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center', flex: 1 }}>
@@ -698,8 +699,9 @@ export default function EarlyAccessPage() {
 
           {/* Branding */}
           <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', flexShrink: 0 }}>
-            <div style={{ width: 26, height: 26, borderRadius: 7, background: 'linear-gradient(135deg,#1a1a2e,#16213e)', border: '1px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ fontSize: 11, fontWeight: 800, color: '#fff' }}>D</span>
+            <div style={{ position: 'relative', width: 26, height: 26, borderRadius: 8, flexShrink: 0 }}>
+              <div aria-hidden="true" style={{ position: 'absolute', inset: -1.5, borderRadius: 10, background: 'conic-gradient(from 0deg, transparent 0%, transparent 62%, rgba(170,128,40,0.55) 74%, rgba(232,204,122,1.0) 83%, rgba(232,204,122,0.95) 88%, rgba(170,128,40,0.50) 96%, transparent 100%)', animation: 'goldenRingSpin 3.2s linear infinite', zIndex: 0 }} />
+              <img src="/docrud-icon.png" alt="Docrud" width={26} height={26} style={{ borderRadius: 7, display: 'block', position: 'relative', zIndex: 1, width: 26, height: 26, objectFit: 'cover' }} />
             </div>
             <span style={{ fontSize: 14, fontWeight: 700, color: '#fafafa', letterSpacing: '-0.03em' }}>docrud</span>
           </Link>
@@ -827,8 +829,9 @@ export default function EarlyAccessPage() {
           {/* Page footer */}
           <footer style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 26, height: 26, borderRadius: 7, background: 'linear-gradient(135deg,#1a1a2e,#16213e)', border: '1px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontSize: 11, fontWeight: 800, color: '#fff' }}>D</span>
+              <div style={{ position: 'relative', width: 26, height: 26, borderRadius: 8, flexShrink: 0 }}>
+                <div aria-hidden="true" style={{ position: 'absolute', inset: -1.5, borderRadius: 10, background: 'conic-gradient(from 0deg, transparent 0%, transparent 62%, rgba(170,128,40,0.55) 74%, rgba(232,204,122,1.0) 83%, rgba(232,204,122,0.95) 88%, rgba(170,128,40,0.50) 96%, transparent 100%)', animation: 'goldenRingSpin 3.2s linear infinite', zIndex: 0 }} />
+                <img src="/docrud-icon.png" alt="Docrud" width={26} height={26} style={{ borderRadius: 7, display: 'block', position: 'relative', zIndex: 1, width: 26, height: 26, objectFit: 'cover' }} />
               </div>
               <span style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.55)', letterSpacing: '-0.02em' }}>docrud</span>
               <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.20)' }}>·</span>

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 
 // ── Types ──────────────────────────────────────────────────────────────
-type Tab = 'overview' | 'users' | 'plans' | 'platform' | 'analytics' | 'documents' | 'mail' | 'content' | 'settings' | 'audit' | 'revenue' | 'gigs' | 'people' | 'search' | 'security' | 'geography' | 'integrations' | 'early-access';
+type Tab = 'overview' | 'users' | 'plans' | 'platform' | 'analytics' | 'documents' | 'mail' | 'content' | 'settings' | 'audit' | 'revenue' | 'gigs' | 'people' | 'search' | 'security' | 'geography' | 'integrations' | 'early-access' | 'public_face';
 
 interface DashboardData {
   users: { total: number; active: number; suspended: number; disabled: number; business: number; individual: number; newLast30Days: number; newLast7Days: number; planDistribution: Record<string, number>; subscriptionStatusDistribution: Record<string, number>; roleDistribution: Record<string, number>; recentSignups: UserRow[]; dailySignups: { date: string; count: number }[] };
@@ -112,6 +112,7 @@ export default function SuperAdminPanel({ adminEmail, onLogout }: { adminEmail: 
     { group: 'People', items: [
       { id: 'users', label: 'Users', icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8z" /></svg> },
       { id: 'people', label: 'Profiles', icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0M19 21a7 7 0 10-14 0" /></svg> },
+      { id: 'public_face', label: 'Public Faces', icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 20 20"><defs><linearGradient id="pfnav" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#7c3aed"/><stop offset="100%" stopColor="#d946ef"/></linearGradient></defs><circle cx="10" cy="10" r="9" fill="url(#pfnav)" opacity="0.8"/><path d="M10 4.5l1.4 3.1 3.4.3-2.5 2.2.8 3.3L10 11.8l-3.1 1.6.8-3.3-2.5-2.2 3.4-.3z" fill="white" opacity="0.95"/></svg> },
     ]},
     { group: 'Commerce', items: [
       { id: 'revenue', label: 'Revenue', icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> },
@@ -227,6 +228,7 @@ export default function SuperAdminPanel({ adminEmail, onLogout }: { adminEmail: 
           {tab === 'geography' && <GeographyTab />}
           {tab === 'integrations' && <IntegrationsTab />}
           {tab === 'early-access' && <EarlyAccessTab />}
+          {tab === 'public_face' && <PublicFaceTab />}
         </div>
       </main>
     </div>
@@ -2615,6 +2617,346 @@ function EarlyAccessTab() {
             <div className="flex gap-2 pt-2">
               <button disabled={Boolean(saving)} onClick={() => doAction('add_feature', { ...newFeat, tags: newFeat.tags.split(',').map((t) => t.trim()).filter(Boolean) })} className="flex-1 py-2 bg-amber-500 hover:bg-amber-400 text-black text-sm font-semibold rounded-lg disabled:opacity-50 transition-all">{saving ? 'Adding…' : 'Add feature'}</button>
               <button onClick={() => setShowAdd(false)} className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm rounded-lg transition-all">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Public Face Tab — review, approve, reject applications
+═══════════════════════════════════════════════════════════════════════ */
+const CATEGORY_LABELS: Record<string, string> = {
+  actor_actress: 'Actor / Actress', singer_musician: 'Singer / Musician',
+  athlete_sportsperson: 'Athlete / Sportsperson', model: 'Model',
+  content_creator: 'Content Creator', influencer: 'Influencer',
+  politician: 'Politician', entrepreneur_ceo: 'Entrepreneur / CEO',
+  author_writer: 'Author / Writer', academic_scientist: 'Academic / Scientist',
+  tv_personality: 'TV Personality', comedian: 'Comedian',
+  social_activist: 'Social Activist', chef_culinary: 'Chef / Culinary Expert',
+  fashion_designer: 'Fashion Designer', photographer_videographer: 'Photographer / Videographer',
+  game_streamer: 'Game Streamer', journalist: 'Journalist', other: 'Other Public Figure',
+};
+const CATEGORY_ICONS: Record<string, string> = {
+  actor_actress:'🎭', singer_musician:'🎵', athlete_sportsperson:'🏆', model:'✨',
+  content_creator:'🎬', influencer:'📱', politician:'🏛️', entrepreneur_ceo:'💼',
+  author_writer:'📖', academic_scientist:'🔬', tv_personality:'📺', comedian:'😄',
+  social_activist:'✊', chef_culinary:'👨‍🍳', fashion_designer:'👗',
+  photographer_videographer:'📷', game_streamer:'🎮', journalist:'📰', other:'⭐',
+};
+
+interface PFApp {
+  id: string; userId: string; userEmail: string; userName: string;
+  status: string; category: string; submittedAt: string; updatedAt: string;
+  instagramHandle?: string; twitterHandle?: string; youtubeChannel?: string;
+  facebookPage?: string; tiktokHandle?: string; websiteUrl?: string;
+  totalFollowers?: string; monthlyReach?: string; mediaFeatures?: string;
+  awardsRecognitions?: string; notableProjects?: string; publicStatement: string;
+  identityProofFileName?: string; identityProofMimeType?: string;
+  emailVerified: boolean; adminNote?: string; reviewedAt?: string;
+}
+
+function PublicFaceTab() {
+  const [apps, setApps] = useState<PFApp[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [selected, setSelected] = useState<PFApp | null>(null);
+  const [adminNote, setAdminNote] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
+  const [actionErr, setActionErr] = useState('');
+  const [proofData, setProofData] = useState<{ dataUrl: string; fileName: string } | null>(null);
+  const [proofLoading, setProofLoading] = useState(false);
+
+  const load = useCallback(async (filter: string) => {
+    setLoading(true);
+    try {
+      const params = filter ? `?status=${filter}` : '';
+      const r = await fetch(`/api/super-admin/public-face${params}`);
+      const d = await r.json();
+      setApps(d.applications || []);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(statusFilter); }, [statusFilter, load]);
+
+  const loadProof = async (appId: string) => {
+    setProofLoading(true);
+    try {
+      const r = await fetch('/api/super-admin/public-face', {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ applicationId: appId }),
+      });
+      const d = await r.json();
+      if (d.application?.identityProofDataUrl) {
+        setProofData({ dataUrl: d.application.identityProofDataUrl, fileName: d.application.identityProofFileName || 'proof' });
+      }
+    } finally {
+      setProofLoading(false);
+    }
+  };
+
+  const doAction = async (action: 'approve' | 'reject' | 'under_review') => {
+    if (!selected) return;
+    setActionLoading(true);
+    setActionErr('');
+    try {
+      const r = await fetch('/api/super-admin/public-face', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ applicationId: selected.id, action, adminNote: adminNote.trim() || undefined }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Action failed.');
+      setSelected(null);
+      setAdminNote('');
+      setProofData(null);
+      load(statusFilter);
+    } catch (e) {
+      setActionErr(e instanceof Error ? e.message : 'Failed.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const counts = {
+    pending: apps.filter(a => a.status === 'pending').length,
+    under_review: apps.filter(a => a.status === 'under_review').length,
+    approved: apps.filter(a => a.status === 'approved').length,
+    rejected: apps.filter(a => a.status === 'rejected').length,
+  };
+
+  const STATUS_COLORS: Record<string, string> = {
+    pending: '#fbbf24', under_review: '#60a5fa', approved: '#34d399', rejected: '#f87171',
+  };
+  const STATUS_LABELS: Record<string, string> = {
+    pending: 'Pending', under_review: 'Under Review', approved: 'Approved', rejected: 'Rejected',
+  };
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-4 flex-wrap">
+        <div>
+          <h2 className="text-xl font-bold text-white">Public Face Applications</h2>
+          <p className="text-sm text-zinc-500 mt-0.5">Review and approve Public Face badge applications</p>
+        </div>
+        <div className="ml-auto flex gap-2 flex-wrap">
+          {[['', 'All'], ['pending', 'Pending'], ['under_review', 'Under Review'], ['approved', 'Approved'], ['rejected', 'Rejected']].map(([v, l]) => (
+            <button key={v} onClick={() => setStatusFilter(v)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${statusFilter === v ? 'bg-violet-600 text-white' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}>
+              {l}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[['pending','Pending',counts.pending,'#fbbf24'],['under_review','Under Review',counts.under_review,'#60a5fa'],['approved','Approved',counts.approved,'#34d399'],['rejected','Rejected',counts.rejected,'#f87171']].map(([k,l,c,col]) => (
+          <div key={k} onClick={() => setStatusFilter(k as string)}
+            className="rounded-xl p-4 cursor-pointer transition-all hover:scale-[1.02]"
+            style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${col as string}30` }}>
+            <p className="text-2xl font-black" style={{ color: col as string }}>{c as number}</p>
+            <p className="text-xs text-zinc-500 mt-1">{l as string}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Table */}
+      {loading ? (
+        <div className="flex items-center justify-center py-16">
+          <div className="h-6 w-6 rounded-full border-2 border-violet-500 border-t-transparent animate-spin" />
+        </div>
+      ) : apps.length === 0 ? (
+        <div className="text-center py-16 text-zinc-600">No applications found.</div>
+      ) : (
+        <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.07)' }}>
+          <table className="w-full text-sm">
+            <thead>
+              <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
+                {['Applicant', 'Category', 'Followers', 'Verified', 'Submitted', 'Status', ''].map(h => (
+                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-widest">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/[0.04]">
+              {apps.map(app => (
+                <tr key={app.id} className="hover:bg-white/[0.02] transition-colors">
+                  <td className="px-4 py-3">
+                    <p className="font-semibold text-white/80 text-sm">{app.userName}</p>
+                    <p className="text-xs text-zinc-600 truncate max-w-[160px]">{app.userEmail}</p>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: '#c084fc' }}>
+                      <span>{CATEGORY_ICONS[app.category] || '⭐'}</span>
+                      <span>{CATEGORY_LABELS[app.category] || app.category}</span>
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-xs text-zinc-500">{app.totalFollowers || '—'}</td>
+                  <td className="px-4 py-3">
+                    <span className={`text-xs font-bold ${app.emailVerified ? 'text-emerald-400' : 'text-zinc-600'}`}>
+                      {app.emailVerified ? '✓ Yes' : '✗ No'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-xs text-zinc-600">
+                    {new Date(app.submittedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold"
+                      style={{ background: `${STATUS_COLORS[app.status]}18`, color: STATUS_COLORS[app.status] || '#fff' }}>
+                      {STATUS_LABELS[app.status] || app.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <button onClick={() => { setSelected(app); setAdminNote(app.adminNote || ''); setProofData(null); }}
+                      className="px-3 py-1 rounded-lg bg-violet-600/20 hover:bg-violet-600/40 text-violet-300 text-xs font-semibold transition-all">
+                      Review
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Review drawer */}
+      {selected && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+          style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}
+          onClick={() => { setSelected(null); setProofData(null); }}>
+          <div className="relative w-full sm:max-w-2xl rounded-t-[24px] sm:rounded-[24px] overflow-hidden max-h-[90vh] overflow-y-auto"
+            style={{ background: '#0f0f15', border: '1px solid rgba(168,85,247,0.2)' }}
+            onClick={e => e.stopPropagation()}>
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.07]">
+              <div>
+                <p className="text-base font-black text-white">{selected.userName}</p>
+                <p className="text-xs text-zinc-500">{selected.userEmail}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold"
+                  style={{ background: `${STATUS_COLORS[selected.status]}18`, color: STATUS_COLORS[selected.status] }}>
+                  {STATUS_LABELS[selected.status]}
+                </span>
+                <button onClick={() => { setSelected(null); setProofData(null); }}
+                  className="flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.06] hover:bg-white/[0.12] transition text-white/40 text-lg">×</button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-5">
+              {/* Category */}
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{CATEGORY_ICONS[selected.category] || '⭐'}</span>
+                <span className="text-sm font-bold" style={{ color: '#c084fc' }}>{CATEGORY_LABELS[selected.category] || selected.category}</span>
+              </div>
+
+              {/* Social handles */}
+              <div className="rounded-xl p-4 space-y-2" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3">Social Presence</p>
+                {[
+                  ['Instagram', selected.instagramHandle],['Twitter', selected.twitterHandle],
+                  ['YouTube', selected.youtubeChannel],['Facebook', selected.facebookPage],
+                  ['TikTok', selected.tiktokHandle],['Website', selected.websiteUrl],
+                ].filter(([,v]) => v).map(([l, v]) => (
+                  <div key={l as string} className="flex items-center gap-2">
+                    <span className="text-xs text-zinc-600 w-20 shrink-0">{l as string}</span>
+                    <span className="text-xs text-violet-300 break-all">{v as string}</span>
+                  </div>
+                ))}
+                {!selected.instagramHandle && !selected.twitterHandle && !selected.youtubeChannel && !selected.websiteUrl && (
+                  <p className="text-xs text-zinc-700">No social handles provided.</p>
+                )}
+              </div>
+
+              {/* Fame proof */}
+              <div className="rounded-xl p-4 space-y-3" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Fame Evidence</p>
+                {[
+                  ['Total Followers', selected.totalFollowers],
+                  ['Monthly Reach', selected.monthlyReach],
+                  ['Media Features', selected.mediaFeatures],
+                  ['Awards', selected.awardsRecognitions],
+                  ['Notable Projects', selected.notableProjects],
+                ].filter(([,v]) => v).map(([l, v]) => (
+                  <div key={l as string}>
+                    <p className="text-[10px] text-zinc-600 uppercase tracking-widest">{l as string}</p>
+                    <p className="text-sm text-white/70 mt-0.5 leading-relaxed">{v as string}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Public statement */}
+              <div className="rounded-xl p-4" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Public Statement</p>
+                <p className="text-sm text-white/60 leading-relaxed">{selected.publicStatement}</p>
+              </div>
+
+              {/* Identity proof */}
+              <div className="rounded-xl p-4 space-y-3" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Identity Proof</p>
+                {selected.identityProofFileName ? (
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-white/60">{selected.identityProofFileName}</span>
+                    {!proofData && (
+                      <button onClick={() => loadProof(selected.id)} disabled={proofLoading}
+                        className="px-3 py-1 rounded-lg bg-violet-600/20 hover:bg-violet-600/40 text-violet-300 text-xs font-semibold transition disabled:opacity-50">
+                        {proofLoading ? 'Loading…' : 'View Proof'}
+                      </button>
+                    )}
+                  </div>
+                ) : <p className="text-xs text-zinc-700">No proof uploaded.</p>}
+                {proofData && (
+                  <div className="mt-2">
+                    {proofData.fileName.endsWith('.pdf') ? (
+                      <a href={proofData.dataUrl} download={proofData.fileName}
+                        className="px-3 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-400 text-xs font-semibold">
+                        Download PDF
+                      </a>
+                    ) : (
+                      <img src={proofData.dataUrl} alt="Identity proof" className="max-w-full rounded-xl border border-white/[0.08] max-h-64 object-contain" />
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Admin note */}
+              <div>
+                <label className="text-xs text-zinc-500 uppercase tracking-widest block mb-1.5">Admin Note (optional — sent to applicant)</label>
+                <textarea rows={2} value={adminNote} onChange={e => setAdminNote(e.target.value)}
+                  placeholder="Optional note for the applicant…"
+                  className="w-full rounded-xl px-4 py-3 text-sm text-white/70 placeholder-zinc-700 resize-none outline-none transition"
+                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }} />
+              </div>
+
+              {actionErr && <p className="text-xs text-red-400">{actionErr}</p>}
+
+              {/* Actions */}
+              <div className="flex gap-2 flex-wrap">
+                {selected.status !== 'under_review' && (
+                  <button onClick={() => doAction('under_review')} disabled={actionLoading}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-50"
+                    style={{ background: 'rgba(96,165,250,0.15)', color: '#60a5fa', border: '1px solid rgba(96,165,250,0.3)' }}>
+                    {actionLoading ? '…' : 'Mark Under Review'}
+                  </button>
+                )}
+                <button onClick={() => doAction('approve')} disabled={actionLoading}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-50"
+                  style={{ background: 'linear-gradient(135deg,#7c3aed,#a855f7)', color: '#fff', boxShadow: '0 4px 14px rgba(124,58,237,0.35)' }}>
+                  {actionLoading ? '…' : '✓ Approve'}
+                </button>
+                <button onClick={() => doAction('reject')} disabled={actionLoading}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-50"
+                  style={{ background: 'rgba(248,113,113,0.12)', color: '#f87171', border: '1px solid rgba(248,113,113,0.25)' }}>
+                  {actionLoading ? '…' : '✗ Reject'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

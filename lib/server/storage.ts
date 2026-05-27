@@ -70,34 +70,69 @@ export const userProfilesPath = path.join(dataDir, 'user-profiles.json');
 export const followsPath = path.join(dataDir, 'follows.json');
 export const upraisedPath = path.join(dataDir, 'upraised.json');
 export const socialEventsPath = path.join(dataDir, 'social-events.json');
+export const messagesPath = path.join(dataDir, 'messages.json');
+export const servicesPath = path.join(dataDir, 'services.json');
+export const serviceBookingsPath = path.join(dataDir, 'service-bookings.json');
+export const serviceReviewsPath = path.join(dataDir, 'service-reviews.json');
+export const serviceAnalyticsPath = path.join(dataDir, 'service-analytics.json');
+export const catalogueSettingsPath = path.join(dataDir, 'catalogue-settings.json');
+export const publicFaceApplicationsPath = path.join(dataDir, 'public-face-applications.json');
+export const publicFaceOtpsPath = path.join(dataDir, 'public-face-otps.json');
+export const sharesPath = path.join(dataDir, 'shares.json');
 
 export async function ensureDirectory(filePath: string) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
 }
 
+// ── In-process read cache (per server instance, 30s TTL) ──────────────────────
+// Cuts repeated file/db reads on hot API routes. writeJsonFile always clears the entry.
+const _readCache = new Map<string, { value: unknown; expiresAt: number }>();
+const READ_CACHE_TTL = 30_000; // 30 seconds
+
+function _cacheGet<T>(key: string): T | undefined {
+  const entry = _readCache.get(key);
+  if (!entry) return undefined;
+  if (Date.now() > entry.expiresAt) { _readCache.delete(key); return undefined; }
+  return entry.value as T;
+}
+
+function _cacheSet(key: string, value: unknown) {
+  _readCache.set(key, { value, expiresAt: Date.now() + READ_CACHE_TTL });
+}
+
+export function invalidateReadCache(filePath: string) {
+  _readCache.delete(getAppStateKey(filePath));
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 export async function readJsonFile<T>(filePath: string, fallback: T): Promise<T> {
   const appStateKey = getAppStateKey(filePath);
+
+  const cached = _cacheGet<T>(appStateKey);
+  if (cached !== undefined) return cached;
 
   if (isDatabaseConfigured()) {
     try {
       const databaseValue = await readAppState<T>(appStateKey);
       if (databaseValue !== null) {
+        _cacheSet(appStateKey, databaseValue);
         return databaseValue;
       }
     } catch (error) {
-      console.error(`Failed to read app state from database for ${appStateKey}`, error);
+      console.error(`Failed to read app state from database for ${appStateKey}:`, (error as Error)?.message ?? error);
     }
   }
 
   try {
     const content = await fs.readFile(filePath, 'utf8');
     const parsed = JSON.parse(content) as T;
+    _cacheSet(appStateKey, parsed);
 
     if (isDatabaseConfigured()) {
       try {
         await writeAppState(appStateKey, parsed);
       } catch (error) {
-        console.error(`Failed to seed app state into database for ${appStateKey}`, error);
+        console.error(`Failed to seed app state into database for ${appStateKey}:`, (error as Error)?.message ?? error);
       }
     }
 
@@ -108,12 +143,15 @@ export async function readJsonFile<T>(filePath: string, fallback: T): Promise<T>
 }
 
 export async function writeJsonFile<T>(filePath: string, data: T) {
+  invalidateReadCache(filePath);
   if (isDatabaseConfigured()) {
     try {
       await writeAppState(getAppStateKey(filePath), data);
       return;
     } catch (error) {
-      console.error(`Failed to write app state to database for ${getAppStateKey(filePath)}`, error);
+      console.error(`Failed to write app state to database for ${getAppStateKey(filePath)}`, (error as Error)?.message ?? error);
+      // During Next.js build the DB may be unreachable — fall through to file write.
+      if (process.env.NEXT_PHASE === 'phase-production-build') return;
       throw error;
     }
   }

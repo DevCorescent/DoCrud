@@ -11,9 +11,12 @@ export type MailPolicyKey =
   | 'business_welcome'
   | 'billing_reminders'
   | 'billing_receipts'
+  | 'storage_alerts'
   | 'gigs_notifications'
   | 'gigs_safety'
-  | 'docrud_go_welcome';
+  | 'docrud_go_welcome'
+  | 'social_notifications'
+  | 'public_face_notifications';
 
 export type MailPolicies = Record<MailPolicyKey, boolean>;
 
@@ -28,9 +31,12 @@ export const defaultMailPolicies: MailPolicies = {
   business_welcome: true,
   billing_reminders: true,
   billing_receipts: true,
+  storage_alerts: true,
   gigs_notifications: true,
   gigs_safety: true,
   docrud_go_welcome: true,
+  social_notifications: true,
+  public_face_notifications: true,
 };
 
 export async function getMailPolicies(): Promise<MailPolicies> {
@@ -50,9 +56,12 @@ export async function saveMailPolicies(next: MailPolicies) {
     business_welcome: Boolean(next.business_welcome),
     billing_reminders: Boolean(next.billing_reminders),
     billing_receipts: Boolean(next.billing_receipts),
+    storage_alerts: Boolean(next.storage_alerts),
     gigs_notifications: Boolean(next.gigs_notifications),
     gigs_safety: Boolean(next.gigs_safety),
     docrud_go_welcome: Boolean(next.docrud_go_welcome),
+    social_notifications: Boolean(next.social_notifications),
+    public_face_notifications: Boolean(next.public_face_notifications),
   };
   await writeJsonFile(mailPoliciesPath, cleaned);
 }

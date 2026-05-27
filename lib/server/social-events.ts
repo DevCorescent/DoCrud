@@ -38,7 +38,54 @@ export async function addSocialEvent(event: Omit<SocialEvent, 'id' | 'createdAt'
   };
   data.events = [newEvent, ...data.events].slice(0, MAX_EVENTS);
   await writeJsonFile(socialEventsPath, data);
+
+  // Fire notification email non-blocking — never throws
+  void sendEventEmail(newEvent).catch(() => {});
+
   return newEvent;
+}
+
+async function sendEventEmail(event: SocialEvent): Promise<void> {
+  try {
+    const [{ getStoredUsers }, { sendNotificationEmail }] = await Promise.all([
+      import('@/lib/server/users'),
+      import('@/lib/server/notification-emails'),
+    ]);
+
+    const users = await getStoredUsers();
+    const target = users.find((u) => u.id === event.targetUserId);
+    if (!target || !target.email) return;
+
+    // Check email preferences — default ON for all except profile_view and document_viewed
+    const prefs = target.emailPreferences ?? {};
+    const defaultOn = !['profile_view', 'document_viewed'].includes(event.type);
+
+    // Map SocialEventType to emailPreferences key
+    const prefKeyMap: Partial<Record<SocialEventType, keyof NonNullable<typeof target.emailPreferences>>> = {
+      follow: 'follows',
+      like: 'likes',
+      comment: 'comments',
+      mention: 'mentions',
+      gig_applied: 'gig_applied',
+    };
+    const prefKey = prefKeyMap[event.type];
+    const enabled = prefKey !== undefined && prefKey in prefs ? prefs[prefKey] : defaultOn;
+    if (!enabled) return;
+
+    await sendNotificationEmail({
+      to: target.email,
+      recipientName: target.name || target.email,
+      type: event.type,
+      actorName: event.actorName,
+      actorId: event.actorId,
+      resourceTitle: event.resourceTitle,
+      resourceId: event.resourceId,
+      excerpt: event.excerpt,
+      href: event.href,
+    });
+  } catch {
+    // non-critical — never throw
+  }
 }
 
 /** Returns events where targetUserId matches, newest-first, capped at 60 */

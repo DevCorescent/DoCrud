@@ -1,7 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { getSuperAdminSessionFromRequest, appendSuperAdminAudit } from '@/lib/server/super-admin-auth';
 import { listAdminUsers, adminSuspendUser, adminUnsuspendUser, adminDisableUser, adminEnableUser, adminDeleteUser } from '@/lib/server/admin-users';
 import { getStoredUsers, saveStoredUsers } from '@/lib/server/auth';
+
+export const dynamic = 'force-dynamic';
 
 function guard(req: NextRequest) {
   const s = getSuperAdminSessionFromRequest(req);

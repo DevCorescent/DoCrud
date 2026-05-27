@@ -1,0 +1,49 @@
+{
+  "individual-1779109829969": [
+    {
+      "title": "Website Development - E commerce",
+      "tagline": "Webapp + ios + android application included",
+      "description": "i can develop a very lucrative frontend + backend website for ecommerce for your brand",
+      "category": "development",
+      "tags": [],
+      "pricingModel": "starting_from",
+      "basePrice": 15999,
+      "currency": "INR",
+      "deliveryTime": 30,
+      "deliveryUnit": "days",
+      "isActive": true,
+      "featured": true,
+      "id": "svc_1779121636470_lthpt5",
+      "userId": "individual-1779109829969",
+      "bookingCount": 2,
+      "rating": 5,
+      "reviewCount": 1,
+      "createdAt": "2026-05-18T16:27:16.470Z",
+      "updatedAt": "2026-05-18T17:34:10.406Z"
+    },
+    {
+      "title": "Brand Design",
+      "tagline": "Complete package",
+      "description": "I can design a visually appealing banners and logo for your brand story",
+      "category": "design",
+      "tags": [
+        "brand design"
+      ],
+      "pricingModel": "contact",
+      "basePrice": 0,
+      "currency": "INR",
+      "deliveryTime": 2,
+      "deliveryUnit": "weeks",
+      "imageUrl": "https://www.forbes.com/advisor/wp-content/uploads/2023/06/graphic-designer-desk.jpeg-1.jpg",
+      "isActive": true,
+      "featured": true,
+      "id": "svc_1779178215277_8xmqiv",
+      "userId": "individual-1779109829969",
+      "bookingCount": 0,
+      "rating": 0,
+      "reviewCount": 0,
+      "createdAt": "2026-05-19T08:10:15.277Z",
+      "updatedAt": "2026-05-19T08:10:15.277Z"
+    }
+  ]
+}

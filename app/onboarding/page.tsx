@@ -1,15 +1,51 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn, useSession } from 'next-auth/react';
 import {
   ArrowRight, Award, Bot, Briefcase, CheckCircle2, Eye, EyeOff,
   FileSignature, FileText, FormInput, Globe,
-  Layers, MapPin, Network, PenLine, Shield, Share2,
+  Layers, LockKeyhole, MapPin, Network, PenLine, Shield, Share2,
   Sparkles, Users, X, Zap,
 } from 'lucide-react';
+
+/* ─── Splash ─────────────────────────────────────────────────── */
+const SLOT_WORDS = ['network', 'gigs', 'jobs', 'updates', 'documents'];
+const SPLASH_FEATS = [
+  'e-sign docs with OTP magic — zero paperwork. ✦',
+  'AI writes your documents in under 60 seconds. ✦',
+  'annotate, stamp & share PDFs — just like that. ✦',
+  'smart forms that actually think for you. ✦',
+  '3,400+ verified pros, one friendly platform. ✦',
+  'post gigs, find talent, get things done. ✦',
+  'DocSheets — spreadsheets, but make it fun. ✦',
+  'SOC 2 & GDPR-ready. your data, always safe. ✦',
+];
+
+/* Professional profile cards for the two marquee rows */
+const SPLASH_PROFILES_TOP = [
+  { init:'AK', name:'Ananya Krishnan',  title:'Sr. Product Designer',     loc:'Bengaluru',  avail:'Open to Work', availColor:'#34d399', skills:['Figma','Design Systems','Bharat UX'],   rating:4.97, projects:24, avatarGrad:'135deg,#059669,#10b981' },
+  { init:'RM', name:'Rohan Mehta',      title:'ML Engineer',               loc:'Hyderabad',  avail:'Available Now',availColor:'#60a5fa', skills:['Python','PyTorch','LLMs'],              rating:4.93, projects:18, avatarGrad:'135deg,#2563eb,#3b82f6' },
+  { init:'SJ', name:'Siddharth Joshi',  title:'Full-Stack Developer',      loc:'Pune',       avail:'Freelance',    availColor:'#a78bfa', skills:['Next.js','Go','Postgres'],               rating:4.91, projects:31, avatarGrad:'135deg,#7c3aed,#8b5cf6' },
+  { init:'PN', name:'Priya Nair',       title:'UX Writer',                 loc:'Kochi',      avail:'Part-time',    availColor:'#fb7185', skills:['UX Writing','SEO','Content'],            rating:4.88, projects:43, avatarGrad:'135deg,#e11d48,#f43f5e' },
+  { init:'VS', name:'Vikram Singh',     title:'Cloud Architect',           loc:'Delhi NCR',  avail:'Contract',     availColor:'#22d3ee', skills:['AWS','Kubernetes','Terraform'],          rating:4.95, projects:15, avatarGrad:'135deg,#0e7490,#06b6d4' },
+  { init:'MI', name:'Meera Iyer',       title:'Brand & Motion Designer',   loc:'Chennai',    avail:'Open to Work', availColor:'#e879f9', skills:['After Effects','Lottie','Figma'],         rating:4.92, projects:38, avatarGrad:'135deg,#a21caf,#d946ef' },
+  { init:'AT', name:'Aryan Thakur',     title:'Data Scientist',            loc:'Mumbai',     avail:'Available Now',availColor:'#34d399', skills:['R','Pandas','Spark'],                    rating:4.86, projects:22, avatarGrad:'135deg,#0f766e,#14b8a6' },
+  { init:'NK', name:'Nisha Kapoor',     title:'Legal Tech Consultant',     loc:'Noida',      avail:'Freelance',    availColor:'#a78bfa', skills:['Contract Law','DocDraft','LegalOps'],    rating:4.89, projects:11, avatarGrad:'135deg,#6d28d9,#7c3aed' },
+] as const;
+
+const SPLASH_PROFILES_BTM = [
+  { init:'LM', name:'Liam Morrison',    title:'Product Manager',           loc:'London, UK', avail:'Open to Work', availColor:'#34d399', skills:['Roadmap','Agile','SaaS Growth'],         rating:4.94, projects:19, avatarGrad:'135deg,#1d4ed8,#3b82f6' },
+  { init:'SC', name:'Sofia Chen',       title:'UX Researcher',             loc:'Singapore',  avail:'Contract',     availColor:'#22d3ee', skills:['User Testing','Figma','Miro'],           rating:4.90, projects:27, avatarGrad:'135deg,#0369a1,#0ea5e9' },
+  { init:'JR', name:'James Russo',      title:'Backend Engineer',          loc:'New York',   avail:'Available Now',availColor:'#60a5fa', skills:['Rust','Kafka','Postgres'],               rating:4.87, projects:34, avatarGrad:'135deg,#1e3a8a,#2563eb' },
+  { init:'AO', name:'Amara Osei',       title:'Growth Marketer',           loc:'Accra, GH',  avail:'Freelance',    availColor:'#fb923c', skills:['SEO','CRO','Paid Media'],                rating:4.85, projects:41, avatarGrad:'135deg,#c2410c,#f97316' },
+  { init:'EP', name:'Elena Petrov',     title:'DevOps Engineer',           loc:'Berlin, DE', avail:'Part-time',    availColor:'#a78bfa', skills:['GCP','Docker','CI/CD'],                  rating:4.91, projects:16, avatarGrad:'135deg,#5b21b6,#7c3aed' },
+  { init:'KY', name:'Kenji Yamamoto',   title:'iOS Engineer',              loc:'Tokyo, JP',  avail:'Open to Work', availColor:'#34d399', skills:['Swift','SwiftUI','Metal'],               rating:4.96, projects:28, avatarGrad:'135deg,#065f46,#10b981' },
+  { init:'FN', name:'Fatima Al-Nouri',  title:'AI Researcher',             loc:'Dubai, UAE', avail:'Available Now',availColor:'#60a5fa', skills:['NLP','LLMs','Python'],                   rating:4.93, projects:13, avatarGrad:'135deg,#1e40af,#3b82f6' },
+  { init:'ZA', name:'Zara Ahmed',       title:'Brand Strategist',          loc:'Karachi, PK',avail:'Freelance',    availColor:'#fb7185', skills:['Brand','Copy','Social'],                 rating:4.84, projects:36, avatarGrad:'135deg,#9f1239,#fb7185' },
+] as const;
 
 /* ─── Constants ──────────────────────────────────────────────── */
 const POPULAR_SKILLS = [
@@ -126,6 +162,404 @@ function ScreenIn({ children }: { children: React.ReactNode }) {
       transform: on ? 'none' : 'translateY(20px)',
     }}>
       {children}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SPLASH SCREEN
+═══════════════════════════════════════════════════════════════ */
+
+type SplashProfile = {
+  init: string; name: string; title: string; loc: string;
+  avail: string; availColor: string; skills: readonly string[];
+  rating: number; projects: number; avatarGrad: string;
+};
+type FeedPost = {
+  init: string; author: string; role: string; time: string;
+  text: string; likes: number; comments: number; avatarGrad: string; tag: string; tagColor: string;
+};
+type EventItem = {
+  title: string; day: string; month: string; location: string;
+  attendees: number; category: string; color: string;
+};
+type GigItem = {
+  title: string; budget: string; skills: readonly string[];
+  poster: string; bids: number; level: string;
+};
+type DocItem = {
+  name: string; type: string; pages: number; shared: string;
+  icon: string; colorRgb: string;
+};
+
+const FEED_POSTS: FeedPost[] = [
+  { init:'AK', author:'Ananya K.',      role:'Sr. Designer',       time:'2h',  text:'Just shipped a full design system at scale — 340+ tokens, Figma + code perfectly in sync. One of the best days of my career. 🔥', likes:284, comments:43, avatarGrad:'135deg,#059669,#10b981', tag:'Design',      tagColor:'#a78bfa' },
+  { init:'RM', author:'Rohan M.',        role:'ML Engineer',         time:'4h',  text:'Fine-tuned a small LLM on domain-specific docs and hit 94% accuracy. Smaller models are underrated. The key was the dataset curation.', likes:512, comments:87, avatarGrad:'135deg,#2563eb,#3b82f6', tag:'AI / ML',     tagColor:'#60a5fa' },
+  { init:'SJ', author:'Siddharth J.',   role:'Full-Stack Dev',      time:'1d',  text:'Migrated a 200k-user SaaS from REST to tRPC in a weekend. Type-safety end-to-end is genuinely life-changing. Zero runtime errors so far.', likes:391, comments:62, avatarGrad:'135deg,#7c3aed,#8b5cf6', tag:'Engineering', tagColor:'#818cf8' },
+  { init:'VS', author:'Vikram S.',       role:'Cloud Architect',     time:'6h',  text:'Kubernetes costs went from ₹2.4L/mo to ₹80k after aggressive right-sizing + spot instance migration. Infrastructure is a product.', likes:743, comments:118, avatarGrad:'135deg,#0e7490,#06b6d4', tag:'Cloud',       tagColor:'#22d3ee' },
+  { init:'MI', author:'Meera I.',        role:'Motion Designer',     time:'3h',  text:'Released 18 free Lottie animations for Indian festivals. Diwali, Holi, Pongal — all CC0. Go use them. Link in bio ✨', likes:1204, comments:231, avatarGrad:'135deg,#a21caf,#d946ef', tag:'Creative',    tagColor:'#e879f9' },
+  { init:'PN', author:'Priya N.',        role:'UX Writer',           time:'5h',  text:'Rewrote 60 error messages across the app. Bounce rate on error screens dropped 38%. Words are literally UX.', likes:476, comments:74, avatarGrad:'135deg,#e11d48,#f43f5e', tag:'UX',          tagColor:'#fb7185' },
+  { init:'AT', author:'Aryan T.',        role:'Data Scientist',      time:'2d',  text:'Built a churn prediction model that saved our startup ₹40L in ARR this quarter. Feature engineering > model selection, every time.', likes:638, comments:95, avatarGrad:'135deg,#0f766e,#14b8a6', tag:'Data',        tagColor:'#34d399' },
+  { init:'NK', author:'Nisha K.',        role:'Legal Tech',          time:'1d',  text:'AI-drafted NDAs are finally legally enforceable in 3 more Indian states. This is a watershed moment for legal tech in Bharat.', likes:892, comments:147, avatarGrad:'135deg,#6d28d9,#7c3aed', tag:'Legal',       tagColor:'#c4b5fd' },
+];
+
+const EVENTS: EventItem[] = [
+  { title:'Figma Config India 2025',          day:'14', month:'Jun', location:'Bengaluru',   attendees:1240, category:'Design',      color:'#a78bfa' },
+  { title:'IndiaAI Summit',                   day:'22', month:'Jul', location:'New Delhi',   attendees:3800, category:'AI & ML',     color:'#60a5fa' },
+  { title:'React India Conference',           day:'5',  month:'Sep', location:'Goa',         attendees:950,  category:'Engineering', color:'#818cf8' },
+  { title:'Startup Mahakumbh',                day:'18', month:'Aug', location:'Lucknow',     attendees:12000,category:'Startup',     color:'#fb923c' },
+  { title:'Product Management Summit',        day:'3',  month:'Oct', location:'Mumbai',      attendees:2100, category:'Product',     color:'#34d399' },
+  { title:'Bharat FinTech Conclave',          day:'29', month:'Jun', location:'Hyderabad',   attendees:4500, category:'Finance',     color:'#fbbf24' },
+  { title:'Women in Tech India',              day:'11', month:'Jul', location:'Pune',        attendees:1800, category:'Community',   color:'#e879f9' },
+  { title:'Cloud & DevOps India',             day:'26', month:'Sep', location:'Chennai',     attendees:720,  category:'Cloud',       color:'#22d3ee' },
+];
+
+const GIGS: GigItem[] = [
+  { title:'Build a Next.js SaaS Dashboard',       budget:'₹18k – ₹28k',  skills:['Next.js','TypeScript','Tailwind'],  poster:'Vikram S.',   bids:14, level:'Expert'      },
+  { title:'Fine-tune LLM for Legal Docs',         budget:'₹35k – ₹55k',  skills:['Python','LLMs','NLP'],              poster:'Nisha K.',    bids:7,  level:'Expert'      },
+  { title:'Brand Identity for D2C Startup',       budget:'₹22k – ₹38k',  skills:['Brand','Figma','Illustration'],     poster:'Meera I.',    bids:19, level:'Mid'         },
+  { title:'Mobile App UI — Fintech',              budget:'₹14k – ₹20k',  skills:['Figma','iOS Design','UX'],          poster:'Ananya K.',   bids:11, level:'Mid'         },
+  { title:'Kubernetes Infra Audit',               budget:'₹40k – ₹70k',  skills:['AWS','K8s','Terraform'],            poster:'Elena P.',    bids:5,  level:'Expert'      },
+  { title:'Content Strategy — B2B SaaS',          budget:'₹8k – ₹14k',   skills:['Content','SEO','Hubspot'],          poster:'Priya N.',    bids:22, level:'Entry'       },
+  { title:'ML Pipeline for E-commerce',           budget:'₹30k – ₹50k',  skills:['Python','Spark','MLflow'],          poster:'Rohan M.',    bids:9,  level:'Expert'      },
+  { title:'React Native — Social App',            budget:'₹25k – ₹40k',  skills:['RN','Redux','Firebase'],            poster:'Kenji Y.',    bids:16, level:'Mid'         },
+];
+
+const DOCS: DocItem[] = [
+  { name:'Q2 Financial Report',       type:'PDF',   pages:24,  shared:'Finance Team',    icon:'📊', colorRgb:'99,102,241'  },
+  { name:'Product Roadmap 2025',      type:'DOCX',  pages:18,  shared:'Product & Eng',   icon:'🗺️', colorRgb:'59,130,246'  },
+  { name:'NDA — Corescent x Acme',   type:'PDF',   pages:6,   shared:'Legal',           icon:'📝', colorRgb:'232,121,249' },
+  { name:'Design System v3.0',        type:'Figma', pages:84,  shared:'Design Team',     icon:'🎨', colorRgb:'167,139,250' },
+  { name:'Investor Deck — Series A',  type:'PPTX',  pages:32,  shared:'Founders',        icon:'💼', colorRgb:'251,191,36'  },
+  { name:'Employee Handbook 2025',    type:'DOCX',  pages:56,  shared:'All Staff',       icon:'📋', colorRgb:'52,211,153'  },
+  { name:'API Documentation v2',      type:'MD',    pages:140, shared:'Engineering',     icon:'⚡', colorRgb:'34,211,238'  },
+  { name:'Brand Guidelines',          type:'PDF',   pages:48,  shared:'Marketing',       icon:'✨', colorRgb:'249,115,22'  },
+];
+
+/* ─── Card components ────────────────────────────────────────── */
+
+const CARD_BASE: React.CSSProperties = {
+  flexShrink: 0,
+  borderRadius: 14,
+  border: '1px solid rgba(255,255,255,0.068)',
+  background: 'rgba(11,11,17,0.82)',
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
+  boxShadow: '0 4px 24px rgba(0,0,0,0.52), inset 0 1px 0 rgba(255,255,255,0.042)',
+  cursor: 'default',
+  userSelect: 'none',
+};
+
+function ProfileCard({ p }: { p: SplashProfile }) {
+  return (
+    <div style={{ ...CARD_BASE, width: 210, padding: '13px 14px 12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 9 }}>
+        <div style={{ width: 34, height: 34, borderRadius: '50%', flexShrink: 0, background: `linear-gradient(${p.avatarGrad})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10.5, fontWeight: 800, color: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>
+          {p.init}
+        </div>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ fontSize: 11.5, fontWeight: 700, color: 'rgba(255,255,255,0.88)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>
+          <div style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.36)', marginTop: 1.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title}</div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 2.5, flexShrink: 0 }}>
+          <span style={{ fontSize: 9, color: '#fbbf24' }}>★</span>
+          <span style={{ fontSize: 9.5, fontWeight: 700, color: 'rgba(255,255,255,0.52)' }}>{p.rating}</span>
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.28)' }}>📍 {p.loc}</span>
+        <span style={{ fontSize: 8, fontWeight: 600, color: p.availColor, padding: '1.5px 6px', borderRadius: 99, background: `${p.availColor}18`, border: `1px solid ${p.availColor}30` }}>{p.avail}</span>
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 9 }}>
+        {p.skills.slice(0, 3).map(s => (
+          <span key={s} style={{ fontSize: 8.5, fontWeight: 500, color: 'rgba(255,255,255,0.36)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 5, padding: '2px 6px' }}>{s}</span>
+        ))}
+      </div>
+      <div style={{ paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.045)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: 8.5, color: 'rgba(255,255,255,0.22)' }}>{p.projects} projects</span>
+        <span style={{ fontSize: 8.5, fontWeight: 600, color: 'rgba(201,168,76,0.68)' }}>Connect →</span>
+      </div>
+    </div>
+  );
+}
+
+function FeedCard({ post }: { post: FeedPost }) {
+  return (
+    <div style={{ ...CARD_BASE, width: 248, padding: '12px 14px 11px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <div style={{ width: 28, height: 28, borderRadius: '50%', flexShrink: 0, background: `linear-gradient(${post.avatarGrad})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9.5, fontWeight: 800, color: '#fff' }}>
+          {post.init}
+        </div>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>{post.author}</div>
+          <div style={{ fontSize: 8.5, color: 'rgba(255,255,255,0.28)' }}>{post.role} · {post.time}</div>
+        </div>
+        <span style={{ fontSize: 7.5, fontWeight: 600, color: post.tagColor, padding: '1.5px 6px', borderRadius: 99, background: `${post.tagColor}16`, border: `1px solid ${post.tagColor}28`, whiteSpace: 'nowrap' }}>{post.tag}</span>
+      </div>
+      <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.48)', lineHeight: 1.58, marginBottom: 9, overflow: 'hidden', maxHeight: '3.16em' }}>{post.text}</p>
+      <div style={{ display: 'flex', gap: 14 }}>
+        <span style={{ fontSize: 8.5, color: 'rgba(255,255,255,0.22)', display: 'flex', alignItems: 'center', gap: 3 }}>♥ {post.likes.toLocaleString()}</span>
+        <span style={{ fontSize: 8.5, color: 'rgba(255,255,255,0.22)', display: 'flex', alignItems: 'center', gap: 3 }}>💬 {post.comments}</span>
+      </div>
+    </div>
+  );
+}
+
+function EventCard({ event }: { event: EventItem }) {
+  return (
+    <div style={{ ...CARD_BASE, width: 208, padding: '12px 14px 11px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 9 }}>
+        <div style={{ width: 38, flexShrink: 0, borderRadius: 9, background: 'rgba(201,168,76,0.1)', border: '1px solid rgba(201,168,76,0.22)', textAlign: 'center' as const, padding: '5px 0' }}>
+          <div style={{ fontSize: 15, fontWeight: 900, color: '#E8CC7A', lineHeight: 1 }}>{event.day}</div>
+          <div style={{ fontSize: 7, fontWeight: 700, color: 'rgba(232,204,122,0.6)', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginTop: 1 }}>{event.month}</div>
+        </div>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.85)', lineHeight: 1.35 }}>{event.title}</div>
+          <div style={{ fontSize: 8.5, color: 'rgba(255,255,255,0.28)', marginTop: 3 }}>📍 {event.location}</div>
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: 8, fontWeight: 600, color: event.color, padding: '1.5px 7px', borderRadius: 99, background: `${event.color}14`, border: `1px solid ${event.color}28` }}>{event.category}</span>
+        <span style={{ fontSize: 8.5, color: 'rgba(255,255,255,0.22)' }}>👥 {event.attendees.toLocaleString()}</span>
+      </div>
+    </div>
+  );
+}
+
+function GigCard({ gig }: { gig: GigItem }) {
+  return (
+    <div style={{ ...CARD_BASE, width: 222, padding: '12px 14px 11px' }}>
+      <div style={{ marginBottom: 8 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.86)', lineHeight: 1.35, marginBottom: 4 }}>{gig.title}</div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: 10.5, fontWeight: 700, color: '#34d399' }}>{gig.budget}</span>
+          <span style={{ fontSize: 7.5, fontWeight: 600, color: 'rgba(255,255,255,0.32)', padding: '1.5px 6px', borderRadius: 99, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>{gig.level}</span>
+        </div>
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 9 }}>
+        {gig.skills.map(s => (
+          <span key={s} style={{ fontSize: 8.5, fontWeight: 500, color: 'rgba(255,255,255,0.36)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 5, padding: '2px 6px' }}>{s}</span>
+        ))}
+      </div>
+      <div style={{ paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.045)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: 8.5, color: 'rgba(255,255,255,0.26)' }}>by {gig.poster}</span>
+        <span style={{ fontSize: 8.5, color: 'rgba(255,255,255,0.22)' }}>{gig.bids} bids</span>
+      </div>
+    </div>
+  );
+}
+
+function DocCard({ doc }: { doc: DocItem }) {
+  return (
+    <div style={{ ...CARD_BASE, width: 195, padding: '12px 14px 11px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 9 }}>
+        <div style={{ width: 36, height: 36, borderRadius: 9, flexShrink: 0, background: `rgba(${doc.colorRgb},0.13)`, border: `1px solid rgba(${doc.colorRgb},0.24)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>
+          {doc.icon}
+        </div>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.86)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{doc.name}</div>
+          <div style={{ fontSize: 8.5, color: 'rgba(255,255,255,0.28)', marginTop: 2 }}>{doc.type} · {doc.pages}p</div>
+        </div>
+      </div>
+      <div style={{ paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.045)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: 8.5, color: 'rgba(255,255,255,0.24)' }}>{doc.shared}</span>
+        <span style={{ fontSize: 8.5, fontWeight: 600, color: `rgba(${doc.colorRgb},0.75)` }}>Open →</span>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Marquee row wrapper ────────────────────────────────────── */
+function SplashRow({ children, dir, dur }: { children: React.ReactNode; dir: 'L' | 'R'; dur: number }) {
+  return (
+    <div style={{ flexShrink: 0, overflow: 'hidden', width: '100%' }}>
+      <div style={{
+        display: 'flex', gap: 12,
+        animation: `${dir === 'L' ? 'splashMarqueeL' : 'splashMarqueeR'} ${dur}s linear infinite`,
+        willChange: 'transform',
+      }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/* Doubled arrays for seamless loop -------------------------------- */
+const PROFILES_TOP_2X  = [...SPLASH_PROFILES_TOP,  ...SPLASH_PROFILES_TOP]  as SplashProfile[];
+const PROFILES_BTM_2X  = [...SPLASH_PROFILES_BTM,  ...SPLASH_PROFILES_BTM]  as SplashProfile[];
+const FEED_POSTS_2X    = [...FEED_POSTS,            ...FEED_POSTS];
+const EVENTS_2X        = [...EVENTS,                ...EVENTS];
+const GIGS_2X          = [...GIGS,                  ...GIGS];
+const DOCS_2X          = [...DOCS,                  ...DOCS];
+
+/* ─── Main splash screen ─────────────────────────────────────── */
+function SplashScreen({ visible, onSkip }: { visible: boolean; onSkip: () => void }) {
+  const slotRef    = useRef<HTMLSpanElement>(null);
+  const slotCurRef = useRef(0);
+  const [slotWord, setSlotWord] = useState(SLOT_WORDS[0]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const cycle = () => {
+      const el = slotRef.current;
+      if (!el || cancelled) return;
+      el.style.transition = 'transform 300ms cubic-bezier(0.4,0,1,1), opacity 260ms ease';
+      el.style.transform  = 'translateY(-72%)';
+      el.style.opacity    = '0';
+      setTimeout(() => {
+        if (cancelled) return;
+        const el2 = slotRef.current;
+        if (!el2) return;
+        el2.style.transition = 'none';
+        el2.style.transform  = 'translateY(72%)';
+        el2.style.opacity    = '0';
+        slotCurRef.current   = (slotCurRef.current + 1) % SLOT_WORDS.length;
+        setSlotWord(SLOT_WORDS[slotCurRef.current]);
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          if (cancelled) return;
+          const el3 = slotRef.current;
+          if (!el3) return;
+          el3.style.transition = 'transform 420ms cubic-bezier(0.22,1,0.36,1), opacity 340ms ease';
+          el3.style.transform  = 'translateY(0)';
+          el3.style.opacity    = '1';
+        }));
+      }, 320);
+    };
+    const t = setInterval(cycle, 2800);
+    return () => { cancelled = true; clearInterval(t); };
+  }, []);
+
+  return (
+    <div
+      aria-hidden={!visible}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 9999,
+        background: '#060608', overflow: 'hidden',
+        transition: 'opacity 900ms cubic-bezier(0.4,0,0.2,1)',
+        opacity: visible ? 1 : 0,
+        pointerEvents: visible ? 'auto' : 'none',
+      }}
+    >
+      {/* ── Card rows — fill entire screen ── */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute', inset: 0,
+          display: 'flex', flexDirection: 'column',
+          justifyContent: 'space-around',
+          padding: '12px 0',
+          opacity: 0,
+          animation: 'obFadeIn 1.1s 0.15s both',
+        }}
+      >
+        <SplashRow dir="L" dur={38}>
+          {PROFILES_TOP_2X.map((p, i) => <ProfileCard key={i} p={p} />)}
+        </SplashRow>
+        <SplashRow dir="R" dur={52}>
+          {FEED_POSTS_2X.map((p, i) => <FeedCard key={i} post={p} />)}
+        </SplashRow>
+        <SplashRow dir="L" dur={44}>
+          {EVENTS_2X.map((e, i) => <EventCard key={i} event={e} />)}
+        </SplashRow>
+        <SplashRow dir="R" dur={36}>
+          {GIGS_2X.map((g, i) => <GigCard key={i} gig={g} />)}
+        </SplashRow>
+        <SplashRow dir="L" dur={48}>
+          {PROFILES_BTM_2X.map((p, i) => <ProfileCard key={i} p={p} />)}
+        </SplashRow>
+        <SplashRow dir="R" dur={58}>
+          {DOCS_2X.map((d, i) => <DocCard key={i} doc={d} />)}
+        </SplashRow>
+      </div>
+
+      {/* ── Frosted blur mask — softens cards behind the headline ── */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute', inset: 0, zIndex: 5,
+          backdropFilter: 'blur(44px)',
+          WebkitBackdropFilter: 'blur(44px)',
+          maskImage: 'radial-gradient(ellipse 72% 52% at 50% 50%, black 0%, black 18%, transparent 62%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 72% 52% at 50% 50%, black 0%, black 18%, transparent 62%)',
+          pointerEvents: 'none',
+        }}
+      />
+
+      {/* ── Dark centre vignette — contrast for text ── */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute', inset: 0, zIndex: 6, pointerEvents: 'none',
+          background: 'radial-gradient(ellipse 65% 50% at 50% 50%, rgba(5,5,8,0.82) 0%, rgba(5,5,8,0.55) 38%, rgba(5,5,8,0.18) 62%, transparent 75%)',
+        }}
+      />
+
+      {/* ── Edge vignette — cards fade naturally at screen edges ── */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute', inset: 0, zIndex: 7, pointerEvents: 'none',
+          background: [
+            'radial-gradient(ellipse 100% 100% at 50% 50%, transparent 42%, rgba(5,5,8,0.72) 78%, rgba(5,5,8,0.96) 100%)',
+          ].join(','),
+        }}
+      />
+
+      {/* ── Center content ── */}
+      <div
+        style={{
+          position: 'absolute', inset: 0, zIndex: 10,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '0 24px',
+        }}
+      >
+        <div style={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
+
+          {/* Headline */}
+          <div style={{ animation: 'obSlideUp 0.55s 0.45s both', opacity: 0, textAlign: 'center' }}>
+            <div style={{
+              display: 'flex', alignItems: 'baseline', justifyContent: 'center',
+              flexWrap: 'nowrap', gap: '0.22em',
+              fontSize: 'clamp(1.55rem, 4.8vw, 2.8rem)',
+              fontWeight: 400, letterSpacing: '-0.035em', lineHeight: 1.15,
+              whiteSpace: 'nowrap',
+            }}>
+              <span style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 400 }}>your</span>
+              <span style={{ display: 'inline-block', overflow: 'hidden', verticalAlign: 'bottom', lineHeight: 1.2 }}>
+                <span
+                  ref={slotRef}
+                  style={{
+                    display: 'inline-block',
+                    color: '#ffffff',
+                    fontWeight: 600,
+                  }}
+                >
+                  {slotWord}
+                </span>
+              </span>
+              <span style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 400 }}>— one platform.</span>
+            </div>
+          </div>
+
+          {/* Buttons */}
+          <div style={{ animation: 'obFadeIn 0.5s 1.5s both', opacity: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button
+              onClick={onSkip}
+              className="group flex items-center gap-2 rounded-full border border-white/[0.10] bg-white/[0.04] px-5 py-2.5 text-[13px] font-medium text-white/60 backdrop-blur-sm transition-all duration-200 hover:border-white/[0.18] hover:bg-white/[0.07] hover:text-white/90 active:scale-[0.97]"
+            >
+              create profile
+              <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
+            </button>
+            <Link
+              href="/login"
+              className="flex items-center gap-2 rounded-full border border-white/[0.10] bg-white/[0.04] px-5 py-2.5 text-[13px] font-medium text-white/60 backdrop-blur-sm transition-all duration-200 hover:border-white/[0.18] hover:bg-white/[0.07] hover:text-white/90 active:scale-[0.97]"
+            >
+              sign in
+            </Link>
+          </div>
+
+        </div>
+      </div>
     </div>
   );
 }
@@ -531,21 +965,624 @@ function AuthLeftPanel({ screen, headline, bio }: { screen: number; headline: st
   );
 }
 
-function LeftPanelSwitch({ screen, headline, bio }: { screen: number; headline: string; bio: string }) {
+/* ═══════════════════════════════════════════════════════════════
+   SIGNUP LEFT PANEL — animated live profile-build preview
+═══════════════════════════════════════════════════════════════ */
+function SignupLeftPanel({ name, email }: { name: string; email: string }) {
+  const displayName  = name.trim()  || 'Your Name';
+  const displayEmail = email.trim() || 'you@example.com';
+  const hasName  = name.trim().length > 0;
+  const hasEmail = email.trim().length > 0;
+  const completion = hasName && hasEmail ? 72 : hasName ? 44 : hasEmail ? 32 : 18;
+
+  const DEMO_SKILLS = ['Product Design', 'Figma', 'UX Research', 'Prototyping'];
+  const PEERS = [
+    { init:'AK', grad:'135deg,#059669,#10b981' },
+    { init:'RM', grad:'135deg,#2563eb,#3b82f6' },
+    { init:'SJ', grad:'135deg,#7c3aed,#8b5cf6' },
+    { init:'PN', grad:'135deg,#e11d48,#f43f5e' },
+    { init:'VS', grad:'135deg,#0e7490,#06b6d4' },
+  ];
+
+  return (
+    <div className="flex h-full w-full flex-col justify-between p-10 xl:p-14 select-none">
+
+      {/* Logo */}
+      <div style={{ animation: 'obFadeIn 0.5s both' }} className="flex items-center gap-2.5">
+        <div className="flex h-9 w-9 items-center justify-center rounded-[11px] border border-white/[0.12] bg-white/[0.06]">
+          <svg viewBox="0 0 32 32" className="h-4.5 w-4.5" fill="none" stroke="white" strokeWidth="1.8">
+            <path d="M6 4h12l8 8v16H6V4z" /><path d="M18 4v8h8" /><path d="M10 16h12M10 20h8" />
+          </svg>
+        </div>
+        <span className="text-[15px] font-black text-white">Docrud</span>
+      </div>
+
+      {/* Centre — animated profile card */}
+      <div style={{ animation: 'obSlideUp 0.6s 0.1s both' }}>
+
+        {/* Label */}
+        <div className="mb-4 flex items-center gap-2">
+          <div className="h-1.5 w-1.5 rounded-full bg-white/40" style={{ animation: 'obPulse 2s ease-in-out infinite' }} />
+          <span className="text-[10px] font-bold uppercase tracking-[0.26em] text-white/28">building your profile</span>
+        </div>
+
+        {/* Profile card */}
+        <div className="relative overflow-hidden rounded-[22px] border border-white/[0.08] bg-white/[0.025]"
+          style={{ boxShadow: '0 8px 48px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05)' }}>
+
+          {/* Cover band */}
+          <div className="relative h-20 overflow-hidden"
+            style={{ background: 'linear-gradient(135deg,rgba(201,168,76,0.12) 0%,rgba(255,255,255,0.04) 50%,rgba(120,80,180,0.08) 100%)' }}>
+            <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom,transparent 40%,rgba(10,10,14,0.85) 100%)' }} />
+            {/* Floating dots */}
+            {[{l:'12%',t:'20%',d:'0s'},{l:'70%',t:'35%',d:'0.4s'},{l:'45%',t:'55%',d:'0.8s'},{l:'85%',t:'18%',d:'1.2s'}].map((p,i)=>(
+              <div key={i} className="absolute h-1 w-1 rounded-full bg-white/25"
+                style={{ left:p.l, top:p.t, animation:`obParticle ${3+i*0.5}s ease-in-out infinite ${p.d}` }} />
+            ))}
+          </div>
+
+          <div className="px-5 pb-5 -mt-8">
+            {/* Avatar + name row */}
+            <div className="mb-4 flex items-end gap-3.5">
+              <div className="relative shrink-0">
+                {/* Pulse ring */}
+                <div className="absolute inset-[-5px] rounded-full border border-white/[0.18]"
+                  style={{ animation: 'splashPulse 3s ease-out infinite' }} />
+                <div className="flex h-14 w-14 items-center justify-center rounded-[16px] border-2 border-[#0a0a0e] font-black text-xl text-white"
+                  style={{ background: 'linear-gradient(135deg,rgba(201,168,76,0.22),rgba(180,140,50,0.10))' }}>
+                  {hasName ? initials(name) : <span style={{ opacity: 0.22 }}>?</span>}
+                </div>
+              </div>
+              <div className="min-w-0 flex-1 pb-1">
+                <div className="truncate text-[15px] font-black text-white transition-all duration-400"
+                  style={{ opacity: hasName ? 1 : 0.22 }}>
+                  {displayName}
+                </div>
+                <div className="mt-0.5 truncate text-[10.5px] text-white/35 transition-all duration-400"
+                  style={{ opacity: hasEmail ? 1 : 0.22 }}>
+                  {hasEmail ? displayEmail.replace(/(.{4}).+(@.+)/, '$1…$2') : 'email not set'}
+                </div>
+              </div>
+              {/* Verified badge */}
+              <div className="mb-1 shrink-0 flex items-center gap-1 rounded-full border border-white/[0.10] bg-white/[0.05] px-2 py-0.5">
+                <div className="h-1.5 w-1.5 rounded-full" style={{ background: '#34d399' }} />
+                <span className="text-[8.5px] font-bold text-white/45">Verified</span>
+              </div>
+            </div>
+
+            {/* Stats row */}
+            <div className="mb-4 grid grid-cols-3 gap-2 text-center">
+              {[['0','Docs'],['0','Connections'],['0','Gigs']].map(([v,l]) => (
+                <div key={l} className="rounded-[10px] border border-white/[0.05] bg-white/[0.03] py-2">
+                  <div className="text-[14px] font-black text-white/22">{v}</div>
+                  <div className="text-[9px] text-white/18 mt-0.5">{l}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Skills */}
+            <div className="mb-4 flex flex-wrap gap-1.5">
+              {DEMO_SKILLS.map((s, i) => (
+                <span key={s} style={{ animation: `obFadeIn 0.4s ${0.6 + i * 0.15}s both`, opacity: 0 }}
+                  className="rounded-full border border-white/[0.07] bg-white/[0.04] px-2.5 py-1 text-[9px] font-medium text-white/35">
+                  {s}
+                </span>
+              ))}
+            </div>
+
+            {/* Completion bar */}
+            <div>
+              <div className="mb-1.5 flex items-center justify-between">
+                <span className="text-[10px] text-white/25 font-medium">Profile completion</span>
+                <span className="text-[10px] font-black" style={{ color: 'rgba(201,168,76,0.75)' }}>{completion}%</span>
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+                <div className="h-full rounded-full transition-all duration-700 ease-out"
+                  style={{ width: `${completion}%`, background: 'linear-gradient(90deg,#C9A84C,#E8CC7A)' }} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* People joining */}
+        <div className="mt-4 flex items-center justify-between rounded-[14px] border border-white/[0.06] bg-white/[0.02] px-4 py-3"
+          style={{ animation: 'obFadeIn 0.6s 0.8s both', opacity: 0 }}>
+          <div className="flex -space-x-2">
+            {PEERS.map(p => (
+              <div key={p.init} className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#0a0a0e] text-[9px] font-bold text-white"
+                style={{ background: `linear-gradient(${p.grad})` }}>
+                {p.init}
+              </div>
+            ))}
+          </div>
+          <div className="ml-3 min-w-0 flex-1">
+            <p className="text-[11px] font-semibold text-white/60">Join 3,400+ professionals</p>
+            <p className="text-[9.5px] text-white/28">designers · engineers · founders</p>
+          </div>
+          <div className="shrink-0 rounded-full border border-white/[0.10] bg-white/[0.05] px-2.5 py-1 text-[8.5px] font-bold text-white/40">
+            Live ✦
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom trust strip */}
+      <div style={{ animation: 'obFadeIn 0.6s 0.4s both', opacity: 0 }}
+        className="flex items-center gap-4 rounded-[14px] border border-white/[0.05] bg-white/[0.015] px-4 py-3">
+        {[['SOC 2','Certified'],['GDPR','Compliant'],['256-bit','Encrypted']].map(([v,l]) => (
+          <div key={l} className="text-center flex-1">
+            <p className="text-[11px] font-black text-white/45">{v}</p>
+            <p className="text-[8.5px] text-white/20 mt-0.5">{l}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   OTP LEFT PANEL
+═══════════════════════════════════════════════════════════════ */
+function OtpLeftPanel({ email }: { email: string }) {
+  const displayEmail = email || 'your email';
+  const STEPS = [
+    { label: 'Account created',  done: true  },
+    { label: 'Verify email',     done: false, active: true },
+    { label: 'Set up profile',   done: false },
+    { label: 'Add skills',       done: false },
+    { label: 'You\'re live!',    done: false },
+  ];
+  return (
+    <div className="flex h-full w-full flex-col justify-between p-10 xl:p-14 select-none">
+      {/* Logo */}
+      <div style={{ animation: 'obFadeIn 0.5s both' }} className="flex items-center gap-2.5">
+        <div className="flex h-9 w-9 items-center justify-center rounded-[11px] border border-white/[0.12] bg-white/[0.06]">
+          <svg viewBox="0 0 32 32" className="h-4 w-4" fill="none" stroke="white" strokeWidth="1.8">
+            <path d="M6 4h12l8 8v16H6V4z" /><path d="M18 4v8h8" /><path d="M10 16h12M10 20h8" />
+          </svg>
+        </div>
+        <span className="text-[15px] font-black text-white">Docrud</span>
+      </div>
+
+      {/* Centre */}
+      <div style={{ animation: 'obSlideUp 0.6s 0.1s both' }}>
+        {/* Animated envelope */}
+        <div className="mb-6 flex justify-center">
+          <div className="relative">
+            {/* Outer glow ring */}
+            <div className="absolute inset-[-12px] rounded-full border border-white/[0.06]"
+              style={{ animation: 'splashPulse 3s ease-out infinite 0.5s' }} />
+            <div className="absolute inset-[-6px] rounded-full border border-white/[0.09]"
+              style={{ animation: 'splashPulse 3s ease-out infinite 0s' }} />
+            <div className="flex h-20 w-20 items-center justify-center rounded-[24px] border border-white/[0.10] bg-white/[0.05]"
+              style={{ boxShadow: '0 8px 40px rgba(0,0,0,0.50), inset 0 1px 0 rgba(255,255,255,0.06)' }}>
+              <svg className="h-9 w-9 text-white/55" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                <path strokeLinecap="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+              </svg>
+            </div>
+            {/* Floating dot badges */}
+            {[{top:'-6px',right:'-6px',c:'#34d399'},{bottom:'-6px',left:'-6px',c:'#60a5fa'},{top:'50%',left:'-18px',c:'rgba(201,168,76,0.8)'}].map((b,i) => (
+              <div key={i} className="absolute h-2.5 w-2.5 rounded-full border-2 border-[#0a0a0e]"
+                style={{ ...b, background: b.c, animation: `obFadeIn 0.4s ${0.6 + i * 0.2}s both`, opacity: 0 } as React.CSSProperties} />
+            ))}
+          </div>
+        </div>
+
+        {/* Email info */}
+        <div className="mb-6 text-center">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/28 mb-1">Code sent to</p>
+          <p className="text-[13px] font-bold text-white/70 truncate">{displayEmail}</p>
+        </div>
+
+        {/* Journey steps */}
+        <div className="space-y-2">
+          {STEPS.map((s, i) => (
+            <div key={i} className="flex items-center gap-3"
+              style={{ animation: `obFadeIn 0.4s ${0.3 + i * 0.1}s both`, opacity: 0 }}>
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
+                style={{
+                  background: s.done ? 'rgba(52,211,153,0.15)' : s.active ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)',
+                  border: s.done ? '1px solid rgba(52,211,153,0.35)' : s.active ? '1px solid rgba(255,255,255,0.18)' : '1px solid rgba(255,255,255,0.06)',
+                }}>
+                {s.done
+                  ? <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="#34d399" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+                  : s.active
+                  ? <div className="h-2 w-2 rounded-full bg-white/60" style={{ animation: 'obPulse 1.8s infinite' }} />
+                  : <div className="h-1.5 w-1.5 rounded-full bg-white/15" />}
+              </div>
+              <span className="text-[12px] font-medium"
+                style={{ color: s.done ? 'rgba(52,211,153,0.75)' : s.active ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.20)' }}>
+                {s.label}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Bottom — security note */}
+      <div style={{ animation: 'obFadeIn 0.6s 0.5s both', opacity: 0 }}
+        className="flex items-center gap-3 rounded-[14px] border border-white/[0.05] bg-white/[0.015] px-4 py-3">
+        <Shield className="h-4 w-4 shrink-0 text-white/28" />
+        <p className="text-[11px] leading-relaxed text-white/25">Code expires in 10 minutes. Do not share it with anyone.</p>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   GO LEFT PANEL — referral earn-free animated diagram
+═══════════════════════════════════════════════════════════════ */
+function GoLeftPanel() {
+  return (
+    <div className="flex h-full w-full flex-col justify-between p-10 xl:p-14 select-none">
+      <style>{`
+        @keyframes goFlowDot {
+          0%   { transform: translateY(-6px); opacity: 0; }
+          18%  { opacity: 1; }
+          82%  { opacity: 1; }
+          100% { transform: translateY(38px); opacity: 0; }
+        }
+        @keyframes goNodeIn {
+          0%   { opacity: 0; transform: translateX(-14px); }
+          100% { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes goBadgeGlow {
+          0%, 100% { box-shadow: 0 0 18px rgba(201,168,76,0.30), 0 4px 24px rgba(201,168,76,0.14); }
+          50%      { box-shadow: 0 0 32px rgba(201,168,76,0.55), 0 4px 40px rgba(201,168,76,0.28); }
+        }
+        @keyframes goCheckDraw {
+          0%   { stroke-dashoffset: 24; }
+          100% { stroke-dashoffset: 0; }
+        }
+        @keyframes goOrb {
+          0%, 100% { opacity: 0.35; transform: scale(1); }
+          50%      { opacity: 0.60; transform: scale(1.12); }
+        }
+      `}</style>
+
+      {/* Logo */}
+      <div style={{ animation: 'obFadeIn 0.5s both' }} className="flex items-center gap-2.5">
+        <div className="flex h-9 w-9 items-center justify-center rounded-[11px] border border-white/[0.12] bg-white/[0.06]">
+          <svg viewBox="0 0 32 32" className="h-4 w-4" fill="none" stroke="white" strokeWidth="1.8">
+            <path d="M6 4h12l8 8v16H6V4z" /><path d="M18 4v8h8" /><path d="M10 16h12M10 20h8" />
+          </svg>
+        </div>
+        <span className="text-[15px] font-black text-white">Docrud</span>
+      </div>
+
+      {/* Centre */}
+      <div>
+        {/* Eyebrow */}
+        <div style={{ animation: 'obFadeIn 0.4s 0.1s both', opacity: 0, background: 'rgba(201,168,76,0.07)', borderColor: 'rgba(201,168,76,0.22)' }}
+          className="mb-3 inline-flex items-center gap-1.5 rounded-full border px-3 py-1">
+          <div className="h-1.5 w-1.5 rounded-full" style={{ background: '#E8CC7A', animation: 'obPulse 2s infinite' }} />
+          <span className="text-[9.5px] font-bold uppercase tracking-[0.24em]" style={{ color: 'rgba(232,204,122,0.75)' }}>Referral Program</span>
+        </div>
+
+        {/* Heading */}
+        <div style={{ animation: 'obSlideUp 0.5s 0.15s both', opacity: 0 }}>
+          <h3 className="text-[1.5rem] font-black tracking-[-0.04em] text-white leading-[1.15]">
+            Earn Docrud Go<br />for <span style={{ color: '#E8CC7A' }}>FREE ✦</span>
+          </h3>
+          <p className="mt-1.5 text-[11.5px] text-white/38 leading-relaxed">
+            Refer one friend who joins Docrud — your Go badge unlocks instantly. No payment ever.
+          </p>
+        </div>
+
+        {/* ── Flow diagram ── */}
+        <div className="mt-6">
+
+          {/* Node 1 — You share */}
+          <div style={{ animation: 'goNodeIn 0.5s 0.3s both', opacity: 0 }}
+            className="flex items-center gap-3 rounded-[14px] border border-white/[0.08] bg-white/[0.035] px-3.5 py-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px]"
+              style={{ background: 'linear-gradient(135deg,rgba(255,255,255,0.10),rgba(255,255,255,0.04))', border: '1px solid rgba(255,255,255,0.13)' }}>
+              <svg className="h-4.5 w-4.5 h-[18px] w-[18px] text-white/65" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[12.5px] font-black text-white/85">You share your link</p>
+              <p className="text-[10.5px] text-white/30 mt-0.5">One unique referral link, yours forever</p>
+            </div>
+            <div className="shrink-0 rounded-full border border-white/[0.09] bg-white/[0.04] px-2.5 py-1 text-[8.5px] font-bold text-white/38">
+              Step 1
+            </div>
+          </div>
+
+          {/* Connector 1 */}
+          <div className="relative ml-[30px] h-9 flex items-center">
+            <div className="absolute left-0 top-0 bottom-0 w-px" style={{ background: 'linear-gradient(to bottom,rgba(255,255,255,0.08),rgba(201,168,76,0.18),rgba(255,255,255,0.04))' }} />
+            {[0, 0.6, 1.2].map((d, i) => (
+              <div key={i} className="absolute left-[-3px] w-[7px] rounded-full"
+                style={{ height: 14, background: 'linear-gradient(to bottom,transparent,rgba(201,168,76,0.85),transparent)', animation: `goFlowDot 1.8s ${d}s ease-in-out infinite` }} />
+            ))}
+            {/* Label */}
+            <p className="absolute left-5 text-[9.5px] text-white/22 font-medium">link clicked</p>
+          </div>
+
+          {/* Node 2 — Friend joins */}
+          <div style={{ animation: 'goNodeIn 0.5s 0.52s both', opacity: 0, background: 'rgba(99,102,241,0.05)', borderColor: 'rgba(99,102,241,0.18)' }}
+            className="flex items-center gap-3 rounded-[14px] border px-3.5 py-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px]"
+              style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.22),rgba(99,102,241,0.08))', border: '1px solid rgba(99,102,241,0.28)' }}>
+              <svg className="h-[18px] w-[18px] text-indigo-400/75" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+              </svg>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[12.5px] font-black text-white/85">Friend clicks &amp; joins</p>
+              <p className="text-[10.5px] text-white/30 mt-0.5">They create their Docrud profile</p>
+            </div>
+            <div className="shrink-0 flex items-center gap-1 rounded-full border px-2.5 py-1"
+              style={{ background: 'rgba(99,102,241,0.10)', borderColor: 'rgba(99,102,241,0.22)' }}>
+              <div className="h-1.5 w-1.5 rounded-full bg-indigo-400" style={{ animation: 'obPulse 1.6s infinite' }} />
+              <span className="text-[8px] font-bold text-indigo-400/80">Step 2</span>
+            </div>
+          </div>
+
+          {/* Connector 2 */}
+          <div className="relative ml-[30px] h-9 flex items-center">
+            <div className="absolute left-0 top-0 bottom-0 w-px" style={{ background: 'linear-gradient(to bottom,rgba(99,102,241,0.15),rgba(201,168,76,0.25),rgba(201,168,76,0.08))' }} />
+            {[0, 0.6, 1.2].map((d, i) => (
+              <div key={i} className="absolute left-[-3px] w-[7px] rounded-full"
+                style={{ height: 14, background: 'linear-gradient(to bottom,transparent,rgba(201,168,76,0.85),transparent)', animation: `goFlowDot 1.8s ${d + 0.3}s ease-in-out infinite` }} />
+            ))}
+            <p className="absolute left-5 text-[9.5px] text-white/22 font-medium">profile created</p>
+          </div>
+
+          {/* Node 3 — Badge unlocks */}
+          <div style={{ animation: 'goNodeIn 0.5s 0.74s both, goBadgeGlow 2.8s 1.4s ease-in-out infinite', opacity: 0, background: 'rgba(201,168,76,0.07)', borderColor: 'rgba(201,168,76,0.28)' } as React.CSSProperties}
+            className="flex items-center gap-3 rounded-[14px] border px-3.5 py-3">
+            <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px]"
+              style={{ background: 'linear-gradient(135deg,#C9A84C,#F0D878)', boxShadow: '0 4px 18px rgba(201,168,76,0.45)' }}>
+              {/* Pulse ring */}
+              <div className="absolute -inset-1 rounded-[13px]"
+                style={{ border: '1.5px solid rgba(201,168,76,0.35)', animation: 'splashPulse 2.5s ease-out infinite' }} />
+              <span className="text-[17px] font-black leading-none" style={{ color: '#1a1208' }}>✦</span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[12.5px] font-black leading-tight" style={{ color: '#F0D878' }}>Your Go badge unlocks</p>
+              <p className="text-[10.5px] text-white/38 mt-0.5">Gold verified. Zero cost.</p>
+            </div>
+            {/* Animated checkmark */}
+            <div className="shrink-0 flex h-7 w-7 items-center justify-center rounded-full border"
+              style={{ background: 'rgba(201,168,76,0.15)', borderColor: 'rgba(201,168,76,0.38)' }}>
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="#E8CC7A" strokeWidth="2.8">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"
+                  strokeDasharray="24" style={{ animation: 'goCheckDraw 0.55s 1.5s ease both' }} />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Stats strip ── */}
+        <div style={{ animation: 'obFadeIn 0.5s 0.9s both', opacity: 0 }}
+          className="mt-4 grid grid-cols-3 divide-x divide-white/[0.05] rounded-[14px] border border-white/[0.05] bg-white/[0.02]">
+          {[
+            { val: '₹0', sub: 'Cost to you' },
+            { val: '1',  sub: 'Friend needed' },
+            { val: '⚡', sub: 'Instant unlock' },
+          ].map(({ val, sub }) => (
+            <div key={sub} className="flex flex-col items-center py-3">
+              <span className="text-[17px] font-black leading-none"
+                style={{ color: val === '⚡' ? '#E8CC7A' : 'rgba(255,255,255,0.80)' }}>{val}</span>
+              <span className="mt-1 text-[9px] text-white/28 leading-tight text-center">{sub}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Bottom trust */}
+      <div style={{ animation: 'obFadeIn 0.6s 0.5s both', opacity: 0 }}
+        className="flex items-center gap-4 rounded-[14px] border border-white/[0.05] bg-white/[0.015] px-4 py-3">
+        {[['SOC 2','Certified'],['GDPR','Compliant'],['256-bit','Encrypted']].map(([v,l]) => (
+          <div key={l} className="flex-1 text-center">
+            <p className="text-[11px] font-black text-white/45">{v}</p>
+            <p className="text-[8.5px] text-white/20 mt-0.5">{l}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PROFILE LEFT PANEL — live profile card preview
+═══════════════════════════════════════════════════════════════ */
+function ProfileLeftPanel({ name, headline, bio, location, avatarUrl, bannerUrl, openToWork, skills }: {
+  name: string; headline: string; bio: string; location: string;
+  avatarUrl: string; bannerUrl: string; openToWork: boolean; skills: string[];
+}) {
+  const displayName = name.trim() || 'Your Name';
+
+  // Profile completion calc
+  const fields = [
+    !!name.trim(),
+    !!headline.trim(),
+    !!bio.trim(),
+    !!avatarUrl.trim(),
+    !!bannerUrl.trim(),
+    !!location.trim(),
+    skills.length > 0,
+  ];
+  const filled = fields.filter(Boolean).length;
+  const completion = Math.round((filled / fields.length) * 100);
+  const completionColor = completion >= 70 ? '#34d399' : completion >= 40 ? '#E8CC7A' : 'rgba(255,255,255,0.35)';
+
+  const STEP_LABELS = ['Name','Headline','Bio','Avatar','Banner','Location','Skills'];
+
+  return (
+    <div className="flex h-full w-full flex-col justify-between p-10 xl:p-14 select-none">
+      {/* Logo */}
+      <div style={{ animation: 'obFadeIn 0.5s both' }} className="flex items-center gap-2.5">
+        <div className="flex h-9 w-9 items-center justify-center rounded-[11px] border border-white/[0.12] bg-white/[0.06]">
+          <svg viewBox="0 0 32 32" className="h-4 w-4" fill="none" stroke="white" strokeWidth="1.8">
+            <path d="M6 4h12l8 8v16H6V4z" /><path d="M18 4v8h8" /><path d="M10 16h12M10 20h8" />
+          </svg>
+        </div>
+        <span className="text-[15px] font-black text-white">Docrud</span>
+      </div>
+
+      {/* Label */}
+      <div style={{ animation: 'obSlideUp 0.55s 0.08s both' }}>
+        <div className="mb-3 flex items-center gap-2">
+          <div className="h-1.5 w-1.5 rounded-full" style={{ background: completionColor, transition: 'background 0.5s', animation: 'obPulse 2s infinite' }} />
+          <span className="text-[10px] font-bold uppercase tracking-[0.26em] text-white/28">live profile preview</span>
+          <span className="ml-auto text-[10px] font-black" style={{ color: completionColor, transition: 'color 0.5s' }}>{completion}%</span>
+        </div>
+
+        {/* Profile card */}
+        <div className="overflow-hidden rounded-[20px] border border-white/[0.08] bg-white/[0.02]"
+          style={{ boxShadow: '0 8px 48px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)' }}>
+
+          {/* Banner */}
+          <div className="relative h-24 overflow-hidden">
+            {bannerUrl
+              ? <img src={bannerUrl} alt="" className="h-full w-full object-cover" />
+              : <div className="h-full w-full" style={{ background: 'linear-gradient(135deg,rgba(201,168,76,0.15) 0%,rgba(99,102,241,0.10) 50%,rgba(236,72,153,0.08) 100%)' }} />
+            }
+            <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom,transparent 50%,rgba(8,8,12,0.8) 100%)' }} />
+            {/* Floating particles when no banner */}
+            {!bannerUrl && [
+              {l:'8%',t:'25%',d:'0s'},{l:'60%',t:'15%',d:'0.5s'},{l:'80%',t:'60%',d:'1s'},{l:'35%',t:'70%',d:'0.3s'},
+            ].map((p,i) => (
+              <div key={i} className="absolute h-1 w-1 rounded-full bg-white/20"
+                style={{ left:p.l, top:p.t, animation:`obParticle ${3+i*0.6}s ease-in-out infinite ${p.d}` }} />
+            ))}
+            {/* Open to work ribbon */}
+            {openToWork && (
+              <div className="absolute bottom-2 right-2 flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5"
+                style={{ animation: 'obFadeIn 0.3s both' }}>
+                <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                <span className="text-[8.5px] font-bold text-emerald-400">Open to Work</span>
+              </div>
+            )}
+          </div>
+
+          <div className="px-4 pb-4 -mt-7">
+            {/* Avatar */}
+            <div className="relative mb-3 inline-block">
+              <div className="absolute inset-[-3px] rounded-full border-2 border-[#08080c]" />
+              <div className="h-12 w-12 overflow-hidden rounded-full border-2 border-[#08080c] bg-white/[0.08]"
+                style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}>
+                {avatarUrl
+                  ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+                  : <div className="flex h-full w-full items-center justify-center text-[13px] font-black text-white/70"
+                      style={{ background: 'linear-gradient(135deg,rgba(201,168,76,0.25),rgba(180,140,50,0.10))' }}>
+                      {initials(displayName)}
+                    </div>
+                }
+              </div>
+            </div>
+
+            {/* Name + headline */}
+            <div className="mb-2">
+              <p className="text-[14px] font-black text-white leading-tight transition-all duration-300"
+                style={{ opacity: name.trim() ? 1 : 0.25 }}>
+                {displayName}
+              </p>
+              <p className="mt-0.5 text-[10.5px] text-white/40 leading-snug transition-all duration-300 line-clamp-1"
+                style={{ opacity: headline.trim() ? 1 : 0.22 }}>
+                {headline.trim() || 'Your headline will appear here'}
+              </p>
+              {location.trim() && (
+                <div className="mt-1 flex items-center gap-1" style={{ animation: 'obFadeIn 0.3s both' }}>
+                  <MapPin className="h-2.5 w-2.5 text-white/25" />
+                  <span className="text-[9.5px] text-white/30">{location}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Bio */}
+            {bio.trim() && (
+              <p className="mb-2.5 text-[10px] leading-relaxed text-white/35 line-clamp-2 transition-all duration-300"
+                style={{ animation: 'obFadeIn 0.3s both' }}>
+                {bio}
+              </p>
+            )}
+
+            {/* Skills */}
+            {skills.length > 0 && (
+              <div className="mb-3 flex flex-wrap gap-1" style={{ animation: 'obFadeIn 0.3s both' }}>
+                {skills.slice(0, 4).map(s => (
+                  <span key={s} className="rounded-full border border-white/[0.07] bg-white/[0.04] px-2 py-0.5 text-[8.5px] text-white/35">
+                    {s}
+                  </span>
+                ))}
+                {skills.length > 4 && <span className="text-[8.5px] text-white/22">+{skills.length - 4}</span>}
+              </div>
+            )}
+
+            {/* Segmented progress */}
+            <div>
+              <div className="mb-1.5 flex gap-0.5">
+                {STEP_LABELS.map((l, i) => (
+                  <div key={l} title={l} className="h-1 flex-1 rounded-full transition-all duration-500"
+                    style={{ background: fields[i] ? completionColor : 'rgba(255,255,255,0.07)' }} />
+                ))}
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] text-white/22">Profile strength</span>
+                <span className="text-[9px] font-black transition-all duration-500" style={{ color: completionColor }}>{completion}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom trust */}
+      <div style={{ animation: 'obFadeIn 0.6s 0.4s both', opacity: 0 }}
+        className="flex items-center gap-4 rounded-[14px] border border-white/[0.05] bg-white/[0.015] px-4 py-3">
+        {[['SOC 2','Certified'],['GDPR','Compliant'],['256-bit','Encrypted']].map(([v,l]) => (
+          <div key={l} className="flex-1 text-center">
+            <p className="text-[11px] font-black text-white/45">{v}</p>
+            <p className="text-[8.5px] text-white/20 mt-0.5">{l}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function LeftPanelSwitch({ screen, headline, bio, sName, sEmail, avatarUrl, bannerUrl, location, openToWork, skills }: {
+  screen: number; headline: string; bio: string;
+  sName?: string; sEmail?: string;
+  avatarUrl?: string; bannerUrl?: string; location?: string;
+  openToWork?: boolean; skills?: string[];
+}) {
   if (screen === 0) return <HeroLeftPanel />;
   if (screen === 1) return <PublishLeftPanel />;
   if (screen === 2) return <ConnectLeftPanel />;
   if (screen === 3) return <GigsLeftPanel />;
+  if (screen === SIGNUP_SCR) return <SignupLeftPanel name={sName ?? ''} email={sEmail ?? ''} />;
+  if (screen === OTP_SCR)  return <OtpLeftPanel email={sEmail ?? ''} />;
+  if (screen === PROFILE_SCR || screen === SKILLS_SCR || screen === PEOPLE_SCR) return (
+    <ProfileLeftPanel
+      name={sName ?? ''}
+      headline={headline}
+      bio={bio}
+      location={location ?? ''}
+      avatarUrl={avatarUrl ?? ''}
+      bannerUrl={bannerUrl ?? ''}
+      openToWork={openToWork ?? false}
+      skills={skills ?? []}
+    />
+  );
+  if (screen === DONE_SCR) return <GoLeftPanel />;
   return <AuthLeftPanel screen={screen} headline={headline} bio={bio} />;
 }
 
 /* ═══════════════════════════════════════════════════════════════
    PAGE
 ═══════════════════════════════════════════════════════════════ */
-export default function OnboardingPage() {
+function OnboardingPageContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [screen, setScreen] = useState(0);
+  const searchParams = useSearchParams();
+
+  const skipSplash = searchParams?.get('start') === 'signup';
+  const [screen, setScreen] = useState(skipSplash ? SIGNUP_SCR : 0);
+  const [showSplash, setShowSplash] = useState(!skipSplash);
 
   const [sName,    setSName]    = useState('');
   const [sEmail,   setSEmail]   = useState('');
@@ -562,12 +1599,84 @@ export default function OnboardingPage() {
   const oRef4 = useRef<HTMLInputElement>(null);
   const oRef5 = useRef<HTMLInputElement>(null);
   const otpRefs = [oRef0, oRef1, oRef2, oRef3, oRef4, oRef5];
+  const avatarFileRef = useRef<HTMLInputElement>(null);
+  const bannerFileRef = useRef<HTMLInputElement>(null);
+  /* Track pending uploads so handleComplete can await them before saving */
+  const pendingAvatarUploadRef = useRef<Promise<string | null>>(Promise.resolve(null));
+  const pendingBannerUploadRef = useRef<Promise<string | null>>(Promise.resolve(null));
+
   const [otpSent,   setOtpSent]   = useState(false);
   const [otpError,  setOtpError]  = useState('');
   const [otpOk,     setOtpOk]     = useState(false);
   const [verifying, setVerifying] = useState(false);
 
-  const [avatarUrl,  setAvatarUrl]  = useState('');
+  const [avatarUrl,       setAvatarUrl]       = useState('');
+  const [bannerUrl,       setBannerUrl]       = useState('');
+  /* Separate text-input state so typing / clearing the URL box never wipes an uploaded image */
+  const [avatarUrlInput,  setAvatarUrlInput]  = useState('');
+  const [bannerUrlInput,  setBannerUrlInput]  = useState('');
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [bannerUploading, setBannerUploading] = useState(false);
+
+  async function uploadImage(file: File, type: 'avatar' | 'banner'): Promise<string | null> {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('type', type);
+    try {
+      const res = await fetch('/api/profile/upload-image', { method: 'POST', body: fd });
+      const data = await res.json() as { url?: string; error?: string };
+      if (!res.ok || !data.url) throw new Error(data.error ?? 'Upload failed');
+      return data.url;
+    } catch {
+      return null;
+    }
+  }
+
+  async function handleAvatarFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    /* Show a local preview immediately, then replace with permanent URL */
+    const preview = URL.createObjectURL(file);
+    setAvatarUrl(preview);
+    setAvatarUrlInput('');
+    setAvatarUploading(true);
+    const uploadPromise = uploadImage(file, 'avatar');
+    pendingAvatarUploadRef.current = uploadPromise;
+    const permanent = await uploadPromise;
+    setAvatarUploading(false);
+    if (permanent) {
+      setAvatarUrl(permanent);
+      URL.revokeObjectURL(preview);
+    }
+  }
+
+  async function handleBannerFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const preview = URL.createObjectURL(file);
+    setBannerUrl(preview);
+    setBannerUrlInput('');
+    setBannerUploading(true);
+    const uploadPromise = uploadImage(file, 'banner');
+    pendingBannerUploadRef.current = uploadPromise;
+    const permanent = await uploadPromise;
+    setBannerUploading(false);
+    if (permanent) {
+      setBannerUrl(permanent);
+      URL.revokeObjectURL(preview);
+    }
+  }
+
+  function applyAvatarUrlInput(val: string) {
+    const trimmed = val.trim();
+    if (trimmed) { setAvatarUrl(trimmed); setAvatarUrlInput(trimmed); }
+  }
+  function applyBannerUrlInput(val: string) {
+    const trimmed = val.trim();
+    if (trimmed) { setBannerUrl(trimmed); setBannerUrlInput(trimmed); }
+  }
   const [headline,   setHeadline]   = useState('');
   const [bio,        setBio]        = useState('');
   const [location,   setLocation]   = useState('');
@@ -588,6 +1697,7 @@ export default function OnboardingPage() {
   type GoPhase = 'offer' | 'paying' | 'success' | 'skipped' | 'refer';
   const [goPhase,   setGoPhase]   = useState<GoPhase>('offer');
   const [goError,   setGoError]   = useState('');
+  const [goStats,   setGoStats]   = useState<{ claimed: number; total: number; remaining: number; pct: number } | null>(null);
 
   /* Referral state */
   const [refLink,        setRefLink]        = useState('');
@@ -622,6 +1732,20 @@ export default function OnboardingPage() {
   useEffect(() => {
     if (screen !== OTP_SCR || otpSent) return;
     void sendOtp();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen]);
+
+  /* Fetch Go spot count when landing on DONE_SCR */
+  useEffect(() => {
+    if (screen !== DONE_SCR) return;
+    fetch('/api/docrud-go/stats')
+      .then(r => r.json())
+      .then((d: { claimed?: number; total?: number; remaining?: number; pct?: number }) => {
+        if (typeof d.claimed === 'number') {
+          setGoStats({ claimed: d.claimed, total: d.total ?? 5000, remaining: d.remaining ?? 0, pct: d.pct ?? 0 });
+        }
+      })
+      .catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [screen]);
 
@@ -685,9 +1809,16 @@ export default function OnboardingPage() {
     setCompleting(true);
     setCompletingError('');
     try {
+      /* Await any in-flight image uploads so we save permanent URLs, not blob: URLs */
+      const [resolvedAvatar, resolvedBanner] = await Promise.all([
+        pendingAvatarUploadRef.current,
+        pendingBannerUploadRef.current,
+      ]);
+      const finalAvatarUrl = resolvedAvatar ?? (avatarUrl.startsWith('blob:') ? '' : avatarUrl);
+      const finalBannerUrl = resolvedBanner ?? (bannerUrl.startsWith('blob:') ? '' : bannerUrl);
       const results = await Promise.allSettled([
         ...followed.map(id => fetch('/api/profile/follow', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ targetUserId:id, action:'follow' }) })),
-        fetch('/api/onboarding/complete', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ profile:{ headline, bio, location, website, avatarUrl, openToWork, skills, interests, onboardingDone:true, profileSetupDone:true } }) }),
+        fetch('/api/onboarding/complete', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ profile:{ headline, bio, location, website, avatarUrl: finalAvatarUrl, bannerUrl: finalBannerUrl, openToWork, skills, interests, onboardingDone:true, profileSetupDone:true } }) }),
       ]);
       const profileResult = results[results.length - 1];
       if (profileResult.status === 'rejected') throw profileResult.reason as Error;
@@ -954,175 +2085,469 @@ export default function OnboardingPage() {
 
       /* ── 4  SIGNUP ── */
       case SIGNUP_SCR: return (
-        <div className="flex flex-col gap-4">
-          <div>
-            <h2 className="text-[1.5rem] sm:text-[1.75rem] font-black tracking-tight text-white">Create your account</h2>
-            <p className="mt-1.5 text-[12px] sm:text-[13px] text-white/38">Free to join. Takes 30 seconds.</p>
+        <div className="flex flex-col gap-5">
+
+          {/* Mobile logo */}
+          <div className="flex lg:hidden items-center gap-2" style={{ animation: 'obFadeIn 0.35s both' }}>
+            <div className="flex h-7 w-7 items-center justify-center rounded-[9px] border border-white/[0.12] bg-white/[0.06]">
+              <svg viewBox="0 0 32 32" className="h-3.5 w-3.5" fill="none" stroke="white" strokeWidth="1.8">
+                <path d="M6 4h12l8 8v16H6V4z" /><path d="M18 4v8h8" /><path d="M10 16h12M10 20h8" />
+              </svg>
+            </div>
+            <span className="text-[14px] font-black text-white">Docrud</span>
           </div>
-          <div className="space-y-2.5">
-            <input value={sName}  onChange={e => setSName(e.target.value)}  placeholder="Full name"              className={INP} autoFocus />
-            <input value={sEmail} onChange={e => setSEmail(e.target.value)} placeholder="Email address" type="email" className={INP} />
-            <div className="relative">
-              <input value={sPass} onChange={e => setSPass(e.target.value)} placeholder="Password (min 8 chars)" type={showPass ? 'text' : 'password'} className={INP + ' pr-10'}
-                onKeyDown={e => { if (e.key === 'Enter') void handleSignup(); }} />
-              <button type="button" onClick={() => setShowPass(v => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/22 hover:text-white/55 transition-colors">
-                {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+
+          {/* Heading */}
+          <div style={{ animation: 'obSlideUp 0.45s 0.05s both', opacity: 0 }}>
+            <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-white/[0.07] bg-white/[0.03] px-3 py-1">
+              <div className="h-1.5 w-1.5 rounded-full" style={{ background: '#34d399', animation: 'obPulse 2s infinite' }} />
+              <span className="text-[9.5px] font-semibold uppercase tracking-[0.26em] text-white/30">Free · No credit card</span>
+            </div>
+            <h2 className="text-[1.5rem] sm:text-[1.75rem] font-black tracking-[-0.04em] text-white leading-[1.1]">
+              Create your profile.
+            </h2>
+            <p className="mt-1 text-[12px] text-white/35">Join 3,400+ professionals. Takes 30 seconds.</p>
+          </div>
+
+          {/* Form card */}
+          <div style={{ animation: 'obSlideUp 0.45s 0.12s both', opacity: 0, boxShadow: '0 0 0 1px rgba(255,255,255,0.03), 0 24px 64px rgba(0,0,0,0.45)' }}
+            className="overflow-hidden rounded-[20px] border border-white/[0.07] bg-white/[0.03] backdrop-blur-sm">
+            <div className="p-4 sm:p-5 space-y-3">
+
+              {/* Full name */}
+              <div className="space-y-1">
+                <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/28">Full name</label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-white/20">
+                    <Users className="h-3.5 w-3.5" />
+                  </span>
+                  <input value={sName} onChange={e => setSName(e.target.value)} placeholder="Arjun Mehta"
+                    className={INP + ' pl-10'} autoFocus />
+                </div>
+              </div>
+
+              {/* Email */}
+              <div className="space-y-1">
+                <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/28">Email address</label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-white/20">
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8"><path strokeLinecap="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                  </span>
+                  <input value={sEmail} onChange={e => setSEmail(e.target.value)} placeholder="you@company.com" type="email"
+                    className={INP + ' pl-10'} />
+                </div>
+              </div>
+
+              {/* Password */}
+              <div className="space-y-1">
+                <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/28">Password</label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-white/20">
+                    <LockKeyhole className="h-3.5 w-3.5" />
+                  </span>
+                  <input value={sPass} onChange={e => setSPass(e.target.value)} placeholder="Min 8 characters"
+                    type={showPass ? 'text' : 'password'} className={INP + ' pl-10 pr-10'}
+                    onKeyDown={e => { if (e.key === 'Enter') void handleSignup(); }} />
+                  <button type="button" onClick={() => setShowPass(v => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/22 hover:text-white/55 transition-colors">
+                    {showPass ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                  </button>
+                </div>
+                {/* Password strength */}
+                {sPass.length > 0 && (
+                  <div className="flex items-center gap-2 pt-0.5">
+                    <div className="flex flex-1 gap-1">
+                      {[1,2,3,4].map(i => (
+                        <div key={i} className="h-1 flex-1 rounded-full transition-all duration-300"
+                          style={{ background: sPass.length >= i * 2 + 2 ? (sPass.length >= 10 ? '#34d399' : '#fbbf24') : 'rgba(255,255,255,0.07)' }} />
+                      ))}
+                    </div>
+                    <span className="text-[9.5px] text-white/28">
+                      {sPass.length < 6 ? 'Weak' : sPass.length < 10 ? 'Fair' : 'Strong'}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Error */}
+            {sError && (
+              <div className="mx-4 mb-4 flex items-start gap-2 rounded-[10px] border border-rose-500/20 bg-rose-500/[0.06] px-3 py-2.5 text-[12px] text-rose-300/75">
+                <span className="mt-0.5 shrink-0">✕</span>{sError}
+              </div>
+            )}
+
+            {/* CTA */}
+            <div className="border-t border-white/[0.04] px-4 pb-4 pt-3 sm:px-5 sm:pb-5">
+              <button onClick={() => void handleSignup()}
+                disabled={sLoading || !sName.trim() || !sEmail.trim() || sPass.length < 8}
+                className={`h-10 sm:h-11 w-full ${WHITE_BTN} disabled:opacity-35`} style={WHITE_BTN_SHADOW}>
+                {sLoading
+                  ? <div className="h-4 w-4 rounded-full border-2 border-[#050508]/25 border-t-[#050508] animate-spin" />
+                  : <><span>Create profile</span><ArrowRight className="h-3.5 w-3.5" /></>}
               </button>
+              <p className="mt-2.5 text-center text-[10px] text-white/18">
+                By continuing you agree to our{' '}
+                <span className="text-white/35 underline underline-offset-2 cursor-pointer">Terms</span>
+                {' '}&amp;{' '}
+                <span className="text-white/35 underline underline-offset-2 cursor-pointer">Privacy Policy</span>.
+              </p>
             </div>
           </div>
-          {sError && <div className="rounded-[10px] border border-rose-500/20 bg-rose-500/[0.06] px-3 py-2 text-[12px] text-rose-300/75">{sError}</div>}
-          <div className="flex flex-col gap-2">
-            <button onClick={() => void handleSignup()} disabled={sLoading || !sName.trim() || !sEmail.trim() || sPass.length < 8}
-              className={`h-10 sm:h-11 w-full ${WHITE_BTN} disabled:opacity-40`} style={WHITE_BTN_SHADOW}>
-              {sLoading
-                ? <div className="h-4 w-4 rounded-full border-2 border-[#050508]/25 border-t-[#050508] animate-spin" />
-                : <><span>Create account</span><ArrowRight className="h-3.5 w-3.5" /></>}
+
+          {/* Sign in link */}
+          <p style={{ animation: 'obFadeIn 0.4s 0.4s both', opacity: 0 }}
+            className="text-center text-[12px] text-white/28">
+            Already have an account?{' '}
+            <button onClick={skip} className="font-semibold text-white/55 hover:text-white transition-colors">
+              Sign in →
             </button>
-            <p className="text-center text-[10.5px] text-white/18">By continuing you agree to our Terms & Privacy Policy.</p>
-            <button onClick={skip} className="w-full py-1 text-center text-[12px] font-medium text-white/28 hover:text-white/50 transition-colors">
-              Already have an account? Sign in →
-            </button>
-          </div>
+          </p>
         </div>
       );
 
       /* ── 5  OTP ── */
       case OTP_SCR: return (
         <div className="flex flex-col gap-5">
-          <div>
-            <div className="mb-3.5 flex h-12 w-12 items-center justify-center rounded-[14px] border border-white/[0.10] bg-white/[0.06]">
-              <svg className="h-6 w-6 text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.6">
-                <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
+          {/* Heading */}
+          <div style={{ animation: 'obSlideUp 0.45s 0.05s both', opacity: 0 }}>
+            <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-white/[0.07] bg-white/[0.03] px-3 py-1">
+              <div className="h-1.5 w-1.5 rounded-full bg-blue-400" style={{ animation: 'obPulse 2s infinite' }} />
+              <span className="text-[9.5px] font-semibold uppercase tracking-[0.26em] text-white/30">Step 2 of 5 — Verify</span>
             </div>
-            <h2 className="text-[1.5rem] sm:text-[1.75rem] font-black tracking-tight text-white">Check your email</h2>
-            <p className="mt-1.5 text-[12px] sm:text-sm text-white/38">
-              We sent a 6-digit code to <span className="font-bold text-white/60">{session?.user?.email ?? sEmail}</span>
+            <h2 className="text-[1.5rem] sm:text-[1.75rem] font-black tracking-[-0.04em] text-white leading-[1.1]">
+              Check your email.
+            </h2>
+            <p className="mt-1 text-[12px] text-white/35">
+              6-digit code sent to{' '}
+              <span className="font-semibold text-white/60">{session?.user?.email ?? sEmail}</span>
             </p>
           </div>
-          <div className="flex justify-center gap-1.5 sm:gap-2">
-            {otpDigits.map((d, i) => (
-              <input key={i} ref={otpRefs[i]} maxLength={1} value={d}
-                onChange={e => handleOtpChange(i, e.target.value)}
-                onKeyDown={e => handleOtpKey(i, e)}
-                className="h-12 w-11 sm:h-14 sm:w-12 rounded-[12px] border border-white/[0.09] bg-white/[0.05] text-center text-lg sm:text-xl font-black text-white focus:outline-none focus:border-white/[0.25] focus:bg-white/[0.08] transition-all duration-200" />
-            ))}
+
+          {/* OTP input card */}
+          <div style={{ animation: 'obSlideUp 0.45s 0.12s both', opacity: 0, boxShadow: '0 0 0 1px rgba(255,255,255,0.03), 0 24px 64px rgba(0,0,0,0.45)' }}
+            className="overflow-hidden rounded-[20px] border border-white/[0.07] bg-white/[0.03] backdrop-blur-sm">
+            <div className="p-5">
+              <div className="mb-4 flex items-center justify-between">
+                <p className="text-[10.5px] font-bold uppercase tracking-[0.20em] text-white/28">Verification code</p>
+                <span className="text-[10px] text-white/20">
+                  {otpDigits.filter(Boolean).length}/6
+                </span>
+              </div>
+
+              {/* 6 boxes in a strict grid so they never wrap */}
+              <div className="grid grid-cols-6 gap-2">
+                {otpDigits.map((d, i) => (
+                  <input
+                    key={i}
+                    ref={otpRefs[i]}
+                    maxLength={1}
+                    value={d}
+                    onChange={e => handleOtpChange(i, e.target.value)}
+                    onKeyDown={e => handleOtpKey(i, e)}
+                    style={{
+                      background: d ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)',
+                      borderColor: d ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.08)',
+                    }}
+                    className="h-12 w-full min-w-0 rounded-[11px] border text-center text-[1.1rem] font-black text-white outline-none transition-all duration-150 focus:border-white/[0.35] focus:bg-white/[0.10] focus:shadow-[0_0_0_3px_rgba(255,255,255,0.06)]"
+                  />
+                ))}
+              </div>
+
+              {/* Progress dots */}
+              <div className="mt-3 flex justify-center gap-1">
+                {otpDigits.map((d, i) => (
+                  <div key={i} className="h-1 w-1 rounded-full transition-all duration-200"
+                    style={{ background: d ? 'rgba(255,255,255,0.60)' : 'rgba(255,255,255,0.12)' }} />
+                ))}
+              </div>
+
+              {otpError && (
+                <p className="mt-3 text-center text-[12px] text-rose-300/65"
+                  style={{ animation: 'obScaleIn 0.2s ease both' }}>
+                  {otpError}
+                </p>
+              )}
+              {otpOk && (
+                <div className="mt-3 flex items-center justify-center gap-2 rounded-[11px] border border-emerald-500/20 bg-emerald-500/[0.06] py-2.5 text-[12.5px] font-semibold text-emerald-400"
+                  style={{ animation: 'obScaleIn 0.3s ease both' }}>
+                  <CheckCircle2 className="h-4 w-4" /> Email verified!
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-white/[0.04] px-5 pb-5 pt-3.5">
+              <button onClick={() => void verifyOtp()} disabled={otpDigits.join('').length < 6 || verifying || otpOk}
+                className={`h-10 sm:h-11 w-full ${WHITE_BTN} disabled:opacity-35`} style={WHITE_BTN_SHADOW}>
+                {verifying
+                  ? <div className="h-4 w-4 rounded-full border-2 border-[#050508]/25 border-t-[#050508] animate-spin" />
+                  : <><span>Verify &amp; continue</span><ArrowRight className="h-3.5 w-3.5" /></>}
+              </button>
+            </div>
           </div>
-          {otpError && <p className="text-center text-[12px] text-rose-300/65">{otpError}</p>}
-          {otpOk && (
-            <div className="flex items-center justify-center gap-2 text-[13px] font-medium text-white/70">
-              <CheckCircle2 className="h-4 w-4" /> Email verified!
-            </div>
-          )}
-          <div className="flex flex-col gap-2">
-            <button onClick={() => void verifyOtp()} disabled={otpDigits.join('').length < 6 || verifying || otpOk}
-              className={`h-10 sm:h-11 w-full ${WHITE_BTN} disabled:opacity-40`} style={WHITE_BTN_SHADOW}>
-              {verifying ? <div className="h-4 w-4 rounded-full border-2 border-[#050508]/25 border-t-[#050508] animate-spin" /> : 'Verify email'}
+
+          {/* Resend + skip */}
+          <div style={{ animation: 'obFadeIn 0.4s 0.4s both', opacity: 0 }}
+            className="flex items-center justify-between text-[12px] text-white/28">
+            <button onClick={() => void sendOtp()} className="font-medium hover:text-white/55 transition-colors">
+              Resend code
             </button>
-            <div className="flex items-center justify-between text-[12px] text-white/28">
-              <button onClick={() => void sendOtp()} className="hover:text-white/50 transition-colors font-medium">Resend code</button>
-              <button onClick={next}  className="hover:text-white/50 transition-colors font-medium">Skip →</button>
-            </div>
+            <button onClick={next} className="font-medium hover:text-white/55 transition-colors">
+              Skip for now →
+            </button>
           </div>
         </div>
       );
 
       /* ── 6  PROFILE ── */
       case PROFILE_SCR: return (
-        <div className="flex flex-col gap-4">
-          <div>
-            <h2 className="text-[1.5rem] sm:text-[1.75rem] font-black tracking-tight text-white">Set up your profile</h2>
-            <p className="mt-1.5 text-[12px] sm:text-[13px] text-white/38">Help people find and know you better.</p>
+        <div className="flex flex-col gap-3.5">
+
+          {/* Heading */}
+          <div style={{ animation: 'obSlideUp 0.45s 0.05s both', opacity: 0 }}>
+            <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-white/[0.07] bg-white/[0.03] px-3 py-1">
+              <div className="h-1.5 w-1.5 rounded-full" style={{ background: '#E8CC7A', animation: 'obPulse 2s infinite' }} />
+              <span className="text-[9.5px] font-semibold uppercase tracking-[0.26em] text-white/30">Step 3 of 5 — Profile</span>
+            </div>
+            <h2 className="text-[1.45rem] sm:text-[1.65rem] font-black tracking-[-0.04em] text-white leading-[1.1]">Make it yours.</h2>
+            <p className="mt-1 text-[11.5px] text-white/35">Live preview updates as you type.</p>
           </div>
-          <div className="space-y-2.5">
-            <div className="flex items-center gap-3">
-              <button type="button" onClick={() => avatarInputRef.current?.click()}
-                className="h-14 w-14 shrink-0 rounded-[14px] border border-white/[0.10] bg-white/[0.07] flex items-center justify-center text-lg font-black text-white/55 overflow-hidden hover:border-white/25 transition-colors">
-                {avatarUrl ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" /> : initials(userName || 'U')}
+
+          {/* Banner + Avatar combo card */}
+          <div style={{ animation: 'obSlideUp 0.45s 0.1s both', opacity: 0 }}
+            className="overflow-hidden rounded-[18px] border border-white/[0.07] bg-white/[0.025]">
+
+            {/* Clickable banner zone */}
+            <button type="button" onClick={() => bannerFileRef.current?.click()}
+              className="group relative flex h-[80px] w-full items-center justify-center overflow-hidden transition-all"
+              style={{ background: bannerUrl ? undefined : 'linear-gradient(135deg,rgba(201,168,76,0.12) 0%,rgba(99,102,241,0.10) 100%)' }}>
+              {bannerUrl && <img src={bannerUrl} alt="" className="absolute inset-0 h-full w-full object-cover" onError={() => setBannerUrl('')} />}
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity" />
+              {bannerUploading
+                ? <div className="relative z-10 flex items-center gap-2 rounded-full border border-white/20 bg-black/70 px-3 py-1.5">
+                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-white/20 border-t-white/70" />
+                    <span className="text-[9.5px] text-white/80">Uploading…</span>
+                  </div>
+                : <div className="relative z-10 flex items-center gap-2 rounded-full border border-white/20 bg-black/55 px-3 py-1.5 backdrop-blur-sm opacity-60 group-hover:opacity-100 transition-opacity">
+                    <svg className="h-3 w-3 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    <span className="text-[9.5px] font-semibold text-white/90">{bannerUrl ? 'Change banner' : 'Upload banner'}</span>
+                  </div>
+              }
+            </button>
+
+            {/* Avatar row */}
+            <div className="flex items-end gap-3 px-4 pb-3.5 pt-0" style={{ marginTop: -20 }}>
+              <button type="button" onClick={() => avatarFileRef.current?.click()}
+                className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-full border-2 border-[#0d0d10] bg-white/[0.07] flex items-center justify-center text-[14px] font-black text-white/55 transition-all hover:border-white/25">
+                {avatarUrl
+                  ? <img src={avatarUrl} alt="" className="absolute inset-0 h-full w-full object-cover" onError={() => setAvatarUrl('')} />
+                  : <span>{initials(userName || 'U')}</span>}
+                {avatarUploading
+                  ? <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/70">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white/70" />
+                    </div>
+                  : <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/55 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <svg className="h-4 w-4 text-white/90" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0118.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                      </svg>
+                    </div>
+                }
               </button>
-              <input ref={avatarInputRef} type="file" accept="image/*" className="hidden"
-                onChange={async (e) => {
-                  const f = e.target.files?.[0];
-                  if (!f) return;
-                  const reader = new FileReader();
-                  reader.onload = async (ev) => {
-                    const dataUrl = await compressImage(ev.target?.result as string, 300);
-                    setAvatarUrl(dataUrl);
-                  };
-                  reader.readAsDataURL(f);
-                  e.target.value = '';
-                }} />
-              <input value={avatarUrl.startsWith('data:') ? '' : avatarUrl} onChange={e => setAvatarUrl(e.target.value)} placeholder="Or paste image URL (optional)" className={INP} />
-            </div>
-            <input value={headline} onChange={e => setHeadline(e.target.value)} placeholder="Headline — e.g. Product Designer at Razorpay" className={INP} />
-            <textarea value={bio} onChange={e => setBio(e.target.value.slice(0, 500))} rows={2} placeholder="A short bio about yourself…"
-              className="w-full rounded-[12px] border border-white/[0.08] bg-white/[0.04] text-white px-3 py-2.5 text-[13px] placeholder:text-white/20 focus:outline-none focus:border-white/[0.22] focus:shadow-[0_0_0_3px_rgba(255,255,255,0.04)] resize-none transition-all duration-200" />
-            <div className="grid grid-cols-2 gap-2.5">
-              <div className="relative"><MapPin className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/18" /><input value={location} onChange={e => setLocation(e.target.value)} placeholder="Location" className={INP + ' pl-9'} /></div>
-              <div className="relative"><Globe   className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/18" /><input value={website}  onChange={e => setWebsite(e.target.value)}  placeholder="Website"  className={INP + ' pl-9'} /></div>
-            </div>
-            <label className="flex cursor-pointer items-center gap-3">
-              <div onClick={() => setOpenToWork(v => !v)} className={`h-5 w-10 rounded-full transition-all duration-300 flex items-center px-0.5 ${openToWork ? 'bg-white' : 'bg-white/[0.10]'}`}>
-                <div className={`h-4 w-4 rounded-full shadow-lg transition-transform duration-300 ${openToWork ? 'translate-x-5 bg-[#050508]' : 'bg-white/38'}`} />
+              <div className="flex-1 min-w-0 pb-0.5">
+                <p className="text-[12px] font-bold text-white/75 truncate">{userName || 'Your Name'}</p>
+                <p className="text-[10.5px] text-white/30 truncate">{headline || 'Add a headline below'}</p>
               </div>
-              <span className="text-[12px] text-white/42 font-medium">Open to work or opportunities</span>
-            </label>
+            </div>
+
+            {/* URL fallback row — uses independent input state; applying only on blur or Enter */}
+            <div className="border-t border-white/[0.05] grid grid-cols-2">
+              <div className="px-3 py-2.5 border-r border-white/[0.05]">
+                <label className="mb-1 block text-[8.5px] font-bold uppercase tracking-[0.18em] text-white/22">
+                  Avatar URL {avatarUrl && !avatarUploading && <span className="text-emerald-400/70 normal-case tracking-normal font-semibold">✓ set</span>}
+                </label>
+                <input
+                  value={avatarUrlInput}
+                  onChange={e => setAvatarUrlInput(e.target.value)}
+                  onBlur={e => applyAvatarUrlInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); applyAvatarUrlInput(avatarUrlInput); } }}
+                  placeholder="or paste URL"
+                  className="h-7 w-full rounded-[8px] border border-white/[0.07] bg-white/[0.03] px-2 text-[11px] text-white placeholder:text-white/18 focus:outline-none focus:border-white/[0.18] transition-all" />
+              </div>
+              <div className="px-3 py-2.5">
+                <label className="mb-1 block text-[8.5px] font-bold uppercase tracking-[0.18em] text-white/22">
+                  Banner URL {bannerUrl && !bannerUploading && <span className="text-emerald-400/70 normal-case tracking-normal font-semibold">✓ set</span>}
+                </label>
+                <input
+                  value={bannerUrlInput}
+                  onChange={e => setBannerUrlInput(e.target.value)}
+                  onBlur={e => applyBannerUrlInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); applyBannerUrlInput(bannerUrlInput); } }}
+                  placeholder="or paste URL"
+                  className="h-7 w-full rounded-[8px] border border-white/[0.07] bg-white/[0.03] px-2 text-[11px] text-white placeholder:text-white/18 focus:outline-none focus:border-white/[0.18] transition-all" />
+              </div>
+            </div>
           </div>
-          <button onClick={next} className={`h-10 sm:h-11 w-full ${WHITE_BTN}`} style={WHITE_BTN_SHADOW}>
-            Continue <ArrowRight className="h-3.5 w-3.5" />
-          </button>
+
+          {/* Headline */}
+          <div style={{ animation: 'obSlideUp 0.45s 0.15s both', opacity: 0 }}
+            className="rounded-[18px] border border-white/[0.07] bg-white/[0.025] px-3.5 py-3">
+            <label className="mb-1.5 block text-[9.5px] font-bold uppercase tracking-[0.16em] text-white/25">Headline</label>
+            <input value={headline} onChange={e => setHeadline(e.target.value)}
+              placeholder="e.g. Product Designer at Razorpay" className={INP} />
+          </div>
+
+          {/* Bio */}
+          <div style={{ animation: 'obSlideUp 0.45s 0.18s both', opacity: 0 }}
+            className="rounded-[18px] border border-white/[0.07] bg-white/[0.025] px-3.5 py-3">
+            <div className="mb-1.5 flex items-center justify-between">
+              <label className="text-[9.5px] font-bold uppercase tracking-[0.16em] text-white/25">Bio</label>
+              <span className="text-[9.5px] text-white/20">{bio.length}/500</span>
+            </div>
+            <textarea value={bio} onChange={e => setBio(e.target.value.slice(0, 500))} rows={2}
+              placeholder="A short bio about yourself…"
+              className="w-full rounded-[12px] border border-white/[0.08] bg-white/[0.04] text-white px-3 py-2.5 text-[13px] placeholder:text-white/20 focus:outline-none focus:border-white/[0.22] focus:shadow-[0_0_0_3px_rgba(255,255,255,0.04)] resize-none transition-all duration-200" />
+          </div>
+
+          {/* Location + Website */}
+          <div style={{ animation: 'obSlideUp 0.45s 0.21s both', opacity: 0 }}
+            className="grid grid-cols-2 gap-2.5">
+            <div className="rounded-[18px] border border-white/[0.07] bg-white/[0.025] px-3.5 py-3">
+              <label className="mb-1.5 block text-[9.5px] font-bold uppercase tracking-[0.16em] text-white/25">Location</label>
+              <div className="relative">
+                <MapPin className="pointer-events-none absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-white/18" />
+                <input value={location} onChange={e => setLocation(e.target.value)} placeholder="Mumbai, IN" className={INP + ' pl-8 text-[12px]'} />
+              </div>
+            </div>
+            <div className="rounded-[18px] border border-white/[0.07] bg-white/[0.025] px-3.5 py-3">
+              <label className="mb-1.5 block text-[9.5px] font-bold uppercase tracking-[0.16em] text-white/25">Website</label>
+              <div className="relative">
+                <Globe className="pointer-events-none absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-white/18" />
+                <input value={website} onChange={e => setWebsite(e.target.value)} placeholder="yoursite.com" className={INP + ' pl-8 text-[12px]'} />
+              </div>
+            </div>
+          </div>
+
+          {/* Open to work + CTA */}
+          <div style={{ animation: 'obSlideUp 0.45s 0.24s both', opacity: 0 }} className="space-y-3">
+            <button type="button" onClick={() => setOpenToWork(v => !v)}
+              className={`flex w-full cursor-pointer items-center gap-3 rounded-[14px] border px-4 py-3 transition-all duration-200 ${openToWork ? 'border-emerald-500/30 bg-emerald-500/[0.06]' : 'border-white/[0.07] bg-white/[0.025]'}`}>
+              <div className={`h-5 w-10 shrink-0 rounded-full flex items-center px-0.5 transition-all duration-300 ${openToWork ? 'bg-emerald-500' : 'bg-white/[0.10]'}`}>
+                <div className={`h-4 w-4 rounded-full shadow-lg transition-transform duration-300 ${openToWork ? 'translate-x-5 bg-white' : 'bg-white/38'}`} />
+              </div>
+              <div className="text-left">
+                <p className={`text-[12px] font-semibold transition-colors ${openToWork ? 'text-emerald-400' : 'text-white/70'}`}>Open to work or opportunities</p>
+                <p className="text-[10px] text-white/28">Visible to recruiters and collaborators</p>
+              </div>
+            </button>
+            <button onClick={next} className={`h-10 sm:h-11 w-full ${WHITE_BTN}`} style={WHITE_BTN_SHADOW}>
+              Continue <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
         </div>
       );
 
       /* ── 7  SKILLS ── */
       case SKILLS_SCR: return (
-        <div className="flex flex-col gap-4">
-          <div>
-            <h2 className="text-[1.5rem] sm:text-[1.75rem] font-black tracking-tight text-white">Skills & Interests</h2>
-            <p className="mt-1.5 text-[12px] sm:text-[13px] text-white/38">Helps us show you relevant content, gigs, and people.</p>
+        <div className="flex flex-col gap-3.5">
+
+          {/* Heading */}
+          <div style={{ animation: 'obSlideUp 0.45s 0.05s both', opacity: 0 }}>
+            <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-white/[0.07] bg-white/[0.03] px-3 py-1">
+              <div className="h-1.5 w-1.5 rounded-full" style={{ background: '#E8CC7A', animation: 'obPulse 2s infinite' }} />
+              <span className="text-[9.5px] font-semibold uppercase tracking-[0.26em] text-white/30">Step 4 of 5 — Skills</span>
+            </div>
+            <h2 className="text-[1.45rem] sm:text-[1.65rem] font-black tracking-[-0.04em] text-white leading-[1.1]">What are you good at?</h2>
+            <p className="mt-1 text-[11.5px] text-white/35">Add skills — they power your search ranking and gig matches.</p>
           </div>
-          <div>
-            <p className="mb-2 text-[9.5px] font-black uppercase tracking-[0.22em] text-white/22">Your Skills</p>
-            <div className="mb-2.5 flex gap-2">
+
+          {/* Skills card */}
+          <div style={{ animation: 'obSlideUp 0.45s 0.10s both', opacity: 0 }}
+            className="rounded-[18px] border border-white/[0.07] bg-white/[0.025] p-3.5 space-y-3">
+            <div className="flex gap-2">
               <input value={skillInput} onChange={e => setSkillInput(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSkill(); } }}
-                placeholder="Type a skill, press Enter" className={INP.replace('w-full', 'flex-1')} />
-              <button onClick={addSkill} className="h-10 sm:h-11 rounded-[12px] border border-white/[0.08] bg-white/[0.04] px-3.5 text-[12px] font-semibold text-white/48 hover:bg-white/[0.08] hover:text-white/70 transition-all whitespace-nowrap">Add</button>
+                placeholder="e.g. React, Figma, Marketing…" className={INP.replace('w-full', 'flex-1')} />
+              <button onClick={addSkill}
+                className="h-10 sm:h-11 shrink-0 rounded-[12px] border border-white/[0.10] bg-white/[0.05] px-3.5 text-[12px] font-bold text-white/55 hover:bg-white/[0.09] hover:text-white/80 transition-all">
+                Add
+              </button>
             </div>
+
+            {/* Added chips */}
             {skills.length > 0 && (
-              <div className="mb-2.5 flex flex-wrap gap-1.5">
-                {skills.map(s => (
-                  <span key={s} className="flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.07] px-3 py-1 text-[12px] font-medium text-white/75">
-                    {s}<button onClick={() => setSkills(p => p.filter(x => x !== s))}><X className="h-3 w-3 text-white/35 hover:text-white/65 transition-colors" /></button>
+              <div className="flex flex-wrap gap-1.5">
+                {skills.map((s, i) => (
+                  <span key={s}
+                    style={{ animation: `obScaleIn 0.25s ${i * 0.04}s both` }}
+                    className="flex items-center gap-1.5 rounded-full border border-white/[0.15] bg-white/[0.07] px-3 py-1 text-[11.5px] font-semibold text-white/80">
+                    {s}
+                    <button onClick={() => setSkills(p => p.filter(x => x !== s))}
+                      className="flex h-4 w-4 items-center justify-center rounded-full hover:bg-white/[0.12] transition-all">
+                      <X className="h-2.5 w-2.5 text-white/40 hover:text-white/70 transition-colors" />
+                    </button>
                   </span>
                 ))}
               </div>
             )}
-            <div className="flex flex-wrap gap-1.5">
-              {POPULAR_SKILLS.filter(s => !skills.includes(s)).slice(0, 12).map(s => (
-                <button key={s} onClick={() => { if (skills.length < 20) setSkills(p => [...p, s]); }}
-                  className="rounded-full border border-white/[0.07] bg-white/[0.02] px-2.5 py-0.5 text-[11px] font-medium text-white/32 hover:text-white/65 hover:border-white/[0.14] hover:bg-white/[0.06] transition-all">
-                  + {s}
-                </button>
-              ))}
+
+            {/* Skill counter */}
+            {skills.length > 0 && (
+              <p className="text-[9.5px] text-white/25">
+                <span className="font-black text-white/50">{skills.length}</span> / 20 skills added
+              </p>
+            )}
+
+            {/* Suggestions */}
+            <div>
+              <p className="mb-2 text-[8.5px] font-black uppercase tracking-[0.22em] text-white/22">Popular</p>
+              <div className="flex flex-wrap gap-1.5">
+                {POPULAR_SKILLS.filter(s => !skills.includes(s)).slice(0, 14).map(s => (
+                  <button key={s}
+                    onClick={() => { if (skills.length < 20) setSkills(p => [...p, s]); }}
+                    className="rounded-full border border-white/[0.07] bg-white/[0.02] px-2.5 py-1 text-[11px] font-medium text-white/30 hover:text-white/70 hover:border-white/[0.16] hover:bg-white/[0.06] transition-all">
+                    + {s}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-          <div>
-            <p className="mb-2 text-[9.5px] font-black uppercase tracking-[0.22em] text-white/22">Interests</p>
+
+          {/* Interests card */}
+          <div style={{ animation: 'obSlideUp 0.45s 0.18s both', opacity: 0 }}
+            className="rounded-[18px] border border-white/[0.07] bg-white/[0.025] p-3.5">
+            <div className="mb-2.5 flex items-center justify-between">
+              <p className="text-[9.5px] font-black uppercase tracking-[0.22em] text-white/30">Areas of interest</p>
+              {interests.length > 0 && (
+                <span className="rounded-full border border-white/[0.10] bg-white/[0.05] px-2 py-0.5 text-[9.5px] font-black text-white/50">
+                  {interests.length} selected
+                </span>
+              )}
+            </div>
             <div className="flex flex-wrap gap-1.5">
-              {INTEREST_CATEGORIES.slice(0, 12).map(cat => (
+              {INTEREST_CATEGORIES.map(cat => (
                 <button key={cat}
                   onClick={() => setInterests(p => p.includes(cat) ? p.filter(x => x !== cat) : [...p, cat])}
-                  className={`rounded-[10px] px-3 py-1 text-[12px] font-semibold transition-all ${interests.includes(cat) ? 'bg-white text-[#050508] border border-white/80' : 'border border-white/[0.07] bg-white/[0.025] text-white/40 hover:text-white/70 hover:border-white/[0.12]'}`}>
+                  className={`rounded-[10px] border px-3 py-1 text-[11.5px] font-semibold transition-all duration-150 ${
+                    interests.includes(cat)
+                      ? 'border-white/70 bg-white text-[#050508] shadow-[0_2px_12px_rgba(255,255,255,0.08)]'
+                      : 'border-white/[0.07] bg-white/[0.025] text-white/38 hover:text-white/70 hover:border-white/[0.14] hover:bg-white/[0.05]'
+                  }`}>
                   {cat}
                 </button>
               ))}
             </div>
           </div>
-          <button onClick={next} className={`h-10 sm:h-11 w-full ${WHITE_BTN}`} style={WHITE_BTN_SHADOW}>
-            Continue <ArrowRight className="h-3.5 w-3.5" />
-          </button>
+
+          {/* CTA */}
+          <div style={{ animation: 'obSlideUp 0.45s 0.24s both', opacity: 0 }}>
+            <button onClick={next} className={`h-10 sm:h-11 w-full ${WHITE_BTN}`} style={WHITE_BTN_SHADOW}
+              disabled={skills.length === 0 && interests.length === 0}>
+              {skills.length > 0 || interests.length > 0 ? 'Continue' : 'Skip for now'} <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
         </div>
       );
 
@@ -1494,133 +2919,177 @@ export default function OnboardingPage() {
         );
 
         return (
-          <div className="flex flex-col gap-3">
-            {/* Welcome header — compact */}
-            <div className="flex items-center gap-3" style={{ animation: 'obSlideUp 0.45s both' }}>
-              <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/[0.10] bg-white/[0.04]">
-                <svg className="absolute inset-0 h-11 w-11 -rotate-90" viewBox="0 0 44 44">
-                  <circle cx="22" cy="22" r="20" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
-                  <circle cx="22" cy="22" r="20" fill="none" strokeWidth="1.5" strokeLinecap="round"
-                    strokeDasharray="125" strokeDashoffset="0"
-                    style={{ stroke: 'url(#doneGrad2)', animation: 'obCheckDraw 1.2s 0.3s cubic-bezier(.4,0,.2,1) both' }} />
-                  <defs>
-                    <linearGradient id="doneGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#C9A84C" /><stop offset="100%" stopColor="#E8CC7A" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-                <CheckCircle2 className="h-5 w-5 text-white/70" style={{ animation: 'obScaleIn 0.4s 1.0s both', opacity: 0 }} />
+          <div className="flex flex-col gap-4">
+
+            {/* ── Welcome header ── */}
+            <div style={{ animation: 'obSlideUp 0.45s both' }} className="text-center">
+              {/* Animated check ring */}
+              <div className="relative mx-auto mb-3 h-16 w-16">
+                <div className="absolute -inset-3 rounded-full"
+                  style={{ background: 'radial-gradient(circle,rgba(52,211,153,0.18) 0%,transparent 65%)', animation: 'obGlow 3s ease-in-out infinite' }} />
+                <div className="absolute inset-0 flex items-center justify-center rounded-full border border-emerald-500/20 bg-emerald-500/[0.07]">
+                  <svg className="absolute inset-0 h-16 w-16 -rotate-90" viewBox="0 0 64 64">
+                    <circle cx="32" cy="32" r="29" fill="none" stroke="rgba(52,211,153,0.12)" strokeWidth="1.5" />
+                    <circle cx="32" cy="32" r="29" fill="none" stroke="rgba(52,211,153,0.6)" strokeWidth="2" strokeLinecap="round"
+                      strokeDasharray="182" strokeDashoffset="0"
+                      style={{ animation: 'obCheckDraw 1.2s 0.2s cubic-bezier(.4,0,.2,1) both' }} />
+                  </svg>
+                  <CheckCircle2 className="h-7 w-7 text-emerald-400" style={{ animation: 'obScaleIn 0.4s 1.0s both', opacity: 0 }} />
+                </div>
               </div>
-              <div>
-                <h2 className="text-[1.35rem] sm:text-[1.55rem] font-black tracking-[-0.03em] text-white leading-tight">
-                  {userName ? `You're in, ${userName.split(' ')[0]}!` : "You're all set!"}
-                </h2>
-                <p className="text-[11px] text-white/35">Your profile is live on Docrud.</p>
-              </div>
+              <h2 className="text-[1.4rem] sm:text-[1.6rem] font-black tracking-[-0.04em] text-white leading-tight">
+                {userName ? `You're in, ${userName.split(' ')[0]}!` : "You're all set!"}
+              </h2>
+              <p className="mt-1 text-[11.5px] text-white/38">Your profile is live. Time to stand out.</p>
             </div>
 
             {/* ── Docrud Go Premium Card ── */}
-            <div className="relative overflow-hidden rounded-[18px] p-[1.5px]"
-              style={{ background: 'linear-gradient(135deg,#C9A84C,#F0D878 40%,#C9A84C 70%,#A07830)', animation: 'obCardGlow 4s ease-in-out infinite' }}>
-              {/* Inner card */}
-              <div className="relative overflow-hidden rounded-[17px] bg-[#100d06] px-4 py-4 sm:px-5 sm:py-4">
+            <div style={{ animation: 'obSlideUp 0.45s 0.12s both', opacity: 0, background: 'linear-gradient(135deg,#C9A84C 0%,#F0D878 35%,#C9A84C 65%,#A07830 100%)' }}
+              className="relative overflow-hidden rounded-[20px] p-[1.5px]">
+              <div className="relative overflow-hidden rounded-[19px]" style={{ background: '#0e0b05' }}>
 
-                {/* Ambient glow inside card */}
+                {/* Ambient top glow */}
                 <div className="pointer-events-none absolute inset-0"
-                  style={{ background: 'radial-gradient(ellipse 90% 70% at 50% -10%,rgba(232,204,122,0.10) 0%,transparent 60%)' }} />
+                  style={{ background: 'radial-gradient(ellipse 100% 60% at 50% -5%,rgba(232,204,122,0.13) 0%,transparent 55%)' }} />
 
-                {/* Header row */}
-                <div className="relative mb-3 flex items-start justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-[10px] font-black uppercase tracking-[0.28em]" style={{ color: '#C9A84C' }}>First Login Offer</span>
-                      <span className="rounded-full px-1.5 py-0.5 text-[8.5px] font-black uppercase tracking-[0.1em]"
-                        style={{ background: 'rgba(201,168,76,0.15)', color: '#E8CC7A', border: '1px solid rgba(201,168,76,0.25)' }}>
-                        Limited
-                      </span>
+                {/* Shimmer line */}
+                <div className="pointer-events-none absolute left-0 right-0 top-0 h-px"
+                  style={{ background: 'linear-gradient(90deg,transparent 0%,rgba(240,216,120,0.6) 50%,transparent 100%)' }} />
+
+                <div className="relative px-5 pt-5 pb-5">
+
+                  {/* ── Top: offer label + scarcity ── */}
+                  <div className="mb-4 flex items-start justify-between gap-3">
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center gap-2">
+                        <div className="h-1.5 w-1.5 rounded-full shrink-0" style={{ background: '#E8CC7A', animation: 'obPulse 2s infinite' }} />
+                        <span className="text-[9px] font-black uppercase tracking-[0.32em]" style={{ color: '#C9A84C' }}>First Login Offer</span>
+                      </div>
+                      <h3 className="text-[1.35rem] font-black tracking-[-0.04em] text-white leading-tight">
+                        Docrud Go <span style={{ color: '#E8CC7A' }}>✦</span>
+                      </h3>
+                      <p className="text-[10.5px] text-white/40 leading-snug">Unlock your verified professional identity.</p>
                     </div>
-                    <div className="text-[1.35rem] sm:text-[1.5rem] font-black tracking-[-0.04em] text-white leading-tight">
-                      Docrud Go <span style={{ color: '#E8CC7A' }}>✦</span>
+
+                    {/* Price block */}
+                    <div className="shrink-0 text-right pt-0.5">
+                      <div className="flex items-baseline justify-end gap-1 mb-0.5">
+                        <span className="text-[10px] text-white/25 line-through">₹499</span>
+                        <span className="text-[26px] font-black leading-none tracking-[-0.03em]" style={{ color: '#F0D878' }}>₹99</span>
+                      </div>
+                      <span className="text-[9px] text-white/28">one-time · no renewal</span>
                     </div>
-                    <div className="text-[11px] text-white/35 mt-0.5">Verified badge + all features unlocked</div>
                   </div>
-                  <div className="shrink-0 text-right">
-                    <div className="text-[22px] sm:text-[26px] font-black text-white leading-none" style={{ color: '#F0D878' }}>₹99</div>
-                    <div className="text-[9px] text-white/30">one-time</div>
+
+                  {/* ── Scarcity bar — live data ── */}
+                  <div className="mb-4 rounded-[10px] px-3 py-2.5"
+                    style={{ background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.16)' }}>
+                    {goStats === null ? (
+                      /* Loading skeleton */
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="h-2.5 w-20 rounded-full animate-pulse bg-white/[0.08]" />
+                          <div className="h-2.5 w-14 rounded-full animate-pulse bg-white/[0.08]" />
+                        </div>
+                        <div className="h-1.5 w-full rounded-full animate-pulse bg-white/[0.06]" />
+                        <div className="h-2 w-36 rounded-full animate-pulse bg-white/[0.05]" />
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-[9.5px] font-bold text-white/45">Spots claimed</span>
+                          <span className="text-[9.5px] font-black" style={{ color: '#E8CC7A' }}>
+                            {goStats.claimed.toLocaleString()} / {goStats.total.toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                          <div className="h-full rounded-full transition-all duration-700"
+                            style={{ width: `${goStats.pct}%`, background: 'linear-gradient(90deg,#C9A84C,#F0D878)' }} />
+                        </div>
+                        <p className="mt-1.5 text-[9px] text-white/30">
+                          Limited to first <span className="font-black text-white/50">{goStats.total.toLocaleString()} users</span> only
+                          {goStats.remaining > 0
+                            ? <> — <span style={{ color: '#E8CC7A' }}>{goStats.remaining.toLocaleString()} spots left.</span></>
+                            : <span style={{ color: '#fb7185' }}> — offer closed.</span>
+                          }
+                        </p>
+                      </>
+                    )}
                   </div>
-                </div>
 
-                {/* Badge benefits — 2-col compact */}
-                <div className="relative mb-3 grid grid-cols-2 gap-1.5">
-                  {[
-                    ['✦', 'Gold verified badge'],
-                    ['3×', 'More profile views'],
-                    ['↑', 'Priority in search'],
-                    ['★', 'Premium gig access'],
-                    ['⚡', 'Faster connection growth'],
-                    ['🔒', 'Higher client trust'],
-                  ].map(([icon, label]) => (
-                    <div key={label} className="flex items-center gap-1.5 rounded-[8px] px-2.5 py-1.5"
-                      style={{ background: 'rgba(201,168,76,0.07)', border: '1px solid rgba(201,168,76,0.12)' }}>
-                      <span className="text-[11px] shrink-0" style={{ color: '#C9A84C' }}>{icon}</span>
-                      <span className="text-[10.5px] font-semibold text-white/65 leading-tight truncate">{label}</span>
-                    </div>
-                  ))}
-                </div>
+                  {/* ── Divider ── */}
+                  <div className="mb-4 h-px" style={{ background: 'linear-gradient(90deg,rgba(201,168,76,0.18),rgba(201,168,76,0.04) 80%,transparent)' }} />
 
-                {/* Feature limits — compact single-line */}
-                <div className="relative mb-3 rounded-[10px] border border-white/[0.06] bg-white/[0.03] px-3 py-2">
-                  <div className="text-[9px] font-black uppercase tracking-[0.2em] text-white/22 mb-1.5">What's included</div>
-                  <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
+                  {/* ── 3 benefit pillars ── */}
+                  <div className="mb-4 grid grid-cols-3 gap-2">
                     {[
-                      ['E-Sign', '25 docs/mo'],
-                      ['Doc AI', '50 gen/mo'],
-                      ['PDF Studio', '30 PDFs/mo'],
-                      ['DocWord', '30 docs/mo'],
-                      ['Forms', '10 active'],
-                      ['Vault', '2 GB'],
-                      ['Network', 'Unlimited'],
-                      ['Gigs', '5 posts/mo'],
-                    ].map(([feat, limit]) => (
-                      <div key={feat} className="flex items-center justify-between gap-1">
-                        <span className="text-[10px] text-white/40">{feat}</span>
-                        <span className="text-[10px] font-semibold text-white/55">{limit}</span>
+                      { icon: '🔍', title: 'More Visibility',  desc: '3× profile views & priority search' },
+                      { icon: '⚡', title: 'Advanced Access',  desc: 'Premium gigs, AI tools & features'  },
+                      { icon: '✦', title: 'Trusted Badge',    desc: 'Gold badge builds instant credibility' },
+                    ].map(({ icon, title, desc }) => (
+                      <div key={title} className="flex flex-col items-center gap-1.5 rounded-[11px] px-2 py-3"
+                        style={{ background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.13)' }}>
+                        <span className="text-[16px] leading-none">{icon}</span>
+                        <p className="text-[9px] font-black text-white/78 leading-tight text-center">{title}</p>
+                        <p className="text-[8px] text-white/32 leading-snug text-center">{desc}</p>
                       </div>
                     ))}
                   </div>
-                </div>
 
-                {/* Error */}
-                {goError && (
-                  <div className="relative mb-2 rounded-[9px] border border-rose-500/20 bg-rose-500/[0.07] px-3 py-2 text-[11px] text-rose-300/80">
-                    {goError}
+                  {/* ── Social proof ── */}
+                  <div className="mb-4 flex items-center gap-2.5 rounded-[10px] px-3 py-2.5"
+                    style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.055)' }}>
+                    <div className="flex shrink-0 -space-x-1.5">
+                      {[['K','#C9A84C'],['R','#7c3aed'],['A','#0ea5e9'],['S','#10b981']].map(([init, bg]) => (
+                        <div key={init} className="flex h-5 w-5 items-center justify-center rounded-full border border-[#0e0b05] text-[7px] font-black text-white"
+                          style={{ background: bg }}>
+                          {init}
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[9.5px] text-white/35 leading-tight">
+                      <span className="font-bold text-white/58">2,800+ professionals</span> upgraded this month
+                    </p>
                   </div>
-                )}
 
-                {/* CTA button */}
-                <button
-                  onClick={() => void handleGoPayment()}
-                  disabled={goPhase === 'paying'}
-                  className="relative w-full flex items-center justify-center gap-2 rounded-[12px] h-10 sm:h-11 font-black text-[13px] sm:text-[14px] transition-all active:scale-[0.98] disabled:opacity-60"
-                  style={{ background: 'linear-gradient(135deg,#C9A84C,#E8CC7A,#C9A84C)', color: '#1a1208', boxShadow: '0 4px 22px rgba(201,168,76,0.45)' }}>
-                  {goPhase === 'paying'
-                    ? <><div className="h-4 w-4 rounded-full border-2 border-[#1a1208]/30 border-t-[#1a1208] animate-spin" /> Processing…</>
-                    : <>✦ Get Docrud Go — ₹99</>
-                  }
-                </button>
+                  {/* ── Error ── */}
+                  {goError && (
+                    <div className="mb-3 rounded-[9px] border border-rose-500/20 bg-rose-500/[0.07] px-3 py-2 text-[11px] text-rose-300/80">
+                      {goError}
+                    </div>
+                  )}
+
+                  {/* ── CTA ── */}
+                  <button
+                    onClick={() => void handleGoPayment()}
+                    disabled={goPhase === 'paying'}
+                    className="w-full flex items-center justify-center gap-2 rounded-[12px] h-11 font-black text-[13px] tracking-[-0.01em] transition-all active:scale-[0.98] disabled:opacity-60"
+                    style={{ background: 'linear-gradient(135deg,#C9A84C 0%,#F0D878 48%,#C9A84C 100%)', color: '#1a1208', boxShadow: '0 4px 28px rgba(201,168,76,0.48), inset 0 1px 0 rgba(255,255,255,0.28)' }}>
+                    {goPhase === 'paying'
+                      ? <><div className="h-4 w-4 rounded-full border-2 border-[#1a1208]/30 border-t-[#1a1208] animate-spin" /> Processing…</>
+                      : <>✦ Unlock Docrud Go — ₹99</>
+                    }
+                  </button>
+
+                  {/* ── Sub-note ── */}
+                  <p className="mt-2.5 text-center text-[9px] text-white/22">
+                    Secure payment via Razorpay · Instant activation · No auto-renewal
+                  </p>
+                </div>
               </div>
             </div>
 
             {/* ── OR divider ── */}
-            <div className="relative flex items-center gap-2">
-              <div className="flex-1 h-px bg-white/[0.08]" />
-              <span className="text-[10px] font-black uppercase tracking-[0.25em] px-2 text-white/20">OR</span>
-              <div className="flex-1 h-px bg-white/[0.08]" />
+            <div className="relative flex items-center gap-3" style={{ animation: 'obFadeIn 0.5s 0.22s both', opacity: 0 }}>
+              <div className="flex-1 h-px bg-white/[0.07]" />
+              <span className="text-[9.5px] font-black uppercase tracking-[0.28em] text-white/18">or</span>
+              <div className="flex-1 h-px bg-white/[0.07]" />
             </div>
 
             {/* ── Refer-a-friend earn-free CTA ── */}
             <button
               type="button"
+              style={{ animation: 'obSlideUp 0.45s 0.26s both', opacity: 0, borderColor: 'rgba(201,168,76,0.16)', background: 'rgba(201,168,76,0.03)' }}
               onClick={() => {
                 setGoPhase('refer');
                 if (!refLink) {
@@ -1635,28 +3104,28 @@ export default function OnboardingPage() {
                     .finally(() => setRefLinkLoading(false));
                 }
               }}
-              className="w-full flex items-center gap-3 rounded-[14px] border px-4 py-3 text-left transition-all hover:bg-white/[0.04] active:scale-[0.98]"
-              style={{ borderColor: 'rgba(201,168,76,0.20)', background: 'rgba(201,168,76,0.04)' }}
+              className="group w-full flex items-center gap-3.5 rounded-[14px] border px-4 py-3.5 text-left transition-all hover:border-amber-500/25 hover:bg-amber-500/[0.04] active:scale-[0.98]"
             >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
-                style={{ background: 'linear-gradient(135deg,#C9A84C,#F0D878)', boxShadow: '0 0 14px rgba(201,168,76,0.35)' }}>
-                <svg className="h-4 w-4 text-[#1a1208]" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14m-7-7l7-7 7 7" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] transition-transform group-hover:scale-105"
+                style={{ background: 'linear-gradient(135deg,#C9A84C,#F0D878)', boxShadow: '0 4px 16px rgba(201,168,76,0.35)' }}>
+                <svg className="h-5 w-5 text-[#1a1208]" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                 </svg>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[12.5px] font-black text-white/85">Earn Docrud Go FREE</p>
-                <p className="text-[10.5px] text-white/35 leading-tight">Refer a friend → they activate → your Go badge unlocks for free</p>
+                <p className="text-[12.5px] font-black text-white/82">Earn Docrud Go — FREE</p>
+                <p className="text-[10.5px] text-white/32 leading-snug mt-0.5">Refer one friend who joins → your Go badge unlocks, no payment needed.</p>
               </div>
-              <svg className="h-4 w-4 text-white/20 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <svg className="h-4 w-4 shrink-0 text-white/18 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6" />
               </svg>
             </button>
 
-            {/* Skip link */}
+            {/* Skip */}
             <button
               onClick={() => setGoPhase('skipped')}
-              className="text-center text-[11px] text-white/20 hover:text-white/45 transition-colors">
+              style={{ animation: 'obFadeIn 0.5s 0.35s both', opacity: 0 }}
+              className="text-center text-[10.5px] text-white/18 hover:text-white/42 transition-colors">
               Continue without upgrading →
             </button>
           </div>
@@ -1670,6 +3139,7 @@ export default function OnboardingPage() {
   /* ════════════ MAIN RENDER ════════════ */
   return (
     <div className="relative flex min-h-[100dvh] overflow-hidden bg-[#050508] text-white">
+      <SplashScreen visible={showSplash} onSkip={() => { setShowSplash(false); setScreen(SIGNUP_SCR); }} />
       <BgOrbs />
 
       {/* LEFT PANEL — desktop only */}
@@ -1678,12 +3148,16 @@ export default function OnboardingPage() {
         <div className="pointer-events-none absolute inset-0"
           style={{ background: 'radial-gradient(ellipse at 30% 50%,rgba(255,255,255,0.015) 0%,transparent 60%)' }} />
         <ScreenIn key={`left-${screen}`}>
-          <LeftPanelSwitch screen={screen} headline={headline} bio={bio} />
+          <LeftPanelSwitch screen={screen} headline={headline} bio={bio} sName={sName} sEmail={sEmail} avatarUrl={avatarUrl} bannerUrl={bannerUrl} location={location} openToWork={openToWork} skills={skills} />
         </ScreenIn>
       </div>
 
       {/* RIGHT PANEL — full screen on mobile, side panel on desktop */}
       <div className="relative flex h-[100dvh] w-full flex-col lg:w-[48%] xl:w-[44%]">
+
+        {/* Always-mounted hidden file inputs — never unmount so refs stay valid */}
+        <input ref={bannerFileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={handleBannerFile} />
+        <input ref={avatarFileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={handleAvatarFile} />
 
         {/* Top bar — fixed height */}
         <div className="relative z-10 flex h-12 shrink-0 items-center justify-between px-5 sm:px-6">
@@ -1704,10 +3178,10 @@ export default function OnboardingPage() {
           )}
         </div>
 
-        {/* Scrollable content area — flex-1, centered */}
-        <div className="relative flex flex-1 items-center justify-center overflow-hidden">
+        {/* Scrollable content area */}
+        <div className="relative flex flex-col flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className="pointer-events-none absolute inset-0 bg-[#050508]/15" />
-          <div className="relative z-10 w-full max-w-[360px] px-5 sm:px-7">
+          <div className="relative z-10 mx-auto w-full max-w-[380px] px-5 sm:px-7 py-6 my-auto">
             <ScreenIn key={screen}>
               {renderForm()}
             </ScreenIn>
@@ -1731,5 +3205,13 @@ export default function OnboardingPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function OnboardingPage() {
+  return (
+    <Suspense>
+      <OnboardingPageContent />
+    </Suspense>
   );
 }

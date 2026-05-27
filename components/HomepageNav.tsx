@@ -3,22 +3,51 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
+import GlobalSearchBar, { type GlobalSearchBarHandle, type LocalSearchResult } from '@/components/GlobalSearchBar';
 import { useSession } from 'next-auth/react';
+
+/* ── Greeting helpers ──────────────────────────────────────────────── */
+function getGreetingData(d: Date) {
+  const h = d.getHours();
+  if (h >= 5 && h < 12)  return { text: 'Good Morning',   emoji: '🌅', phase: 'morning'   };
+  if (h >= 12 && h < 17) return { text: 'Good Afternoon', emoji: '☀️', phase: 'afternoon' };
+  if (h >= 17 && h < 21) return { text: 'Good Evening',   emoji: '🌆', phase: 'evening'   };
+  return                         { text: 'Good Night',     emoji: '🌙', phase: 'night'     };
+}
+function fmtTime(d: Date) {
+  return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })
+    .toUpperCase().replace(/\s/g, ' '); // narrow non-breaking space
+}
+function fmtDate(d: Date) {
+  const day  = d.toLocaleDateString('en-IN', { weekday: 'short' });
+  const date = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  return `${day}, ${date}`;
+}
 import {
   Bell,
   BriefcaseBusiness,
+  Briefcase,
   Check,
+  ChevronDown,
   CreditCard,
   Eye,
+  FileSignature,
   FileText,
+  FolderLock,
   Globe,
+  HardDrive,
   Heart,
+  Layers,
   Mail,
   Menu,
   MessageCircle,
+  MessageSquare,
   PenLine,
   Plus,
   Search,
+  Share2,
+  Sheet,
+  Sparkles,
   User,
   UserPlus,
   Users,
@@ -99,15 +128,31 @@ interface HomepageNavProps {
   accentLabel?: string;
   onPublishClick?: () => void;
   onScratchpadClick?: () => void;
+  onDocSheetClick?: () => void;
+  onESignClick?: () => void;
+  onFileDriveClick?: () => void;
   onMobileMenuClick?: () => void;
   guestMode?: boolean;
 }
+
+/* ── Tools panel data ─────────────────────────────────────────── */
+const TOOLS_ITEMS = [
+  { id: 'docword',   label: 'DocWord',        desc: 'AI document editor',     Icon: FileText,      color: '#818cf8', bg: 'rgba(129,140,248,0.13)', bd: 'rgba(129,140,248,0.22)' },
+  { id: 'docsheets', label: 'DocSheets',      desc: 'Smart spreadsheets',     Icon: Sheet,         color: '#34d399', bg: 'rgba(52,211,153,0.11)',  bd: 'rgba(52,211,153,0.20)'  },
+  { id: 'esign',     label: 'E-Sign',         desc: 'Digital signatures',     Icon: FileSignature, color: '#a78bfa', bg: 'rgba(167,139,250,0.13)', bd: 'rgba(167,139,250,0.22)' },
+  { id: 'scratchpad',label: 'Scratchpad',     desc: 'Canvas & quick notes',   Icon: PenLine,       color: '#fb923c', bg: 'rgba(251,146,60,0.11)',  bd: 'rgba(251,146,60,0.20)'  },
+  { id: 'sharing',   label: 'File Sharing',   desc: 'Send & receive files',   Icon: Share2,        color: '#38bdf8', bg: 'rgba(56,189,248,0.11)',  bd: 'rgba(56,189,248,0.20)'  },
+  { id: 'directory', label: 'File Directory', desc: 'Browse your workspace',  Icon: Layers,        color: '#fbbf24', bg: 'rgba(251,191,36,0.11)',  bd: 'rgba(251,191,36,0.20)'  },
+] as const;
 
 export default function HomepageNav({
   softwareName,
   accentLabel,
   onPublishClick,
   onScratchpadClick,
+  onDocSheetClick,
+  onESignClick,
+  onFileDriveClick,
   onMobileMenuClick,
   guestMode,
 }: HomepageNavProps) {
@@ -118,6 +163,67 @@ export default function HomepageNav({
   const [notifications, setNotifications] = useState<WorkspaceNotification[]>([]);
   const notifRef = useRef<HTMLDivElement>(null);
   const [badge, setBadge] = useState<{ docrudGo: boolean; avatarUrl: string | null } | null>(null);
+  const [msgUnread, setMsgUnread] = useState(0);
+  const [toolsOpen, setToolsOpen] = useState(false);
+
+  const searchBarRef = useRef<GlobalSearchBarHandle>(null);
+
+  // ⌘K / Ctrl+K shortcut to open search
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        searchBarRef.current?.open();
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  const getLocalResults = useCallback((q: string): LocalSearchResult[] => {
+    const query = q.toLowerCase().trim();
+    const nav: Array<{ id: string; title: string; subtitle: string; href: string; Icon: React.ComponentType<{ className?: string }> }> = [
+      { id: 'gigs',      title: 'Browse Gigs',         subtitle: 'Find live opportunities',         href: '/gigs',      Icon: Briefcase    },
+      { id: 'people',    title: 'Explore Professionals', subtitle: 'Discover talent & public faces', href: '/people',    Icon: Users        },
+      { id: 'feed',      title: 'Latest Feed',           subtitle: 'Articles, designs & insights',  href: '/published', Icon: Globe        },
+      { id: 'esign',     title: 'E-Sign Studio',         subtitle: 'Digital signatures & contracts',href: '/#esign',    Icon: FileSignature },
+      { id: 'workspace', title: 'My Workspace',          subtitle: 'Documents, templates & files',  href: '/workspace', Icon: FileText     },
+      { id: 'profile',   title: 'My Profile',            subtitle: 'View & edit your public profile',href: '/profile',  Icon: User         },
+      { id: 'messages',  title: 'Messages',              subtitle: 'Chat with professionals',        href: '/messages',  Icon: MessageSquare},
+      { id: 'docword',   title: 'DocWord',               subtitle: 'AI document editor',             href: '/workspace', Icon: Sparkles     },
+    ];
+    return nav
+      .filter(({ title, subtitle }) =>
+        title.toLowerCase().includes(query) || subtitle.toLowerCase().includes(query)
+      )
+      .slice(0, 4)
+      .map(({ id, title, subtitle, href, Icon }) => ({
+        id,
+        kind: 'tab' as const,
+        title,
+        subtitle,
+        Icon,
+        onSelect: () => { window.location.href = href; },
+      }));
+  }, []);
+
+  /* ── Live clock ── */
+  const [now, setNow] = useState<Date | null>(null); // null until mounted (avoids SSR mismatch)
+  const [greetPhase, setGreetPhase] = useState('');  // tracks greeting phase to animate transitions
+  useEffect(() => {
+    const tick = () => {
+      const d = new Date();
+      setNow(d);
+      const phase = getGreetingData(d).phase;
+      setGreetPhase((prev) => {
+        // when phase changes, trigger CSS re-key via state update
+        return prev !== phase ? phase : prev;
+      });
+    };
+    tick(); // immediate first tick
+    const id = setInterval(tick, 30_000); // refresh every 30 s — cheap
+    return () => clearInterval(id);
+  }, []);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -140,14 +246,70 @@ export default function HomepageNav({
       .catch(() => {});
   }, [isAuthenticated, guestMode]);
 
+  const fetchMsgUnread = useCallback(async () => {
+    try {
+      const res = await fetch('/api/messages/unread');
+      if (!res.ok) return;
+      const d = await res.json() as { unread: number };
+      setMsgUnread(d.unread ?? 0);
+    } catch { /* silent */ }
+  }, []);
+
+  // SSE connection for real-time notifications + 60s fallback poll
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || guestMode) return;
+
+    let es: EventSource | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+
+    function connect() {
+      es = new EventSource('/api/notifications/stream');
+
+      es.onmessage = (e) => {
+        if (e.data === 'ping') {
+          fetchNotifications();
+          return;
+        }
+        try {
+          const data = JSON.parse(e.data) as { notifications?: WorkspaceNotification[] };
+          if (Array.isArray(data.notifications)) setNotifications(data.notifications);
+        } catch { /* ignore parse errors */ }
+      };
+
+      es.onerror = () => {
+        es?.close();
+        es = null;
+        // Reconnect after 5s
+        reconnectTimer = setTimeout(connect, 5_000);
+      };
+    }
+
+    connect();
+
+    // Fetch once immediately (SSE may take a moment to deliver initial payload)
     fetchNotifications();
-    const id = setInterval(fetchNotifications, 30_000);
-    function onVisible() { if (document.visibilityState === 'visible') fetchNotifications(); }
+    fetchMsgUnread();
+
+    // Fallback poll every 60s — SSE covers real-time, this is a safety net
+    const pollId = setInterval(fetchNotifications, 60_000);
+    const msgId = setInterval(fetchMsgUnread, 15_000);
+
+    function onVisible() {
+      if (document.visibilityState === 'visible') {
+        fetchNotifications();
+        fetchMsgUnread();
+      }
+    }
     document.addEventListener('visibilitychange', onVisible);
-    return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVisible); };
-  }, [isAuthenticated, fetchNotifications]);
+
+    return () => {
+      es?.close();
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      clearInterval(pollId);
+      clearInterval(msgId);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [isAuthenticated, guestMode, fetchNotifications, fetchMsgUnread]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -181,6 +343,18 @@ export default function HomepageNav({
     } catch { /* silent */ }
   }
 
+  function handleToolClick(id: string) {
+    setToolsOpen(false);
+    setTimeout(() => {
+      if (id === 'docsheets')  { onDocSheetClick?.();   return; }
+      if (id === 'esign')      { onESignClick?.();       return; }
+      if (id === 'scratchpad') { onScratchpadClick?.();  return; }
+      if (id === 'directory')  { onFileDriveClick?.();   return; }
+      if (id === 'docword')    { window.location.href = '/docword';    return; }
+      if (id === 'sharing')    { window.location.href = '/workspace';  return; }
+    }, 80);
+  }
+
   return (
     <header className="shrink-0 h-14 border-b border-white/[0.05] bg-[#08090a]/90 backdrop-blur-[60px] flex items-center justify-between px-3 sm:px-4 z-30 relative shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_24px_rgba(0,0,0,0.35)]">
 
@@ -196,52 +370,251 @@ export default function HomepageNav({
           </button>
         )}
         <Link href="/" className="flex items-center gap-2 shrink-0 group">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] bg-white/[0.10] text-[11px] font-black text-white ring-1 ring-white/[0.14] shadow-[0_2px_8px_rgba(0,0,0,0.3)] transition group-hover:bg-white/[0.15]">
-            {softwareName.charAt(0).toUpperCase()}
+          {/* Logo icon with animated golden ring */}
+          <div className="relative shrink-0" style={{ width: 28, height: 28 }}>
+            {/* Spinning golden sweep ring */}
+            <div
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                inset: -1.5,
+                borderRadius: 11,
+                background: 'conic-gradient(from 0deg, transparent 0%, transparent 62%, rgba(170,128,40,0.55) 74%, rgba(232,204,122,1.0) 83%, rgba(232,204,122,0.95) 88%, rgba(170,128,40,0.50) 96%, transparent 100%)',
+                animation: 'goldenRingSpin 3.2s linear infinite',
+                pointerEvents: 'none',
+                zIndex: 0,
+              }}
+            />
+            {/* Icon image */}
+            <img
+              src="/docrud-icon.png"
+              alt="Docrud"
+              width={28}
+              height={28}
+              style={{ borderRadius: 9, display: 'block', position: 'relative', zIndex: 1, width: 28, height: 28, objectFit: 'cover' }}
+            />
           </div>
           <span className="text-[13.5px] font-bold text-white/90 tracking-[-0.01em]">{softwareName}</span>
-          {accentLabel && (
-            <span className="hidden lg:block shrink-0 rounded-full border border-white/[0.10] bg-white/[0.04] px-2.5 py-[3px] text-[9.5px] font-semibold text-white/35 tracking-[0.02em]">{accentLabel}</span>
-          )}
+          {/* ── Live greeting chip ── */}
+          {now && (() => {
+            const { text, emoji } = getGreetingData(now);
+            const timeStr = fmtTime(now);
+            const dateStr = fmtDate(now);
+            return (
+              <div
+                className="hidden lg:flex items-center gap-1.5 shrink-0 select-none overflow-hidden"
+                style={{
+                  borderRadius: 20,
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  background: 'rgba(255,255,255,0.034)',
+                  padding: '3px 10px 3px 8px',
+                  backdropFilter: 'blur(8px)',
+                }}
+              >
+                {/* Emoji + greeting — keyed to phase so it re-animates on change */}
+                <span
+                  key={greetPhase}
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 600,
+                    color: 'rgba(255,255,255,0.60)',
+                    letterSpacing: '0.01em',
+                    animation: 'greetSlideIn 0.45s cubic-bezier(0.22,1,0.36,1) both',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  <span style={{ fontSize: 11 }}>{emoji}</span>
+                  {text}
+                </span>
+                {/* Divider */}
+                <span style={{ width: 1, height: 10, background: 'rgba(255,255,255,0.12)', borderRadius: 1, flexShrink: 0 }} />
+                {/* Date */}
+                <span style={{ fontSize: 10, fontWeight: 500, color: 'rgba(255,255,255,0.38)', whiteSpace: 'nowrap', letterSpacing: '0.01em' }}>
+                  {dateStr}
+                </span>
+                {/* Divider */}
+                <span style={{ width: 1, height: 10, background: 'rgba(255,255,255,0.12)', borderRadius: 1, flexShrink: 0 }} />
+                {/* Time — keyed to minute so it re-animates on tick */}
+                <span
+                  key={timeStr}
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 600,
+                    color: 'rgba(255,255,255,0.55)',
+                    whiteSpace: 'nowrap',
+                    letterSpacing: '0.03em',
+                    fontVariantNumeric: 'tabular-nums',
+                    animation: 'greetSlideIn 0.35s cubic-bezier(0.22,1,0.36,1) both',
+                  }}
+                >
+                  {timeStr}
+                </span>
+              </div>
+            );
+          })()}
         </Link>
       </div>
 
-      {/* ── CENTER: search bar (md+) ── */}
-      <div className="mx-4 hidden md:flex flex-1 max-w-[380px] items-center gap-2 rounded-[10px] border border-white/[0.09] bg-white/[0.04] px-3 py-1.5 text-[12px] text-white/35 transition hover:border-white/[0.14] hover:bg-white/[0.06] cursor-pointer">
-        <Search className="h-3.5 w-3.5 shrink-0 text-white/25" />
-        <span className="flex-1 select-none">Search for tools, people, feeds...</span>
-        <kbd className="shrink-0 rounded-[5px] border border-white/[0.10] bg-white/[0.05] px-1.5 py-0.5 text-[10px] font-semibold text-white/25">⌘ K</kbd>
-      </div>
+      {/* ── CENTER: live search bar (md+) ── */}
+      <GlobalSearchBar
+        ref={searchBarRef}
+        getLocalResults={getLocalResults}
+        className="mx-3"
+      />
+
+      {/* ── Mobile search trigger (shown below md) ── */}
+      <button
+        type="button"
+        aria-label="Search"
+        onClick={() => searchBarRef.current?.openMobile()}
+        className="md:hidden flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.04] text-white/50 transition hover:bg-white/[0.09] hover:text-white/80 active:scale-95"
+      >
+        <Search className="h-[14px] w-[14px]" />
+      </button>
 
       {/* ── RIGHT group: nav links + bell + avatar ── */}
       <div className="flex items-center gap-1.5 shrink-0">
 
-        {/* Desktop-only nav links */}
-        {isAuthenticated && !guestMode && onPublishClick && (
-          <button type="button" onClick={onPublishClick}
-            className="hidden sm:inline-flex h-8 items-center gap-1.5 rounded-[10px] border border-white/[0.12] bg-white/[0.08] px-3 text-[12px] font-semibold text-white/80 transition hover:bg-white/[0.14] hover:text-white active:scale-95 shadow-[0_1px_4px_rgba(0,0,0,0.2)]">
-            <Plus className="h-3 w-3" />Publish
-          </button>
-        )}
-        {isAuthenticated && !guestMode && (
-          <>
-            <Link href="/gigs" className="hidden md:flex h-8 items-center gap-1.5 rounded-[10px] border border-white/[0.08] bg-white/[0.04] px-3 text-[12px] font-medium text-white/50 transition hover:bg-white/[0.09] hover:text-white/75 active:scale-95">
-              <BriefcaseBusiness className="h-3 w-3" />Gigs
-            </Link>
-            <Link href="/people" className="hidden md:flex h-8 items-center gap-1.5 rounded-[10px] border border-white/[0.08] bg-white/[0.04] px-3 text-[12px] font-medium text-white/50 transition hover:bg-white/[0.09] hover:text-white/75 active:scale-95">
-              <Users className="h-3 w-3" />People
-            </Link>
-          </>
-        )}
+        {/* Desktop-only nav links — Publish/Gigs/People moved to the bottom dock */}
         <Link href="/published" className="hidden sm:flex h-8 items-center gap-1.5 rounded-[10px] border border-white/[0.08] bg-white/[0.04] px-3 text-[12px] font-medium text-white/50 transition hover:bg-white/[0.09] hover:text-white/75 active:scale-95">
           <Globe className="h-3 w-3" />Feed
         </Link>
-        {onScratchpadClick && (
-          <button type="button" onClick={onScratchpadClick}
-            className="hidden sm:flex h-8 items-center gap-1.5 rounded-[10px] border border-violet-500/[0.22] bg-violet-500/[0.07] px-3 text-[12px] font-medium text-violet-300/75 transition hover:bg-violet-500/[0.14] hover:text-violet-200 active:scale-95"
-            title="Open Scratchpad">
-            <PenLine className="h-3 w-3" />Scratchpad
-          </button>
+
+        {/* ── File Drive button ── */}
+        <button
+          type="button"
+          onClick={() => onFileDriveClick?.()}
+          className="hidden sm:flex h-8 items-center gap-1.5 rounded-[10px] border border-white/[0.08] bg-white/[0.04] px-3 text-[12px] font-medium text-white/50 transition hover:bg-white/[0.09] hover:text-white/75 active:scale-95"
+        >
+          <HardDrive className="h-3 w-3" />
+          <span className="font-semibold">Drive</span>
+        </button>
+
+        {/* ── Tools dropdown trigger ── */}
+        <button
+          type="button"
+          onClick={() => setToolsOpen(o => !o)}
+          className={`flex h-8 items-center gap-1.5 rounded-[10px] border px-2.5 sm:px-3 text-[12px] font-medium transition active:scale-95 ${
+            toolsOpen
+              ? 'border-violet-500/[0.32] bg-violet-500/[0.12] text-violet-300'
+              : 'border-white/[0.08] bg-white/[0.04] text-white/55 hover:bg-white/[0.09] hover:text-white/80'
+          }`}
+        >
+          <Sparkles className="h-[13px] w-[13px] shrink-0" />
+          <span className="hidden sm:inline font-semibold">Tools</span>
+          <ChevronDown className={`hidden sm:block h-3 w-3 shrink-0 transition-transform duration-200 ${toolsOpen ? 'rotate-180' : ''}`} />
+        </button>
+
+        {/* ── Tools panel portal ── */}
+        {toolsOpen && typeof document !== 'undefined' && createPortal(
+          <>
+            <style>{`
+              @keyframes tn-bd    { from{opacity:0} to{opacity:1} }
+              @keyframes tn-sheet { from{transform:translateY(100%)} to{transform:translateY(0)} }
+              @keyframes tn-drop  { from{opacity:0;transform:translateY(-4px) scale(0.97)} to{opacity:1;transform:none} }
+              @keyframes tn-item  { from{opacity:0;transform:translateX(-4px)} to{opacity:1;transform:none} }
+              .tn-panel { animation: tn-sheet 0.34s cubic-bezier(0.22,1,0.36,1) both; }
+              @media(min-width:640px){ .tn-panel { animation: tn-drop 0.16s cubic-bezier(0.22,1,0.36,1) both; } }
+              .tn-row { transition: background 0.10s ease; }
+              .tn-row:hover  { background: rgba(255,255,255,0.048) !important; }
+              .tn-row:active { background: rgba(255,255,255,0.028) !important; transform: scale(0.985); transition-duration:0.06s; }
+              .tn-icon-box { transition: transform 0.14s cubic-bezier(0.34,1.56,0.64,1); }
+              .tn-row:hover .tn-icon-box { transform: scale(1.10); }
+            `}</style>
+
+            {/* Mobile backdrop */}
+            <div className="sm:hidden" onClick={() => setToolsOpen(false)}
+              style={{ position:'fixed', inset:0, zIndex:2147483646, background:'rgba(0,0,0,0.72)', backdropFilter:'blur(6px)', WebkitBackdropFilter:'blur(6px)', animation:'tn-bd 0.16s ease both' }} />
+            {/* Desktop transparent click-catcher */}
+            <div className="hidden sm:block" onClick={() => setToolsOpen(false)}
+              style={{ position:'fixed', inset:0, zIndex:2147483646 }} />
+
+            {/* Panel */}
+            <div
+              className="tn-panel fixed bottom-0 left-0 right-0 rounded-t-[24px]
+                sm:bottom-auto sm:left-auto sm:top-[57px] sm:right-4 sm:w-[248px] sm:rounded-[14px]"
+              style={{
+                zIndex: 2147483647,
+                background: 'rgba(4,4,8,0.94)',
+                backdropFilter: 'blur(48px) saturate(2.6)',
+                WebkitBackdropFilter: 'blur(48px) saturate(2.6)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                boxShadow: '0 12px 48px rgba(0,0,0,0.80), 0 0 0 1px rgba(255,255,255,0.03) inset',
+                paddingBottom: 'calc(env(safe-area-inset-bottom,0px) + 8px)',
+              }}
+            >
+              {/* Drag handle — mobile only */}
+              <div className="flex justify-center pt-2.5 pb-0 sm:hidden">
+                <div style={{ width: 32, height: 3.5, borderRadius: 99, background: 'rgba(255,255,255,0.10)' }} />
+              </div>
+
+              {/* Header */}
+              <div style={{ display:'flex', alignItems:'center', gap:9, padding:'12px 13px 10px', borderBottom:'1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ width:26, height:26, borderRadius:7, background:'rgba(139,92,246,0.14)', border:'1px solid rgba(139,92,246,0.20)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                  <Sparkles style={{ width:12, height:12, color:'#a78bfa' }} />
+                </div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <p style={{ margin:0, fontSize:12.5, fontWeight:700, color:'rgba(255,255,255,0.90)', letterSpacing:'-0.01em' }}>Tools</p>
+                  <p style={{ margin:0, fontSize:9.5, color:'rgba(255,255,255,0.26)' }}>Workspace toolkit</p>
+                </div>
+                <button type="button" onClick={() => setToolsOpen(false)}
+                  style={{ width:24, height:24, borderRadius:'50%', border:'1px solid rgba(255,255,255,0.07)', background:'rgba(255,255,255,0.04)', display:'flex', alignItems:'center', justifyContent:'center', color:'rgba(255,255,255,0.30)', cursor:'pointer', flexShrink:0 }}>
+                  <X style={{ width:11, height:11 }} />
+                </button>
+              </div>
+
+              {/* Single-column tool list */}
+              <div style={{ padding:'5px 6px 4px' }}>
+                {TOOLS_ITEMS.map((tool, idx) => (
+                  <button key={tool.id} type="button" className="tn-row"
+                    onClick={() => handleToolClick(tool.id)}
+                    style={{
+                      display:'flex', alignItems:'center', gap:10, width:'100%',
+                      borderRadius:10, border:'none', background:'transparent',
+                      padding:'8px 8px', textAlign:'left', cursor:'pointer',
+                      animation:`tn-item 0.22s ${0.03 + idx * 0.025}s cubic-bezier(0.22,1,0.36,1) both`,
+                    }}
+                  >
+                    {/* Icon */}
+                    <div className="tn-icon-box" style={{ width:30, height:30, borderRadius:8, flexShrink:0, background:tool.bg, border:`1px solid ${tool.bd}`, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                      <tool.Icon style={{ width:14, height:14, color:tool.color }} />
+                    </div>
+                    {/* Text */}
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <p style={{ margin:0, fontSize:12, fontWeight:600, color:'rgba(255,255,255,0.84)', lineHeight:1.2 }}>{tool.label}</p>
+                      <p style={{ margin:'1.5px 0 0', fontSize:10, color:'rgba(255,255,255,0.28)', lineHeight:1.2 }}>{tool.desc}</p>
+                    </div>
+                    {/* Right accent dot */}
+                    <div style={{ width:4, height:4, borderRadius:'50%', background:tool.color, opacity:0.35, flexShrink:0 }} />
+                  </button>
+                ))}
+              </div>
+
+            </div>
+          </>,
+          document.body
+        )}
+
+        {/* Messages icon */}
+        {isAuthenticated && !guestMode && (
+          <Link
+            href="/messages"
+            className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.04] text-white/50 transition hover:bg-white/[0.09] hover:text-white/80 active:scale-95"
+            aria-label={`Messages${msgUnread > 0 ? ` (${msgUnread} unread)` : ''}`}
+          >
+            <MessageSquare className="h-[15px] w-[15px]" />
+            {msgUnread > 0 && (
+              <>
+                <span className="absolute -right-[2px] -top-[2px] h-[11px] w-[11px] rounded-full bg-blue-500/30 animate-ping" />
+                <span className="absolute -right-[2px] -top-[2px] flex h-[11px] w-[11px] items-center justify-center rounded-full bg-blue-500 text-[6.5px] font-black text-white shadow-[0_0_8px_rgba(59,130,246,0.75)]">
+                  {msgUnread > 9 ? '9+' : msgUnread}
+                </span>
+              </>
+            )}
+          </Link>
         )}
 
         {/* Notification bell */}

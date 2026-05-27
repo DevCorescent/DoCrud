@@ -9,7 +9,6 @@ import Link from 'next/link';
 import {
   ArrowRight,
   Bot,
-  Building2,
   CheckCircle2,
   Eye,
   EyeOff,
@@ -411,15 +410,15 @@ function LeftPanel({ activeFeature, setActiveFeature, mounted }: {
           </div>
         </div>
 
-        {/* Headline — directly below logo row, no large gap */}
-        <h1 className="text-[2rem] font-black leading-[1.1] tracking-[-0.05em] text-white xl:text-[2.25rem]">
+        {/* Single-line headline */}
+        <h1 className="whitespace-nowrap text-[clamp(1.6rem,2.8vw,2.1rem)] font-black leading-[1.1] tracking-[-0.05em] text-white">
           Every document.{' '}
           <span className="bg-gradient-to-r from-white/95 via-white/60 to-white/30 bg-clip-text text-transparent">
             One platform.
           </span>
         </h1>
-        <p className="mt-2 max-w-[360px] text-[12px] leading-[1.65] text-white/32 xl:text-[12.5px]">
-          E-signatures, AI document generation, PDF editing, smart forms, and a professional network — all unified.
+        <p className="mt-2 max-w-[380px] text-[12px] leading-[1.65] text-white/30">
+          E-signatures, AI docs, PDF editing, smart forms, and a professional network — unified.
         </p>
       </div>
 
@@ -667,24 +666,30 @@ export default function LoginPage() {
             style={{ animation: mounted ? 'obSlideUp 0.55s 0.15s ease both' : 'none', opacity: mounted ? undefined : 0 }}>
 
             {/* Heading */}
-            <div className="mb-3 sm:mb-5">
+            <div className="mb-4 sm:mb-6">
               {/* Mobile logo */}
-              <div className="mb-3 flex items-center gap-2 lg:hidden">
+              <div className="mb-4 flex items-center gap-2 lg:hidden">
                 <div className="flex h-7 w-7 items-center justify-center rounded-[9px] border border-white/[0.12] bg-white/[0.07]">
                   <div className="h-3 w-3 rotate-45 rounded-[2px] bg-gradient-to-br from-white via-slate-100 to-white/80" />
                 </div>
                 <span className="text-[15px] font-black tracking-[-0.04em] text-white">Docrud</span>
               </div>
-              <div className="mb-2 flex items-center gap-3">
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent to-white/[0.07]" />
-                <span className="text-[10px] font-bold uppercase tracking-[0.32em] text-white/20">Welcome back</span>
-                <div className="h-px flex-1 bg-gradient-to-l from-transparent to-white/[0.07]" />
+
+              {/* "Welcome back" pill */}
+              <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-white/[0.07] bg-white/[0.03] px-3 py-1">
+                <div className="h-1.5 w-1.5 rounded-full bg-white/40" />
+                <span className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/28">Welcome back</span>
               </div>
-              <h2 className="text-[1.6rem] font-black tracking-[-0.05em] text-white leading-[1.1] sm:text-[2.2rem]">
-                Sign in to your<br />
+
+              {/* Single-line heading */}
+              <h2 className="whitespace-nowrap text-[clamp(1.35rem,4.5vw,2rem)] font-black tracking-[-0.05em] text-white leading-[1.1]">
+                Sign in to your{' '}
                 <span className="bg-gradient-to-r from-white/90 via-white/55 to-white/25 bg-clip-text text-transparent">workspace.</span>
               </h2>
-              <p className="mt-1.5 hidden text-[13px] text-white/32 sm:block">Access your documents, signatures, AI tools, and network.</p>
+
+              <p className="mt-1.5 text-[12px] text-white/30 sm:text-[13px]">
+                Access your docs, signatures, AI tools and network.
+              </p>
             </div>
 
             {/* Form card */}
@@ -813,7 +818,7 @@ export default function LoginPage() {
                 </form>
               </div>
 
-              {/* Bottom row: guest + signup links */}
+              {/* Bottom row: guest + create profile */}
               <div className="flex items-center justify-between gap-2 border-t border-white/[0.04] px-4 py-2.5">
                 <button type="button"
                   onClick={() => {
@@ -824,22 +829,19 @@ export default function LoginPage() {
                   <LockKeyhole className="h-3 w-3 shrink-0" />
                   Guest
                 </button>
-                <div className="flex items-center gap-3 text-[11px] text-white/22">
-                  <Link href="/signup" className="flex items-center gap-1 transition hover:text-white/55">
-                    <Building2 className="h-3 w-3 shrink-0" />
-                    Business
-                  </Link>
-                  <span className="text-white/[0.08]">·</span>
-                  <Link href="/individual-signup" className="flex items-center gap-1 transition hover:text-white/55">
-                    <UserRound className="h-3 w-3 shrink-0" />
-                    Personal
-                  </Link>
-                </div>
+                <Link
+                  href="/onboarding?start=signup"
+                  className="group flex items-center gap-1.5 rounded-[9px] border border-white/[0.07] bg-white/[0.03] px-3 py-1.5 text-[11px] font-semibold text-white/38 transition hover:border-white/[0.14] hover:bg-white/[0.06] hover:text-white/65"
+                >
+                  <UserRound className="h-3 w-3 shrink-0" />
+                  Create profile
+                  <ArrowRight className="h-2.5 w-2.5 transition-transform duration-200 group-hover:translate-x-0.5" />
+                </Link>
               </div>
             </div>
 
-            <p className="mt-3 hidden text-center text-[11px] text-white/16 sm:block">
-              Protected by enterprise-grade encryption · <span className="text-white/28">Docrud Platform</span>
+            <p className="mt-3 text-center text-[10.5px] text-white/16 whitespace-nowrap overflow-hidden text-ellipsis">
+              Protected by enterprise-grade encryption · Docrud Platform
             </p>
           </div>
         </div>

@@ -85,7 +85,13 @@ function createPool() {
     },
   };
 
-  return new Pool(poolConfig as ConstructorParameters<typeof Pool>[0]);
+  const pool = new Pool(poolConfig as ConstructorParameters<typeof Pool>[0]);
+  // Without this handler, a failed idle client emits an unhandled 'error'
+  // event which crashes the Node.js process — including during Vercel builds.
+  pool.on('error', (err) => {
+    console.error('[pg pool] background client error:', err.message);
+  });
+  return pool;
 }
 
 export function getDbPool() {

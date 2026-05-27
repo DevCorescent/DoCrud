@@ -22,42 +22,47 @@ import { buildGoogleMapsLink, formatSignatureLocation } from '@/lib/location';
 import { buildAbsoluteAppUrl } from '@/lib/url';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { AlertTriangle, ArrowRight, Award, BarChart3, Bell, BookOpen, BrainCircuit, BriefcaseBusiness, ChevronDown, ChevronRight, CircleHelp, Copy, CreditCard, Download, Eye, FileSearch, FileSignature, FileSpreadsheet, FileText, FolderKanban, History, KeyRound, LayoutDashboard, LineChart, Link2, Lock, LockKeyhole, LogOut, Mail, Maximize2, Menu, MessageSquare, MoreHorizontal, PanelLeftClose, PanelLeftOpen, PenLine, PieChart, QrCode, RefreshCw, ScanText, Search, Settings, Share2, ShieldCheck, Sparkles, Table2, Upload, UserRound, Users, Video, Wrench, X } from 'lucide-react';
-import ShareLinkModal from './ShareLinkModal';
-import ClientPortal from './ClientPortal';
-import EmployeePortal from './EmployeePortal';
-import BusinessSettingsCenter from './BusinessSettingsCenter';
-import TutorialsCenter from './TutorialsCenter';
-import DoxpertCenter from './DoxpertCenter';
-import DocumentVisualizerCenter from './DocumentVisualizerCenter';
-import DocumentVisualizerModal from './DocumentVisualizerModal';
-import ProfileCenter from './ProfileCenter';
-import FileTransferCenter from './FileTransferCenter';
-import SecureAccessCenter from './SecureAccessCenter';
-import DocSheetCenter from './DocSheetCenter';
-import BillingCenter from './BillingCenter';
-import SupportCenter from './SupportCenter';
-import TeamWorkspaceCenter from './TeamWorkspaceCenter';
-import DealRoomCenter from './DealRoomCenter';
-import InternalMailboxCenter from './InternalMailboxCenter';
-import DailyToolsCenter from './DailyToolsCenter';
-import ScratchpadCenter from './ScratchpadCenter';
-import HiringDeskCenter from './HiringDeskCenter';
-import DocrudiansCenter from './DocrudiansCenter';
-import TemplatePublisherCenter from './TemplatePublisherCenter';
-	import VirtualIdCenter from './VirtualIdCenter';
-	import CertificatesCenter from './CertificatesCenter';
-	import GigsCenter from './GigsCenter';
-	import TalentLeadsCenter from './TalentLeadsCenter';
-	import SuperAdminCommandCenter from './SuperAdminCommandCenter';
-import FormsCenter from './FormsCenter';
-import TemplateStudioDialog from './TemplateStudioDialog';
+import dynamic from 'next/dynamic';
 import { PdfSignatureBoxEditor } from './PdfSignatureBoxEditor';
-	import WorkspaceTour from './WorkspaceTour';
-	import DocrudLogo from './DocrudLogo';
+import DocrudLogo from './DocrudLogo';
 import type { BusinessSettings } from '@/types/document';
 import { fullWorkspaceTour, WORKSPACE_TOUR_STORAGE_KEY, workspaceTours, type WorkspaceTourFeatureKey } from '@/lib/workspace-tour';
 import { trackTelemetry } from '@/lib/telemetry-client';
-import GlobalSearchBar from './GlobalSearchBar';
+
+// ── Lazily-loaded sidebar panels — only the active panel is ever downloaded ──
+const PanelLoader = () => <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100%', color:'rgba(255,255,255,0.25)', fontSize:13 }}>Loading…</div>;
+
+const ShareLinkModal          = dynamic(() => import('./ShareLinkModal'),          { ssr: false, loading: PanelLoader });
+const ClientPortal            = dynamic(() => import('./ClientPortal'),            { ssr: false, loading: PanelLoader });
+const EmployeePortal          = dynamic(() => import('./EmployeePortal'),          { ssr: false, loading: PanelLoader });
+const BusinessSettingsCenter  = dynamic(() => import('./BusinessSettingsCenter'),  { ssr: false, loading: PanelLoader });
+const TutorialsCenter         = dynamic(() => import('./TutorialsCenter'),         { ssr: false, loading: PanelLoader });
+const DoxpertCenter           = dynamic(() => import('./DoxpertCenter'),           { ssr: false, loading: PanelLoader });
+const DocumentVisualizerCenter= dynamic(() => import('./DocumentVisualizerCenter'),{ ssr: false, loading: PanelLoader });
+const DocumentVisualizerModal = dynamic(() => import('./DocumentVisualizerModal'), { ssr: false, loading: PanelLoader });
+const ProfileCenter           = dynamic(() => import('./ProfileCenter'),           { ssr: false, loading: PanelLoader });
+const FileTransferCenter      = dynamic(() => import('./FileTransferCenter'),      { ssr: false, loading: PanelLoader });
+const SecureAccessCenter      = dynamic(() => import('./SecureAccessCenter'),      { ssr: false, loading: PanelLoader });
+const DocSheetCenter          = dynamic(() => import('./DocSheetCenter'),          { ssr: false, loading: PanelLoader });
+const BillingCenter           = dynamic(() => import('./BillingCenter'),           { ssr: false, loading: PanelLoader });
+const SupportCenter           = dynamic(() => import('./SupportCenter'),           { ssr: false, loading: PanelLoader });
+const TeamWorkspaceCenter     = dynamic(() => import('./TeamWorkspaceCenter'),     { ssr: false, loading: PanelLoader });
+const DealRoomCenter          = dynamic(() => import('./DealRoomCenter'),          { ssr: false, loading: PanelLoader });
+const InternalMailboxCenter   = dynamic(() => import('./InternalMailboxCenter'),   { ssr: false, loading: PanelLoader });
+const DailyToolsCenter        = dynamic(() => import('./DailyToolsCenter'),        { ssr: false, loading: PanelLoader });
+const ScratchpadCenter        = dynamic(() => import('./ScratchpadCenter'),        { ssr: false, loading: PanelLoader });
+const HiringDeskCenter        = dynamic(() => import('./HiringDeskCenter'),        { ssr: false, loading: PanelLoader });
+const DocrudiansCenter        = dynamic(() => import('./DocrudiansCenter'),        { ssr: false, loading: PanelLoader });
+const TemplatePublisherCenter = dynamic(() => import('./TemplatePublisherCenter'), { ssr: false, loading: PanelLoader });
+const VirtualIdCenter         = dynamic(() => import('./VirtualIdCenter'),         { ssr: false, loading: PanelLoader });
+const CertificatesCenter      = dynamic(() => import('./CertificatesCenter'),      { ssr: false, loading: PanelLoader });
+const GigsCenter              = dynamic(() => import('./GigsCenter'),              { ssr: false, loading: PanelLoader });
+const TalentLeadsCenter       = dynamic(() => import('./TalentLeadsCenter'),       { ssr: false, loading: PanelLoader });
+const SuperAdminCommandCenter = dynamic(() => import('./SuperAdminCommandCenter'), { ssr: false, loading: PanelLoader });
+const FormsCenter             = dynamic(() => import('./FormsCenter'),             { ssr: false, loading: PanelLoader });
+const TemplateStudioDialog    = dynamic(() => import('./TemplateStudioDialog'),    { ssr: false, loading: PanelLoader });
+const WorkspaceTour           = dynamic(() => import('./WorkspaceTour'),           { ssr: false, loading: PanelLoader });
+const GlobalSearchBar         = dynamic(() => import('./GlobalSearchBar'),         { ssr: false, loading: PanelLoader });
 
 const emptyDashboard: DashboardMetrics = {
   totalDocuments: 0,
@@ -815,6 +820,10 @@ export default function DocumentGenerator() {
   ]);
 
   useEffect(() => { setIsMounted(true); }, []);
+  useEffect(() => {
+    document.body.style.overflow = sidebarOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [sidebarOpen]);
   useEffect(() => {
     setHistoryPage(1);
   }, [historyAccessFilter, historyDateFilter, historyEmailFilter, historySearch, historySort, historySourceFilter, historyStatusFilter]);
@@ -4797,7 +4806,7 @@ export default function DocumentGenerator() {
             <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(false)}><X className="h-6 w-6" /></Button>
           </div>
 
-          <nav className="flex-1 min-h-0 overflow-y-auto p-4 space-y-6 pb-8 md:h-auto md:overflow-visible">
+          <nav className="flex-1 min-h-0 overflow-y-auto touch-scroll p-4 space-y-6 pb-8 md:h-auto md:overflow-visible md:overscroll-auto">
             {/* Mobile always uses the full nav with labels. */}
 	            <div className="space-y-6 md:hidden">
 	            <div className="space-y-3">

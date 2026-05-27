@@ -1,7 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { getSuperAdminSessionFromRequest, appendSuperAdminAudit, getPlatformFlags, savePlatformFlags, getSuperAdminConfig } from '@/lib/server/super-admin-auth';
 import { getPlatformConfig, savePlatformConfig } from '@/lib/server/platform';
 import { getAuthSettings, saveAuthSettings, getMailSettings, saveMailSettings } from '@/lib/server/settings';
+
+export const dynamic = 'force-dynamic';
 
 function guard(req: NextRequest) {
   const s = getSuperAdminSessionFromRequest(req);

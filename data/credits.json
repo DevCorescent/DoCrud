@@ -345,6 +345,111 @@
           "post_like"
         ]
       }
+    },
+    "individual-1779101966386": {
+      "balance": 0,
+      "totalEarned": 0,
+      "totalSpent": 0,
+      "streak": {
+        "current": 0,
+        "longest": 0,
+        "lastPostDate": null,
+        "streakStartDate": null
+      },
+      "milestones": [],
+      "verified": false,
+      "transactions": [],
+      "dailyEarnLog": {}
+    },
+    "individual-1779102244525": {
+      "balance": 0,
+      "totalEarned": 0,
+      "totalSpent": 0,
+      "streak": {
+        "current": 0,
+        "longest": 0,
+        "lastPostDate": null,
+        "streakStartDate": null
+      },
+      "milestones": [],
+      "verified": false,
+      "transactions": [],
+      "dailyEarnLog": {}
+    },
+    "individual-1779102759249": {
+      "balance": 0,
+      "totalEarned": 0,
+      "totalSpent": 0,
+      "streak": {
+        "current": 0,
+        "longest": 0,
+        "lastPostDate": null,
+        "streakStartDate": null
+      },
+      "milestones": [],
+      "verified": false,
+      "transactions": [],
+      "dailyEarnLog": {}
+    },
+    "individual-1779104110838": {
+      "balance": 0,
+      "totalEarned": 0,
+      "totalSpent": 0,
+      "streak": {
+        "current": 0,
+        "longest": 0,
+        "lastPostDate": null,
+        "streakStartDate": null
+      },
+      "milestones": [],
+      "verified": false,
+      "transactions": [],
+      "dailyEarnLog": {}
+    },
+    "individual-1779105706874": {
+      "balance": 0,
+      "totalEarned": 0,
+      "totalSpent": 0,
+      "streak": {
+        "current": 0,
+        "longest": 0,
+        "lastPostDate": null,
+        "streakStartDate": null
+      },
+      "milestones": [],
+      "verified": false,
+      "transactions": [],
+      "dailyEarnLog": {}
+    },
+    "individual-1779109829969": {
+      "balance": 0,
+      "totalEarned": 0,
+      "totalSpent": 0,
+      "streak": {
+        "current": 0,
+        "longest": 0,
+        "lastPostDate": null,
+        "streakStartDate": null
+      },
+      "milestones": [],
+      "verified": false,
+      "transactions": [],
+      "dailyEarnLog": {}
+    },
+    "individual-1779433563834": {
+      "balance": 0,
+      "totalEarned": 0,
+      "totalSpent": 0,
+      "streak": {
+        "current": 0,
+        "longest": 0,
+        "lastPostDate": null,
+        "streakStartDate": null
+      },
+      "milestones": [],
+      "verified": false,
+      "transactions": [],
+      "dailyEarnLog": {}
     }
   }
 }

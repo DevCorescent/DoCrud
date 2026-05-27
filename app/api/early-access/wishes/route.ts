@@ -1,6 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { addFeatureWish, getEarlyAccessFeatures } from '@/lib/server/early-access';
 import { sendTrackedMail } from '@/lib/server/mailer';
+
+export const dynamic = 'force-dynamic';
 
 function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -34,13 +36,13 @@ export async function POST(req: NextRequest) {
       policyKey: 'otp_verification',
       typeLabel: 'system',
       to: email.trim(),
-      subject: `Your wish for ${feature.title} has been received — docrud`,
-      text: `Hi ${wish.name},\n\nThank you for sharing your thoughts on "${feature.title}"! Your feedback directly influences what we build and how we prioritize.\n\nWe'll keep you updated as this feature takes shape.\n\n— docrud Team`,
+      subject: `Your wish for ${feature.title} has been received â€” docrud`,
+      text: `Hi ${wish.name},\n\nThank you for sharing your thoughts on "${feature.title}"! Your feedback directly influences what we build and how we prioritize.\n\nWe'll keep you updated as this feature takes shape.\n\nâ€” docrud Team`,
       html: `
         <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:520px;margin:0 auto;background:#09090b;color:#fafafa;border-radius:16px;overflow:hidden;">
           <div style="padding:32px 32px 0;">
-            <div style="font-size:11px;letter-spacing:0.12em;color:#78716c;text-transform:uppercase;margin-bottom:6px;">docrud · Make a Wish</div>
-            <h2 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#fafafa;">Wish received! ✨</h2>
+            <div style="font-size:11px;letter-spacing:0.12em;color:#78716c;text-transform:uppercase;margin-bottom:6px;">docrud Â· Make a Wish</div>
+            <h2 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#fafafa;">Wish received! âœ¨</h2>
             <p style="margin:0 0 24px;font-size:14px;color:#a8a29e;">Hi <strong style="color:#fbbf24;">${wish.name}</strong>, your thoughts on <strong style="color:#fafafa;">${feature.title}</strong> are noted.</p>
           </div>
           <div style="margin:0 32px 24px;background:#18181b;border:1px solid #27272a;border-radius:12px;padding:20px;">
@@ -51,11 +53,11 @@ export async function POST(req: NextRequest) {
             <p style="font-size:13px;color:#78716c;margin:0;">Thank you for being an early believer in docrud.</p>
           </div>
           <div style="padding:16px 32px;border-top:1px solid #27272a;background:#0c0a09;">
-            <p style="font-size:11px;color:#44403c;margin:0;">© 2026 docrud · Built In Bharat for the World</p>
+            <p style="font-size:11px;color:#44403c;margin:0;">Â© 2026 docrud Â· Built In Bharat for the World</p>
           </div>
         </div>
       `,
-      preheader: `Your wish for ${feature.title} is noted — thank you!`,
+      preheader: `Your wish for ${feature.title} is noted â€” thank you!`,
       origin: req.nextUrl.origin,
     }).catch(() => null);
 

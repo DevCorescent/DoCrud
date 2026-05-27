@@ -43,11 +43,17 @@ export async function GET() {
           accountType: user.accountType,
           createdAt: user.createdAt,
           docrudGo: profile.docrudGo === true,
+          publicFace: profile.publicFace
+            ? { category: profile.publicFace.category, approvedAt: profile.publicFace.approvedAt }
+            : null,
           profile: {
             headline: profile.headline,
             bio: profile.bio,
             location: profile.location,
             avatarUrl: profile.avatarUrl,
+            bannerUrl: profile.bannerUrl,
+            coverGradient: profile.coverGradient,
+            coverPosition: profile.coverPosition,
             skills: profile.skills,
             openToWork: profile.openToWork,
             pronouns: profile.pronouns,
@@ -62,8 +68,11 @@ export async function GET() {
       }),
     );
 
-    // Verified first, then most upraised, then most followed
+    // Public Faces first, then docrudGo verified, then most upraised, then most followed
     people.sort((a, b) => {
+      const aPF = !!a.publicFace;
+      const bPF = !!b.publicFace;
+      if (aPF !== bPF) return aPF ? -1 : 1;
       if (a.docrudGo !== b.docrudGo) return a.docrudGo ? -1 : 1;
       if (b.upraiseCount !== a.upraiseCount) return b.upraiseCount - a.upraiseCount;
       return b.stats.followers - a.stats.followers;

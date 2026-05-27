@@ -223,10 +223,13 @@ export default function PublishAnythingDialog({
   open,
   onOpenChange,
   isAuthenticated,
+  initialCategory,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   isAuthenticated: boolean;
+  /** If set, skip the picker step and jump straight to this category's form when the dialog opens. */
+  initialCategory?: CategoryId;
 }) {
   const router = useRouter();
   const [step, setStep] = useState<Step>('pick');
@@ -264,8 +267,6 @@ export default function PublishAnythingDialog({
   // reset on open
   useEffect(() => {
     if (open) {
-      setStep('pick');
-      setCategory(null);
       setError('');
       setSuccessHref(null);
       setFields({ ...blank });
@@ -278,8 +279,16 @@ export default function PublishAnythingDialog({
       setThumbnailFile(null);
       setThumbnailUrlInput('');
       setThumbnailMode('upload');
+      if (initialCategory) {
+        setCategory(initialCategory);
+        setStep('form');
+        setAnimKey(k => k + 1);
+      } else {
+        setStep('pick');
+        setCategory(null);
+      }
     }
-  }, [open]);
+  }, [open, initialCategory]);
 
   const pickCategory = (id: CategoryId) => {
     setCategory(id);
@@ -1690,7 +1699,7 @@ function ProductForm({
             <ShoppingBag className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/25" />
             <input className={`${inputCls} pl-9`} type="url" value={f.productShopUrl} onChange={e => set({ productShopUrl: e.target.value })} placeholder="https://yourstore.com/product" />
           </div>
-          <p className="mt-1 text-[11px] text-white/30">Buyers will be redirected here when they click "Shop Now"</p>
+          <p className="mt-1 text-[11px] text-white/30">Buyers will be redirected here when they click &quot;Shop Now&quot;</p>
         </Field>
         <Field label="WhatsApp Contact (optional)">
           <div className="relative">

@@ -1,7 +1,9 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/server/auth';
 import { getPublicResumesByIds, listResumeDirectory, publishResume } from '@/lib/server/resume-directory';
 import { matchResumesToJd } from '@/lib/server/resume-matching';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);

@@ -62,6 +62,7 @@ import {
   Palette,
   Pencil,
   PenLine,
+  Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -70,9 +71,13 @@ import { ProcessProgress } from '@/components/ui/process-progress';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { buildAbsoluteAppUrl, buildQrImageUrl } from '@/lib/url';
+import { useCollabEngine } from '@/lib/collabEngine';
+import CollabBar from '@/components/CollabBar';
 import { DocWordAccessGroup, DocWordBlock, DocWordDocument, DocWordSelectionComment, DocWordTrackedChange, FileDirectoryLocker, SecureFileTransfer } from '@/types/document';
-import PdfStudio from '@/components/PdfStudio';
-import ScratchpadCenter from '@/components/ScratchpadCenter';
+import dynamic from 'next/dynamic';
+const PdfStudio        = dynamic(() => import('@/components/PdfStudio'),        { ssr: false, loading: () => null });
+const ScratchpadCenter = dynamic(() => import('@/components/ScratchpadCenter'), { ssr: false, loading: () => null });
+import { getDriveHandoffFile } from '@/lib/driveHandoff';
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 type AiMode =
@@ -1095,6 +1100,12 @@ export default function DocWordWorkspace() {
     [documents, currentDocumentId],
   );
 
+  /* ── Real-time Collaboration ── */
+  const [collabOpen, setCollabOpen] = useState(false);
+  const collabUserName = session?.user?.name ?? session?.user?.email ?? guestId ?? 'Anonymous';
+  const collabToken    = currentDocument?.shareToken ?? null;
+  const collabEngine   = useCollabEngine(collabToken, collabUserName);
+
   const selectedGuidedPreset = useMemo(
     () => guidedPresets.find((preset) => preset.id === guidedPresetId) || guidedPresets[0],
     [guidedPresetId],
@@ -1542,6 +1553,41 @@ export default function DocWordWorkspace() {
     if (saveStateResetTimerRef.current) {
       window.clearTimeout(saveStateResetTimerRef.current);
     }
+  }, []);
+
+  /* ── Collab: auto-save + broadcast when document changes ── */
+  useEffect(() => {
+    if (!currentDocument?.blocks?.length) return;
+    const snapshot = JSON.stringify(currentDocument.blocks);
+    collabEngine.triggerAutoSave(snapshot);
+    collabEngine.broadcastEdit(snapshot);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentDocument?.updatedAt]);
+
+  /* ── Collab: apply remote snapshot from peers ── */
+  useEffect(() => {
+    if (!collabEngine.remoteContent || !currentDocumentId) return;
+    try {
+      const remoteBlocks = JSON.parse(collabEngine.remoteContent) as DocWordBlock[];
+      if (Array.isArray(remoteBlocks) && remoteBlocks.length > 0) {
+        updateCurrentDocument({ blocks: remoteBlocks });
+      }
+    } catch { /* ignore non-block remote payloads */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [collabEngine.remoteContent]);
+
+  /* ── Drive handoff: auto-import file passed from the Universal File Viewer ── */
+  useEffect(() => {
+    const handoff = getDriveHandoffFile();
+    if (!handoff) return;
+    // Convert Blob → File so importExistingDocument can process it
+    const virtualFile = new File([handoff.blob], handoff.name, {
+      type: handoff.mimeType || handoff.blob.type,
+      lastModified: Date.now(),
+    });
+    void importExistingDocument(virtualFile);
+    setInsight(`Opened "${handoff.name}" from Drive.`);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const updateCurrentDocument = useCallback((updates: Partial<DocWordDocument>) => {
@@ -3784,6 +3830,35 @@ export default function DocWordWorkspace() {
                 <Star className={cn('h-3.5 w-3.5', currentDocument?.isFavorite ? 'fill-current' : '')} />
               </button>
 
+              {/* Live collaboration button */}
+              {collabToken ? (
+                <button
+                  type="button"
+                  onClick={() => setCollabOpen((c) => !c)}
+                  className={cn(
+                    'h-8 items-center gap-1.5 rounded-lg border px-2.5 text-[13px] font-medium transition-all inline-flex',
+                    collabOpen
+                      ? 'border-violet-400/60 bg-violet-500/20 text-violet-300 shadow-[0_0_0_1px_rgba(139,92,246,0.3)]'
+                      : darkMode
+                        ? 'border-white/[0.07] bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] hover:text-violet-300'
+                        : 'border-slate-200/80 bg-white/80 text-slate-600 shadow-[0_1px_2px_rgba(15,23,42,0.05)] hover:bg-violet-50 hover:text-violet-600 hover:border-violet-200',
+                  )}
+                  aria-label="Live collaboration"
+                  title="Real-time collaboration"
+                >
+                  <Users className="h-3.5 w-3.5" />
+                  <span className="hidden xl:inline">Live</span>
+                  {collabEngine.users.length > 1 && (
+                    <span className={cn(
+                      'flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold',
+                      collabOpen ? 'bg-violet-400/30 text-violet-200' : 'bg-violet-100 text-violet-700',
+                    )}>
+                      {collabEngine.users.length}
+                    </span>
+                  )}
+                </button>
+              ) : null}
+
               {/* Dark / light toggle */}
               <button
                 type="button"
@@ -5307,6 +5382,10 @@ export default function DocWordWorkspace() {
                           ) : (
                           <div className="space-y-3">
                             {currentDocument.blocks.map((block, index) => {
+                                // Live cursor: find remote peers editing this block
+                                const remoteCursors = collabEngine.users.filter(
+                                  u => u.sessionId !== collabEngine.sessionId && u.cursor?.line === index,
+                                );
                                 return (
                                   <article
                                     key={block.id}
@@ -5322,13 +5401,34 @@ export default function DocWordWorkspace() {
                                       nextBlocks.splice(index, 0, item);
                                       updateCurrentDocument({ blocks: nextBlocks });
                                     }}
+                                    onFocus={() => collabEngine.broadcastCursor(index, 0)}
                                     className={cn(
-                                      'group overflow-hidden rounded-xl border p-2 transition sm:p-3',
+                                      'group relative overflow-hidden rounded-xl border p-2 transition sm:p-3',
                                       activeBlockId === block.id
                                         ? 'border-sky-200/80 bg-sky-50/60'
-                                        : 'border-transparent bg-transparent hover:border-slate-200/70 hover:bg-slate-50/60',
+                                        : remoteCursors.length > 0
+                                          ? 'border-transparent bg-transparent'
+                                          : 'border-transparent bg-transparent hover:border-slate-200/70 hover:bg-slate-50/60',
                                     )}
+                                    style={remoteCursors.length > 0 ? {
+                                      borderColor: remoteCursors[0].color + '60',
+                                      boxShadow: `0 0 0 2px ${remoteCursors[0].color}28`,
+                                    } : undefined}
                                   >
+                                    {/* Live cursor avatars */}
+                                    {remoteCursors.length > 0 && (
+                                      <div className="absolute -top-2 right-2 z-10 flex -space-x-1">
+                                        {remoteCursors.slice(0, 3).map(u => (
+                                          <span
+                                            key={u.sessionId}
+                                            title={u.name}
+                                            style={{ background: u.color, width: 18, height: 18, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700, color: '#fff', border: '1.5px solid #fff', flexShrink: 0 }}
+                                          >
+                                            {u.name.slice(0, 1).toUpperCase()}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
                                     <div className="flex items-start gap-3">
                                       <div className="hidden pt-2 text-slate-400 sm:block">
                                         <GripVertical className="h-4 w-4" />
@@ -5768,9 +5868,9 @@ export default function DocWordWorkspace() {
                 <div className="space-y-3">
                   {/* Selected text preview */}
                   <div className={cn('relative rounded-[1.1rem] border px-3.5 py-3 text-sm leading-relaxed', darkMode ? 'border-white/[0.08] bg-white/[0.03] text-slate-300' : 'border-slate-200/80 bg-slate-50/80 text-slate-600')}>
-                    <span className={cn('mr-1 font-semibold', darkMode ? 'text-sky-400' : 'text-sky-500')}>"</span>
+                    <span className={cn('mr-1 font-semibold', darkMode ? 'text-sky-400' : 'text-sky-500')}>&quot;</span>
                     {selectionText.slice(0, 180)}{selectionText.length > 180 ? '...' : ''}
-                    <span className={cn('ml-1 font-semibold', darkMode ? 'text-sky-400' : 'text-sky-500')}>"</span>
+                    <span className={cn('ml-1 font-semibold', darkMode ? 'text-sky-400' : 'text-sky-500')}>&quot;</span>
                   </div>
 
                   {/* Mode pills */}
@@ -5882,9 +5982,9 @@ export default function DocWordWorkspace() {
             </div>
 
             <div className={cn('mt-3 rounded-[1rem] border px-3.5 py-2.5 text-sm leading-relaxed', darkMode ? 'border-white/[0.07] bg-white/[0.03] text-slate-300' : 'border-slate-100 bg-slate-50/80 text-slate-600')}>
-              <span className={cn('font-semibold', darkMode ? 'text-sky-400' : 'text-sky-500')}>"</span>
+              <span className={cn('font-semibold', darkMode ? 'text-sky-400' : 'text-sky-500')}>&quot;</span>
               {selectionText.slice(0, 120)}{selectionText.length > 120 ? '...' : ''}
-              <span className={cn('font-semibold', darkMode ? 'text-sky-400' : 'text-sky-500')}>"</span>
+              <span className={cn('font-semibold', darkMode ? 'text-sky-400' : 'text-sky-500')}>&quot;</span>
             </div>
 
             <div className="mt-3 flex gap-1.5 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -7495,6 +7595,22 @@ export default function DocWordWorkspace() {
         <div className="fixed bottom-4 right-4 z-50 max-w-sm rounded-[1.2rem] border border-rose-200 bg-white px-4 py-3 text-sm text-rose-600 shadow-lg">
           {error}
         </div>
+      ) : null}
+
+      {/* ── Real-time CollabBar ── */}
+      {collabOpen && collabToken ? (
+        <CollabBar
+          engine={collabEngine}
+          content={JSON.stringify(currentDocument?.blocks ?? [])}
+          onContentChange={(blocksJson) => {
+            try {
+              const blocks = JSON.parse(blocksJson) as DocWordBlock[];
+              if (Array.isArray(blocks) && blocks.length > 0) {
+                updateCurrentDocument({ blocks });
+              }
+            } catch { /* ignore */ }
+          }}
+        />
       ) : null}
     </div>
   );

@@ -1,5 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { appendSuperAdminAudit, createSuperAdminSession, getSuperAdminEmail, verifySuperAdminOtp } from '@/lib/server/super-admin-auth';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {

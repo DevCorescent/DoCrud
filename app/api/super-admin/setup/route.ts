@@ -1,7 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { getSuperAdminEmail, setSuperAdminEmail } from '@/lib/server/super-admin-auth';
 
-// One-time setup endpoint — only works when no super admin email is configured
+export const dynamic = 'force-dynamic';
+
+// One-time setup endpoint â€” only works when no super admin email is configured
 export async function POST(req: NextRequest) {
   try {
     const existing = getSuperAdminEmail();

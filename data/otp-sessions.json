@@ -1,18 +1,31 @@
 {
   "sessions": [
     {
-      "id": "dxXFLwNYgFDxlkf3lh5AI7jV",
-      "purpose": "document_signing",
-      "email": "harshsihag14@gmail.com",
-      "historyId": "1778775956136",
-      "signerKey": "signer_1",
-      "otpHash": "12770ce80c56f0c37e4a7e874a056db5c7c43da5d613976b17512e771a16d395",
-      "otpSalt": "eff00fb647bab376523eae95032834a2",
-      "createdAt": "2026-05-14T16:28:40.882Z",
-      "lastSentAt": "2026-05-14T16:28:40.882Z",
-      "expiresAt": "2026-05-14T16:38:40.882Z",
+      "id": "CKJoVT5PxF4TOM_la_Iofi1o",
+      "purpose": "account_action",
+      "email": "test01@yopmail.com",
+      "userId": "individual-1779109829969",
+      "action": "deactivate",
+      "otpHash": "dae790cebd3efff2394e431917afc11e1f7b5c1cf6fad83ab7099adb561c80ae",
+      "otpSalt": "e742f328ccdd90f37a27169af080c34b",
+      "createdAt": "2026-05-19T10:55:18.346Z",
+      "lastSentAt": "2026-05-19T10:55:18.346Z",
+      "expiresAt": "2026-05-19T11:05:18.346Z",
       "attempts": 1,
-      "verifiedAt": "2026-05-14T16:29:23.995Z"
+      "verifiedAt": "2026-05-19T10:55:44.203Z"
+    },
+    {
+      "id": "EPX6YTkJzL7E7OkOrKY16hDn",
+      "purpose": "account_action",
+      "email": "test01@yopmail.com",
+      "userId": "individual-1779109829969",
+      "action": "deactivate",
+      "otpHash": "7ab0c93240e41bfe215b6196276f30d72253164a421215243d50dcd56764a973",
+      "otpSalt": "1706a44c7e6ad1d45b97f6906b6f68cd",
+      "createdAt": "2026-05-19T10:53:17.262Z",
+      "lastSentAt": "2026-05-19T10:53:17.262Z",
+      "expiresAt": "2026-05-19T11:03:17.262Z",
+      "attempts": 0
     }
   ]
 }

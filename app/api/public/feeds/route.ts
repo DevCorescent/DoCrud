@@ -92,40 +92,28 @@ export async function GET() {
           likesRaw: t.likesCount ?? 0,
           comments: t.commentsCount ?? 0,
           href: `/published/${t.id}`,
+          thumbnailUrl: t.thumbnailUrl || null,
+          mimeType: t.mimeType || null,
+          createdAt: t.createdAt,
+          featured: !!(t.featured && t.featuredUntil && new Date(t.featuredUntil) > new Date()),
         };
       });
 
-    // Per category: pick #1 by likes and #1 by comments (deduplicated)
-    const byCategory: Record<string, typeof items> = {};
-    for (const item of items) {
-      if (!byCategory[item.category]) byCategory[item.category] = [];
-      byCategory[item.category].push(item);
-    }
+    // Sort by recency first, boosted by engagement
+    const sorted = [...items].sort((a, b) => {
+      const aScore = new Date(a.createdAt).getTime() / 1000 + (a.likesRaw * 50) + (a.comments * 30);
+      const bScore = new Date(b.createdAt).getTime() / 1000 + (b.likesRaw * 50) + (b.comments * 30);
+      return bScore - aScore;
+    });
 
-    const picks: typeof items = [];
+    // De-duplicate and cap at 16
     const seen = new Set<string>();
-
-    for (const catItems of Object.values(byCategory)) {
-      const byLikes = [...catItems].sort((a, b) => b.likesRaw - a.likesRaw);
-      const byComments = [...catItems].sort((a, b) => b.comments - a.comments);
-
-      for (const item of [byLikes[0], byComments[0]]) {
-        if (item && !seen.has(item.id)) {
-          seen.add(item.id);
-          picks.push(item);
-        }
-      }
-    }
-
-    // If fewer than 6 picks, pad with remaining items sorted by engagement
-    if (picks.length < 6) {
-      const remaining = items
-        .filter((it) => !seen.has(it.id))
-        .sort((a, b) => (b.likesRaw + b.comments) - (a.likesRaw + a.comments));
-      for (const item of remaining) {
-        if (picks.length >= 12) break;
-        picks.push(item);
+    const picks: typeof items = [];
+    for (const item of sorted) {
+      if (!seen.has(item.id)) {
         seen.add(item.id);
+        picks.push(item);
+        if (picks.length >= 16) break;
       }
     }
 
