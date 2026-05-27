@@ -806,6 +806,29 @@ function ImageAdjustModal({
   );
 }
 
+async function compressImage(dataUrl: string, maxDimension: number, quality = 0.85): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new window.Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > height) {
+        if (width > maxDimension) { height = Math.round((height * maxDimension) / width); width = maxDimension; }
+      } else {
+        if (height > maxDimension) { width = Math.round((width * maxDimension) / height); height = maxDimension; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { resolve(dataUrl); return; }
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
 interface EditModalProps {
   profile: UserProfileData;
   userName: string;
@@ -825,8 +848,10 @@ function EditProfileModal({ profile, userName, onClose, onSaved }: EditModalProp
   function handleImageFile(file: File, field: 'avatarUrl' | 'coverGradient') {
     if (file.size > 5 * 1024 * 1024) { setError('Image must be under 5 MB'); return; }
     const reader = new FileReader();
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string;
+    reader.onload = async (e) => {
+      const rawDataUrl = e.target?.result as string;
+      const maxDim = field === 'avatarUrl' ? 300 : 1200;
+      const dataUrl = await compressImage(rawDataUrl, maxDim);
       const type: 'avatar' | 'banner' = field === 'avatarUrl' ? 'avatar' : 'banner';
       const initialPosition = field === 'avatarUrl' ? (form.avatarPosition ?? '50% 50%') : (form.coverPosition ?? '50% 50%');
       setAdjustTarget({ dataUrl, type, initialPosition });

@@ -76,7 +76,7 @@ function createPool() {
   const connectionString = getDatabaseUrl();
   const poolConfig = {
     connectionString,
-    ssl: connectionString.includes('supabase.co')
+    ssl: (connectionString.includes('supabase.co') || connectionString.includes('prisma.io'))
       ? { rejectUnauthorized: false }
       : undefined,
     max: 5,

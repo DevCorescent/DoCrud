@@ -89,6 +89,29 @@ function Highlight({ children, delay = '0.48s' }: { children: React.ReactNode; d
   );
 }
 
+/* ─── Image compression ──────────────────────────────────────── */
+async function compressImage(dataUrl: string, maxDimension: number, quality = 0.85): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new window.Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > height) {
+        if (width > maxDimension) { height = Math.round((height * maxDimension) / width); width = maxDimension; }
+      } else {
+        if (height > maxDimension) { width = Math.round((width * maxDimension) / height); height = maxDimension; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { resolve(dataUrl); return; }
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
 /* ─── Screen transition ──────────────────────────────────────── */
 function ScreenIn({ children }: { children: React.ReactNode }) {
   const [on, setOn] = useState(false);
@@ -558,6 +581,8 @@ export default function OnboardingPage() {
   const [suggestions, setSuggestions] = useState<Array<{ id:string; name:string; profile:{ headline?:string; avatarUrl?:string } }>>([]);
   const [followed,    setFollowed]    = useState<string[]>([]);
   const [completing,  setCompleting]  = useState(false);
+  const [completingError, setCompletingError] = useState('');
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   /* Docrud Go offer state */
   type GoPhase = 'offer' | 'paying' | 'success' | 'skipped' | 'refer';
@@ -658,14 +683,23 @@ export default function OnboardingPage() {
 
   async function handleComplete() {
     setCompleting(true);
+    setCompletingError('');
     try {
-      await Promise.all([
+      const results = await Promise.allSettled([
         ...followed.map(id => fetch('/api/profile/follow', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ targetUserId:id, action:'follow' }) })),
         fetch('/api/onboarding/complete', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ profile:{ headline, bio, location, website, avatarUrl, openToWork, skills, interests, onboardingDone:true, profileSetupDone:true } }) }),
       ]);
+      const profileResult = results[results.length - 1];
+      if (profileResult.status === 'rejected') throw profileResult.reason as Error;
+      const profileRes = (profileResult as PromiseFulfilledResult<Response>).value;
+      if (!profileRes.ok) {
+        const json = await profileRes.json() as { error?: string };
+        throw new Error(json.error || 'Profile save failed');
+      }
       setScreen(DONE_SCR);
-    } catch { setScreen(DONE_SCR); }
-    finally { setCompleting(false); }
+    } catch (err) {
+      setCompletingError((err as Error).message || 'Something went wrong. Please try again.');
+    } finally { setCompleting(false); }
   }
 
   function addSkill() {
@@ -1003,10 +1037,23 @@ export default function OnboardingPage() {
           </div>
           <div className="space-y-2.5">
             <div className="flex items-center gap-3">
-              <div className="h-14 w-14 shrink-0 rounded-[14px] border border-white/[0.10] bg-white/[0.07] flex items-center justify-center text-lg font-black text-white/55 overflow-hidden">
+              <button type="button" onClick={() => avatarInputRef.current?.click()}
+                className="h-14 w-14 shrink-0 rounded-[14px] border border-white/[0.10] bg-white/[0.07] flex items-center justify-center text-lg font-black text-white/55 overflow-hidden hover:border-white/25 transition-colors">
                 {avatarUrl ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" /> : initials(userName || 'U')}
-              </div>
-              <input value={avatarUrl} onChange={e => setAvatarUrl(e.target.value)} placeholder="Avatar image URL (optional)" className={INP} />
+              </button>
+              <input ref={avatarInputRef} type="file" accept="image/*" className="hidden"
+                onChange={async (e) => {
+                  const f = e.target.files?.[0];
+                  if (!f) return;
+                  const reader = new FileReader();
+                  reader.onload = async (ev) => {
+                    const dataUrl = await compressImage(ev.target?.result as string, 300);
+                    setAvatarUrl(dataUrl);
+                  };
+                  reader.readAsDataURL(f);
+                  e.target.value = '';
+                }} />
+              <input value={avatarUrl.startsWith('data:') ? '' : avatarUrl} onChange={e => setAvatarUrl(e.target.value)} placeholder="Or paste image URL (optional)" className={INP} />
             </div>
             <input value={headline} onChange={e => setHeadline(e.target.value)} placeholder="Headline — e.g. Product Designer at Razorpay" className={INP} />
             <textarea value={bio} onChange={e => setBio(e.target.value.slice(0, 500))} rows={2} placeholder="A short bio about yourself…"
@@ -1108,6 +1155,7 @@ export default function OnboardingPage() {
                 </div>
               ))}
           </div>
+          {completingError && <p className="text-xs text-red-400 text-center">{completingError}</p>}
           <button onClick={() => void handleComplete()} disabled={completing}
             className={`h-10 sm:h-11 w-full ${WHITE_BTN} disabled:opacity-55`} style={WHITE_BTN_SHADOW}>
             {completing

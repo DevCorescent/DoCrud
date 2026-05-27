@@ -4788,12 +4788,12 @@ export default function DocumentGenerator() {
 
 	      <div className="mx-auto flex max-w-[1600px] gap-0 px-0 md:px-4 lg:px-6">
 	        <aside
-	          className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 flex flex-col w-[88vw] max-w-72 border-r border-white/60 bg-gradient-to-b from-white/80 via-white/65 to-white/55 shadow-[18px_18px_42px_rgba(148,163,184,0.16),-8px_-8px_24px_rgba(255,255,255,0.82)] backdrop-blur-3xl transform transition-transform duration-300 ease-in-out md:sticky md:top-[96px] md:self-start md:translate-x-0 md:rounded-[28px] md:border md:shadow-[18px_18px_42px_rgba(148,163,184,0.12),-8px_-8px_24px_rgba(255,255,255,0.72)] ${
+	          className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 flex flex-col w-[88vw] max-w-72 border-r border-white/[0.08] bg-[#0D0D0F] transform transition-transform duration-300 ease-in-out md:sticky md:top-[96px] md:self-start md:translate-x-0 md:rounded-[28px] md:border md:border-white/[0.08] ${
 	            sidebarHidden ? 'md:w-20 md:max-w-none' : 'md:w-[340px] md:max-w-[340px]'
 	          }`}
 	        >
-          <div className="flex-none flex items-center justify-between p-4 border-b md:hidden">
-            <h2 className="text-lg font-semibold">Menu</h2>
+          <div className="flex-none flex items-center justify-between p-4 border-b border-white/[0.08] md:hidden">
+            <h2 className="text-lg font-semibold text-white">Menu</h2>
             <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(false)}><X className="h-6 w-6" /></Button>
           </div>
 
@@ -4807,7 +4807,7 @@ export default function DocumentGenerator() {
 	                return (
 	                  <div
 	                    key={group.id}
-	                    className={`relative overflow-hidden rounded-[26px] border border-white/75 bg-white/76 p-2 shadow-[12px_12px_30px_rgba(148,163,184,0.10),-6px_-6px_18px_rgba(255,255,255,0.82)] backdrop-blur-xl ${tone.ring} ${tone.headerGlow}`}
+	                    className={`relative overflow-hidden rounded-[26px] border border-white/[0.08] bg-white/[0.05] p-2 ${tone.ring} ${tone.headerGlow}`}
 	                  >
 	                    <button
 	                      type="button"
@@ -4816,7 +4816,7 @@ export default function DocumentGenerator() {
 	                    >
 	                      <div className="flex items-center gap-2">
 	                        <span className={`h-2 w-2 rounded-full ${tone.dot}`} />
-	                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">{group.label}</p>
+	                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{group.label}</p>
 	                      </div>
 	                      <div className="flex items-center gap-2">
 	                        {group.badge && <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${tone.badge}`}>{group.badge}</span>}
@@ -4840,8 +4840,8 @@ export default function DocumentGenerator() {
                                     locked
                                       ? 'cursor-not-allowed text-slate-500 opacity-70'
                                       : active
-                                        ? `bg-slate-950 text-white shadow-[0_18px_35px_rgba(15,23,42,0.18)] ${tone.activeStripe}`
-                                        : 'text-slate-700 hover:bg-white/70'
+                                        ? `bg-white/[0.12] text-white ${tone.activeStripe}`
+                                        : 'text-slate-300 hover:bg-white/[0.07]'
                                   }`}
 		                            >
 		                              <div className="flex items-center gap-3">
@@ -4868,12 +4868,12 @@ export default function DocumentGenerator() {
 
             {!isEmployee && (!isClient || hasClientFeature('generate_documents')) && (
             <div>
-              <h3 className="text-sm font-medium text-slate-900 mb-3">Available Templates</h3>
+              <h3 className="text-sm font-medium text-slate-200 mb-3">Available Templates</h3>
               <div className="space-y-2">
                 {allowedTemplates.map((template) => (
-                  <button key={template.id} onClick={() => handleTemplateSelect(template)} className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${selectedTemplate?.id === template.id ? 'bg-blue-100 text-blue-900' : 'text-slate-700 hover:bg-slate-100'}`}>
+                  <button key={template.id} onClick={() => handleTemplateSelect(template)} className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${selectedTemplate?.id === template.id ? 'bg-white/[0.12] text-white' : 'text-slate-300 hover:bg-white/[0.07]'}`}>
                     <div className="font-medium">{template.name}</div>
-                    <div className="text-xs text-slate-500">{template.category}</div>
+                    <div className="text-xs text-slate-400">{template.category}</div>
                   </button>
                 ))}
                 {allowedTemplates.length === 0 && (
@@ -4922,10 +4922,10 @@ export default function DocumentGenerator() {
 	                        onClick={() => attemptOpenTab(item.id, item.label)}
 	                        className={`group relative flex h-12 w-12 items-center justify-center rounded-2xl border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 ${
 	                          active
-	                            ? 'border-slate-950 bg-slate-950 text-white shadow-[0_18px_35px_rgba(15,23,42,0.18)]'
+	                            ? 'border-white/[0.15] bg-white/[0.12] text-white'
 	                            : locked
-                                ? 'cursor-not-allowed border-white/70 bg-white/55 text-slate-500 opacity-70'
-	                              : 'border-white/70 bg-white/70 text-slate-800 shadow-[0_14px_30px_rgba(148,163,184,0.10)] hover:bg-white/85'
+                                ? 'cursor-not-allowed border-white/[0.08] bg-white/[0.05] text-slate-500 opacity-70'
+	                              : 'border-white/[0.08] bg-white/[0.05] text-slate-200 hover:bg-white/[0.12]'
 	                        }`}
 	                      >
 	                        <RailHoverBadge label={item.label} />
@@ -4945,7 +4945,7 @@ export default function DocumentGenerator() {
 	                      return (
 	                        <div
 	                          key={group.id}
-	                          className={`relative overflow-hidden rounded-[26px] border border-white/75 bg-white/76 p-2 shadow-[12px_12px_30px_rgba(148,163,184,0.10),-6px_-6px_18px_rgba(255,255,255,0.82)] backdrop-blur-xl ${tone.ring} ${tone.headerGlow}`}
+	                          className={`relative overflow-hidden rounded-[26px] border border-white/[0.08] bg-white/[0.05] p-2 ${tone.ring} ${tone.headerGlow}`}
 	                        >
 	                          <button
 	                            type="button"
@@ -4954,11 +4954,11 @@ export default function DocumentGenerator() {
 	                          >
 	                            <div className="flex items-center gap-2">
 	                              <span className={`h-2 w-2 rounded-full ${tone.dot}`} />
-	                              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">{group.label}</p>
+	                              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{group.label}</p>
 	                            </div>
 	                            <div className="flex items-center gap-2">
 	                              {group.badge && <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${tone.badge}`}>{group.badge}</span>}
-	                              {expanded ? <ChevronDown className="h-4 w-4 text-slate-500" /> : <ChevronRight className="h-4 w-4 text-slate-500" />}
+	                              {expanded ? <ChevronDown className="h-4 w-4 text-slate-400" /> : <ChevronRight className="h-4 w-4 text-slate-400" />}
 	                            </div>
 	                          </button>
 	                          {expanded && (
@@ -4988,7 +4988,7 @@ export default function DocumentGenerator() {
 		                                      </div>
 	                                      <div className="min-w-0 flex-1">
 	                                        <div className="flex items-center gap-2 overflow-hidden">
-		                                          <p className={`truncate whitespace-nowrap text-[13px] font-semibold tracking-tight ${active ? 'text-white' : 'text-slate-900'}`}>{item.label}</p>
+		                                          <p className={`truncate whitespace-nowrap text-[13px] font-semibold tracking-tight ${active ? 'text-white' : 'text-slate-200'}`}>{item.label}</p>
 		                                          <InfoHint label={item.description} />
 	                                        </div>
 	                                      </div>
@@ -5006,7 +5006,7 @@ export default function DocumentGenerator() {
 
                   {!isEmployee && (!isClient || hasClientFeature('generate_documents')) && (
                     <div>
-                      <h3 className="text-sm font-medium text-slate-900 mb-3">Available Templates</h3>
+                      <h3 className="text-sm font-medium text-slate-200 mb-3">Available Templates</h3>
                       <div className="space-y-2">
                         {allowedTemplates.map((template) => (
                           <button key={template.id} onClick={() => handleTemplateSelect(template)} className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${selectedTemplate?.id === template.id ? 'bg-blue-100 text-blue-900' : 'text-slate-700 hover:bg-slate-100'}`}>
