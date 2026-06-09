@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "dev:local": "next dev -H 127.0.0.1 -p 3010",
-    "build": "next build",
+    "build": "set NODE_OPTIONS=--max-old-space-size=4096 && next build",
     "start": "next start",
     "start:local": "next start -H 127.0.0.1 -p 3010",
     "lint": "next lint",

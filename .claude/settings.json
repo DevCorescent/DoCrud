@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git remote *)",
+      "Bash(git fetch *)",
+      "Bash(git merge *)",
+      "Bash(git commit -m ' *)",
+      "Bash(npm install *)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" npm run build)",
+      "Bash(cmd /c \"set NODE_OPTIONS=--max-old-space-size=4096 && npm run build\")",
+      "PowerShell($env:NODE_OPTIONS=\"--max-old-space-size=4096\"; npm run build 2>&1)",
+      "PowerShell(npm run build 2>&1)",
+      "Bash(wmic OS get TotalVisibleMemorySize,FreePhysicalMemory /Value)",
+      "PowerShell([Math]::Round\\(\\(Get-CimInstance Win32_OperatingSystem\\).TotalVisibleMemorySize/1MB, 1\\))"
+    ]
+  }
+}

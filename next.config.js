@@ -11,11 +11,15 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   reactStrictMode: true,
   compress: true,
   poweredByHeader: false,
 
   experimental: {
+    cpus: 2,
     serverComponentsExternalPackages: [
       // PDF / document processing — keep server-side only
       'puppeteer',

@@ -682,7 +682,7 @@ export async function getPageAnalytics(pageId: string): Promise<PageAnalytics> {
     const r = reviewRes.rows[0] || {};
 
     // Fill missing weeks with 0
-    function fillWeeks(rows: { week: string; count: number }[], numWeeks: number) {
+    const fillWeeks = (rows: { week: string; count: number }[], numWeeks: number) => {
       const map = new Map(rows.map(r => [r.week, r.count]));
       const result: { week: string; count: number }[] = [];
       for (let i = numWeeks - 1; i >= 0; i--) {
