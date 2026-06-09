@@ -6,6 +6,7 @@ import { buildBillingThreshold } from '@/lib/server/billing';
 import { getUserUsageSummary } from '@/lib/server/saas';
 import { getVisibleDealRooms } from '@/lib/server/deal-rooms';
 import { getDeduplicatedSocialEventsForUser } from '@/lib/server/social-events';
+import { getDbPool } from '@/lib/server/database';
 
 type NotificationState = {
   readMap: Record<string, string[]>;
@@ -250,7 +251,16 @@ async function buildBoardRoomNotifications(user: User, state: NotificationState)
   return notifications;
 }
 
-export async function getNotificationState() {
+export async function getNotificationState(userId?: string): Promise<NotificationState> {
+  const pool = getDbPool();
+  if (pool && userId) {
+    const result = await pool.query<{ notification_id: string }>(
+      `SELECT notification_id FROM notification_reads WHERE user_id = $1`,
+      [userId]
+    );
+    const readIds = result.rows.map((r) => r.notification_id);
+    return { readMap: { [userId]: readIds } };
+  }
   return readJsonFile<NotificationState>(notificationStatePath, emptyState);
 }
 
@@ -329,7 +339,7 @@ async function buildSocialNotifications(user: User, state: NotificationState): P
 }
 
 export async function getWorkspaceNotifications(user: User) {
-  const state = await getNotificationState();
+  const state = await getNotificationState(user.id);
   const [history, mailNotifications, billingNotifications, boardRoomNotifications, socialNotifications] = await Promise.all([
     getHistoryEntries(),
     buildMailboxNotifications(user, state),
@@ -354,15 +364,21 @@ export async function getWorkspaceNotifications(user: User) {
 }
 
 export async function markWorkspaceNotificationsRead(userId: string, notificationIds: string[]) {
+  const pool = getDbPool();
+  if (pool && notificationIds.length > 0) {
+    const values = notificationIds.map((_, i) => `($1, $${i + 2}, NOW())`).join(', ');
+    await pool.query(
+      `INSERT INTO notification_reads (user_id, notification_id, read_at) VALUES ${values} ON CONFLICT DO NOTHING`,
+      [userId, ...notificationIds]
+    );
+    return { readMap: { [userId]: notificationIds } };
+  }
   const state = await getNotificationState();
   const existing = new Set(state.readMap[userId] || []);
   notificationIds.forEach((id) => existing.add(id));
   const nextState: NotificationState = {
     ...state,
-    readMap: {
-      ...state.readMap,
-      [userId]: Array.from(existing),
-    },
+    readMap: { ...state.readMap, [userId]: Array.from(existing) },
   };
   await saveNotificationState(nextState);
   return nextState;

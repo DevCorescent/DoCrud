@@ -1,8 +1,8 @@
 {
   "users": {
     "1": {
-      "balance": 61,
-      "totalEarned": 61,
+      "balance": 75,
+      "totalEarned": 75,
       "totalSpent": 0,
       "streak": {
         "current": 2,
@@ -55,6 +55,118 @@
           "reason": "post_like",
           "description": "Your post \"portfolio\" received a like",
           "createdAt": "2026-05-15T12:59:30.063Z"
+        },
+        {
+          "id": "8e0b4d0c-3e02-46f9-8518-93416d58e9c5",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"article\" received a like",
+          "createdAt": "2026-06-03T09:33:12.709Z"
+        },
+        {
+          "id": "f50d016d-e9fc-43af-b3bb-83341a17a857",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"Mumbai Expo 2026\" received a like",
+          "createdAt": "2026-06-03T10:10:08.848Z"
+        },
+        {
+          "id": "f8772a79-08ec-4260-8511-863fefe16d53",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"Mumbai Expo 2026\" is trending",
+          "createdAt": "2026-06-03T10:10:09.388Z"
+        },
+        {
+          "id": "7cd810cf-d1ad-4c94-9e51-53d5b98fe0c5",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"announcement\" is trending",
+          "createdAt": "2026-06-03T12:15:19.060Z"
+        },
+        {
+          "id": "499aca2f-a5ae-4f04-81d5-66fc51cb2e21",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"announcement\" received a like",
+          "createdAt": "2026-06-03T12:15:26.040Z"
+        },
+        {
+          "id": "9c8f09ad-65d6-4b90-ac97-76476fdd616b",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"job\" received a like",
+          "createdAt": "2026-06-03T12:15:50.813Z"
+        },
+        {
+          "id": "b9a74f1a-2d17-425f-b4b0-1dce08e7e489",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"job\" is trending",
+          "createdAt": "2026-06-03T12:15:51.513Z"
+        },
+        {
+          "id": "c5eb0fdc-bfb2-43a7-9d2d-fcb2f42bb9dc",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"portfolio\" received a like",
+          "createdAt": "2026-06-03T12:33:36.669Z"
+        },
+        {
+          "id": "5b653883-e86a-4f4b-9c70-59d6890869a1",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"Build a Modern Business Website & Brand Identity for Startup\" received a like",
+          "createdAt": "2026-06-03T13:13:34.842Z"
+        },
+        {
+          "id": "a208776c-fefa-40f2-8ed2-ac840226df3e",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"Build a Modern Business Website & Brand Identity for Startup\" is trending",
+          "createdAt": "2026-06-03T13:13:39.345Z"
+        },
+        {
+          "id": "1989c65a-52f2-41b5-9dc4-715fc6f838a5",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"testing document\" received a like",
+          "createdAt": "2026-06-04T08:15:02.362Z"
+        },
+        {
+          "id": "e58bfb84-390b-45d9-9c96-63d1232bfe02",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"testing document\" received a like",
+          "createdAt": "2026-06-04T08:16:16.307Z"
+        },
+        {
+          "id": "99cb791d-e2c5-4a08-a5cc-362bb4cef674",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"testing document\" is trending",
+          "createdAt": "2026-06-04T08:16:19.250Z"
+        },
+        {
+          "id": "86739e0c-6505-40c6-8613-d2b50250ae0f",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"testing document\" is trending",
+          "createdAt": "2026-06-04T08:16:33.645Z"
         }
       ],
       "dailyEarnLog": {
@@ -65,6 +177,24 @@
         "2026-05-15": [
           "daily_post",
           "publish_10",
+          "post_like"
+        ],
+        "2026-06-03": [
+          "post_like",
+          "post_like",
+          "post_like",
+          "post_like",
+          "post_like",
+          "post_like",
+          "post_like",
+          "post_like",
+          "post_like",
+          "post_like"
+        ],
+        "2026-06-04": [
+          "post_like",
+          "post_like",
+          "post_like",
           "post_like"
         ]
       }
@@ -271,8 +401,8 @@
       "dailyEarnLog": {}
     },
     "individual-1778758936957": {
-      "balance": 58,
-      "totalEarned": 58,
+      "balance": 67,
+      "totalEarned": 67,
       "totalSpent": 0,
       "streak": {
         "current": 1,
@@ -333,6 +463,78 @@
           "reason": "post_like",
           "description": "Your post \"testing video\" received a like",
           "createdAt": "2026-05-15T18:14:48.579Z"
+        },
+        {
+          "id": "ca54b728-6056-4cdb-8ef4-218778f9a4a4",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"testing video\" received a like",
+          "createdAt": "2026-06-03T09:32:57.674Z"
+        },
+        {
+          "id": "086e57aa-e9cf-462d-818b-a2c3779eb729",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"testing news section\" received a like",
+          "createdAt": "2026-06-03T09:34:16.159Z"
+        },
+        {
+          "id": "0c5d643a-d601-4191-bf84-2af16a059eed",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"iphone 17 pro max - 1 TB\" received a like",
+          "createdAt": "2026-06-03T09:34:57.206Z"
+        },
+        {
+          "id": "f200178e-3f58-43b0-8681-353562d3704b",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"iphone 17 pro max - 1 TB\" is trending",
+          "createdAt": "2026-06-03T09:39:20.534Z"
+        },
+        {
+          "id": "4a7ee0e6-9ff7-4e80-89ea-0a7a63833ed9",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"testing video\" is trending",
+          "createdAt": "2026-06-03T09:52:13.322Z"
+        },
+        {
+          "id": "e07941e0-1cd1-4f22-8433-934cf73e8625",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"Senior Devops Engineer\" is trending",
+          "createdAt": "2026-06-03T09:52:23.573Z"
+        },
+        {
+          "id": "925d8031-7e8d-44f1-98d1-d6daf9f2ed08",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"Senior Devops Engineer\" received a like",
+          "createdAt": "2026-06-03T09:52:26.090Z"
+        },
+        {
+          "id": "5d6f004e-1d3f-4a3e-8c84-fe92f7243ef0",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"testing news section\" is trending",
+          "createdAt": "2026-06-03T09:57:01.433Z"
+        },
+        {
+          "id": "a5c658c4-bce6-4b68-9444-74087ed11cb5",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"testing document 2\" received a like",
+          "createdAt": "2026-06-03T13:12:10.547Z"
         }
       ],
       "dailyEarnLog": {
@@ -342,6 +544,17 @@
           "post_like",
           "post_like",
           "publish_10",
+          "post_like"
+        ],
+        "2026-06-03": [
+          "post_like",
+          "post_like",
+          "post_like",
+          "post_like",
+          "post_like",
+          "post_like",
+          "post_like",
+          "post_like",
           "post_like"
         ]
       }
@@ -437,6 +650,441 @@
       "dailyEarnLog": {}
     },
     "individual-1779433563834": {
+      "balance": 0,
+      "totalEarned": 0,
+      "totalSpent": 0,
+      "streak": {
+        "current": 0,
+        "longest": 0,
+        "lastPostDate": null,
+        "streakStartDate": null
+      },
+      "milestones": [],
+      "verified": false,
+      "transactions": [],
+      "dailyEarnLog": {}
+    },
+    "individual-1780155524036": {
+      "balance": 0,
+      "totalEarned": 0,
+      "totalSpent": 0,
+      "streak": {
+        "current": 0,
+        "longest": 0,
+        "lastPostDate": null,
+        "streakStartDate": null
+      },
+      "milestones": [],
+      "verified": false,
+      "transactions": [],
+      "dailyEarnLog": {}
+    },
+    "individual-1780159513754": {
+      "balance": 0,
+      "totalEarned": 0,
+      "totalSpent": 0,
+      "streak": {
+        "current": 0,
+        "longest": 0,
+        "lastPostDate": null,
+        "streakStartDate": null
+      },
+      "milestones": [],
+      "verified": false,
+      "transactions": [],
+      "dailyEarnLog": {}
+    },
+    "individual-1780160241154": {
+      "balance": 0,
+      "totalEarned": 0,
+      "totalSpent": 0,
+      "streak": {
+        "current": 0,
+        "longest": 0,
+        "lastPostDate": null,
+        "streakStartDate": null
+      },
+      "milestones": [],
+      "verified": false,
+      "transactions": [],
+      "dailyEarnLog": {}
+    },
+    "individual-1780302905872": {
+      "balance": 0,
+      "totalEarned": 0,
+      "totalSpent": 0,
+      "streak": {
+        "current": 0,
+        "longest": 0,
+        "lastPostDate": null,
+        "streakStartDate": null
+      },
+      "milestones": [],
+      "verified": false,
+      "transactions": [],
+      "dailyEarnLog": {}
+    },
+    "individual-1780315878841": {
+      "balance": 0,
+      "totalEarned": 0,
+      "totalSpent": 0,
+      "streak": {
+        "current": 0,
+        "longest": 0,
+        "lastPostDate": null,
+        "streakStartDate": null
+      },
+      "milestones": [],
+      "verified": false,
+      "transactions": [],
+      "dailyEarnLog": {}
+    },
+    "individual-1780382619136": {
+      "balance": 0,
+      "totalEarned": 0,
+      "totalSpent": 0,
+      "streak": {
+        "current": 0,
+        "longest": 0,
+        "lastPostDate": null,
+        "streakStartDate": null
+      },
+      "milestones": [],
+      "verified": false,
+      "transactions": [],
+      "dailyEarnLog": {}
+    },
+    "individual-1780384080554": {
+      "balance": 0,
+      "totalEarned": 0,
+      "totalSpent": 0,
+      "streak": {
+        "current": 0,
+        "longest": 0,
+        "lastPostDate": null,
+        "streakStartDate": null
+      },
+      "milestones": [],
+      "verified": false,
+      "transactions": [],
+      "dailyEarnLog": {}
+    },
+    "individual-1780402063179": {
+      "balance": 0,
+      "totalEarned": 0,
+      "totalSpent": 0,
+      "streak": {
+        "current": 0,
+        "longest": 0,
+        "lastPostDate": null,
+        "streakStartDate": null
+      },
+      "milestones": [],
+      "verified": false,
+      "transactions": [],
+      "dailyEarnLog": {}
+    },
+    "individual-1780405061392": {
+      "balance": 0,
+      "totalEarned": 0,
+      "totalSpent": 0,
+      "streak": {
+        "current": 0,
+        "longest": 0,
+        "lastPostDate": null,
+        "streakStartDate": null
+      },
+      "milestones": [],
+      "verified": false,
+      "transactions": [],
+      "dailyEarnLog": {}
+    },
+    "individual-1780404674760": {
+      "balance": 28,
+      "totalEarned": 28,
+      "totalSpent": 0,
+      "streak": {
+        "current": 2,
+        "longest": 2,
+        "lastPostDate": "2026-06-05",
+        "streakStartDate": "2026-06-04"
+      },
+      "milestones": [
+        "first_publish"
+      ],
+      "verified": false,
+      "transactions": [
+        {
+          "id": "a268ea2a-83ba-4d82-8498-ae08bfe35658",
+          "type": "earn",
+          "amount": 5,
+          "reason": "daily_post",
+          "description": "Daily post reward",
+          "createdAt": "2026-06-04T14:02:39.419Z"
+        },
+        {
+          "id": "c41060cd-fd4b-4e9b-ab62-1b8d11926b30",
+          "type": "earn",
+          "amount": 10,
+          "reason": "first_publish",
+          "description": "Milestone: First Publish",
+          "createdAt": "2026-06-04T14:02:39.570Z"
+        },
+        {
+          "id": "44fee44e-0c1b-41f0-ac0b-cb2cd9b111d9",
+          "type": "earn",
+          "amount": 5,
+          "reason": "daily_post",
+          "description": "Daily post reward",
+          "createdAt": "2026-06-05T06:04:20.545Z"
+        },
+        {
+          "id": "ba3ceed3-9f67-4d79-b843-f92258f171cf",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"The Indian IT sector\" received a like",
+          "createdAt": "2026-06-05T06:34:25.234Z"
+        },
+        {
+          "id": "92a1465e-392c-49a5-85e8-c2055008c3dc",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"The Indian IT sector\" is trending",
+          "createdAt": "2026-06-05T06:34:25.883Z"
+        },
+        {
+          "id": "5b727e7c-9394-44aa-b669-b43e4594695b",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"The Indian IT sector\" received a like",
+          "createdAt": "2026-06-05T12:43:29.634Z"
+        },
+        {
+          "id": "2ee25933-7c23-491f-a1dd-8d533e903a03",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"The Indian IT sector\" is trending",
+          "createdAt": "2026-06-05T12:43:31.109Z"
+        },
+        {
+          "id": "18895c8e-1334-4d77-a1d8-1dc19727b15a",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"The Indian IT sector\" received a like",
+          "createdAt": "2026-06-06T11:56:52.077Z"
+        },
+        {
+          "id": "aac04a4c-e5ff-4213-b864-6aeca8994dd7",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"The Indian IT sector\" is trending",
+          "createdAt": "2026-06-06T11:56:52.958Z"
+        },
+        {
+          "id": "08dd7102-cccd-4d53-92a0-c2f39d808400",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"The Indian IT sector\" is trending",
+          "createdAt": "2026-06-06T11:57:32.194Z"
+        },
+        {
+          "id": "7589dafe-5f94-4733-8dae-8b989d825442",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"The Indian IT sector\" received a like",
+          "createdAt": "2026-06-06T11:57:46.794Z"
+        }
+      ],
+      "dailyEarnLog": {
+        "2026-06-04": [
+          "daily_post",
+          "first_publish"
+        ],
+        "2026-06-05": [
+          "daily_post",
+          "post_like",
+          "post_like",
+          "post_like",
+          "post_like"
+        ],
+        "2026-06-06": [
+          "post_like",
+          "post_like",
+          "post_like",
+          "post_like"
+        ]
+      }
+    },
+    "individual-1780403102793": {
+      "balance": 34,
+      "totalEarned": 34,
+      "totalSpent": 0,
+      "streak": {
+        "current": 3,
+        "longest": 3,
+        "lastPostDate": "2026-06-04",
+        "streakStartDate": "2026-06-02"
+      },
+      "milestones": [
+        "first_publish"
+      ],
+      "verified": false,
+      "transactions": [
+        {
+          "id": "3eebeaa8-889e-4fd4-8625-58e970837481",
+          "type": "earn",
+          "amount": 5,
+          "reason": "daily_post",
+          "description": "Daily post reward",
+          "createdAt": "2026-06-02T18:48:19.307Z"
+        },
+        {
+          "id": "3843d717-42a4-4455-b766-a8fa6234ce89",
+          "type": "earn",
+          "amount": 10,
+          "reason": "first_publish",
+          "description": "Milestone: First Publish",
+          "createdAt": "2026-06-02T18:48:19.484Z"
+        },
+        {
+          "id": "ef2997c6-06ae-45d0-8da8-22bc07db7abb",
+          "type": "earn",
+          "amount": 5,
+          "reason": "daily_post",
+          "description": "Daily post reward",
+          "createdAt": "2026-06-03T07:37:26.047Z"
+        },
+        {
+          "id": "bf8d118d-f138-4edd-a06d-c3a1456cd638",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"Music Party\" received a like",
+          "createdAt": "2026-06-04T08:16:58.557Z"
+        },
+        {
+          "id": "150cf99b-b03a-46c2-8890-0eb254de1607",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"Music Party\" is trending",
+          "createdAt": "2026-06-04T08:18:05.128Z"
+        },
+        {
+          "id": "f4614368-2208-4710-9030-057bb89700e5",
+          "type": "earn",
+          "amount": 5,
+          "reason": "daily_post",
+          "description": "Daily post reward",
+          "createdAt": "2026-06-04T12:13:15.155Z"
+        },
+        {
+          "id": "68b91df1-e37a-48df-9e69-eaee848ed18d",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"Datathon 2026\" is trending",
+          "createdAt": "2026-06-04T12:58:41.338Z"
+        },
+        {
+          "id": "29f5c4fc-8a61-4014-85c4-c9ba27d5eeb0",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"Datathon 2026\" received a like",
+          "createdAt": "2026-06-04T12:58:42.340Z"
+        },
+        {
+          "id": "f5e8f42f-7cc6-4553-bc37-4d9b0473a692",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"Music Party\" is trending",
+          "createdAt": "2026-06-04T15:08:41.084Z"
+        },
+        {
+          "id": "f7dcbd1d-67fb-4405-abf9-ea001e824088",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"Music Party\" received a like",
+          "createdAt": "2026-06-05T17:05:19.736Z"
+        },
+        {
+          "id": "ae992b97-1a74-42bd-902e-2c99a8340c2a",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"Music Party\" is trending",
+          "createdAt": "2026-06-05T17:05:20.266Z"
+        },
+        {
+          "id": "bac08032-c0f6-4e72-a4a9-da3c18f78d8c",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"post\" is trending",
+          "createdAt": "2026-06-06T10:10:04.636Z"
+        },
+        {
+          "id": "501a5838-d4f5-42c8-97b6-1056eeb24652",
+          "type": "earn",
+          "amount": 1,
+          "reason": "post_like",
+          "description": "Your post \"post\" received a like",
+          "createdAt": "2026-06-06T10:10:10.996Z"
+        }
+      ],
+      "dailyEarnLog": {
+        "2026-06-02": [
+          "daily_post",
+          "first_publish"
+        ],
+        "2026-06-03": [
+          "daily_post"
+        ],
+        "2026-06-04": [
+          "post_like",
+          "post_like",
+          "daily_post",
+          "post_like",
+          "post_like",
+          "post_like"
+        ],
+        "2026-06-05": [
+          "post_like",
+          "post_like"
+        ],
+        "2026-06-06": [
+          "post_like",
+          "post_like"
+        ]
+      }
+    },
+    "individual-1780405646682": {
+      "balance": 0,
+      "totalEarned": 0,
+      "totalSpent": 0,
+      "streak": {
+        "current": 0,
+        "longest": 0,
+        "lastPostDate": null,
+        "streakStartDate": null
+      },
+      "milestones": [],
+      "verified": false,
+      "transactions": [],
+      "dailyEarnLog": {}
+    },
+    "individual-1780663284582": {
       "balance": 0,
       "totalEarned": 0,
       "totalSpent": 0,

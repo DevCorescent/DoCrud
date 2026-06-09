@@ -4438,28 +4438,28 @@ export default function DocumentGenerator() {
 	                <DocrudLogo height={34} priority />
 	              </Link>
 		              {/* Profile avatar with Docrud Go ring */}
-              <Link href="/profile" className="relative hidden md:flex shrink-0" title={profileOverview?.docrudGo ? 'Docrud Go ✶ — My Profile' : 'My Profile'}>
+              <Link href="/profile" className="relative hidden md:flex shrink-0" title={profileOverview?.docrudGo ? 'Docrud Infinity ∞ — My Profile' : 'My Profile'}>
                 {profileOverview?.docrudGo && (
                   <>
-                    <div className="absolute inset-[-2.5px] rounded-full" style={{ background: 'conic-gradient(from 0deg,#C9A84C 0%,#F0D878 25%,#E8CC7A 50%,#F0D878 75%,#C9A84C 100%)', animation: 'goRingSpin 4s linear infinite' }} />
-                    <div className="absolute inset-[-2.5px] rounded-full opacity-50" style={{ background: 'conic-gradient(from 0deg,#C9A84C,#F0D878,#C9A84C)', filter: 'blur(5px)' }} />
+                    <div className="absolute inset-[-2.5px] rounded-full" style={{ background: 'conic-gradient(from 0deg,#4f46e5 0%,#818cf8 25%,#a5b4fc 50%,#818cf8 75%,#4f46e5 100%)', animation: 'goRingSpin 4s linear infinite' }} />
+                    <div className="absolute inset-[-2.5px] rounded-full opacity-50" style={{ background: 'conic-gradient(from 0deg,#4f46e5,#818cf8,#4f46e5)', filter: 'blur(5px)' }} />
                   </>
                 )}
                 <div
-                  className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full overflow-hidden ${profileOverview?.docrudGo ? 'bg-[#1a1208]' : 'bg-slate-100 border border-slate-200'}`}
-                  style={profileOverview?.docrudGo ? { boxShadow: '0 0 0 2px white, 0 2px 12px rgba(201,168,76,0.35)' } : undefined}
+                  className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full overflow-hidden ${profileOverview?.docrudGo ? 'bg-[#0f0e2e]' : 'bg-slate-100 border border-slate-200'}`}
+                  style={profileOverview?.docrudGo ? { boxShadow: '0 0 0 2px white, 0 2px 12px rgba(99,102,241,0.35)' } : undefined}
                 >
                   {profileOverview?.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={profileOverview.avatarUrl} alt="Profile" className="h-full w-full object-cover" />
                   ) : (
-                    <span className={`text-[11px] font-bold leading-none select-none ${profileOverview?.docrudGo ? 'text-[#E8CC7A]' : 'text-slate-600'}`}>
+                    <span className={`text-[11px] font-bold leading-none select-none ${profileOverview?.docrudGo ? 'text-[#a5b4fc]' : 'text-slate-600'}`}>
                       {(session?.user?.name || 'W').charAt(0).toUpperCase()}
                     </span>
                   )}
                 </div>
                 {profileOverview?.docrudGo && (
-                  <span className="absolute -bottom-0.5 -right-0.5 z-20 flex h-3.5 w-3.5 items-center justify-center rounded-full text-[7px] font-black" style={{ background: 'linear-gradient(135deg,#C9A84C,#F0D878)', color: '#1a1208', boxShadow: '0 0 0 1.5px white' }}>✶</span>
+                  <span className="absolute -bottom-0.5 -right-0.5 z-20 flex h-3.5 w-3.5 items-center justify-center rounded-full text-[8px] font-black" style={{ background: 'linear-gradient(135deg,#4f46e5,#818cf8)', color: '#fff', boxShadow: '0 0 0 1.5px white' }}>∞</span>
                 )}
               </Link>
               <div className="hidden min-w-0 md:block">

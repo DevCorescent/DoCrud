@@ -213,29 +213,29 @@ export async function processProfileActivation(params: {
     try {
       const firstName = (referrer.name || 'there').split(' ')[0];
       const bodyHtml = `
-        <div style="background:linear-gradient(135deg,#1a1208 0%,#2d1f0a 50%,#1a1208 100%); border-radius:16px; padding:28px 24px; margin-bottom:20px; text-align:center;">
-          <div style="font-size:11px; font-weight:800; letter-spacing:.18em; text-transform:uppercase; color:rgba(232,204,122,0.7); margin-bottom:8px;">🎉 Referral Reward Unlocked</div>
-          <div style="font-size:28px; font-weight:900; letter-spacing:-.03em; background:linear-gradient(90deg,#C9A84C,#F0D878,#C9A84C); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;">Docrud Go ✦ — Free!</div>
+        <div style="background:linear-gradient(135deg,#0f0e2e 0%,#1e1b4b 50%,#0f0e2e 100%); border-radius:16px; padding:28px 24px; margin-bottom:20px; text-align:center;">
+          <div style="font-size:11px; font-weight:800; letter-spacing:.18em; text-transform:uppercase; color:rgba(165,180,252,0.7); margin-bottom:8px;">🎉 Referral Reward Unlocked</div>
+          <div style="font-size:28px; font-weight:900; letter-spacing:-.03em; color:#a5b4fc;">Docrud Infinity ∞ — Free!</div>
           <div style="margin-top:10px; font-size:14px; color:rgba(255,255,255,0.55); max-width:360px; margin-left:auto; margin-right:auto; line-height:1.6;">
-            Your referral activated their profile. You've earned <strong style="color:#E8CC7A;">Docrud Go</strong> absolutely free — no payment required.
+            Your referral activated their profile. You've earned <strong style="color:#a5b4fc;">Docrud Infinity</strong> absolutely free — no payment required.
           </div>
         </div>
         <p style="font-size:14.5px; color:#334155; line-height:1.7; margin:0 0 20px;">
-          Hi ${firstName}, a friend you referred just signed up and activated their Docrud profile. As promised, your <strong style="color:#92400e;">Docrud Go ✦</strong> badge is now live — completely free.
+          Hi ${firstName}, a friend you referred just signed up and activated their Docrud profile. As promised, your <strong style="color:#4f46e5;">Docrud Infinity ∞</strong> badge is now live — completely free.
         </p>
-        <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:12px; padding:18px 20px; margin-bottom:20px;">
-          <div style="font-size:12px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:#92400e; margin-bottom:10px;">✦ You now have</div>
+        <div style="background:#eef2ff; border:1px solid #c7d2fe; border-radius:12px; padding:18px 20px; margin-bottom:20px;">
+          <div style="font-size:12px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:#4338ca; margin-bottom:10px;">∞ You now have</div>
           ${[
-            'Gold verified badge on your profile',
+            'Infinity verified badge on your profile',
             'Priority placement in search & talent directory',
             'Access to premium gig listings',
             'Higher trust signals for clients',
             'E-Sign, Document AI, DocWord & more',
-          ].map(b => `<div style="padding:5px 0; font-size:12.5px; color:#92400e;">✓ ${b}</div>`).join('')}
+          ].map(b => `<div style="padding:5px 0; font-size:12.5px; color:#4338ca;">✓ ${b}</div>`).join('')}
         </div>
         <div style="text-align:center; margin:28px 0;">
-          <a href="${params.origin}" style="display:inline-block; background:linear-gradient(135deg,#C9A84C,#E8CC7A); color:#1a1208; font-size:14px; font-weight:900; letter-spacing:-.01em; text-decoration:none; padding:13px 36px; border-radius:12px; box-shadow:0 4px 18px rgba(201,168,76,0.35);">
-            Open Docrud ✦
+          <a href="${params.origin}" style="display:inline-block; background:linear-gradient(135deg,#4f46e5,#6366f1); color:#ffffff; font-size:14px; font-weight:900; letter-spacing:-.01em; text-decoration:none; padding:13px 36px; border-radius:12px; box-shadow:0 4px 18px rgba(99,102,241,0.35);">
+            Open Docrud ∞
           </a>
         </div>
         <p style="font-size:12px; color:#94a3b8; text-align:center; line-height:1.6; margin:0;">
@@ -245,18 +245,18 @@ export async function processProfileActivation(params: {
       `;
       const html = buildEmailChrome({
         origin: params.origin,
-        subject: `You earned Docrud Go free, ${firstName}! ✦`,
-        preheader: 'Your referral just activated — your gold badge is live for free.',
+        subject: `You earned Docrud Infinity free, ${firstName}! ∞`,
+        preheader: 'Your referral just activated — your Infinity badge is live for free.',
         bodyHtml,
       });
       await sendTrackedMail({
         policyKey: 'docrud_go_welcome',
         typeLabel: 'docrud_go_welcome',
         to: referrer.email,
-        subject: `You earned Docrud Go free, ${firstName}! ✦`,
-        text: `Hi ${firstName}, your referral signed up and activated their Docrud profile. Your Docrud Go badge is now live — no payment needed. Sign in at ${params.origin}.`,
+        subject: `You earned Docrud Infinity free, ${firstName}! ∞`,
+        text: `Hi ${firstName}, your referral signed up and activated their Docrud profile. Your Docrud Infinity badge is now live — no payment needed. Sign in at ${params.origin}.`,
         html,
-        preheader: 'Your referral activated — gold badge unlocked for free.',
+        preheader: 'Your referral activated — Infinity badge unlocked for free.',
         sentBy: 'system',
         origin: params.origin,
         metadata: { type: 'referral_bonus', refereeUserId: params.refereeUserId },
@@ -349,14 +349,14 @@ export async function sendReferralInviteEmail(params: {
   });
 
   const firstName = (params.referrerName || 'Someone').split(' ')[0];
-  const referralLink = `${params.origin}/signup?ref=${encodeURIComponent(params.referralCode)}`;
+  const referralLink = `${params.origin}/onboarding?start=signup&ref=${encodeURIComponent(params.referralCode)}`;
 
   const bodyHtml = `
-    <div style="background:linear-gradient(135deg,#1a1208 0%,#2d1f0a 50%,#1a1208 100%); border-radius:16px; padding:28px 24px; margin-bottom:20px; text-align:center;">
-      <div style="font-size:11px; font-weight:800; letter-spacing:.18em; text-transform:uppercase; color:rgba(232,204,122,0.7); margin-bottom:8px;">You're Invited</div>
-      <div style="font-size:28px; font-weight:900; letter-spacing:-.03em; background:linear-gradient(90deg,#C9A84C,#F0D878,#C9A84C); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;">Join Docrud ✦</div>
+    <div style="background:linear-gradient(135deg,#06060f 0%,#0f0e2e 50%,#06060f 100%); border-radius:16px; padding:28px 24px; margin-bottom:20px; text-align:center;">
+      <div style="font-size:11px; font-weight:800; letter-spacing:.18em; text-transform:uppercase; color:rgba(165,180,252,0.7); margin-bottom:8px;">You're Invited</div>
+      <div style="font-size:28px; font-weight:900; letter-spacing:-.03em; background:linear-gradient(90deg,#6366f1,#a5b4fc,#6366f1); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;">Join Docrud ∞</div>
       <div style="margin-top:10px; font-size:14px; color:rgba(255,255,255,0.55); max-width:360px; margin-left:auto; margin-right:auto; line-height:1.6;">
-        <strong style="color:#E8CC7A;">${firstName}</strong> invited you to Docrud — the professional document platform.
+        <strong style="color:#a5b4fc;">${firstName}</strong> invited you to Docrud — the professional document platform.
       </div>
     </div>
     <p style="font-size:14.5px; color:#334155; line-height:1.7; margin:0 0 20px;">
@@ -367,14 +367,14 @@ export async function sendReferralInviteEmail(params: {
       ${[
         'E-Sign documents & contracts',
         'AI-powered document generation',
-        'Verified profile with gold badge',
+        'Verified profile with Infinity badge',
         'Network with professionals',
         'Secure file sharing & PDF studio',
       ].map(f => `<div style="padding:4px 0; font-size:13px; color:#64748b;">→ ${f}</div>`).join('')}
     </div>
     <div style="text-align:center; margin:28px 0;">
-      <a href="${referralLink}" style="display:inline-block; background:linear-gradient(135deg,#C9A84C,#E8CC7A); color:#1a1208; font-size:14px; font-weight:900; letter-spacing:-.01em; text-decoration:none; padding:13px 36px; border-radius:12px; box-shadow:0 4px 18px rgba(201,168,76,0.35);">
-        Accept Invite & Join Docrud ✦
+      <a href="${referralLink}" style="display:inline-block; background:linear-gradient(135deg,#4f46e5,#6366f1); color:#ffffff; font-size:14px; font-weight:900; letter-spacing:-.01em; text-decoration:none; padding:13px 36px; border-radius:12px; box-shadow:0 4px 18px rgba(99,102,241,0.35);">
+        Accept Invite & Join Docrud ∞
       </a>
     </div>
     <p style="font-size:12px; color:#94a3b8; text-align:center; line-height:1.6; margin:0;">

@@ -36,7 +36,7 @@ declare global {
 }
 import { createPortal } from 'react-dom';
 import {
-  X, Upload, Search, Lock, Globe, HardDrive,
+  X, Upload, Search, Lock, Globe,
   FileText, Image as ImgIcon, Video, Music, Archive, File as FileIcon,
   MoreHorizontal, Share2, Download, Trash2, Copy, Check,
   QrCode, Send, Plus, Key, Star, Eye,
@@ -45,13 +45,15 @@ import {
   Clock, Pin, Wifi, WifiOff, Tag, Move, FolderPlus, Unlock,
   AlertTriangle, CheckSquare, Square, RefreshCw, ArrowRight,
   MoreVertical, Pencil, PinOff, StarOff, Loader2, ChevronLeft, ChevronDown,
+  BarChart2, TrendingUp, Activity, Layers,
 } from 'lucide-react';
 import UniversalFileViewer, { type ViewableFile } from '@/components/UniversalFileViewer';
 import QRShareDialog, { type QRShareTarget } from '@/components/QRShareDialog';
 import QRScannerDialog, { type AddedShareFile } from '@/components/QRScannerDialog';
 import { listSharesForItem } from '@/lib/shareStore';
+import { useSearchTracker, SEARCH_CONTEXTS } from '@/lib/search-tracking';
 
-/* ─── Types ─────────────────────────────────────────────────────────────── */
+/* --- Types --------------------------------------------------------------- */
 
 type Privacy   = 'public' | 'private' | 'password';
 type FileKind  = 'pdf' | 'image' | 'video' | 'audio' | 'doc' | 'sheet' | 'archive' | 'other';
@@ -64,7 +66,7 @@ interface FileHistoryEntry {
   icon: string; // emoji
 }
 type ViewMode  = 'grid' | 'list';
-type SideSection = 'my-drive' | 'recent' | 'starred' | 'shared' | 'offline';
+type SideSection = 'my-drive' | 'recent' | 'starred' | 'shared' | 'offline' | 'analytics';
 
 interface DriveItem {
   id:        string;
@@ -97,59 +99,80 @@ interface DriveItem {
 
 interface BreadcrumbEntry { id: string | null; name: string; }
 
+/* ── Ddrive premium "D" icon ─────────────────────────────────────────────── */
+function DdriveIcon({ size = 16, style }: { size?: number; style?: React.CSSProperties }) {
+  return (
+    <svg
+      width={size} height={size} viewBox="0 0 24 24" fill="none"
+      xmlns="http://www.w3.org/2000/svg" style={style}
+      aria-label="Ddrive"
+    >
+      <defs>
+        <linearGradient id="ddrive-g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%"   stopColor="#a78bfa" />
+          <stop offset="100%" stopColor="#6366f1" />
+        </linearGradient>
+        <filter id="ddrive-glow">
+          <feGaussianBlur stdDeviation="1.2" result="blur" />
+          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
+      </defs>
+      {/* rounded-rect background */}
+      <rect x="1" y="1" width="22" height="22" rx="6" ry="6"
+        fill="url(#ddrive-g)" opacity="0.15" />
+      <rect x="1" y="1" width="22" height="22" rx="6" ry="6"
+        fill="none" stroke="url(#ddrive-g)" strokeWidth="1.4" />
+      {/* "D" letterform */}
+      <text
+        x="12" y="17" textAnchor="middle" dominantBaseline="auto"
+        fontFamily="system-ui, -apple-system, sans-serif"
+        fontSize="14" fontWeight="800" letterSpacing="-0.5"
+        fill="url(#ddrive-g)" filter="url(#ddrive-glow)"
+      >D</text>
+    </svg>
+  );
+}
+
 export interface FileDriveCenterProps {
   open: boolean;
   onClose: () => void;
 }
 
-/* ─── Seed data ──────────────────────────────────────────────────────────── */
-
-const now = Date.now();
+/* --- Seed data ------------------------------------------------------------ */
 
 const SEED_ITEMS: DriveItem[] = [
-  // Root folders
-  { id:'d1', parentId:null, type:'folder', name:'Marketing Assets',    createdAt:now-864e5*7,  updatedAt:now-864e5,   folderColor:'#818cf8', starred:true  },
-  { id:'d2', parentId:null, type:'folder', name:'Legal Documents',     createdAt:now-864e5*14, updatedAt:now-864e5*3, folderColor:'#f87171', locked:true, lockPassword:'admin123' },
-  { id:'d3', parentId:null, type:'folder', name:'Client Deliverables', createdAt:now-864e5*21, updatedAt:now-864e5*5, folderColor:'#34d399' },
-  { id:'d4', parentId:null, type:'folder', name:'Team Resources',      createdAt:now-864e5*30, updatedAt:now-864e5*7, folderColor:'#fbbf24' },
-  // Root files
-  { id:'f1',  parentId:null, type:'file', kind:'pdf',     name:'Q4 Annual Report.pdf',   size:'2.4 MB',  bytes:2400000,  privacy:'public',   createdAt:now-7200000,  updatedAt:now-7200000,  views:142, starred:true,  pinned:true  },
-  { id:'f2',  parentId:null, type:'file', kind:'archive', name:'Brand Kit Final.zip',    size:'18 MB',   bytes:18000000, privacy:'private',  createdAt:now-86400000, updatedAt:now-86400000, views:0   },
-  { id:'f3',  parentId:null, type:'file', kind:'image',   name:'Product Mockups.png',    size:'3.1 MB',  bytes:3100000,  privacy:'public',   createdAt:now-864e5*3,  updatedAt:now-864e5*3,  views:89  },
-  { id:'f4',  parentId:null, type:'file', kind:'pdf',     name:'Investor Pitch Deck.pdf',size:'5.7 MB',  bytes:5700000,  privacy:'password', createdAt:now-864e5*5,  updatedAt:now-864e5*5,  views:12, starred:true  },
-  { id:'f5',  parentId:null, type:'file', kind:'image',   name:'Team Photos Session.jpg',size:'9.2 MB',  bytes:9200000,  privacy:'public',   createdAt:now-864e5*7,  updatedAt:now-864e5*7,  views:234 },
-  { id:'f6',  parentId:null, type:'file', kind:'doc',     name:'NDA Contract.docx',      size:'0.8 MB',  bytes:800000,   privacy:'private',  createdAt:now-864e5*14, updatedAt:now-864e5*14, views:0   },
-  { id:'f7',  parentId:null, type:'file', kind:'sheet',   name:'Sales Data 2024.xlsx',   size:'1.2 MB',  bytes:1200000,  privacy:'password', createdAt:now-864e5*14, updatedAt:now-864e5*14, views:5   },
-  { id:'f8',  parentId:null, type:'file', kind:'video',   name:'Promo Video 30s.mp4',    size:'124 MB',  bytes:124000000,privacy:'public',   createdAt:now-864e5*21, updatedAt:now-864e5*21, views:891, starred:true, offlineAvailable:true },
-  { id:'f9',  parentId:null, type:'file', kind:'archive', name:'Design System v2.zip',   size:'42 MB',   bytes:42000000, privacy:'public',   createdAt:now-864e5*30, updatedAt:now-864e5*30, views:67  },
-  { id:'f10', parentId:null, type:'file', kind:'audio',   name:'Sprint Recording.m4a',   size:'15 MB',   bytes:15000000, privacy:'private',  createdAt:now-864e5*30, updatedAt:now-864e5*30, views:0, offlineAvailable:true  },
-  // Marketing Assets children
-  { id:'f11', parentId:'d1', type:'file', kind:'doc',   name:'Q4 Campaign Brief.docx',   size:'1.1 MB',  bytes:1100000,  privacy:'public', createdAt:now-864e5*2, updatedAt:now-864e5*2, views:23 },
-  { id:'f12', parentId:'d1', type:'file', kind:'image', name:'Hero Banner 2024.png',      size:'4.2 MB',  bytes:4200000,  privacy:'public', createdAt:now-864e5*4, updatedAt:now-864e5*4, views:45 },
-  { id:'f13', parentId:'d1', type:'file', kind:'sheet', name:'Brand Colors.xlsx',         size:'0.4 MB',  bytes:400000,   privacy:'public', createdAt:now-864e5*6, updatedAt:now-864e5*6, views:12 },
-  { id:'d11', parentId:'d1', type:'folder', name:'2024 Assets', createdAt:now-864e5*10, updatedAt:now-864e5*2, folderColor:'#60a5fa' },
-  // 2024 Assets children (deep)
-  { id:'f111',parentId:'d11',type:'file', kind:'image', name:'Campaign Photos.jpg',      size:'22 MB',   bytes:22000000, privacy:'public', createdAt:now-864e5*5, updatedAt:now-864e5*5, views:67 },
-  { id:'f112',parentId:'d11',type:'file', kind:'video', name:'Ad Spot 15s.mp4',          size:'56 MB',   bytes:56000000, privacy:'public', createdAt:now-864e5*6, updatedAt:now-864e5*6, views:103 },
-  // Legal Documents children
-  { id:'f21', parentId:'d2', type:'file', kind:'pdf',   name:'Terms of Service v3.pdf',  size:'1.8 MB',  bytes:1800000,  privacy:'private', createdAt:now-864e5*4, updatedAt:now-864e5*4, views:3 },
-  { id:'f22', parentId:'d2', type:'file', kind:'doc',   name:'Employment Contract.docx', size:'0.9 MB',  bytes:900000,   privacy:'private', createdAt:now-864e5*8, updatedAt:now-864e5*8, views:1 },
-  // Client Deliverables children
-  { id:'f31', parentId:'d3', type:'file', kind:'pdf',   name:'Final Report Alpha.pdf',   size:'3.2 MB',  bytes:3200000,  privacy:'public', createdAt:now-864e5*3, updatedAt:now-864e5*3, views:18 },
-  { id:'d31', parentId:'d3', type:'folder', name:'Client A', createdAt:now-864e5*12, updatedAt:now-864e5*3, folderColor:'#a78bfa' },
-  { id:'d32', parentId:'d3', type:'folder', name:'Client B', createdAt:now-864e5*20, updatedAt:now-864e5*8, folderColor:'#fb923c' },
+  {
+    id: 'welcome-guide-v1',
+    parentId: null,
+    type: 'file',
+    kind: 'pdf',
+    name: 'Welcome to Ddrive.pdf',
+    size: '12 KB',
+    bytes: 12288,
+    privacy: 'public',
+    mimeType: 'application/pdf',
+    createdAt: Date.now() - 30000,
+    updatedAt: Date.now() - 30000,
+    views: 0,
+    starred: true,
+    pinned: true,
+    tags: ['getting-started'],
+    history: [
+      { id: 'h-init', action: 'Ddrive initialised', timestamp: Date.now() - 30000, detail: 'Your secure workspace is ready.', icon: '🚀' },
+    ],
+  },
 ];
 
-/* ─── Style constants ────────────────────────────────────────────────────── */
+/* --- Style constants ------------------------------------------------------ */
 
 const KIND_COLOR: Record<FileKind, string> = {
-  pdf:'#f87171', image:'#34d399', video:'#fb923c', audio:'#a78bfa',
-  doc:'#818cf8', sheet:'#4ade80', archive:'#fbbf24', other:'#94a3b8',
+  pdf:'rgba(248,113,113,.60)', image:'rgba(52,211,153,.55)', video:'rgba(251,146,60,.60)', audio:'rgba(167,139,250,.65)',
+  doc:'rgba(129,140,248,.65)', sheet:'rgba(74,222,128,.55)', archive:'rgba(251,191,36,.55)', other:'rgba(148,163,184,.50)',
 };
 const KIND_BG: Record<FileKind, string> = {
-  pdf:'rgba(248,113,113,.12)', image:'rgba(52,211,153,.11)', video:'rgba(251,146,60,.11)',
-  audio:'rgba(167,139,250,.12)', doc:'rgba(129,140,248,.12)', sheet:'rgba(74,222,128,.10)',
-  archive:'rgba(251,191,36,.10)', other:'rgba(148,163,184,.10)',
+  pdf:'rgba(255,255,255,.05)', image:'rgba(255,255,255,.05)', video:'rgba(255,255,255,.05)',
+  audio:'rgba(255,255,255,.05)', doc:'rgba(255,255,255,.05)', sheet:'rgba(255,255,255,.05)',
+  archive:'rgba(255,255,255,.05)', other:'rgba(255,255,255,.04)',
 };
 const FOLDER_COLORS  = ['#818cf8','#34d399','#f87171','#fbbf24','#fb923c','#60a5fa','#a78bfa','#e879f9'];
 const LABEL_COLORS: { hex: string; name: string }[] = [
@@ -164,33 +187,105 @@ const LABEL_COLORS: { hex: string; name: string }[] = [
 ];
 const PAGE_SIZE = 20;
 
-/* ─── Demo blob builder ──────────────────────────────────────────────────── */
+/* --- Welcome PDF builder -------------------------------------------------- */
 
 function buildDemoBlob(item: DriveItem): Blob | null {
-  if (item.type !== 'file') return null;
-  if (item.kind === 'image') {
-    if (typeof document === 'undefined') return null;
-    const c = document.createElement('canvas'); c.width = 320; c.height = 240;
-    const ctx = c.getContext('2d')!;
-    const g = ctx.createLinearGradient(0, 0, 320, 240);
-    g.addColorStop(0, '#a78bfa'); g.addColorStop(1, '#34d399');
-    ctx.fillStyle = g; ctx.fillRect(0, 0, 320, 240);
-    ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.font = 'bold 16px system-ui';
-    ctx.fillText(item.name.split('.')[0], 30, 130);
-    const b64 = c.toDataURL('image/png').split(',')[1];
-    const bin = atob(b64); const arr = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-    return new Blob([arr.buffer as ArrayBuffer], { type: 'image/png' });
-  }
-  if (item.kind === 'sheet') {
-    return new Blob(['Region,Q1,Q2,Q3,Q4\nNorth,4200,5100,4800,6200\nSouth,3100,3400,3900,4100\n'], { type: 'text/csv' });
-  }
-  if (item.kind === 'pdf') {
-    const stream = 'BT /F1 14 Tf 60 760 Td (Demo PDF) Tj ET';
-    const body = `%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>\nendobj\n4 0 obj\n<< /Length ${stream.length} >>\nstream\n${stream}\nendstream\nendobj\n5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\nxref\n0 6\n0000000000 65535 f \ntrailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n0\n%%EOF`;
-    return new Blob([body], { type: 'application/pdf' });
-  }
-  return null;
+  if (item.type !== 'file' || item.kind !== 'pdf') return null;
+
+  // Build a clean, readable single-page welcome PDF using raw PDF syntax
+  const lines: string[] = [
+    'BT',
+    // Title
+    '/F2 22 Tf',
+    '56 740 Td',
+    '(Welcome to Ddrive) Tj',
+    // Subtitle rule
+    '/F1 10 Tf',
+    '0 -22 Td',
+    '(Your secure, private document workspace.) Tj',
+    // Divider
+    '0 -28 Td',
+    '(____________________________________________) Tj',
+    // Section: Getting Started
+    '/F2 13 Tf',
+    '0 -30 Td',
+    '(Getting Started) Tj',
+    '/F1 11 Tf',
+    '0 -20 Td',
+    '(1.  Upload files  -- click + New or drag files directly into Ddrive.) Tj',
+    '0 -17 Td',
+    '(2.  Organise      -- create folders, colour-code and lock them.) Tj',
+    '0 -17 Td',
+    '(3.  Share securely -- email, QR code, WhatsApp, or direct link.) Tj',
+    '0 -17 Td',
+    '(4.  Set privacy   -- Public, Private, or Password-protected.) Tj',
+    '0 -17 Td',
+    '(5.  Offline access -- pin files for local availability.) Tj',
+    // Section: File Actions
+    '/F2 13 Tf',
+    '0 -32 Td',
+    '(Available actions on every file) Tj',
+    '/F1 11 Tf',
+    '0 -20 Td',
+    '(Open / Preview  |  Download  |  Rename  |  Star  |  Pin) Tj',
+    '0 -17 Td',
+    '(Move to folder  |  Share via email / QR  |  Add label  |  Delete) Tj',
+    '0 -17 Td',
+    '(Set privacy     |  Toggle offline  |  View file history & audit trail) Tj',
+    // Section: Security
+    '/F2 13 Tf',
+    '0 -32 Td',
+    '(Security & Privacy) Tj',
+    '/F1 11 Tf',
+    '0 -20 Td',
+    '(All files are stored locally in your browser -- nothing leaves your device) Tj',
+    '0 -17 Td',
+    '(unless you explicitly share them. Folder lock, file passwords, and) Tj',
+    '0 -17 Td',
+    '(per-file privacy controls give you full ownership of your data.) Tj',
+    // Footer
+    '/F1 9 Tf',
+    '56 60 Td',
+    '(Ddrive  |  Secure Document Workspace  |  support@docrud.in) Tj',
+    'ET',
+  ];
+
+  const stream = lines.join('\n');
+  const pdf = [
+    '%PDF-1.4',
+    '1 0 obj',
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    'endobj',
+    '2 0 obj',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    'endobj',
+    '3 0 obj',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792]',
+    '   /Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> >>',
+    'endobj',
+    '4 0 obj',
+    `<< /Length ${stream.length} >>`,
+    'stream',
+    stream,
+    'endstream',
+    'endobj',
+    '5 0 obj',
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+    'endobj',
+    '6 0 obj',
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>',
+    'endobj',
+    'xref',
+    '0 7',
+    '0000000000 65535 f ',
+    'trailer',
+    '<< /Size 7 /Root 1 0 R >>',
+    'startxref',
+    '0',
+    '%%EOF',
+  ].join('\n');
+
+  return new Blob([pdf], { type: 'application/pdf' });
 }
 
 function fmtSize(n: number): string {
@@ -208,7 +303,7 @@ function fmtDate(ms: number): string {
   return new Date(ms).toLocaleDateString();
 }
 
-/* ─── IndexedDB blob persistence ────────────────────────────────────────── */
+/* --- IndexedDB blob persistence ------------------------------------------ */
 
 const DB_NAME    = 'docrud_drive_v1';
 const BLOB_STORE = 'blobs';
@@ -250,9 +345,10 @@ async function deleteBlobsFromDb(ids: string[]) {
   });
 }
 
-/* ─── localStorage metadata persistence ─────────────────────────────────── */
+/* --- localStorage metadata persistence ----------------------------------- */
 
-const LS_KEY = 'docrud_drive_items_v2';
+const LS_KEY   = 'docrud_drive_items_v3';
+const PLAN_KEY = 'docrud_drive_plan_v3'; // versioned — resets with each LS_KEY bump
 function saveItemsToStorage(list: DriveItem[]) {
   try {
     // Blobs can't be JSON-serialised — store everything else
@@ -266,23 +362,58 @@ function loadItemsFromStorage(): DriveItem[] | null {
   } catch { return null; }
 }
 
-/* ─── Drive plans ────────────────────────────────────────────────────────── */
+/* --- Drive plans ---------------------------------------------------------- */
 
 interface DrivePlan { id: string; label: string; gb: number; price: number; color: string; popular: boolean; perks: string[]; }
 const DRIVE_PLANS: DrivePlan[] = [
-  { id:'free',       label:'Free',       gb:    1, price:   0, color:'#94a3b8', popular:false,
-    perks:['1 GB storage','File & folder sharing','Basic viewer','Community support'] },
-  { id:'starter',    label:'Starter',    gb:   10, price:  49, color:'#818cf8', popular:false,
-    perks:['10 GB storage','Priority uploads','Email support','Password-protected files'] },
-  { id:'pro',        label:'Pro',        gb:   50, price:  99, color:'#a78bfa', popular:true,
-    perks:['50 GB storage','Advanced sharing & QR','Chat support','Offline access','Folder locking'] },
-  { id:'business',   label:'Business',   gb:  200, price: 199, color:'#34d399', popular:false,
-    perks:['200 GB storage','Team collaboration','API access','Priority support','Audit logs'] },
-  { id:'enterprise', label:'Enterprise', gb: 1024, price: 499, color:'#fbbf24', popular:false,
-    perks:['1 TB storage','Unlimited sharing','Dedicated account manager','SLA guarantee','Custom domain'] },
+  { id:'free',    label:'Free',    gb:  0.5, price:  0, color:'#94a3b8', popular:false,
+    perks:['500 MB storage','Upload files & folders','In-app file viewer','Search, sort & pagination','Basic link sharing'] },
+  { id:'starter', label:'Starter', gb: 10,   price: 49, color:'#818cf8', popular:false,
+    perks:['10 GB storage','Email & WhatsApp sharing','Color label tagging','Offline availability','Private & password-protected files'] },
+  { id:'pro',     label:'Pro',     gb: 50,   price: 99, color:'#a78bfa', popular:true,
+    perks:['50 GB storage','QR code sharing & scanner','Folder lock protection','Move files across folders','File history & audit trail'] },
 ];
 
-/* ─── Storage helpers ────────────────────────────────────────────────────── */
+/** Maps server-side planId → local DRIVE_PLANS id */
+function serverPlanToLocal(serverPlanId: string): string {
+  if (serverPlanId === 'drive-pro')     return 'pro';
+  if (serverPlanId === 'drive-starter') return 'starter';
+  if (serverPlanId === 'infinity')      return 'pro'; // Infinity gets Pro-tier features
+  return 'free';
+}
+
+/* --- Feature gating ------------------------------------------------------- */
+
+const PLAN_TIER: Record<string, number> = {
+  free: 0, starter: 1, pro: 2,
+};
+
+type DriveFeature =
+  | 'emailShare' | 'whatsappShare' | 'fileLabels' | 'offlineToggle' | 'filePrivacy'
+  | 'qrShare' | 'qrScanner' | 'folderLock' | 'fileMove' | 'fileHistory' | 'bulkMoveShare';
+
+const FEATURE_MIN_TIER: Record<DriveFeature, number> = {
+  emailShare:    1,  // Starter+
+  whatsappShare: 1,
+  fileLabels:    1,
+  offlineToggle: 1,
+  filePrivacy:   0,  // free for all plans
+  qrShare:       2,  // Pro+
+  qrScanner:     2,
+  folderLock:    2,
+  fileMove:      2,
+  fileHistory:   2,
+  bulkMoveShare: 2,
+};
+
+const FEATURE_REQUIRED_PLAN: Record<DriveFeature, string> = {
+  emailShare:    'Starter', whatsappShare: 'Starter', fileLabels:  'Starter',
+  offlineToggle: 'Starter', filePrivacy:   'Starter',
+  qrShare:       'Pro',     qrScanner:     'Pro',     folderLock:  'Pro',
+  fileMove:      'Pro',     fileHistory:   'Pro',     bulkMoveShare:'Pro',
+};
+
+/* --- Storage helpers ------------------------------------------------------ */
 
 function storageBarGradient(pct: number): string {
   if (pct >= 90) return 'linear-gradient(90deg,#ef4444,#f87171)';
@@ -298,7 +429,7 @@ function storageAccentColor(pct: number): string {
   return '#a78bfa';
 }
 
-/* ─── WhatsApp share ─────────────────────────────────────────────────────── */
+/* --- WhatsApp share ------------------------------------------------------- */
 
 function shareOnWhatsApp(item: DriveItem) {
   const link = `https://docrud.in/drive/${item.id}`;
@@ -310,12 +441,12 @@ function shareOnWhatsApp(item: DriveItem) {
     ``,
     `🔗 Open: ${link}`,
     ``,
-    `_Shared via DocRud Drive_`,
+    `_Shared via Ddrive_`,
   ].filter((l): l is string => l !== null);
   window.open(`https://wa.me/?text=${encodeURIComponent(lines.join('\n'))}`, '_blank', 'noopener,noreferrer');
 }
 
-/* ─── Small helpers ──────────────────────────────────────────────────────── */
+/* --- Small helpers -------------------------------------------------------- */
 
 function KindIcon({ kind, sz = 14 }: { kind: FileKind; sz?: number }) {
   const Map: Record<FileKind, React.ComponentType<{ style?: React.CSSProperties }>> = {
@@ -330,27 +461,28 @@ function KindIcon({ kind, sz = 14 }: { kind: FileKind; sz?: number }) {
   );
 }
 
-/* ─── Main component ─────────────────────────────────────────────────────── */
+/* --- Main component ------------------------------------------------------- */
 
 export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps) {
-  /* ── Core state ── */
+  /* -- Core state -- */
   const [items,     setItems]     = useState<DriveItem[]>(() => {
     if (typeof window === 'undefined') return SEED_ITEMS;
     return loadItemsFromStorage() ?? SEED_ITEMS;
   });
   const [view,      setView]      = useState<ViewMode>('list');
   const [section,   setSection]   = useState<SideSection>('my-drive');
-  const [navStack,  setNavStack]  = useState<BreadcrumbEntry[]>([{ id: null, name: 'My Drive' }]);
+  const [navStack,  setNavStack]  = useState<BreadcrumbEntry[]>([{ id: null, name: 'My Ddrive' }]);
   const [query,     setQuery]     = useState('');
+  const trackSearchDrive = useSearchTracker(SEARCH_CONTEXTS.FILE_DRIVE);
   const [sortBy,    setSortBy]    = useState<'name'|'date'|'size'>('date');
 
-  /* ── Selection & DnD ── */
+  /* -- Selection & DnD -- */
   const [selectedIds,    setSelectedIds]    = useState<Set<string>>(new Set());
   const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
   const [draggedId,      setDraggedId]      = useState<string | null>(null);
   const [dropTargetId,   setDropTargetId]   = useState<string | null>(null);
 
-  /* ── Overlays ── */
+  /* -- Overlays -- */
   const [uploadOpen,     setUploadOpen]     = useState(false);
   const [shareFile,      setShareFile]      = useState<DriveItem | null>(null);
   const [menuItem,       setMenuItem]       = useState<DriveItem | null>(null);
@@ -367,51 +499,57 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
   const [sharedFileIds,  setSharedFileIds]  = useState<Set<string>>(new Set());
   const [unlockedFolders, setUnlockedFolders] = useState<Set<string>>(new Set());
 
-  /* ── Upload state ── */
+  /* -- Upload state -- */
   const [uploadPrivacy, setUploadPrivacy] = useState<Privacy>('public');
   const [dragging,      setDragging]      = useState(false);
   const [uploadedName,  setUploadedName]  = useState('');
   const [uploading,     setUploading]     = useState(false);
   const [uploadDone,    setUploadDone]    = useState(false);
 
-  /* ── Password gate ── */
+  /* -- Password gate -- */
   const [pwdInput, setPwdInput] = useState('');
   const [pwdError, setPwdError] = useState(false);
 
-  /* ── Lock gate ── */
+  /* -- Lock gate -- */
   const [lockInput, setLockInput] = useState('');
   const [lockError, setLockError] = useState(false);
 
-  /* ── New folder ── */
+  /* -- New folder -- */
   const [newFolderName,  setNewFolderName]  = useState('');
   const [newFolderColor, setNewFolderColor] = useState(FOLDER_COLORS[0]);
 
-  /* ── Drive plan + storage ── */
-  const [currentPlan, setCurrentPlan] = useState('free');
+  /* -- Drive plan + storage -- */
+  const [currentPlan, setCurrentPlan] = useState(() =>
+    typeof window !== 'undefined' ? (localStorage.getItem(PLAN_KEY) ?? 'free') : 'free'
+  );
+  const [serverLimitGb,  setServerLimitGb]  = useState<number | null>(null);
+  const [quotaLoaded,    setQuotaLoaded]    = useState(false);
   const [plansOpen,   setPlansOpen]   = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [billingPeriod, setBillingPeriod] = useState<'monthly'|'annual'>('monthly');
   const [driveCheckoutBusy,    setDriveCheckoutBusy]    = useState('');
   const [driveCheckoutError,   setDriveCheckoutError]   = useState('');
   const [driveCheckoutSuccess, setDriveCheckoutSuccess] = useState('');
+  const [featureLocked, setFeatureLocked] = useState<{ feature: DriveFeature; requiredPlan: string } | null>(null);
 
-  /* ── Pagination ── */
+  /* -- Pagination -- */
   const [currentPage, setCurrentPage] = useState(1);
 
-  /* ── Label picker ── */
+  /* -- Label picker -- */
   const [labelTarget, setLabelTarget] = useState<string | null>(null); // item id
 
-  /* ── Mobile sidebar ── */
+  /* -- Mobile sidebar + search -- */
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [mobileSearchOpen,  setMobileSearchOpen]  = useState(false);
 
-  /* ── Email share ── */
+  /* -- Email share -- */
   const [emailFile,    setEmailFile]    = useState<DriveItem | null>(null);
   const [emailTo,      setEmailTo]      = useState('');
   const [emailNotes,   setEmailNotes]   = useState('');
   const [emailSending, setEmailSending] = useState(false);
   const [emailSent,    setEmailSent]    = useState(false);
 
-  /* ── Chat share ── */
+  /* -- Chat share -- */
   const [chatQuery, setChatQuery] = useState('');
   const [chatSent,  setChatSent]  = useState<string | null>(null);
   const [historyFile, setHistoryFile] = useState<DriveItem | null>(null);
@@ -419,7 +557,7 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
   const [chatSentConvId, setChatSentConvId] = useState<string|null>(null);
   const [emailError, setEmailError] = useState<string>('');
 
-  /* ── Deep-link (email action buttons: drive-open / drive-import) ── */
+  /* -- Deep-link (email action buttons: drive-open / drive-import) -- */
   const [deepLinkFileId,  setDeepLinkFileId]  = useState<string | null>(null);
   const [deepLinkAction,  setDeepLinkAction]  = useState<'open' | 'import' | null>(null);
   const [importConfirm,   setImportConfirm]   = useState<{ id: string; name: string } | null>(null);
@@ -436,20 +574,38 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
 
   const currentFolderId = navStack[navStack.length - 1].id;
 
-  /* ── Storage accounting ── */
+  /* -- Storage accounting -- */
   const storageUsed  = useMemo(
     () => items.filter(i => i.type === 'file').reduce((s, i) => s + (i.bytes ?? 0), 0),
     [items],
   );
   const storagePlan  = DRIVE_PLANS.find(p => p.id === currentPlan) ?? DRIVE_PLANS[0];
-  const storageTotal = storagePlan.gb * 1_073_741_824;
+  // Use server-authoritative limitGb when available, else fall back to plan definition
+  const storageTotal = (serverLimitGb ?? storagePlan.gb) * 1_073_741_824;
   const storagePct   = Math.min(100, (storageUsed / storageTotal) * 100);
   const storageNear  = storagePct > 85;
 
-  /* ── Persist metadata to localStorage whenever items change ── */
+  /* -- Fetch real quota from server on open -- */
+  useEffect(() => {
+    if (!open) return;
+    fetch('/api/billing/drive-upgrade')
+      .then(r => r.ok ? r.json() : null)
+      .then((q: { limitGb: number; planId: string; source: string } | null) => {
+        if (!q) return;
+        setServerLimitGb(q.limitGb);
+        const localPlan = serverPlanToLocal(q.planId);
+        setCurrentPlan(localPlan);
+        localStorage.setItem(PLAN_KEY, localPlan);
+        setQuotaLoaded(true);
+      })
+      .catch(() => { setQuotaLoaded(true); });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  /* -- Persist metadata to localStorage whenever items change -- */
   useEffect(() => { saveItemsToStorage(items); }, [items]);
 
-  /* ── Reload blobs from IndexedDB on mount (for files uploaded in prior sessions) ── */
+  /* -- Reload blobs from IndexedDB on mount (for files uploaded in prior sessions) -- */
   useEffect(() => {
     items.forEach(item => {
       if (item.type === 'file' && !item.blob) {
@@ -461,7 +617,7 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* ── Close context menu on outside click ── */
+  /* -- Close context menu on outside click -- */
   useEffect(() => {
     if (!menuItem) return;
     const handler = (e: MouseEvent) => {
@@ -472,10 +628,10 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
     return () => document.removeEventListener('mousedown', handler);
   }, [menuItem]);
 
-  /* ── Reset page whenever filters change ── */
+  /* -- Reset page whenever filters change -- */
   useEffect(() => { setCurrentPage(1); }, [section, currentFolderId, query, sortBy]);
 
-  /* ── Storage capacity email alerts (fire once per threshold, tracked in localStorage) ── */
+  /* -- Storage capacity email alerts (fire once per threshold, tracked in localStorage) -- */
   useEffect(() => {
     const thresholds = [
       { key: 'drive_alert_100', level: '100', pct: 100 },
@@ -502,7 +658,7 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storagePct]);
 
-  /* ── Razorpay drive plan checkout ── */
+  /* -- Razorpay drive plan checkout -- */
   const handleDriveUpgrade = useCallback(async (planId: string) => {
     if (planId === 'free') {
       setCurrentPlan('free');
@@ -541,7 +697,7 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
         key: data.keyId,
         amount: data.pricing?.totalAmountInPaise,
         currency: 'INR',
-        name: 'DocRud Drive',
+        name: 'Ddrive',
         description: data.planLabel,
         order_id: data.order.id,
         handler: async (payment: Record<string, string>) => {
@@ -549,11 +705,14 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
             const verifyRes = await fetch('/api/billing/drive-upgrade', {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ ...payment, planId: `drive-${planId}` }),
+              body: JSON.stringify({ ...payment, planId: `drive-${planId}`, period: billingPeriod }),
             });
             const verifyData = await verifyRes.json().catch(() => null);
             if (!verifyRes.ok) throw new Error(verifyData?.error || 'Verification failed.');
             setCurrentPlan(planId);
+            const grantedGb: number = verifyData?.grantedGb ?? (DRIVE_PLANS.find(p => p.id === planId)?.gb ?? 0);
+            setServerLimitGb(grantedGb);
+            localStorage.setItem(PLAN_KEY, planId);
             localStorage.removeItem('drive_alert_75');
             localStorage.removeItem('drive_alert_90');
             localStorage.removeItem('drive_alert_100');
@@ -581,7 +740,29 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
     }
   }, [billingPeriod]);
 
-  /* ── Visible items ── */
+  // currentPlan is persisted to localStorage in the quota-fetch effect and payment success handler
+
+  /* -- Feature gating helpers -- */
+  const currentTier = PLAN_TIER[currentPlan] ?? 0;
+
+  const featureAvailable = useCallback((feature: DriveFeature): boolean => {
+    return currentTier >= FEATURE_MIN_TIER[feature];
+  }, [currentTier]);
+
+  const checkFeature = useCallback((feature: DriveFeature): boolean => {
+    if (currentTier >= FEATURE_MIN_TIER[feature]) return true;
+    setFeatureLocked({ feature, requiredPlan: FEATURE_REQUIRED_PLAN[feature] });
+    return false;
+  }, [currentTier]);
+
+  /* auto-dismiss feature-lock toast after 5 s */
+  useEffect(() => {
+    if (!featureLocked) return;
+    const t = setTimeout(() => setFeatureLocked(null), 5000);
+    return () => clearTimeout(t);
+  }, [featureLocked]);
+
+  /* -- Visible items -- */
   const visibleItems = useMemo(() => {
     let list = items;
     if (section === 'my-drive') {
@@ -608,28 +789,34 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
     return list;
   }, [items, section, currentFolderId, query, sortBy]);
 
-  /* ── Paginated slice ── */
+  /* -- Paginated slice -- */
   const totalPages   = Math.max(1, Math.ceil(visibleItems.length / PAGE_SIZE));
   const pagedItems   = visibleItems.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
-  /* ── Pinned items (for grid header) ── */
+  // Track search after filter is applied
+  useEffect(() => {
+    if (query.trim()) trackSearchDrive(query, visibleItems.length);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, visibleItems.length]);
+
+  /* -- Pinned items (for grid header) -- */
   const pinnedItems = useMemo(
     () => items.filter(i => i.pinned && (section === 'my-drive' || section === 'starred')).slice(0, 6),
     [items, section],
   );
 
-  /* ── Folder count helper ── */
+  /* -- Folder count helper -- */
   const folderItemCount = useCallback((folderId: string) =>
     items.filter(i => i.parentId === folderId).length
   , [items]);
 
-  /* ── History helper ── */
+  /* -- History helper -- */
   function addHistory(itemId: string, action: string, detail?: string, icon = '📋') {
     const entry: FileHistoryEntry = { id: `h${Date.now()}${Math.random()}`, action, timestamp: Date.now(), detail, icon };
     setItems(prev => prev.map(i => i.id === itemId ? { ...i, history: [...(i.history ?? []), entry] } : i));
   }
 
-  /* ── Fetch chat users when share panel opens ── */
+  /* -- Fetch chat users when share panel opens -- */
   useEffect(() => {
     if (!shareFile) return;
     fetch('/api/drive/chat-users').then(r => r.json()).then(d => {
@@ -637,7 +824,7 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
     }).catch(() => {});
   }, [shareFile]);
 
-  /* ── Read deep-link URL params once on mount ── */
+  /* -- Read deep-link URL params once on mount -- */
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
@@ -655,7 +842,7 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* ── Execute deep-link action once drive is open + items are loaded ── */
+  /* -- Execute deep-link action once drive is open + items are loaded -- */
   useEffect(() => {
     if (!open || !deepLinkFileId || !deepLinkAction) return;
     if (deepLinkAction === 'open') {
@@ -682,7 +869,7 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, deepLinkFileId, deepLinkAction]);
 
-  /* ── Handlers ── */
+  /* -- Handlers -- */
 
   function navigateInto(folder: DriveItem) {
     if (folder.locked && !unlockedFolders.has(folder.id)) {
@@ -933,7 +1120,8 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
   }
 
   function handleScannerFileAdded(added: AddedShareFile) {
-    const newId = `shared_${added.token}`;
+    /* prefer the real server transfer id, fall back to token-based stub id */
+    const newId = added.transferId ?? `shared_${added.token}`;
     const ext = added.name.split('.').pop()?.toLowerCase() ?? '';
     const kind: FileKind = ext === 'pdf' ? 'pdf' : ['jpg','jpeg','png','gif','webp'].includes(ext) ? 'image' : ['mp4','mov'].includes(ext) ? 'video' : ['mp3','m4a'].includes(ext) ? 'audio' : ['doc','docx'].includes(ext) ? 'doc' : ['xls','xlsx','csv'].includes(ext) ? 'sheet' : ['zip','rar'].includes(ext) ? 'archive' : 'other';
     setItems(prev => {
@@ -944,7 +1132,7 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
     setScannerOpen(false);
   }
 
-  /* ── DnD on items ── */
+  /* -- DnD on items -- */
   function handleDragItemStart(e: React.DragEvent, item: DriveItem) {
     e.dataTransfer.setData('itemId', item.id);
     setDraggedId(item.id);
@@ -969,7 +1157,7 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
 
   if (!open || typeof document === 'undefined') return null;
 
-  /* ── Render ─────────────────────────────────────────────────────────────── */
+  /* -- Render --------------------------------------------------------------- */
   return createPortal(
     <>
       {/* Global styles */}
@@ -985,20 +1173,30 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
         @keyframes fd-slide-up { from{opacity:0;transform:translateY(40px)} to{opacity:1;transform:none} }
         @keyframes fd-fade { from{opacity:0} to{opacity:1} }
 
-        .fd-row  { transition:background .08s,box-shadow .08s; cursor:pointer; }
-        .fd-row:hover  { background:rgba(255,255,255,.042)!important; }
-        .fd-row-folder { background:rgba(251,191,36,.028); }
-        .fd-row-folder:hover { background:rgba(251,191,36,.068)!important; }
+        .fd-row  { transition:background .08s; cursor:pointer; }
+        .fd-row:hover  { background:rgba(255,255,255,.035)!important; }
+        .fd-row-folder { background:transparent; }
+        .fd-row-folder:hover { background:rgba(255,255,255,.035)!important; }
+
+        /* Recent section — larger rows on desktop */
+        @media(min-width:640px){
+          .fd-recent-list .fd-row { padding-top:14px!important; padding-bottom:14px!important; }
+          .fd-recent-list .fd-row-icon-wrap { width:36px!important; height:36px!important; border-radius:11px!important; }
+          .fd-recent-list .fd-row-name { font-size:14px!important; }
+          .fd-recent-list .fd-row-meta { font-size:11px!important; }
+          .fd-recent-list .fd-col-size,
+          .fd-recent-list .fd-col-date { font-size:11px!important; }
+        }
 
         .fd-card { transition:background .12s,transform .14s cubic-bezier(.34,1.56,.64,1),box-shadow .14s; }
-        .fd-card:hover { background:rgba(255,255,255,.065)!important; transform:translateY(-3px) scale(1.01); box-shadow:0 12px 36px rgba(0,0,0,.48); }
-        .fd-card-folder { background:rgba(251,191,36,.04)!important; }
-        .fd-card-folder:hover { background:rgba(251,191,36,.09)!important; }
-        .fd-card.drag-over { border-color:rgba(99,102,241,.65)!important; background:rgba(99,102,241,.12)!important; }
+        .fd-card:hover { background:rgba(255,255,255,.055)!important; transform:translateY(-2px); box-shadow:0 8px 28px rgba(0,0,0,.40); }
+        .fd-card-folder { background:rgba(255,255,255,.03)!important; }
+        .fd-card-folder:hover { background:rgba(255,255,255,.06)!important; }
+        .fd-card.drag-over { border-color:rgba(255,255,255,.30)!important; background:rgba(255,255,255,.06)!important; }
 
         .fd-tab  { transition:background .10s,color .10s; border-radius:10px; }
-        .fd-tab:hover  { background:rgba(255,255,255,.055)!important; }
-        .fd-tab.active { background:linear-gradient(135deg,rgba(139,92,246,.18),rgba(99,102,241,.10))!important; }
+        .fd-tab:hover  { background:rgba(255,255,255,.045)!important; }
+        .fd-tab.active { background:rgba(255,255,255,.07)!important; }
 
         .fd-zone { transition:border-color .14s,background .14s; }
         .fd-zone.drag { border-color:rgba(139,92,246,.6)!important; background:rgba(139,92,246,.08)!important; }
@@ -1026,9 +1224,42 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
         @media (max-width:640px) {
           .fd-hide-mobile { display:none !important; }
           .fd-show-mobile { display:flex !important; }
+          /* Header tightening */
+          .fd-header { gap:5px !important; padding:8px 10px !important; }
+          .fd-search-box { width:0 !important; overflow:hidden !important; padding:0 !important; border-color:transparent !important; flex:0 !important; }
+          .fd-search-box.open { width:100% !important; flex:1 !important; }
+          .fd-search-full { position:absolute; left:0; right:0; top:0; bottom:0; z-index:10; display:flex; align-items:center; gap:8px; padding:0 10px; background:rgba(4,4,8,.99); }
+          /* Row actions compact */
+          .fd-row-actions { width:64px !important; }
+          .fd-row-actions .fd-act-secondary { display:none !important; }
+          /* Bulk bar compact */
+          .fd-bulk-label { display:none !important; }
+          /* Plans modal — horizontal scroll carousel */
+          .fd-plans-scroll { padding:16px 16px 20px !important; }
+          .fd-plans-grid {
+            display:flex !important;
+            flex-direction:row !important;
+            overflow-x:auto !important;
+            scroll-snap-type:x mandatory !important;
+            -webkit-overflow-scrolling:touch !important;
+            gap:12px !important;
+            padding-bottom:4px !important;
+          }
+          .fd-plans-grid > * {
+            min-width:268px !important;
+            max-width:268px !important;
+            flex-shrink:0 !important;
+            scroll-snap-align:start !important;
+          }
+          .fd-plans-header { padding:16px 16px 14px !important; gap:10px !important; }
+          .fd-plans-title { font-size:15px !important; }
+          .fd-plans-subtitle { display:none !important; }
+          .fd-plans-footer { padding:10px 16px 14px !important; flex-direction:column !important; gap:4px !important; }
+          .fd-plans-icon { display:none !important; }
         }
         @media (min-width:641px) {
           .fd-show-mobile { display:none !important; }
+          .fd-search-box { width:200px; }
         }
       `}</style>
 
@@ -1042,33 +1273,33 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
           <div className="fd-mobile-drawer" style={{ position:'relative', width:220, height:'100%', background:'rgba(5,5,9,.99)', borderRight:'1px solid rgba(255,255,255,.07)', display:'flex', flexDirection:'column', padding:'16px 10px', gap:3, overflowY:'auto', flexShrink:0 }}>
             <div style={{ display:'flex', alignItems:'center', gap:9, marginBottom:12, paddingBottom:10, borderBottom:'1px solid rgba(255,255,255,.06)' }}>
               <div style={{ width:30, height:30, borderRadius:9, background:'rgba(139,92,246,.15)', border:'1px solid rgba(139,92,246,.22)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                <HardDrive style={{ width:13, height:13, color:'#a78bfa' }} />
+                <DdriveIcon size={13} />
               </div>
-              <span style={{ fontSize:13, fontWeight:800, color:'rgba(255,255,255,.88)' }}>DocRud Drive</span>
+              <span style={{ fontSize:13, fontWeight:800, color:'rgba(255,255,255,.88)' }}>Ddrive</span>
               <button onClick={() => setMobileSidebarOpen(false)} style={{ marginLeft:'auto', background:'transparent', border:'none', cursor:'pointer', color:'rgba(255,255,255,.35)' }}><X style={{width:14,height:14}}/></button>
             </div>
             {([
-              { id:'my-drive', label:'My Drive',  Icon:HardDrive,  badge:null },
-              { id:'recent',   label:'Recent',    Icon:Clock,      badge:null },
-              { id:'starred',  label:'Starred',   Icon:Star,       badge:items.filter(i=>i.starred).length },
-              { id:'shared',   label:'Shared',    Icon:Users,      badge:null },
-              { id:'offline',  label:'Offline',   Icon:WifiOff,    badge:items.filter(i=>i.offlineAvailable).length },
+              { id:'my-drive',  label:'My Ddrive',   Icon:(p: {style?: React.CSSProperties}) => <DdriveIcon size={14} style={p.style} />,  badge:null },
+              { id:'recent',    label:'Recent',     Icon:Clock,      badge:null },
+              { id:'starred',   label:'Starred',    Icon:Star,       badge:items.filter(i=>i.starred).length },
+              { id:'shared',    label:'Shared',     Icon:Users,      badge:null },
+              { id:'analytics', label:'Analytics',  Icon:BarChart2,  badge:null },
             ] as {id:SideSection,label:string,Icon:React.ComponentType<{style?:React.CSSProperties}>,badge:number|null}[]).map(({ id, label, Icon, badge }) => (
-              <button key={id} onClick={() => { setSection(id); setNavStack([{id:null,name:'My Drive'}]); setQuery(''); setSelectedIds(new Set()); setMobileSidebarOpen(false); }}
+              <button key={id} onClick={() => { setSection(id); setNavStack([{id:null,name:'My Ddrive'}]); setQuery(''); setSelectedIds(new Set()); setMobileSidebarOpen(false); }}
                 className={`fd-tab${section===id?' active':''}`}
-                style={{ display:'flex', alignItems:'center', gap:9, padding:'10px 12px', border:'none', background:'transparent', cursor:'pointer', width:'100%', textAlign:'left' }}>
-                <Icon style={{ width:14, height:14, color:section===id?'#a78bfa':'rgba(255,255,255,.30)', flexShrink:0 }} />
-                <span style={{ fontSize:12.5, fontWeight:600, color:section===id?'rgba(255,255,255,.90)':'rgba(255,255,255,.40)', flex:1 }}>{label}</span>
-                {badge != null && badge > 0 && <span style={{ fontSize:9, fontWeight:800, background:'rgba(139,92,246,.28)', color:'#a78bfa', borderRadius:6, padding:'1px 6px' }}>{badge}</span>}
+                style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 12px', border:'none', background:'transparent', cursor:'pointer', width:'100%', textAlign:'left', borderRadius:9 }}>
+                <Icon style={{ width:14, height:14, color:section===id?'rgba(255,255,255,.78)':'rgba(255,255,255,.28)', flexShrink:0 }} />
+                <span style={{ fontSize:13, fontWeight:section===id?600:400, color:section===id?'rgba(255,255,255,.85)':'rgba(255,255,255,.42)', flex:1 }}>{label}</span>
+                {badge != null && badge > 0 && <span style={{ fontSize:9, fontWeight:700, background:'rgba(255,255,255,.08)', color:'rgba(255,255,255,.40)', borderRadius:5, padding:'1px 6px' }}>{badge}</span>}
               </button>
             ))}
             <div style={{ marginTop:'auto', padding:'10px 8px 4px', borderTop:'1px solid rgba(255,255,255,.05)' }}>
-              <div style={{ height:4, borderRadius:99, background:'rgba(255,255,255,.07)', overflow:'hidden', marginBottom:5 }}>
-                <div style={{ height:'100%', width:`${storagePct.toFixed(1)}%`, borderRadius:99, background:storageBarGradient(storagePct) }} />
+              <div style={{ height:3, borderRadius:99, background:'rgba(255,255,255,.06)', overflow:'hidden', marginBottom:6 }}>
+                <div style={{ height:'100%', width:`${storagePct.toFixed(1)}%`, borderRadius:99, background: storagePct >= 90 ? 'rgba(248,113,113,.65)' : storagePct >= 75 ? 'rgba(251,146,60,.55)' : 'rgba(255,255,255,.30)' }} />
               </div>
-              <p style={{ margin:'0 0 7px', fontSize:9.5, color:'rgba(255,255,255,.72)', textAlign:'center' }}>{fmtSize(storageUsed)} / {fmtSize(storageTotal)}</p>
-              <button onClick={() => { setPlansOpen(true); setMobileSidebarOpen(false); }} style={{ width:'100%', padding:'7px', borderRadius:8, border:'1px solid rgba(139,92,246,.28)', background:'rgba(139,92,246,.12)', cursor:'pointer', fontSize:10.5, fontWeight:700, color:'#a78bfa' }}>
-                <Zap style={{ width:10, height:10, display:'inline', marginRight:4, verticalAlign:'middle' }} /> Upgrade
+              <p style={{ margin:'0 0 7px', fontSize:9, color:'rgba(255,255,255,.28)', textAlign:'center' }}>{fmtSize(storageUsed)} of {fmtSize(storageTotal)}</p>
+              <button onClick={() => { setPlansOpen(true); setMobileSidebarOpen(false); }} style={{ width:'100%', padding:'7px', borderRadius:8, border:'1px solid rgba(255,255,255,.10)', background:'rgba(255,255,255,.04)', cursor:'pointer', fontSize:10.5, fontWeight:600, color:'rgba(255,255,255,.45)' }}>
+                Manage plan
               </button>
             </div>
           </div>
@@ -1079,109 +1310,131 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
       <div style={{ position:'fixed', inset:0, zIndex:2147483641, display:'flex', alignItems:'center', justifyContent:'center', pointerEvents:'none' }}>
         <div
           onClick={e => e.stopPropagation()}
-          style={{ pointerEvents:'auto', width:'100%', height:'100%', maxWidth:1100, maxHeight:'100%', background:'rgba(4,4,8,.99)', backdropFilter:'blur(60px)', border:'1px solid rgba(255,255,255,.07)', display:'flex', flexDirection:'column', overflow:'hidden', animation:'fd-in .28s cubic-bezier(.22,1,.36,1) both', boxShadow:'0 24px 80px rgba(0,0,0,.92)' }}
-          className="sm:rounded-[22px] sm:h-[calc(100svh-24px)] sm:max-h-[820px]"
+          style={{ pointerEvents:'auto', width:'100%', height:'100%', background:'rgba(4,4,8,.99)', backdropFilter:'blur(60px)', border:'none', display:'flex', flexDirection:'column', overflow:'hidden', animation:'fd-in .28s cubic-bezier(.22,1,.36,1) both' }}
         >
 
-          {/* ══ HEADER ══ */}
-          <div style={{ display:'flex', alignItems:'center', gap:8, padding:'9px 14px', borderBottom:'1px solid rgba(255,255,255,.065)', flexShrink:0, background:'rgba(255,255,255,.012)' }}>
+          {/* == HEADER == */}
+          <div className="fd-header" style={{ display:'flex', alignItems:'center', gap:8, padding:'9px 14px', borderBottom:'1px solid rgba(255,255,255,.065)', flexShrink:0, background:'rgba(255,255,255,.012)', position:'relative' }}>
+
+            {/* Mobile full-width search overlay */}
+            {mobileSearchOpen && (
+              <div className="fd-search-full">
+                <Search style={{ width:13, height:13, color:'rgba(255,255,255,.35)', flexShrink:0 }} />
+                <input autoFocus type="text" placeholder="Search files & folders…" value={query} onChange={e => setQuery(e.target.value)}
+                  style={{ border:'none', background:'transparent', outline:'none', fontSize:13, color:'rgba(255,255,255,.80)', width:'100%', caretColor:'#a78bfa' }} />
+                <button onClick={() => { setQuery(''); setMobileSearchOpen(false); }} style={{ border:'none', background:'rgba(255,255,255,.06)', borderRadius:7, cursor:'pointer', color:'rgba(255,255,255,.45)', padding:'4px 8px', fontSize:11, flexShrink:0 }}>Done</button>
+              </div>
+            )}
 
             {/* Mobile hamburger */}
-            <button className="fd-show-mobile" onClick={() => setMobileSidebarOpen(true)} style={{ width:30, height:30, borderRadius:9, border:'1px solid rgba(255,255,255,.09)', background:'rgba(255,255,255,.04)', display:'none', alignItems:'center', justifyContent:'center', color:'rgba(255,255,255,.50)', cursor:'pointer', flexShrink:0 }}>
+            <button className="fd-show-mobile" onClick={() => setMobileSidebarOpen(true)} style={{ width:32, height:32, borderRadius:9, border:'1px solid rgba(255,255,255,.08)', background:'rgba(255,255,255,.04)', display:'none', alignItems:'center', justifyContent:'center', color:'rgba(255,255,255,.45)', cursor:'pointer', flexShrink:0 }}>
               <List style={{ width:14, height:14 }} />
             </button>
 
-            {/* Logo */}
-            <div className="fd-hide-mobile" style={{ width:32, height:32, borderRadius:10, background:'linear-gradient(135deg,rgba(139,92,246,.20),rgba(99,102,241,.12))', border:'1px solid rgba(139,92,246,.28)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-              <HardDrive style={{ width:14, height:14, color:'#a78bfa' }} />
+            {/* Logo — desktop only */}
+            <div className="fd-hide-mobile" style={{ width:32, height:32, borderRadius:10, background:'linear-gradient(135deg,rgba(139,92,246,.18),rgba(99,102,241,.10))', border:'1px solid rgba(139,92,246,.24)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+              <DdriveIcon size={14} />
             </div>
-            <span className="fd-hide-mobile" style={{ fontSize:13, fontWeight:800, color:'rgba(255,255,255,.70)', letterSpacing:'.01em', flexShrink:0 }}>Drive</span>
+            <span className="fd-hide-mobile" style={{ fontSize:13, fontWeight:700, color:'rgba(255,255,255,.55)', letterSpacing:'.01em', flexShrink:0 }}>Ddrive</span>
 
             {/* Breadcrumbs */}
             <div style={{ display:'flex', alignItems:'center', gap:1, flex:1, minWidth:0, overflow:'hidden' }}>
               {navStack.map((crumb, i) => (
                 <div key={i} style={{ display:'flex', alignItems:'center', gap:1, flexShrink: i < navStack.length-1 ? 0 : 1, minWidth:0 }}>
-                  {i > 0 && <ChevronRight style={{ width:11, height:11, color:'rgba(255,255,255,.18)', flexShrink:0 }} />}
+                  {i > 0 && <ChevronRight style={{ width:10, height:10, color:'rgba(255,255,255,.16)', flexShrink:0 }} />}
                   <button onClick={() => navigateTo(i)}
-                    style={{ border:'none', background:'transparent', cursor:i < navStack.length-1?'pointer':'default', padding:'3px 7px', borderRadius:7, fontSize:12, fontWeight:i===navStack.length-1?700:500, color:i===navStack.length-1?'rgba(255,255,255,.88)':'rgba(255,255,255,.38)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', maxWidth:i===navStack.length-1?200:110, transition:'color .10s' }}>
-                    {i === 0 ? <span style={{ display:'flex', alignItems:'center', gap:4 }}><Home style={{ width:10, height:10 }} />{crumb.name}</span> : crumb.name}
+                    style={{ border:'none', background:'transparent', cursor:i < navStack.length-1?'pointer':'default', padding:'3px 6px', borderRadius:7, fontSize:12, fontWeight:i===navStack.length-1?600:400, color:i===navStack.length-1?'rgba(255,255,255,.80)':'rgba(255,255,255,.32)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', maxWidth:i===navStack.length-1?160:90, transition:'color .10s' }}>
+                    {i === 0 ? <span style={{ display:'flex', alignItems:'center', gap:4 }}><Home style={{ width:10, height:10 }} /><span className="fd-hide-mobile">{crumb.name}</span></span> : crumb.name}
                   </button>
                 </div>
               ))}
             </div>
 
-            {/* Search */}
-            <div style={{ display:'flex', alignItems:'center', gap:7, height:34, background:'rgba(255,255,255,.045)', border:'1px solid rgba(255,255,255,.09)', borderRadius:11, padding:'0 11px', width:200, flexShrink:0, transition:'border-color .12s,width .18s' }}
-              onFocus={e => (e.currentTarget.style.borderColor = 'rgba(139,92,246,.45)')}
-              onBlur={e  => (e.currentTarget.style.borderColor = 'rgba(255,255,255,.09)')}>
+            {/* Search — desktop inline, mobile icon */}
+            <div className="fd-search-box fd-hide-mobile" style={{ display:'flex', alignItems:'center', gap:7, height:34, background:'rgba(255,255,255,.04)', border:'1px solid rgba(255,255,255,.08)', borderRadius:11, padding:'0 11px', flexShrink:0, transition:'border-color .12s' }}
+              onFocus={e => (e.currentTarget.style.borderColor = 'rgba(139,92,246,.40)')}
+              onBlur={e  => (e.currentTarget.style.borderColor = 'rgba(255,255,255,.08)')}>
               <Search style={{ width:12, height:12, color:'rgba(255,255,255,.28)', flexShrink:0 }} />
-              <input type="text" placeholder="Search files & folders…" value={query} onChange={e => setQuery(e.target.value)}
-                style={{ border:'none', background:'transparent', outline:'none', fontSize:12, color:'rgba(255,255,255,.78)', width:'100%', caretColor:'#a78bfa' }} />
-              {query && <button onClick={() => setQuery('')} style={{ border:'none', background:'transparent', cursor:'pointer', color:'rgba(255,255,255,.32)', padding:0, display:'flex' }}><X style={{ width:10, height:10 }} /></button>}
+              <input type="text" placeholder="Search files…" value={query} onChange={e => setQuery(e.target.value)}
+                style={{ border:'none', background:'transparent', outline:'none', fontSize:12, color:'rgba(255,255,255,.75)', width:'100%', caretColor:'#a78bfa' }} />
+              {query && <button onClick={() => setQuery('')} style={{ border:'none', background:'transparent', cursor:'pointer', color:'rgba(255,255,255,.28)', padding:0, display:'flex' }}><X style={{ width:10, height:10 }} /></button>}
             </div>
+            {/* Mobile search icon */}
+            <button className="fd-show-mobile" onClick={() => setMobileSearchOpen(true)} style={{ width:32, height:32, borderRadius:9, border:'1px solid rgba(255,255,255,.08)', background:query?'rgba(139,92,246,.14)':'rgba(255,255,255,.03)', display:'none', alignItems:'center', justifyContent:'center', color:query?'#a78bfa':'rgba(255,255,255,.38)', cursor:'pointer', flexShrink:0 }}>
+              <Search style={{ width:13, height:13 }} />
+            </button>
 
-            {/* View toggle */}
-            <div style={{ display:'flex', background:'rgba(255,255,255,.04)', border:'1px solid rgba(255,255,255,.09)', borderRadius:9, overflow:'hidden', flexShrink:0 }} className="fd-hide-mobile">
+            {/* View toggle — desktop only */}
+            <div className="fd-hide-mobile" style={{ display:'flex', background:'rgba(255,255,255,.04)', border:'1px solid rgba(255,255,255,.08)', borderRadius:9, overflow:'hidden', flexShrink:0 }}>
               {(['list','grid'] as ViewMode[]).map(v => (
-                <button key={v} onClick={() => setView(v)} style={{ width:30, height:30, border:'none', background:view===v?'rgba(139,92,246,.22)':'transparent', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:view===v?'#a78bfa':'rgba(255,255,255,.30)', transition:'all .12s' }}>
+                <button key={v} onClick={() => setView(v)} style={{ width:30, height:30, border:'none', background:view===v?'rgba(255,255,255,.10)':'transparent', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:view===v?'rgba(255,255,255,.75)':'rgba(255,255,255,.28)', transition:'all .12s' }}>
                   {v === 'list' ? <List style={{ width:13, height:13 }} /> : <LayoutGrid style={{ width:13, height:13 }} />}
                 </button>
               ))}
             </div>
 
-            {/* Actions row */}
-            <button onClick={() => setScannerOpen(true)} title="Scan QR" style={{ display:'flex', alignItems:'center', gap:5, height:32, background:'rgba(52,211,153,.09)', border:'1px solid rgba(52,211,153,.20)', borderRadius:10, padding:'0 10px', cursor:'pointer', flexShrink:0, transition:'background .12s' }}
-              onMouseEnter={e=>(e.currentTarget.style.background='rgba(52,211,153,.18)')} onMouseLeave={e=>(e.currentTarget.style.background='rgba(52,211,153,.09)')}>
-              <ScanLine style={{ width:12, height:12, color:'#34d399' }} />
-              <span className="fd-hide-mobile" style={{ fontSize:11.5, fontWeight:700, color:'#6ee7b7' }}>Scan</span>
+            {/* Scan QR — icon only, neutral styling */}
+            <button onClick={() => { if (!checkFeature('qrScanner')) return; setScannerOpen(true); }} title={featureAvailable('qrScanner') ? 'Scan QR' : 'Requires Pro'}
+              style={{ width:32, height:32, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(255,255,255,.04)', border:'1px solid rgba(255,255,255,.08)', borderRadius:9, cursor:'pointer', flexShrink:0, transition:'background .12s', opacity: featureAvailable('qrScanner') ? 1 : 0.50 }}
+              onMouseEnter={e=>(e.currentTarget.style.background='rgba(255,255,255,.08)')} onMouseLeave={e=>(e.currentTarget.style.background='rgba(255,255,255,.04)')}>
+              <ScanLine style={{ width:13, height:13, color:'rgba(255,255,255,.50)' }} />
             </button>
 
-            <button onClick={() => setNewFolderOpen(true)} title="New folder" style={{ display:'flex', alignItems:'center', gap:5, height:32, background:'rgba(251,191,36,.09)', border:'1px solid rgba(251,191,36,.18)', borderRadius:10, padding:'0 10px', cursor:'pointer', flexShrink:0, transition:'background .12s' }}
-              onMouseEnter={e=>(e.currentTarget.style.background='rgba(251,191,36,.18)')} onMouseLeave={e=>(e.currentTarget.style.background='rgba(251,191,36,.09)')}>
-              <FolderPlus style={{ width:12, height:12, color:'#fbbf24' }} />
-              <span className="fd-hide-mobile" style={{ fontSize:11.5, fontWeight:700, color:'#fcd34d' }}>Folder</span>
+            {/* New folder — icon only */}
+            <button onClick={() => setNewFolderOpen(true)} title="New folder"
+              style={{ width:32, height:32, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(255,255,255,.04)', border:'1px solid rgba(255,255,255,.08)', borderRadius:9, cursor:'pointer', flexShrink:0, transition:'background .12s' }}
+              onMouseEnter={e=>(e.currentTarget.style.background='rgba(255,255,255,.08)')} onMouseLeave={e=>(e.currentTarget.style.background='rgba(255,255,255,.04)')}>
+              <FolderPlus style={{ width:13, height:13, color:'rgba(255,255,255,.50)' }} />
             </button>
 
-            <button onClick={() => setUploadOpen(true)} style={{ display:'flex', alignItems:'center', gap:6, height:32, background:'linear-gradient(135deg,rgba(139,92,246,.28),rgba(99,102,241,.20))', border:'1px solid rgba(139,92,246,.35)', borderRadius:10, padding:'0 13px', cursor:'pointer', flexShrink:0, transition:'all .12s', boxShadow:'0 1px 8px rgba(139,92,246,.18)' }}
-              onMouseEnter={e=>(e.currentTarget.style.background='linear-gradient(135deg,rgba(139,92,246,.40),rgba(99,102,241,.30))')} onMouseLeave={e=>(e.currentTarget.style.background='linear-gradient(135deg,rgba(139,92,246,.28),rgba(99,102,241,.20))')}>
-              <Upload style={{ width:12, height:12, color:'#c4b5fd' }} />
-              <span style={{ fontSize:11.5, fontWeight:700, color:'#ddd6fe' }}>Upload</span>
+            {/* Upload */}
+            <button onClick={() => setUploadOpen(true)} style={{ display:'flex', alignItems:'center', gap:6, height:32, background:'rgba(255,255,255,.08)', border:'1px solid rgba(255,255,255,.14)', borderRadius:10, padding:'0 12px', cursor:'pointer', flexShrink:0, transition:'all .12s' }}
+              onMouseEnter={e=>(e.currentTarget.style.background='rgba(255,255,255,.13)')} onMouseLeave={e=>(e.currentTarget.style.background='rgba(255,255,255,.08)')}>
+              <Upload style={{ width:12, height:12, color:'rgba(255,255,255,.65)' }} />
+              <span className="fd-hide-mobile" style={{ fontSize:11.5, fontWeight:600, color:'rgba(255,255,255,.70)' }}>Upload</span>
             </button>
 
-            <button onClick={onClose} style={{ width:30, height:30, borderRadius:'50%', border:'1px solid rgba(255,255,255,.09)', background:'rgba(255,255,255,.04)', display:'flex', alignItems:'center', justifyContent:'center', color:'rgba(255,255,255,.35)', cursor:'pointer', flexShrink:0, transition:'all .12s' }}
-              onMouseEnter={e=>{e.currentTarget.style.background='rgba(255,80,80,.15)';e.currentTarget.style.color='#f87171';e.currentTarget.style.borderColor='rgba(248,113,113,.28)';}}
-              onMouseLeave={e=>{e.currentTarget.style.background='rgba(255,255,255,.04)';e.currentTarget.style.color='rgba(255,255,255,.35)';e.currentTarget.style.borderColor='rgba(255,255,255,.09)';}}>
-              <X style={{ width:13, height:13 }} />
+            {/* Close */}
+            <button onClick={onClose} style={{ width:30, height:30, borderRadius:'50%', border:'1px solid rgba(255,255,255,.08)', background:'rgba(255,255,255,.03)', display:'flex', alignItems:'center', justifyContent:'center', color:'rgba(255,255,255,.32)', cursor:'pointer', flexShrink:0, transition:'all .12s' }}
+              onMouseEnter={e=>{e.currentTarget.style.background='rgba(248,113,113,.12)';e.currentTarget.style.color='#f87171';e.currentTarget.style.borderColor='rgba(248,113,113,.22)';}}
+              onMouseLeave={e=>{e.currentTarget.style.background='rgba(255,255,255,.03)';e.currentTarget.style.color='rgba(255,255,255,.32)';e.currentTarget.style.borderColor='rgba(255,255,255,.08)';}}>
+              <X style={{ width:12, height:12 }} />
             </button>
           </div>
 
-          {/* ══ BODY ══ */}
+          {/* == BODY == */}
           <div style={{ display:'flex', flex:1, minHeight:0 }}>
 
-            {/* ── SIDEBAR ── */}
+            {/* -- SIDEBAR -- */}
             <div className="fd-scroll fd-hide-mobile" style={{ width:200, flexShrink:0, borderRight:'1px solid rgba(255,255,255,.055)', display:'flex', flexDirection:'column', padding:'12px 10px 10px', gap:2, overflowY:'auto' }}>
 
               <p style={{ margin:'0 0 6px 10px', fontSize:9.5, fontWeight:800, color:'rgba(255,255,255,.22)', letterSpacing:'.10em', textTransform:'uppercase' }}>Navigation</p>
 
               {([
-                { id:'my-drive', label:'My Drive',  Icon:HardDrive,  badge:null },
-                { id:'recent',   label:'Recent',    Icon:Clock,      badge:null },
-                { id:'starred',  label:'Starred',   Icon:Star,       badge:items.filter(i=>i.starred).length },
-                { id:'shared',   label:'Shared',    Icon:Users,      badge:null },
-                { id:'offline',  label:'Offline',   Icon:WifiOff,    badge:items.filter(i=>i.offlineAvailable).length },
+                { id:'my-drive',  label:'My Ddrive',   Icon:(p: {style?: React.CSSProperties}) => <DdriveIcon size={14} style={p.style} />,  badge:null },
+                { id:'recent',    label:'Recent',     Icon:Clock,      badge:null },
+                { id:'starred',   label:'Starred',    Icon:Star,       badge:items.filter(i=>i.starred).length },
+                { id:'shared',    label:'Shared',     Icon:Users,      badge:null },
               ] as {id:SideSection,label:string,Icon:React.ComponentType<{style?:React.CSSProperties}>,badge:number|null}[]).map(({ id, label, Icon, badge }) => (
-                <button key={id} onClick={() => { setSection(id); setNavStack([{id:null,name:'My Drive'}]); setQuery(''); setSelectedIds(new Set()); }}
+                <button key={id} onClick={() => { setSection(id); setNavStack([{id:null,name:'My Ddrive'}]); setQuery(''); setSelectedIds(new Set()); }}
                   className={`fd-tab${section===id?' active':''}`}
-                  style={{ display:'flex', alignItems:'center', gap:9, padding:'9px 12px', border:'none', background:section===id?'rgba(139,92,246,.14)':'transparent', cursor:'pointer', width:'100%', textAlign:'left' }}>
-                  <div style={{ width:26, height:26, borderRadius:8, background:section===id?'rgba(139,92,246,.20)':'rgba(255,255,255,.04)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                    <Icon style={{ width:12, height:12, color:section===id?'#a78bfa':'rgba(255,255,255,.30)' }} />
-                  </div>
-                  <span style={{ fontSize:12.5, fontWeight:600, color:section===id?'rgba(255,255,255,.92)':'rgba(255,255,255,.42)', flex:1 }}>{label}</span>
+                  style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 10px', border:'none', background:'transparent', cursor:'pointer', width:'100%', textAlign:'left', borderRadius:9 }}>
+                  <Icon style={{ width:13, height:13, color:section===id?'rgba(255,255,255,.78)':'rgba(255,255,255,.28)', flexShrink:0 }} />
+                  <span style={{ fontSize:12.5, fontWeight:section===id?600:400, color:section===id?'rgba(255,255,255,.85)':'rgba(255,255,255,.40)', flex:1 }}>{label}</span>
                   {badge != null && badge > 0 && (
-                    <span style={{ fontSize:9, fontWeight:800, background:'rgba(139,92,246,.28)', color:'#c4b5fd', borderRadius:6, padding:'1px 6px', minWidth:16, textAlign:'center' }}>{badge}</span>
+                    <span style={{ fontSize:9, fontWeight:700, background:'rgba(255,255,255,.08)', color:'rgba(255,255,255,.40)', borderRadius:5, padding:'1px 6px', minWidth:16, textAlign:'center' }}>{badge}</span>
                   )}
                 </button>
               ))}
+
+              {/* Analytics separator + tab */}
+              <p style={{ margin:'14px 0 5px 10px', fontSize:9.5, fontWeight:800, color:'rgba(255,255,255,.22)', letterSpacing:'.10em', textTransform:'uppercase' }}>Insights</p>
+              <button onClick={() => { setSection('analytics'); setQuery(''); setSelectedIds(new Set()); }}
+                className={`fd-tab${section==='analytics'?' active':''}`}
+                style={{ display:'flex', alignItems:'center', gap:9, padding:'8px 10px', border:'none', background:'transparent', cursor:'pointer', width:'100%', textAlign:'left', borderRadius:9 }}>
+                <BarChart2 style={{ width:13, height:13, color:section==='analytics'?'rgba(99,102,241,.90)':'rgba(255,255,255,.28)', flexShrink:0 }} />
+                <span style={{ fontSize:12.5, fontWeight:section==='analytics'?600:400, color:section==='analytics'?'rgba(255,255,255,.85)':'rgba(255,255,255,.40)', flex:1 }}>Analytics</span>
+              </button>
 
               {/* Labels */}
               {items.some(i => i.label) && (
@@ -1201,38 +1454,710 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
               )}
 
               {/* Storage widget */}
-              <div style={{ marginTop:'auto', padding:'12px 10px 6px', borderTop:'1px solid rgba(255,255,255,.055)' }}>
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6 }}>
-                  <span style={{ fontSize:10, fontWeight:700, color:'rgba(255,255,255,.40)', textTransform:'uppercase', letterSpacing:'.07em' }}>Storage</span>
-                  <span style={{ fontSize:9.5, color:storageAccentColor(storagePct), fontWeight:700 }}>{Math.round(storagePct)}%</span>
+              <div style={{ marginTop:'auto', padding:'10px 8px 6px', borderTop:'1px solid rgba(255,255,255,.05)' }}>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:5 }}>
+                  <span style={{ fontSize:9.5, fontWeight:600, color:'rgba(255,255,255,.28)', textTransform:'uppercase', letterSpacing:'.07em' }}>Storage</span>
+                  <span style={{ fontSize:9.5, color:'rgba(255,255,255,.38)', fontWeight:600 }}>{Math.round(storagePct)}%</span>
                 </div>
-                <div style={{ height:5, borderRadius:99, background:'rgba(255,255,255,.07)', overflow:'hidden', marginBottom:6 }}>
-                  <div style={{ height:'100%', width:`${storagePct.toFixed(1)}%`, borderRadius:99, background:storageBarGradient(storagePct), transition:'width .5s cubic-bezier(.4,0,.2,1)' }} />
+                <div style={{ height:3, borderRadius:99, background:'rgba(255,255,255,.06)', overflow:'hidden', marginBottom:6 }}>
+                  <div style={{ height:'100%', width:`${storagePct.toFixed(1)}%`, borderRadius:99, background: storagePct >= 90 ? 'rgba(248,113,113,.70)' : storagePct >= 75 ? 'rgba(251,146,60,.60)' : 'rgba(255,255,255,.35)', transition:'width .5s cubic-bezier(.4,0,.2,1)' }} />
                 </div>
-                <p style={{ margin:'0 0 8px', fontSize:9.5, color:'rgba(255,255,255,.72)', textAlign:'center' }}>
-                  {fmtSize(storageUsed)} used of {fmtSize(storageTotal)}
+                <p style={{ margin:'0 0 7px', fontSize:9, color:'rgba(255,255,255,.30)', textAlign:'center' }}>
+                  {fmtSize(storageUsed)} of {fmtSize(storageTotal)}
                 </p>
-                {storageNear && <p style={{ margin:'0 0 8px', fontSize:9.5, color:'#fb923c', textAlign:'center', fontWeight:600 }}>⚠ Storage nearly full</p>}
                 <button onClick={() => setPlansOpen(true)}
-                  style={{ width:'100%', padding:'7px', borderRadius:9, border:'1px solid rgba(139,92,246,.28)', background:'rgba(139,92,246,.12)', cursor:'pointer', fontSize:11, fontWeight:700, color:'#a78bfa', display:'flex', alignItems:'center', justifyContent:'center', gap:5, transition:'all .12s' }}
-                  onMouseEnter={e=>(e.currentTarget.style.background='rgba(139,92,246,.22)')}
-                  onMouseLeave={e=>(e.currentTarget.style.background='rgba(139,92,246,.12)')}>
-                  <Zap style={{ width:10, height:10 }} /> Upgrade Plan
+                  style={{ width:'100%', padding:'6px', borderRadius:8, border:'1px solid rgba(255,255,255,.10)', background:'rgba(255,255,255,.04)', cursor:'pointer', fontSize:10.5, fontWeight:600, color:'rgba(255,255,255,.45)', display:'flex', alignItems:'center', justifyContent:'center', gap:4, transition:'all .10s' }}
+                  onMouseEnter={e=>{e.currentTarget.style.background='rgba(255,255,255,.08)';e.currentTarget.style.color='rgba(255,255,255,.70)';}}
+                  onMouseLeave={e=>{e.currentTarget.style.background='rgba(255,255,255,.04)';e.currentTarget.style.color='rgba(255,255,255,.45)';}}>
+                  <Zap style={{ width:9, height:9 }} /> Manage plan
                 </button>
-                <p style={{ margin:'5px 0 0', fontSize:9, color:'rgba(255,255,255,.18)', textAlign:'center' }}>
-                  {storagePlan.label} plan · {storagePlan.gb >= 1024 ? `${storagePlan.gb/1024} TB` : `${storagePlan.gb} GB`}
-                </p>
               </div>
             </div>
 
-            {/* ── MAIN CONTENT ── */}
+            {/* -- MAIN CONTENT -- */}
             <div style={{ flex:1, minWidth:0, display:'flex', flexDirection:'column', overflow:'hidden', position:'relative' }}>
 
+              {/* == ANALYTICS PANEL == */}
+              {section === 'analytics' && (() => {
+                /* ── data prep ───────────────────────────────────────── */
+                const files        = items.filter(i=>i.type==='file');
+                const folders      = items.filter(i=>i.type==='folder');
+                const totalViews   = files.reduce((s,f)=>s+(f.views??0),0);
+                const totalBytes   = files.reduce((s,f)=>s+(f.bytes??0),0);
+                const sharedCount  = items.filter(i=>i.sharedViaQr||listSharesForItem(i.id).length>0).length;
+                const starredCount = items.filter(i=>i.starred).length;
+                const offlineCount = items.filter(i=>i.offlineAvailable).length;
+                const taggedCount  = items.filter(i=>(i.tags??[]).length>0).length;
+                const pinnedCount  = items.filter(i=>i.pinned).length;
+                const lockedCount  = folders.filter(f=>f.locked).length;
+
+                const kindOrder: FileKind[] = ['pdf','doc','sheet','image','video','audio','archive','other'];
+                const KIND_LABELS: Record<FileKind,string> = {pdf:'PDF',doc:'Doc',sheet:'Sheet',image:'Image',video:'Video',audio:'Audio',archive:'Archive',other:'Other'};
+                const KIND_SOLID: Record<FileKind,string>  = {
+                  pdf:'#f87171',image:'#34d399',video:'#fb923c',audio:'#a78bfa',
+                  doc:'#818cf8',sheet:'#4ade80',archive:'#fbbf24',other:'#94a3b8',
+                };
+                const kindStats = kindOrder.map(k=>({
+                  kind:k, label:KIND_LABELS[k],
+                  count:files.filter(f=>(f.kind??'other')===k).length,
+                  bytes:files.filter(f=>(f.kind??'other')===k).reduce((s,f)=>s+(f.bytes??0),0),
+                  color:KIND_SOLID[k],
+                  views:files.filter(f=>(f.kind??'other')===k).reduce((s,f)=>s+(f.views??0),0),
+                })).filter(s=>s.count>0);
+                const totalKindCount = Math.max(1,kindStats.reduce((s,k)=>s+k.count,0));
+                const maxKindBytes   = Math.max(1,...kindStats.map(s=>s.bytes));
+                const maxKindViews   = Math.max(1,...kindStats.map(s=>s.views));
+
+                const topFiles   = [...files].sort((a,b)=>(b.views??0)-(a.views??0)).slice(0,7);
+                const maxTopView = Math.max(1,topFiles[0]?.views??1);
+
+                const recentFiles  = [...files].sort((a,b)=>b.updatedAt-a.updatedAt).slice(0,5);
+                const largestFiles = [...files].sort((a,b)=>(b.bytes??0)-(a.bytes??0)).slice(0,5);
+                const maxLargeB    = Math.max(1,largestFiles[0]?.bytes??1);
+
+                const privBreakdown = (['public','private','password'] as const).map(p=>({
+                  label: p==='public'?'Public':p==='private'?'Private':'Password',
+                  count: files.filter(f=>(f.privacy??'public')===p).length,
+                  color: p==='public'?'#34d399':p==='private'?'#f87171':'#fbbf24',
+                })).filter(p=>p.count>0);
+                const totalPriv = Math.max(1,privBreakdown.reduce((s,p)=>s+p.count,0));
+
+                const allEvents = items.flatMap(item=>
+                  (item.history??[]).map(h=>({...h,itemName:item.name,itemId:item.id}))
+                ).sort((a,b)=>b.timestamp-a.timestamp);
+
+                // Activity: last 14 days
+                const nowMs = Date.now(); const dayMs = 86_400_000;
+                const activity14 = Array.from({length:14},(_,i)=>{
+                  const s=nowMs-(13-i)*dayMs; const e=s+dayMs;
+                  const evs=allEvents.filter(ev=>ev.timestamp>=s&&ev.timestamp<e);
+                  return {
+                    label: new Date(s).toLocaleDateString('en-IN',{weekday:'short',day:'numeric'}),
+                    shortLabel: new Date(s).toLocaleDateString('en-IN',{weekday:'short'}),
+                    count: evs.length,
+                    uploads: evs.filter(e=>e.action==='Uploaded').length,
+                    views:   evs.filter(e=>e.action==='Opened').length,
+                    shares:  evs.filter(e=>e.action==='Shared').length,
+                  };
+                });
+                const maxDay14 = Math.max(1,...activity14.map(d=>d.count));
+
+                // Upload trend: 30-day sparkline
+                const upload30 = Array.from({length:30},(_,i)=>{
+                  const s=nowMs-(29-i)*dayMs; const e=s+dayMs;
+                  return allEvents.filter(ev=>ev.timestamp>=s&&ev.timestamp<e&&ev.action==='Uploaded').length;
+                });
+                const maxU30 = Math.max(1,...upload30);
+
+                // Storage health
+                const storagePctNum = Math.min(100,(storageUsed/storageTotal)*100);
+                const storageColor  = storagePctNum>90?'#f87171':storagePctNum>75?'#fb923c':storagePctNum>50?'#fbbf24':'#6366f1';
+
+                // File age bands
+                const ageBands = [
+                  {label:'Today',     days:1,   color:'#34d399'},
+                  {label:'This week', days:7,   color:'#6366f1'},
+                  {label:'This month',days:30,  color:'#fb923c'},
+                  {label:'3 months',  days:90,  color:'#a78bfa'},
+                  {label:'Older',     days:Infinity, color:'#94a3b8'},
+                ].map(b=>({
+                  ...b,
+                  count:files.filter(f=>{
+                    const ageDays=(nowMs-(f.createdAt??0))/dayMs;
+                    const prevDays=b.days===1?0:b.days===7?1:b.days===30?7:b.days===90?30:90;
+                    return ageDays>=prevDays&&ageDays<b.days;
+                  }).length,
+                })).filter(b=>b.count>0);
+                const maxAge = Math.max(1,...ageBands.map(b=>b.count));
+
+                // Top tags
+                const tagMap: Record<string,number> = {};
+                items.forEach(i=>(i.tags??[]).forEach(t=>{tagMap[t]=(tagMap[t]??0)+1;}));
+                const topTags = Object.entries(tagMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
+
+                // Action distribution
+                const actionMap: Record<string,number> = {};
+                allEvents.forEach(e=>{actionMap[e.action]=(actionMap[e.action]??0)+1;});
+                const topActions = Object.entries(actionMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
+                const maxAction  = Math.max(1,...topActions.map(a=>a[1]));
+
+                /* ── pure-SVG chart helpers ───────────────────────────── */
+                function DonutChart({segs,size=130,strokeW=12,label,sub}:{
+                  segs:{v:number;c:string}[];size?:number;strokeW?:number;label?:string;sub?:string;
+                }) {
+                  const r=size/2-strokeW; const circ=2*Math.PI*r;
+                  const total=Math.max(1,segs.reduce((s,g)=>s+g.v,0));
+                  let off=circ*0.25; // start at top
+                  return (
+                    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+                      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={strokeW}/>
+                      {segs.filter(s=>s.v>0).map((seg,i)=>{
+                        const dash=(seg.v/total)*circ-1.5; const gap=circ-dash;
+                        const el=(
+                          <circle key={i} cx={size/2} cy={size/2} r={r} fill="none"
+                            stroke={seg.c} strokeWidth={strokeW} strokeLinecap="round"
+                            strokeDasharray={`${dash.toFixed(2)} ${gap.toFixed(2)}`}
+                            strokeDashoffset={off}
+                          />
+                        );
+                        off-=(seg.v/total)*circ;
+                        return el;
+                      })}
+                      {label&&<text x={size/2} y={size/2-5} textAnchor="middle" fill="rgba(255,255,255,.88)" fontSize="17" fontWeight="800" fontFamily="system-ui">{label}</text>}
+                      {sub&&<text x={size/2} y={size/2+11} textAnchor="middle" fill="rgba(255,255,255,.30)" fontSize="9" fontFamily="system-ui">{sub}</text>}
+                    </svg>
+                  );
+                }
+
+                function AreaSparkline({data,color='#6366f1',height=56,width=260,fill=true}:{data:number[];color?:string;height?:number;width?:number;fill?:boolean}) {
+                  if(data.length<2) return null;
+                  const max=Math.max(1,...data); const pts=data.length;
+                  const xs=data.map((_,i)=>((i/(pts-1))*width).toFixed(1));
+                  const ys=data.map(d=>((1-d/max)*(height-8)+4).toFixed(1));
+                  const lineD=xs.map((x,i)=>`${i===0?'M':'L'}${x},${ys[i]}`).join(' ');
+                  const areaD=`${lineD} L${width},${height} L0,${height} Z`;
+                  return (
+                    <svg viewBox={`0 0 ${width} ${height}`} width="100%" preserveAspectRatio="none" style={{display:'block'}}>
+                      <defs>
+                        <linearGradient id="area-grad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={color} stopOpacity="0.35"/>
+                          <stop offset="100%" stopColor={color} stopOpacity="0.02"/>
+                        </linearGradient>
+                      </defs>
+                      {fill&&<path d={areaD} fill="url(#area-grad)"/>}
+                      <path d={lineD} fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                      {data.map((v,i)=>v===max&&(
+                        <circle key={i} cx={xs[i]} cy={ys[i]} r="3" fill={color} opacity="0.9"/>
+                      ))}
+                    </svg>
+                  );
+                }
+
+                function MultiBarChart({data,keys,colors,height=80}:{data:{label:string;[k:string]:number|string}[];keys:string[];colors:string[];height?:number}) {
+                  const maxVal=Math.max(1,...data.flatMap(d=>keys.map(k=>d[k] as number)));
+                  const barW=Math.max(4,Math.floor((260/data.length)-3));
+                  return (
+                    <svg viewBox={`0 0 ${data.length*(barW+3)} ${height+18}`} width="100%" style={{overflow:'visible'}}>
+                      {data.map((d,i)=>{
+                        const x=i*(barW+3);
+                        return (
+                          <g key={i}>
+                            {keys.map((k,ki)=>{
+                              const val=d[k] as number;
+                              const bh=Math.max(2,(val/maxVal)*(height-6));
+                              const bx=x+ki*Math.floor(barW/keys.length);
+                              const bw=Math.max(2,Math.floor(barW/keys.length)-1);
+                              return <rect key={ki} x={bx} y={height-bh} width={bw} height={bh} rx="3" fill={colors[ki]} opacity="0.85"/>;
+                            })}
+                            <text x={x+barW/2} y={height+12} textAnchor="middle" fill="rgba(255,255,255,0.22)" fontSize="7.5" fontFamily="system-ui">{d.label}</text>
+                          </g>
+                        );
+                      })}
+                    </svg>
+                  );
+                }
+
+                function RadialGauge({pct,color,size=100}:{pct:number;color:string;size?:number}) {
+                  const r=size/2-10; const circ=2*Math.PI*r;
+                  const dash=(pct/100)*circ*0.75; const gap=circ;
+                  return (
+                    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{transform:'rotate(135deg)',transformOrigin:'center'}}>
+                      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="8" strokeDasharray={`${circ*0.75} ${circ*0.25}`} strokeLinecap="round"/>
+                      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth="8" strokeDasharray={`${dash} ${gap}`} strokeLinecap="round" style={{transition:'stroke-dasharray .8s ease'}}/>
+                    </svg>
+                  );
+                }
+
+                /* ── style helpers ──────────────────────────────────── */
+                const glass  = {background:'rgba(255,255,255,.028)',border:'1px solid rgba(255,255,255,.08)',borderRadius:20} as React.CSSProperties;
+                const glass2 = {background:'rgba(255,255,255,.018)',border:'1px solid rgba(255,255,255,.07)',borderRadius:16} as React.CSSProperties;
+                const grid2  = {display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))',gap:14} as React.CSSProperties;
+                const grid3  = {display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(190px,1fr))',gap:12} as React.CSSProperties;
+                const H = ({children,icon}:{children:React.ReactNode,icon?:React.ReactNode})=>(
+                  <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:16}}>
+                    {icon&&<span style={{display:'flex',alignItems:'center',justifyContent:'center',width:26,height:26,borderRadius:8,background:'rgba(255,255,255,.06)',flexShrink:0}}>{icon}</span>}
+                    <span style={{fontSize:12,fontWeight:700,color:'rgba(255,255,255,.72)',letterSpacing:'.01em'}}>{children}</span>
+                  </div>
+                );
+                const Chip = ({label,value,accent}:{label:string;value:string|number;accent:string})=>(
+                  <div style={{display:'flex',flexDirection:'column',gap:1,padding:'10px 14px',borderRadius:12,background:`${accent}10`,border:`1px solid ${accent}28`}}>
+                    <span style={{fontSize:9.5,fontWeight:700,color:`${accent}cc`,letterSpacing:'.08em',textTransform:'uppercase' as const}}>{label}</span>
+                    <span style={{fontSize:18,fontWeight:800,color:'rgba(255,255,255,.88)',letterSpacing:'-0.03em',lineHeight:1.1}}>{value}</span>
+                  </div>
+                );
+
+                return (
+                  <div style={{flex:1,overflowY:'auto',overflowX:'hidden',padding:'0',WebkitOverflowScrolling:'touch'} as React.CSSProperties}>
+                    <style>{`
+                      .fd-an-inner{padding:18px 14px 48px}
+                      @media(min-width:480px){.fd-an-inner{padding:20px 18px 48px}}
+                      @media(min-width:700px){.fd-an-inner{padding:24px 26px 56px}}
+                      .fd-an-kpi{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+                      @keyframes fd-rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+                      .fd-an-card{animation:fd-rise .35s cubic-bezier(.4,0,.2,1) both}
+                    `}</style>
+
+                    <div className="fd-an-inner">
+
+                      {/* ══ HERO HEADER ══ */}
+                      <div style={{position:'relative',borderRadius:22,overflow:'hidden',marginBottom:20,padding:'22px 22px 20px',background:'linear-gradient(135deg,rgba(99,102,241,.18) 0%,rgba(139,92,246,.12) 50%,rgba(6,182,212,.08) 100%)',border:'1px solid rgba(99,102,241,.25)'}}>
+                        <div style={{position:'absolute',top:-40,right:-40,width:160,height:160,borderRadius:'50%',background:'radial-gradient(circle,rgba(99,102,241,.25) 0%,transparent 70%)',pointerEvents:'none'}}/>
+                        <div style={{position:'absolute',bottom:-30,left:60,width:120,height:120,borderRadius:'50%',background:'radial-gradient(circle,rgba(139,92,246,.20) 0%,transparent 70%)',pointerEvents:'none'}}/>
+                        <div style={{position:'relative',display:'flex',alignItems:'flex-start',justifyContent:'space-between',flexWrap:'wrap',gap:12}}>
+                          <div>
+                            <p style={{margin:0,fontSize:10,fontWeight:700,letterSpacing:'.18em',textTransform:'uppercase',color:'rgba(167,139,250,.80)'}}>Ddrive</p>
+                            <h2 style={{margin:'4px 0 0',fontSize:22,fontWeight:900,letterSpacing:'-0.04em',color:'#fff',lineHeight:1.1}}>Analytics &amp; Insights</h2>
+                            <p style={{margin:'6px 0 0',fontSize:12,color:'rgba(255,255,255,.45)',maxWidth:380}}>Comprehensive intelligence on your workspace — storage efficiency, engagement patterns, security posture, and productivity trends.</p>
+                          </div>
+                          <div style={{display:'flex',flexDirection:'column',gap:6,alignItems:'flex-end'}}>
+                            <span style={{fontSize:10,color:'rgba(255,255,255,.30)',background:'rgba(255,255,255,.06)',padding:'4px 12px',borderRadius:20,fontWeight:600,whiteSpace:'nowrap'}}>{items.length} total items</span>
+                            <span style={{fontSize:9.5,color:storageColor,background:`${storageColor}18`,padding:'4px 10px',borderRadius:20,fontWeight:700,border:`1px solid ${storageColor}30`}}>{storagePctNum.toFixed(0)}% storage used</span>
+                          </div>
+                        </div>
+                        {/* mini sparkline in header */}
+                        <div style={{marginTop:14,opacity:.6}}>
+                          <AreaSparkline data={upload30} color="#a78bfa" height={36} fill={true}/>
+                        </div>
+                        <p style={{margin:'4px 0 0',fontSize:9.5,color:'rgba(255,255,255,.25)'}}>↑ Upload activity — last 30 days</p>
+                      </div>
+
+                      {/* ══ KPI GRID ══ */}
+                      <div className="fd-an-kpi" style={{marginBottom:18}}>
+                        {([
+                          {l:'Files',v:files.length,         s:'total in workspace', a:'#818cf8', ic:<FileText  style={{width:11,height:11,color:'#818cf8'}}/>},
+                          {l:'Folders',v:folders.length,      s:'directories',        a:'#fbbf24', ic:<Folder    style={{width:11,height:11,color:'#fbbf24'}}/>},
+                          {l:'Storage',v:fmtSize(totalBytes), s:`${storagePctNum.toFixed(0)}% of plan`,a:storageColor,ic:<Archive   style={{width:11,height:11,color:storageColor}}/>},
+                          {l:'Total views',v:totalViews,      s:'cumulative opens',   a:'#34d399', ic:<Eye       style={{width:11,height:11,color:'#34d399'}}/>},
+                          {l:'Shared',v:sharedCount,          s:'items shared out',   a:'#a78bfa', ic:<Share2    style={{width:11,height:11,color:'#a78bfa'}}/>},
+                          {l:'Starred',v:starredCount,        s:'favourites',         a:'#facc15', ic:<Star      style={{width:11,height:11,color:'#facc15'}}/>},
+                          {l:'Pinned',v:pinnedCount,           s:'quick-access',       a:'#f97316', ic:<Pin       style={{width:11,height:11,color:'#f97316'}}/>},
+                          {l:'Tagged',v:taggedCount,          s:'items with tags',    a:'#2dd4bf', ic:<Tag       style={{width:11,height:11,color:'#2dd4bf'}}/>},
+                          {l:'Locked',v:lockedCount,          s:'protected folders',  a:'#f87171', ic:<Lock      style={{width:11,height:11,color:'#f87171'}}/>},
+                          {l:'Events',v:allEvents.length,     s:'activity recorded',  a:'#94a3b8', ic:<Activity  style={{width:11,height:11,color:'#94a3b8'}}/>},
+                          {l:'File types',v:kindStats.length, s:'distinct categories',a:'#fb923c', ic:<BarChart2 style={{width:11,height:11,color:'#fb923c'}}/>},
+                        ] as {l:string;v:number|string;s:string;a:string;ic:React.ReactNode}[]).map((c,idx)=>(
+                          <div key={c.l} className="fd-an-card" style={{...glass2,padding:'14px 16px',display:'flex',flexDirection:'column',gap:9,animationDelay:`${idx*30}ms`}}>
+                            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                              <span style={{fontSize:10,fontWeight:700,color:'rgba(255,255,255,.35)',letterSpacing:'.05em',textTransform:'uppercase' as const}}>{c.l}</span>
+                              <span style={{display:'flex',alignItems:'center',justifyContent:'center',width:22,height:22,borderRadius:7,background:`${c.a}18`,flexShrink:0}}>{c.ic}</span>
+                            </div>
+                            <span style={{fontSize:22,fontWeight:900,letterSpacing:'-0.04em',color:'rgba(255,255,255,.92)',lineHeight:1}}>{c.v}</span>
+                            <span style={{fontSize:9.5,color:'rgba(255,255,255,.25)',fontWeight:500}}>{c.s}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* ══ ROW: Storage ring + File types donut ══ */}
+                      <div style={{...grid2,marginBottom:14}}>
+
+                        {/* Storage deep-dive */}
+                        <div style={{...glass,padding:'20px 22px'}}>
+                          <H icon={<Archive style={{width:12,height:12,color:'rgba(255,255,255,.50)'}}/>}>Storage Intelligence</H>
+                          <div style={{display:'flex',alignItems:'center',gap:20,flexWrap:'wrap'}}>
+                            {/* gauge */}
+                            <div style={{position:'relative',flexShrink:0}}>
+                              <RadialGauge pct={storagePctNum} color={storageColor} size={110}/>
+                              <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',paddingTop:8}}>
+                                <span style={{fontSize:17,fontWeight:900,color:'rgba(255,255,255,.90)',letterSpacing:'-0.03em'}}>{storagePctNum.toFixed(0)}%</span>
+                                <span style={{fontSize:9,color:'rgba(255,255,255,.30)'}}>used</span>
+                              </div>
+                            </div>
+                            <div style={{flex:1,minWidth:130,display:'flex',flexDirection:'column',gap:10}}>
+                              <div>
+                                <div style={{display:'flex',justifyContent:'space-between',marginBottom:5}}>
+                                  <span style={{fontSize:11.5,color:'rgba(255,255,255,.55)'}}>Used</span>
+                                  <span style={{fontSize:11.5,fontWeight:800,color:'rgba(255,255,255,.85)',fontFamily:'ui-monospace,monospace'}}>{fmtSize(storageUsed)}</span>
+                                </div>
+                                <div style={{height:7,borderRadius:99,background:'rgba(255,255,255,.07)',overflow:'hidden'}}>
+                                  <div style={{height:'100%',width:`${storagePctNum.toFixed(1)}%`,borderRadius:99,background:`linear-gradient(90deg,${storageColor}cc,${storageColor})`,transition:'width .8s ease',boxShadow:`0 0 8px ${storageColor}55`}}/>
+                                </div>
+                              </div>
+                              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+                                <Chip label="Free" value={fmtSize(storageTotal-storageUsed)} accent="#34d399"/>
+                                <Chip label="Plan" value={fmtSize(storageTotal)} accent="#6366f1"/>
+                              </div>
+                            </div>
+                          </div>
+                          {/* per-kind storage bars */}
+                          {kindStats.length>0&&(
+                            <div style={{marginTop:18,paddingTop:14,borderTop:'1px solid rgba(255,255,255,.06)'}}>
+                              <p style={{margin:'0 0 12px',fontSize:9.5,fontWeight:700,letterSpacing:'.12em',textTransform:'uppercase',color:'rgba(255,255,255,.22)'}}>Breakdown by type</p>
+                              {kindStats.map(s=>(
+                                <div key={s.kind} style={{marginBottom:9}}>
+                                  <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
+                                    <span style={{width:8,height:8,borderRadius:'50%',background:s.color,flexShrink:0}}/>
+                                    <span style={{flex:1,fontSize:11,color:'rgba(255,255,255,.50)'}}>{s.label}</span>
+                                    <span style={{fontSize:10,color:'rgba(255,255,255,.35)',fontFamily:'ui-monospace,monospace'}}>{fmtSize(s.bytes)}</span>
+                                    <span style={{fontSize:9.5,color:'rgba(255,255,255,.28)',width:28,textAlign:'right'}}>{s.count}f</span>
+                                  </div>
+                                  <div style={{height:5,borderRadius:99,background:'rgba(255,255,255,.06)',overflow:'hidden'}}>
+                                    <div style={{height:'100%',width:`${(s.bytes/maxKindBytes*100).toFixed(1)}%`,borderRadius:99,background:s.color,transition:'width .6s ease'}}/>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* File types donut */}
+                        <div style={{...glass,padding:'20px 22px'}}>
+                          <H icon={<BarChart2 style={{width:12,height:12,color:'rgba(255,255,255,.50)'}}/>}>File Composition</H>
+                          {kindStats.length===0?(
+                            <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'32px 0',gap:8}}>
+                              <FileText style={{width:28,height:28,color:'rgba(255,255,255,.12)'}}/>
+                              <p style={{margin:0,fontSize:11,color:'rgba(255,255,255,.22)'}}>No files yet</p>
+                            </div>
+                          ):(
+                            <>
+                              <div style={{display:'flex',alignItems:'center',gap:18,flexWrap:'wrap',marginBottom:18}}>
+                                <DonutChart segs={kindStats.map(s=>({v:s.count,c:s.color}))} size={130} strokeW={12} label={String(files.length)} sub="files"/>
+                                <div style={{flex:1,minWidth:120,display:'flex',flexDirection:'column',gap:8}}>
+                                  {kindStats.map(s=>(
+                                    <div key={s.kind} style={{display:'flex',alignItems:'center',gap:7}}>
+                                      <span style={{width:7,height:7,borderRadius:'50%',background:s.color,flexShrink:0}}/>
+                                      <span style={{flex:1,fontSize:11.5,color:'rgba(255,255,255,.60)'}}>{s.label}</span>
+                                      <span style={{fontSize:11.5,fontWeight:700,color:'rgba(255,255,255,.80)'}}>{s.count}</span>
+                                      <span style={{fontSize:9.5,color:'rgba(255,255,255,.30)',width:30,textAlign:'right'}}>{((s.count/totalKindCount)*100).toFixed(0)}%</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                              {/* views by type */}
+                              <div style={{paddingTop:14,borderTop:'1px solid rgba(255,255,255,.06)'}}>
+                                <p style={{margin:'0 0 10px',fontSize:9.5,fontWeight:700,letterSpacing:'.12em',textTransform:'uppercase',color:'rgba(255,255,255,.22)'}}>Views by type</p>
+                                {kindStats.filter(s=>s.views>0).map(s=>(
+                                  <div key={s.kind} style={{marginBottom:8}}>
+                                    <div style={{display:'flex',justifyContent:'space-between',marginBottom:3}}>
+                                      <span style={{fontSize:10.5,color:'rgba(255,255,255,.48)'}}>{s.label}</span>
+                                      <span style={{fontSize:10,fontWeight:700,color:'rgba(52,211,153,.80)'}}>{s.views} views</span>
+                                    </div>
+                                    <div style={{height:4,borderRadius:99,background:'rgba(255,255,255,.06)',overflow:'hidden'}}>
+                                      <div style={{height:'100%',width:`${(s.views/maxKindViews*100).toFixed(1)}%`,borderRadius:99,background:'rgba(52,211,153,.55)',transition:'width .6s ease'}}/>
+                                    </div>
+                                  </div>
+                                ))}
+                                {kindStats.every(s=>s.views===0)&&<p style={{fontSize:11,color:'rgba(255,255,255,.20)',textAlign:'center',padding:'8px 0'}}>No views recorded yet</p>}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* ══ ROW: 14-day multi-series activity chart ══ */}
+                      <div style={{...glass,padding:'20px 22px',marginBottom:14}}>
+                        <div style={{display:'flex',alignItems:'center',flexWrap:'wrap',gap:12,marginBottom:16}}>
+                          <span style={{display:'flex',alignItems:'center',justifyContent:'center',width:26,height:26,borderRadius:8,background:'rgba(255,255,255,.06)'}}><Activity style={{width:12,height:12,color:'rgba(255,255,255,.50)'}}/></span>
+                          <span style={{fontSize:12,fontWeight:700,color:'rgba(255,255,255,.72)'}}>Activity Trend — 14 Days</span>
+                          <div style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:12}}>
+                            {[{c:'#6366f1',l:'All'},{c:'#34d399',l:'Uploads'},{c:'#f87171',l:'Views'}].map(k=>(
+                              <span key={k.l} style={{display:'flex',alignItems:'center',gap:4,fontSize:10,color:'rgba(255,255,255,.38)',fontWeight:600}}>
+                                <span style={{width:8,height:3,borderRadius:99,background:k.c}}/>
+                                {k.l}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        {activity14.every(d=>d.count===0)?(
+                          <p style={{fontSize:11,color:'rgba(255,255,255,.22)',textAlign:'center',padding:'24px 0'}}>No activity in the last 14 days. Start uploading or opening files.</p>
+                        ):(
+                          <div style={{padding:'4px 0 4px'}}>
+                            <MultiBarChart
+                              data={activity14.map(d=>({label:d.shortLabel,all:d.count,up:d.uploads,view:d.views}))}
+                              keys={['all','up','view']}
+                              colors={['rgba(99,102,241,.60)','rgba(52,211,153,.70)','rgba(248,113,113,.60)']}
+                              height={90}
+                            />
+                          </div>
+                        )}
+                        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(100px,1fr))',gap:8,marginTop:12}}>
+                          {[
+                            {l:'Total events',v:allEvents.length,c:'#818cf8'},
+                            {l:'14-day events',v:activity14.reduce((s,d)=>s+d.count,0),c:'#6366f1'},
+                            {l:'Uploads',v:activity14.reduce((s,d)=>s+d.uploads,0),c:'#34d399'},
+                            {l:'Views',v:activity14.reduce((s,d)=>s+d.views,0),c:'#f87171'},
+                          ].map(m=>(
+                            <div key={m.l} style={{background:'rgba(255,255,255,.03)',borderRadius:10,padding:'9px 12px'}}>
+                              <p style={{margin:0,fontSize:16,fontWeight:800,color:m.c,letterSpacing:'-0.03em'}}>{m.v}</p>
+                              <p style={{margin:'2px 0 0',fontSize:9.5,color:'rgba(255,255,255,.28)'}}>{m.l}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* ══ ROW: Top files + Privacy ══ */}
+                      <div style={{...grid2,marginBottom:14}}>
+
+                        {/* Top files by views */}
+                        <div style={{...glass,padding:'20px 22px'}}>
+                          <H icon={<Eye style={{width:12,height:12,color:'rgba(255,255,255,.50)'}}/>}>Top Files by Engagement</H>
+                          {topFiles.length===0?(
+                            <p style={{fontSize:11,color:'rgba(255,255,255,.22)',textAlign:'center',padding:'28px 0'}}>No views recorded yet</p>
+                          ):(
+                            <>
+                              {/* area sparkline of views distribution */}
+                              <div style={{borderRadius:12,overflow:'hidden',background:'rgba(52,211,153,.06)',border:'1px solid rgba(52,211,153,.12)',padding:'10px 12px',marginBottom:14}}>
+                                <AreaSparkline data={topFiles.map(f=>f.views??0)} color="#34d399" height={44} fill/>
+                              </div>
+                              {topFiles.map((f,i)=>{
+                                const pct=((f.views??0)/maxTopView*100).toFixed(1);
+                                const isTop=i===0;
+                                return (
+                                  <div key={f.id} style={{marginBottom:11}}>
+                                    <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:5}}>
+                                      <span style={{fontSize:9,fontWeight:900,color:isTop?'#fbbf24':'rgba(255,255,255,.22)',width:16,flexShrink:0}}>#{i+1}</span>
+                                      <KindIcon kind={f.kind??'other'} sz={11}/>
+                                      <span style={{flex:1,fontSize:11.5,color:isTop?'rgba(255,255,255,.85)':'rgba(255,255,255,.55)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',fontWeight:isTop?700:400}}>{f.name}</span>
+                                      <span style={{fontSize:11,fontWeight:800,color:isTop?'#34d399':'rgba(52,211,153,.70)',flexShrink:0}}>{f.views??0}</span>
+                                    </div>
+                                    <div style={{height:5,borderRadius:99,background:'rgba(255,255,255,.06)',overflow:'hidden'}}>
+                                      <div style={{height:'100%',width:`${pct}%`,borderRadius:99,background:isTop?'linear-gradient(90deg,#34d399,#6ee7b7)':'rgba(52,211,153,.40)',transition:'width .6s ease'}}/>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </>
+                          )}
+                        </div>
+
+                        {/* Security & privacy panel */}
+                        <div style={{...glass,padding:'20px 22px'}}>
+                          <H icon={<Shield style={{width:12,height:12,color:'rgba(255,255,255,.50)'}}/>}>Security Posture</H>
+                          {privBreakdown.length===0?(
+                            <p style={{fontSize:11,color:'rgba(255,255,255,.22)',textAlign:'center',padding:'28px 0'}}>No files yet</p>
+                          ):(
+                            <>
+                              <div style={{display:'flex',alignItems:'center',gap:18,flexWrap:'wrap',marginBottom:16}}>
+                                <DonutChart segs={privBreakdown.map(p=>({v:p.count,c:p.color}))} size={120} strokeW={11}
+                                  label={`${((privBreakdown.find(p=>p.label==='Private')?.count??0)/totalPriv*100).toFixed(0)}%`} sub="private"/>
+                                <div style={{flex:1,minWidth:120,display:'flex',flexDirection:'column',gap:10}}>
+                                  {privBreakdown.map(p=>(
+                                    <div key={p.label}>
+                                      <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
+                                        <span style={{display:'flex',alignItems:'center',gap:6,fontSize:11.5,color:'rgba(255,255,255,.60)'}}>
+                                          <span style={{width:7,height:7,borderRadius:'50%',background:p.color,flexShrink:0}}/>{p.label}
+                                        </span>
+                                        <span style={{fontSize:12,fontWeight:800,color:p.color}}>{p.count}</span>
+                                      </div>
+                                      <div style={{height:5,borderRadius:99,background:'rgba(255,255,255,.06)',overflow:'hidden'}}>
+                                        <div style={{height:'100%',width:`${(p.count/totalPriv*100).toFixed(1)}%`,borderRadius:99,background:p.color+'99',transition:'width .6s ease'}}/>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                              {/* segmented pill */}
+                              <div style={{height:9,borderRadius:99,display:'flex',overflow:'hidden',gap:2,marginBottom:14}}>
+                                {privBreakdown.map(p=>(
+                                  <div key={p.label} title={`${p.label}: ${p.count}`}
+                                    style={{height:'100%',flex:p.count,background:p.color+'bb',transition:'flex .6s ease',minWidth:p.count?5:0}}/>
+                                ))}
+                              </div>
+                              {/* security score */}
+                              <div style={{background:'rgba(255,255,255,.03)',borderRadius:14,padding:'12px 14px'}}>
+                                <div style={{display:'flex',justifyContent:'space-between',marginBottom:6}}>
+                                  <span style={{fontSize:11,fontWeight:700,color:'rgba(255,255,255,.50)'}}>Security Score</span>
+                                  <span style={{fontSize:13,fontWeight:900,color:
+                                    lockedCount+privBreakdown.find(p=>p.label==='Private')?.count!>files.length*0.5?'#34d399':'#fbbf24'
+                                  }}>{Math.min(100,Math.round(((privBreakdown.find(p=>p.label==='Private')?.count??0)*60+lockedCount*40)/(Math.max(1,files.length+folders.length))))}%</span>
+                                </div>
+                                <div style={{height:6,borderRadius:99,background:'rgba(255,255,255,.07)',overflow:'hidden'}}>
+                                  <div style={{height:'100%',borderRadius:99,background:'linear-gradient(90deg,#34d399,#6ee7b7)',
+                                    width:`${Math.min(100,Math.round(((privBreakdown.find(p=>p.label==='Private')?.count??0)*60+lockedCount*40)/(Math.max(1,files.length+folders.length))))}%`,
+                                    transition:'width .8s ease'}}/>
+                                </div>
+                                <p style={{margin:'6px 0 0',fontSize:9.5,color:'rgba(255,255,255,.22)'}}>Based on private files &amp; locked folders ratio</p>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* ══ ROW: Largest files + File age ══ */}
+                      <div style={{...grid2,marginBottom:14}}>
+
+                        {/* Largest files */}
+                        <div style={{...glass,padding:'20px 22px'}}>
+                          <H icon={<Layers style={{width:12,height:12,color:'rgba(255,255,255,.50)'}}/>}>Space Hogs</H>
+                          {largestFiles.length===0?(
+                            <p style={{fontSize:11,color:'rgba(255,255,255,.22)',textAlign:'center',padding:'28px 0'}}>No files yet</p>
+                          ):(
+                            largestFiles.map((f,i)=>{
+                              const pct=((f.bytes??0)/maxLargeB*100).toFixed(1);
+                              return (
+                                <div key={f.id} style={{marginBottom:13}}>
+                                  <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:5}}>
+                                    <span style={{fontSize:9,fontWeight:900,color:'rgba(255,255,255,.22)',width:14}}>{i+1}</span>
+                                    <KindIcon kind={f.kind??'other'} sz={11}/>
+                                    <span style={{flex:1,fontSize:11.5,color:'rgba(255,255,255,.62)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{f.name}</span>
+                                    <span style={{fontSize:10.5,fontWeight:800,color:'rgba(255,255,255,.55)',fontFamily:'ui-monospace,monospace',flexShrink:0}}>{fmtSize(f.bytes??0)}</span>
+                                  </div>
+                                  <div style={{height:6,borderRadius:99,background:'rgba(255,255,255,.06)',overflow:'hidden'}}>
+                                    <div style={{height:'100%',width:`${pct}%`,borderRadius:99,background:KIND_SOLID[f.kind??'other'],opacity:.75,transition:'width .6s ease'}}/>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                          {/* total storage context */}
+                          {files.length>0&&(
+                            <div style={{marginTop:14,paddingTop:12,borderTop:'1px solid rgba(255,255,255,.06)',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                              <span style={{fontSize:10.5,color:'rgba(255,255,255,.30)'}}>Total across all files</span>
+                              <span style={{fontSize:12,fontWeight:800,color:'rgba(255,255,255,.65)',fontFamily:'ui-monospace,monospace'}}>{fmtSize(totalBytes)}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* File age distribution */}
+                        <div style={{...glass,padding:'20px 22px'}}>
+                          <H icon={<Clock style={{width:12,height:12,color:'rgba(255,255,255,.50)'}}/>}>File Age Distribution</H>
+                          {ageBands.length===0?(
+                            <p style={{fontSize:11,color:'rgba(255,255,255,.22)',textAlign:'center',padding:'28px 0'}}>No files yet</p>
+                          ):(
+                            <>
+                              <DonutChart segs={ageBands.map(b=>({v:b.count,c:b.color}))} size={120} strokeW={11} label={String(files.length)} sub="files"/>
+                              <div style={{marginTop:14}}>
+                                {ageBands.map(b=>(
+                                  <div key={b.label} style={{marginBottom:10}}>
+                                    <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
+                                      <span style={{width:7,height:7,borderRadius:'50%',background:b.color,flexShrink:0}}/>
+                                      <span style={{flex:1,fontSize:11.5,color:'rgba(255,255,255,.55)'}}>{b.label}</span>
+                                      <span style={{fontSize:12,fontWeight:800,color:'rgba(255,255,255,.75)'}}>{b.count}</span>
+                                      <span style={{fontSize:9.5,color:'rgba(255,255,255,.30)',width:28,textAlign:'right'}}>{((b.count/files.length)*100).toFixed(0)}%</span>
+                                    </div>
+                                    <div style={{height:5,borderRadius:99,background:'rgba(255,255,255,.06)',overflow:'hidden'}}>
+                                      <div style={{height:'100%',width:`${(b.count/maxAge*100).toFixed(1)}%`,borderRadius:99,background:b.color,transition:'width .6s ease'}}/>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* ══ ROW: Action heatmap + Tags ══ */}
+                      <div style={{...grid2,marginBottom:14}}>
+
+                        {/* Action distribution */}
+                        <div style={{...glass,padding:'20px 22px'}}>
+                          <H icon={<TrendingUp style={{width:12,height:12,color:'rgba(255,255,255,.50)'}}/>}>Action Breakdown</H>
+                          {topActions.length===0?(
+                            <p style={{fontSize:11,color:'rgba(255,255,255,.22)',textAlign:'center',padding:'28px 0'}}>No actions recorded</p>
+                          ):(
+                            <>
+                              <div style={{marginBottom:16}}>
+                                {topActions.map(([action,count],i)=>{
+                                  const actionColors=['#6366f1','#34d399','#f87171','#fbbf24','#a78bfa','#fb923c'];
+                                  const c=actionColors[i%actionColors.length];
+                                  return (
+                                    <div key={action} style={{marginBottom:10}}>
+                                      <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
+                                        <span style={{fontSize:11.5,fontWeight:600,color:'rgba(255,255,255,.60)'}}>{action}</span>
+                                        <div style={{display:'flex',alignItems:'center',gap:6}}>
+                                          <span style={{fontSize:12,fontWeight:800,color:c}}>{count}</span>
+                                          <span style={{fontSize:9.5,color:'rgba(255,255,255,.28)'}}>{((count/allEvents.length)*100).toFixed(0)}%</span>
+                                        </div>
+                                      </div>
+                                      <div style={{height:6,borderRadius:99,background:'rgba(255,255,255,.06)',overflow:'hidden'}}>
+                                        <div style={{height:'100%',width:`${(count/maxAction*100).toFixed(1)}%`,borderRadius:99,background:c+'bb',transition:'width .6s ease'}}/>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                              <div style={{background:'rgba(255,255,255,.03)',borderRadius:12,padding:'10px 14px',display:'flex',justifyContent:'space-between'}}>
+                                <span style={{fontSize:10.5,color:'rgba(255,255,255,.30)'}}>Total logged</span>
+                                <span style={{fontSize:13,fontWeight:800,color:'rgba(255,255,255,.70)'}}>{allEvents.length}</span>
+                              </div>
+                            </>
+                          )}
+                        </div>
+
+                        {/* Tags & labels */}
+                        <div style={{...glass,padding:'20px 22px'}}>
+                          <H icon={<Tag style={{width:12,height:12,color:'rgba(255,255,255,.50)'}}/>}>Tags &amp; Labels</H>
+                          {topTags.length===0?(
+                            <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:8,padding:'24px 0'}}>
+                              <Tag style={{width:24,height:24,color:'rgba(255,255,255,.12)'}}/>
+                              <p style={{margin:0,fontSize:11,color:'rgba(255,255,255,.22)'}}>No tags yet — right-click a file to add tags</p>
+                            </div>
+                          ):(
+                            <div style={{display:'flex',flexWrap:'wrap',gap:7}}>
+                              {topTags.map(([tag,count])=>{
+                                const maxTag=topTags[0][1];
+                                const intensity=Math.round(40+((count/maxTag)*60));
+                                return (
+                                  <span key={tag} style={{
+                                    display:'inline-flex',alignItems:'center',gap:5,
+                                    padding:'5px 11px',borderRadius:20,fontSize:11.5,fontWeight:600,
+                                    background:`rgba(99,102,241,${(intensity/100)*0.22})`,
+                                    border:`1px solid rgba(99,102,241,${(intensity/100)*0.40})`,
+                                    color:`rgba(165,180,252,${0.50+(intensity/100)*0.40})`,
+                                  }}>
+                                    {tag}
+                                    <span style={{fontSize:9,fontWeight:800,background:'rgba(99,102,241,.25)',borderRadius:10,padding:'1px 5px',color:'rgba(165,180,252,.80)'}}>{count}</span>
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          )}
+                          {/* recently tagged */}
+                          {taggedCount>0&&(
+                            <div style={{marginTop:16,paddingTop:12,borderTop:'1px solid rgba(255,255,255,.06)',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                              <span style={{fontSize:10.5,color:'rgba(255,255,255,.30)'}}>Tagged items</span>
+                              <span style={{fontSize:13,fontWeight:800,color:'rgba(165,180,252,.80)'}}>{taggedCount} <span style={{fontSize:10,fontWeight:400,color:'rgba(255,255,255,.28)'}}>of {items.length}</span></span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* ══ Activity timeline ══ */}
+                      <div style={{...glass,padding:'20px 22px'}}>
+                        <div style={{display:'flex',alignItems:'center',flexWrap:'wrap',gap:12,marginBottom:16}}>
+                          <span style={{display:'flex',alignItems:'center',justifyContent:'center',width:26,height:26,borderRadius:8,background:'rgba(255,255,255,.06)'}}><Clock style={{width:12,height:12,color:'rgba(255,255,255,.50)'}}/></span>
+                          <span style={{fontSize:12,fontWeight:700,color:'rgba(255,255,255,.72)'}}>Recent Activity</span>
+                          <span style={{marginLeft:'auto',fontSize:9.5,fontWeight:600,color:'rgba(255,255,255,.28)',background:'rgba(255,255,255,.05)',padding:'3px 10px',borderRadius:20}}>{allEvents.slice(0,16).length} events</span>
+                        </div>
+                        {allEvents.length===0?(
+                          <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:8,padding:'24px 0'}}>
+                            <Activity style={{width:26,height:26,color:'rgba(255,255,255,.12)'}}/>
+                            <p style={{margin:0,fontSize:11,color:'rgba(255,255,255,.22)'}}>No activity yet — upload, open, or share files to start logging.</p>
+                          </div>
+                        ):(
+                          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:0}}>
+                            {allEvents.slice(0,16).map((ev,idx)=>(
+                              <div key={ev.id+idx} style={{display:'flex',gap:12,padding:'9px 8px',borderRadius:10,transition:'background .12s'}}
+                                onMouseEnter={e=>(e.currentTarget.style.background='rgba(255,255,255,.03)')}
+                                onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
+                                <div style={{width:28,height:28,borderRadius:9,background:'rgba(255,255,255,.05)',border:'1px solid rgba(255,255,255,.08)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:13}}>{ev.icon}</div>
+                                <div style={{flex:1,minWidth:0,paddingTop:1}}>
+                                  <div style={{display:'flex',alignItems:'baseline',gap:6,flexWrap:'wrap'}}>
+                                    <span style={{fontSize:12,fontWeight:700,color:'rgba(255,255,255,.68)'}}>{ev.action}</span>
+                                    <span style={{fontSize:10,color:'rgba(255,255,255,.30)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',maxWidth:150}}>{ev.itemName}</span>
+                                  </div>
+                                  <div style={{display:'flex',alignItems:'center',gap:6,marginTop:2}}>
+                                    {ev.detail&&<span style={{fontSize:9.5,color:'rgba(255,255,255,.22)'}}>{ev.detail}</span>}
+                                    <span style={{fontSize:9,color:'rgba(255,255,255,.18)',marginLeft:'auto'}}>{fmtDate(ev.timestamp)}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                    </div>{/* fd-an-inner */}
+                  </div>
+                );
+              })()}
+
+              {/* Sort + toolbar bar — hidden when analytics is active */}
+              {section !== 'analytics' && <>
               {/* Sort + toolbar bar */}
               <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 16px', flexShrink:0, borderBottom:'1px solid rgba(255,255,255,.055)', background:'rgba(255,255,255,.008)' }}>
                 <div style={{ display:'flex', alignItems:'center', gap:6, flex:1, minWidth:0 }}>
                   <span style={{ fontSize:11, fontWeight:800, color:'rgba(255,255,255,.65)', letterSpacing:'.01em', whiteSpace:'nowrap' }}>
-                    {section === 'my-drive' ? (navStack.length > 1 ? navStack[navStack.length-1].name : 'My Drive') : section.charAt(0).toUpperCase()+section.slice(1).replace('-',' ')}
+                    {section === 'my-drive' ? (navStack.length > 1 ? navStack[navStack.length-1].name : 'My Ddrive') : section.charAt(0).toUpperCase()+section.slice(1).replace('-',' ')}
                   </span>
                   <span style={{ fontSize:10, color:'rgba(255,255,255,.25)', background:'rgba(255,255,255,.06)', padding:'1px 7px', borderRadius:20, fontWeight:600 }}>
                     {visibleItems.length}
@@ -1242,7 +2167,7 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
                   <span style={{ fontSize:9.5, color:'rgba(255,255,255,.22)', marginRight:3, fontWeight:600 }}>Sort:</span>
                   {(['name','date','size'] as const).map(s => (
                     <button key={s} onClick={() => setSortBy(s)}
-                      style={{ padding:'3px 9px', borderRadius:7, border:`1px solid ${sortBy===s?'rgba(139,92,246,.40)':'transparent'}`, background:sortBy===s?'rgba(139,92,246,.16)':'transparent', cursor:'pointer', fontSize:10, fontWeight:600, color:sortBy===s?'#a78bfa':'rgba(255,255,255,.32)', transition:'all .12s' }}>
+                      style={{ padding:'3px 9px', borderRadius:7, border:`1px solid ${sortBy===s?'rgba(255,255,255,.16)':'transparent'}`, background:sortBy===s?'rgba(255,255,255,.07)':'transparent', cursor:'pointer', fontSize:10, fontWeight:sortBy===s?600:400, color:sortBy===s?'rgba(255,255,255,.78)':'rgba(255,255,255,.32)', transition:'all .12s' }}>
                       {s.charAt(0).toUpperCase()+s.slice(1)}
                     </button>
                   ))}
@@ -1250,7 +2175,7 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
                 {/* Mobile view toggle */}
                 <div className="fd-show-mobile" style={{ display:'none', background:'rgba(255,255,255,.04)', border:'1px solid rgba(255,255,255,.09)', borderRadius:8, overflow:'hidden' }}>
                   {(['list','grid'] as ViewMode[]).map(v => (
-                    <button key={v} onClick={() => setView(v)} style={{ width:28, height:28, border:'none', background:view===v?'rgba(139,92,246,.20)':'transparent', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:view===v?'#a78bfa':'rgba(255,255,255,.30)' }}>
+                    <button key={v} onClick={() => setView(v)} style={{ width:28, height:28, border:'none', background:view===v?'rgba(255,255,255,.10)':'transparent', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:view===v?'rgba(255,255,255,.75)':'rgba(255,255,255,.30)' }}>
                       {v === 'list' ? <List style={{ width:12, height:12 }} /> : <LayoutGrid style={{ width:12, height:12 }} />}
                     </button>
                   ))}
@@ -1282,22 +2207,56 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
                 onClick={() => setSelectedIds(new Set())}
               >
                 {visibleItems.length === 0 ? (
-                  <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:'100%', gap:12, padding:40 }}>
-                    <div style={{ width:52, height:52, borderRadius:16, background:'rgba(255,255,255,.03)', border:'1px solid rgba(255,255,255,.07)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                      <HardDrive style={{ width:22, height:22, color:'rgba(255,255,255,.12)' }} />
+                  <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:'100%', gap:20, padding:'40px 32px', textAlign:'center' }}>
+                    {/* Icon */}
+                    <div style={{ width:64, height:64, borderRadius:20, background:'rgba(255,255,255,.03)', border:'1px solid rgba(255,255,255,.07)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 0 8px rgba(255,255,255,.015)' }}>
+                      {query
+                        ? <Search style={{ width:26, height:26, color:'rgba(255,255,255,.15)' }} />
+                        : section === 'starred'
+                          ? <Star style={{ width:26, height:26, color:'rgba(255,255,255,.15)' }} />
+                          : section === 'recent'
+                            ? <Clock style={{ width:26, height:26, color:'rgba(255,255,255,.15)' }} />
+                            : section === 'offline'
+                              ? <WifiOff style={{ width:26, height:26, color:'rgba(255,255,255,.15)' }} />
+                              : <FolderOpen style={{ width:26, height:26, color:'rgba(255,255,255,.15)' }} />
+                      }
                     </div>
-                    <div style={{ textAlign:'center' }}>
-                      <p style={{ margin:0, fontSize:13, fontWeight:600, color:'rgba(255,255,255,.28)' }}>
-                        {query ? 'No matching files' : section === 'my-drive' ? 'This folder is empty' : `No ${section.replace('-',' ')} files`}
+                    {/* Copy */}
+                    <div style={{ maxWidth:280 }}>
+                      <p style={{ margin:0, fontSize:14, fontWeight:700, letterSpacing:'-0.02em', color:'rgba(255,255,255,.35)' }}>
+                        {query
+                          ? 'No results found'
+                          : section === 'starred' ? 'No starred files'
+                          : section === 'recent'  ? 'Nothing recent yet'
+                          : section === 'offline' ? 'No offline files'
+                          : section === 'shared'  ? 'Nothing shared yet'
+                          : currentFolderId !== null ? 'This folder is empty'
+                          : 'Your Ddrive is ready'}
                       </p>
-                      <p style={{ margin:'4px 0 0', fontSize:11, color:'rgba(255,255,255,.18)' }}>
-                        {query ? 'Try a different search' : 'Upload or drag files here'}
+                      <p style={{ margin:'6px 0 0', fontSize:12, lineHeight:1.6, color:'rgba(255,255,255,.18)' }}>
+                        {query
+                          ? 'Try adjusting your search terms.'
+                          : section === 'starred' ? 'Star any file or folder to find it here instantly.'
+                          : section === 'recent'  ? 'Files you open or upload will appear here.'
+                          : section === 'offline' ? 'Right-click a file and choose “Make offline” to access it without a connection.'
+                          : section === 'shared'  ? 'Share a file via email, QR, or WhatsApp to see it here.'
+                          : currentFolderId !== null ? 'Upload files or create sub-folders to organise this space.'
+                          : 'Upload your first file or drag it here to get started.'}
                       </p>
                     </div>
+                    {/* CTA — only show for my-drive root empty state */}
+                    {!query && section === 'my-drive' && (
+                      <button onClick={() => setUploadOpen(true)}
+                        style={{ display:'inline-flex', alignItems:'center', gap:7, height:38, padding:'0 20px', borderRadius:12, border:'1px solid rgba(255,255,255,.14)', background:'rgba(255,255,255,.06)', color:'rgba(255,255,255,.70)', fontSize:12, fontWeight:700, cursor:'pointer', letterSpacing:'-0.01em', transition:'background .12s' }}
+                        onMouseEnter={e => (e.currentTarget.style.background='rgba(255,255,255,.10)')}
+                        onMouseLeave={e => (e.currentTarget.style.background='rgba(255,255,255,.06)')}>
+                        <Upload style={{ width:13, height:13 }} /> Upload files
+                      </button>
+                    )}
                   </div>
                 ) : view === 'list' ? (
-                  /* ── LIST VIEW ── */
-                  <div>
+                  /* -- LIST VIEW -- */
+                  <div className={section === 'recent' ? 'fd-recent-list' : ''}>
                     {/* Column headers */}
                     <div style={{ display:'flex', alignItems:'center', gap:10, padding:'5px 16px 4px', borderBottom:'1px solid rgba(255,255,255,.04)', background:'rgba(255,255,255,.012)' }}>
                       <div style={{ width:14, flexShrink:0 }} />
@@ -1332,7 +2291,7 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
 
                           {/* Icon — folders visually larger and distinct */}
                           {isFolder ? (
-                            <div style={{ width:28, height:28, borderRadius:8, background:`${item.folderColor ?? '#fbbf24'}22`, border:`1px solid ${item.folderColor ?? '#fbbf24'}44`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, position:'relative' }}>
+                            <div className="fd-row-icon-wrap" style={{ width:28, height:28, borderRadius:8, background:`${item.folderColor ?? '#fbbf24'}22`, border:`1px solid ${item.folderColor ?? '#fbbf24'}44`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, position:'relative' }}>
                               <Folder style={{ width:15, height:15, color:item.folderColor??'#fbbf24' }} />
                               {item.locked && !unlockedFolders.has(item.id) && (
                                 <div style={{ position:'absolute', bottom:-3, right:-3, width:11, height:11, borderRadius:'50%', background:item.folderColor??'#fbbf24', display:'flex', alignItems:'center', justifyContent:'center' }}>
@@ -1352,17 +2311,17 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
                             ) : (
                               <div style={{ display:'flex', alignItems:'center', gap:5, flexWrap:'nowrap' }}>
                                 {item.label && <span className="fd-label-dot" style={{ background:item.label, width:8, height:8, borderRadius:'50%', flexShrink:0 }} />}
-                                <span style={{ fontSize:13, fontWeight:isFolder?700:500, color:isFolder?'rgba(255,255,255,.88)':'rgba(255,255,255,.78)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.name}</span>
-                                {!isFolder && item.privacy === 'public'   && <span style={{ display:'flex', alignItems:'center', gap:2, padding:'1px 5px', borderRadius:20, background:'rgba(52,211,153,.10)', border:'1px solid rgba(52,211,153,.18)', fontSize:8, fontWeight:700, color:'#34d399', flexShrink:0 }}><Globe style={{width:6,height:6}}/>Pub</span>}
-                                {!isFolder && item.privacy === 'private'  && <span style={{ display:'flex', alignItems:'center', gap:2, padding:'1px 5px', borderRadius:20, background:'rgba(255,255,255,.05)', border:'1px solid rgba(255,255,255,.10)', fontSize:8, fontWeight:700, color:'rgba(255,255,255,.38)', flexShrink:0 }}><Lock style={{width:6,height:6}}/>Priv</span>}
-                                {!isFolder && item.privacy === 'password' && <span style={{ display:'flex', alignItems:'center', gap:2, padding:'1px 5px', borderRadius:20, background:'rgba(251,191,36,.10)', border:'1px solid rgba(251,191,36,.18)', fontSize:8, fontWeight:700, color:'#fbbf24', flexShrink:0 }}><Key style={{width:6,height:6}}/>Pwd</span>}
-                                {sharedFileIds.has(item.id)               && <span style={{ display:'flex', alignItems:'center', gap:2, padding:'1px 5px', borderRadius:20, background:'rgba(99,102,241,.15)', border:'1px solid rgba(99,102,241,.25)', fontSize:8, fontWeight:700, color:'#a5b4fc', flexShrink:0 }}><QrCode style={{width:6,height:6}}/>Shared</span>}
-                                {hasLiveShare                             && <span style={{ display:'flex', alignItems:'center', gap:2, padding:'1px 5px', borderRadius:20, background:'rgba(52,211,153,.10)', border:'1px solid rgba(52,211,153,.20)', fontSize:8, fontWeight:700, color:'#34d399', flexShrink:0 }}><Zap style={{width:6,height:6}}/>Live</span>}
-                                {item.offlineAvailable                    && <span style={{ display:'flex', alignItems:'center', gap:2, padding:'1px 5px', borderRadius:20, background:'rgba(96,165,250,.10)', border:'1px solid rgba(96,165,250,.18)', fontSize:8, fontWeight:700, color:'#60a5fa', flexShrink:0 }}><WifiOff style={{width:6,height:6}}/>Off</span>}
-                                {item.starred && <Star style={{ width:10, height:10, fill:'#fbbf24', color:'#fbbf24', flexShrink:0 }} />}
+                                <span className="fd-row-name" style={{ fontSize:13, fontWeight:isFolder?700:500, color:isFolder?'rgba(255,255,255,.88)':'rgba(255,255,255,.78)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.name}</span>
+                                {!isFolder && item.privacy === 'public'   && <span className="fd-hide-mobile" style={{ display:'flex', alignItems:'center', gap:2, padding:'1px 5px', borderRadius:20, background:'rgba(255,255,255,.04)', border:'1px solid rgba(255,255,255,.08)', fontSize:8, fontWeight:600, color:'rgba(255,255,255,.35)', flexShrink:0 }}><Globe style={{width:6,height:6}}/>Pub</span>}
+                                {!isFolder && item.privacy === 'private'  && <span className="fd-hide-mobile" style={{ display:'flex', alignItems:'center', gap:2, padding:'1px 5px', borderRadius:20, background:'rgba(255,255,255,.04)', border:'1px solid rgba(255,255,255,.08)', fontSize:8, fontWeight:600, color:'rgba(255,255,255,.28)', flexShrink:0 }}><Lock style={{width:6,height:6}}/>Priv</span>}
+                                {!isFolder && item.privacy === 'password' && <span className="fd-hide-mobile" style={{ display:'flex', alignItems:'center', gap:2, padding:'1px 5px', borderRadius:20, background:'rgba(255,255,255,.04)', border:'1px solid rgba(255,255,255,.08)', fontSize:8, fontWeight:600, color:'rgba(251,191,36,.60)', flexShrink:0 }}><Key style={{width:6,height:6}}/>Pwd</span>}
+                                {sharedFileIds.has(item.id)               && <span className="fd-hide-mobile" style={{ display:'flex', alignItems:'center', gap:2, padding:'1px 5px', borderRadius:20, background:'rgba(255,255,255,.04)', border:'1px solid rgba(255,255,255,.08)', fontSize:8, fontWeight:600, color:'rgba(167,139,250,.65)', flexShrink:0 }}><QrCode style={{width:6,height:6}}/>QR</span>}
+                                {hasLiveShare                             && <span className="fd-hide-mobile" style={{ display:'flex', alignItems:'center', gap:2, padding:'1px 5px', borderRadius:20, background:'rgba(255,255,255,.04)', border:'1px solid rgba(255,255,255,.08)', fontSize:8, fontWeight:600, color:'rgba(52,211,153,.60)', flexShrink:0 }}><Zap style={{width:6,height:6}}/>Live</span>}
+                                {item.offlineAvailable                    && <span style={{ display:'flex', alignItems:'center', gap:2, padding:'1px 5px', borderRadius:20, background:'rgba(255,255,255,.04)', border:'1px solid rgba(255,255,255,.08)', fontSize:8, fontWeight:600, color:'rgba(255,255,255,.32)', flexShrink:0 }}><WifiOff style={{width:6,height:6}}/><span className="fd-hide-mobile">Off</span></span>}
+                                {item.starred && <Star style={{ width:9, height:9, fill:'rgba(251,191,36,.65)', color:'rgba(251,191,36,.65)', flexShrink:0 }} />}
                               </div>
                             )}
-                            <p style={{ margin:'2px 0 0', fontSize:10, color:'rgba(255,255,255,.24)', display:'flex', alignItems:'center', gap:5 }}>
+                            <p className="fd-row-meta" style={{ margin:'2px 0 0', fontSize:10, color:'rgba(255,255,255,.24)', display:'flex', alignItems:'center', gap:5 }}>
                               {isFolder && <span>{folderItemCount(item.id)} items</span>}
                               {!isFolder && item.size && <span className="fd-hide-mobile" style={{ display:'none' }}>{item.size}</span>}
                               {(item.views ?? 0) > 0 && !isFolder && <><span style={{ color:'rgba(255,255,255,.14)' }}>·</span><span style={{ display:'flex', alignItems:'center', gap:2 }}><Eye style={{width:7,height:7}}/>{item.views}</span></>}
@@ -1370,35 +2329,35 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
                           </div>
 
                           {/* Size (desktop) */}
-                          <span className="fd-hide-mobile" style={{ width:70, fontSize:11, color:'rgba(255,255,255,.28)', textAlign:'right', flexShrink:0 }}>
+                          <span className="fd-hide-mobile fd-col-size" style={{ width:70, fontSize:11, color:'rgba(255,255,255,.28)', textAlign:'right', flexShrink:0 }}>
                             {isFolder ? `${folderItemCount(item.id)} items` : item.size ?? '—'}
                           </span>
 
                           {/* Modified (desktop) */}
-                          <span className="fd-hide-mobile" style={{ width:80, fontSize:11, color:'rgba(255,255,255,.24)', textAlign:'right', flexShrink:0 }}>
+                          <span className="fd-hide-mobile fd-col-date" style={{ width:80, fontSize:11, color:'rgba(255,255,255,.24)', textAlign:'right', flexShrink:0 }}>
                             {fmtDate(item.updatedAt)}
                           </span>
 
                           {/* Row actions */}
-                          <div style={{ display:'flex', alignItems:'center', gap:0, flexShrink:0, width:110, justifyContent:'flex-end' }}>
-                            <button className="fd-act" onClick={e=>{e.stopPropagation();toggleStar(item.id);}} style={{ width:26,height:26,borderRadius:7,border:'none',background:'transparent',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:item.starred?'#fbbf24':'rgba(255,255,255,.16)' }}>
-                              <Star style={{ width:11, height:11, fill:item.starred?'#fbbf24':'none' }} />
+                          <div className="fd-row-actions" style={{ display:'flex', alignItems:'center', gap:0, flexShrink:0, width:110, justifyContent:'flex-end' }}>
+                            <button className="fd-act fd-act-secondary" onClick={e=>{e.stopPropagation();toggleStar(item.id);}} style={{ width:26,height:26,borderRadius:7,border:'none',background:'transparent',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:item.starred?'rgba(251,191,36,.70)':'rgba(255,255,255,.16)' }}>
+                              <Star style={{ width:11, height:11, fill:item.starred?'rgba(251,191,36,.70)':'none' }} />
                             </button>
-                            <button className="fd-act fd-hide-mobile" onClick={e=>{e.stopPropagation();setQrShareTarget({id:item.id,name:item.name,kind:isFolder?'folder':'file',fileKind:item.kind});}} style={{ width:26,height:26,borderRadius:7,border:'none',background:'transparent',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'rgba(255,255,255,.20)' }} title="Share QR">
+                            <button className="fd-act fd-act-secondary fd-hide-mobile" onClick={e=>{e.stopPropagation(); if(!checkFeature('qrShare')) return; setQrShareTarget({id:item.id,name:item.name,kind:isFolder?'folder':'file',fileKind:item.kind});}} style={{ width:26,height:26,borderRadius:7,border:'none',background:'transparent',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'rgba(255,255,255,.18)', position:'relative' }} title={featureAvailable('qrShare')?'Share QR':'Requires Pro'}>
                               <QrCode style={{ width:11, height:11 }} />
                             </button>
                             {!isFolder && (
-                              <button className="fd-act fd-hide-mobile" onClick={e=>{e.stopPropagation();shareOnWhatsApp(item);}} title="WhatsApp" style={{ width:26,height:26,borderRadius:7,border:'none',background:'transparent',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'#25D366' }}>
+                              <button className="fd-act fd-act-secondary fd-hide-mobile" onClick={e=>{e.stopPropagation(); if(!checkFeature('whatsappShare')) return; shareOnWhatsApp(item);}} title={featureAvailable('whatsappShare')?'WhatsApp':'Requires Starter'} style={{ width:26,height:26,borderRadius:7,border:'none',background:'transparent',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'rgba(255,255,255,.18)' }}>
                                 <MessageCircle style={{ width:11, height:11 }} />
                               </button>
                             )}
-                            <button className="fd-act" onClick={e=>{e.stopPropagation();setShareFile(item);setChatQuery('');}} style={{ width:26,height:26,borderRadius:7,border:'none',background:'transparent',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'rgba(255,255,255,.20)' }}>
+                            <button className="fd-act fd-act-secondary" onClick={e=>{e.stopPropagation();setShareFile(item);setChatQuery('');}} style={{ width:26,height:26,borderRadius:7,border:'none',background:'transparent',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'rgba(255,255,255,.20)' }}>
                               <Share2 style={{ width:11, height:11 }} />
                             </button>
-                            <button className="fd-act fd-hide-mobile" onClick={e=>{e.stopPropagation();setHistoryFile(item);}} title="History" style={{ width:26,height:26,borderRadius:7,border:'none',background:'transparent',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'rgba(255,255,255,.18)' }}>
+                            <button className="fd-act fd-act-secondary fd-hide-mobile" onClick={e=>{e.stopPropagation();setHistoryFile(item);}} title="History" style={{ width:26,height:26,borderRadius:7,border:'none',background:'transparent',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'rgba(255,255,255,.18)' }}>
                               <Clock style={{ width:11, height:11 }} />
                             </button>
-                            <button className="fd-act" onClick={e=>{e.stopPropagation();openContextMenu(e,item);}} data-menu-anchor="true" style={{ width:26,height:26,borderRadius:7,border:'none',background:'transparent',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'rgba(255,255,255,.28)' }}>
+                            <button className="fd-act" onClick={e=>{e.stopPropagation();openContextMenu(e,item);}} data-menu-anchor="true" style={{ width:28,height:28,borderRadius:8,border:'none',background:'rgba(255,255,255,.03)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'rgba(255,255,255,.35)' }}>
                               <MoreHorizontal style={{ width:13, height:13 }} />
                             </button>
                           </div>
@@ -1407,7 +2366,7 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
                     })}
                   </div>
                 ) : (
-                  /* ── GRID VIEW ── */
+                  /* -- GRID VIEW -- */
                   <div style={{ padding:'12px 16px', display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(140px,1fr))', gap:10, alignContent:'start' }}>
                     {pagedItems.map((item, idx) => {
                       const isFolder     = item.type === 'folder';
@@ -1462,7 +2421,7 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
                 )}
               </div>
 
-              {/* ── PAGINATION ── */}
+              {/* -- PAGINATION -- */}
               {totalPages > 1 && (
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, padding:'10px 16px', borderTop:'1px solid rgba(255,255,255,.055)', flexShrink:0, background:'rgba(255,255,255,.008)' }}>
                   <button onClick={() => setCurrentPage(p => Math.max(1, p-1))} disabled={currentPage===1}
@@ -1501,7 +2460,7 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
                 </div>
               )}
 
-              {/* ── BULK ACTION BAR ── */}
+              {/* -- BULK ACTION BAR -- */}
               {selectedIds.size > 0 && (
                 <div className="fd-bulk" style={{ position:'absolute', bottom:0, left:0, right:0, zIndex:50, background:'rgba(5,5,12,.97)', backdropFilter:'blur(20px)', border:'1px solid rgba(255,255,255,.09)', borderRadius:'12px 12px 0 0', padding:'12px 16px', display:'flex', alignItems:'center', gap:8 }}>
                   <div style={{ display:'flex', alignItems:'center', gap:8, flex:1 }}>
@@ -1511,14 +2470,15 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
                     <span style={{ fontSize:13, fontWeight:600, color:'rgba(255,255,255,.70)' }}>item{selectedIds.size !== 1 ? 's' : ''} selected</span>
                   </div>
                   {[
-                    { label:'Star',    Icon:Star,      action:() => { selectedIds.forEach(id => toggleStar(id)); setSelectedIds(new Set()); } },
-                    { label:'Move',    Icon:Move,      action:() => { setMovingItems(Array.from(selectedIds)); } },
-                    { label:'Share QR',Icon:QrCode,    action:() => { const first = items.find(i => selectedIds.has(i.id)); if (first) setQrShareTarget({id:first.id,name:first.name,kind:first.type==='folder'?'folder':'file',fileKind:first.kind}); } },
-                    { label:'Delete',  Icon:Trash2,    action:() => { if (confirm(`Delete ${selectedIds.size} items?`)) deleteItems(Array.from(selectedIds)); }, danger:true },
-                  ].map(({ label, Icon, action, danger }) => (
-                    <button key={label} onClick={action} style={{ display:'flex', alignItems:'center', gap:5, padding:'7px 12px', borderRadius:9, border:`1px solid ${danger ? 'rgba(239,68,68,.25)' : 'rgba(255,255,255,.10)'}`, background:danger?'rgba(239,68,68,.10)':'rgba(255,255,255,.05)', cursor:'pointer', color:danger?'#f87171':'rgba(255,255,255,.65)', fontSize:12, fontWeight:600, transition:'all .12s' }}>
+                    { label:'Star',    Icon:Star,      locked:false,                              action:() => { selectedIds.forEach(id => toggleStar(id)); setSelectedIds(new Set()); } },
+                    { label:'Move',    Icon:Move,      locked:!featureAvailable('bulkMoveShare'), action:() => { if (!checkFeature('bulkMoveShare')) return; setMovingItems(Array.from(selectedIds)); } },
+                    { label:'Share QR',Icon:QrCode,    locked:!featureAvailable('bulkMoveShare'), action:() => { if (!checkFeature('bulkMoveShare')) return; const first = items.find(i => selectedIds.has(i.id)); if (first) setQrShareTarget({id:first.id,name:first.name,kind:first.type==='folder'?'folder':'file',fileKind:first.kind}); } },
+                    { label:'Delete',  Icon:Trash2,    locked:false, action:() => { if (confirm(`Delete ${selectedIds.size} items?`)) deleteItems(Array.from(selectedIds)); }, danger:true },
+                  ].map(({ label, Icon, action, danger, locked }) => (
+                    <button key={label} onClick={action} style={{ display:'flex', alignItems:'center', gap:5, padding:'7px 11px', borderRadius:9, border:`1px solid ${danger ? 'rgba(239,68,68,.22)' : 'rgba(255,255,255,.09)'}`, background:danger?'rgba(239,68,68,.08)':'rgba(255,255,255,.04)', cursor:'pointer', color:danger?'#f87171':'rgba(255,255,255,.60)', fontSize:12, fontWeight:600, transition:'all .12s', opacity: locked ? 0.5 : 1 }}>
                       <Icon style={{ width:12, height:12 }} />
-                      <span className="hidden sm:inline">{label}</span>
+                      <span className="fd-bulk-label">{label}</span>
+                      {locked && <Lock style={{ width:9, height:9, marginLeft:2 }} />}
                     </button>
                   ))}
                   <button onClick={() => setSelectedIds(new Set())} style={{ marginLeft:'auto', width:28, height:28, borderRadius:8, border:'none', background:'rgba(255,255,255,.06)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'rgba(255,255,255,.40)' }}>
@@ -1526,51 +2486,99 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
                   </button>
                 </div>
               )}
+              </>}
             </div>
           </div>
         </div>
       </div>
 
-      {/* ══ CONTEXT MENU ══ */}
-      {menuItem && (
-        <div
-          data-ctx-menu="true"
-          className="fd-ctx-menu"
-          style={{ position:'fixed', zIndex:2147483660, left:Math.min(menuPos.x, window.innerWidth-200), top:Math.min(menuPos.y, window.innerHeight-280), background:'rgba(9,9,14,.98)', border:'1px solid rgba(255,255,255,.10)', borderRadius:11, boxShadow:'0 8px 32px rgba(0,0,0,.75)', padding:4, minWidth:190, fontFamily:'system-ui,sans-serif' }}
-        >
-          {[
-            { Icon:FolderOpen, label:'Open',           action:() => { menuItem.type==='folder'?navigateInto(menuItem):openFile(menuItem); setMenuItem(null); } },
-            menuItem.type==='file' && { Icon:Eye, label:'View',  action:() => { openFile(menuItem); setMenuItem(null); } },
-            { Icon:Pencil, label:'Rename',              action:() => startRename(menuItem) },
-            { Icon:Star,   label:menuItem.starred?'Unstar':'Star',  action:() => toggleStar(menuItem.id) },
-            { Icon:menuItem.pinned?PinOff:Pin, label:menuItem.pinned?'Unpin':'Pin to top', action:() => togglePin(menuItem.id) },
-            { Icon:Move,   label:'Move to…',            action:() => { setMovingItems([menuItem.id]); setMenuItem(null); } },
-            { Icon:QrCode,          label:'Share QR',            action:() => { setQrShareTarget({id:menuItem.id,name:menuItem.name,kind:menuItem.type==='folder'?'folder':'file',fileKind:menuItem.kind}); setMenuItem(null); } },
-            { Icon:Clock,           label:'View History',         action:() => { setHistoryFile(menuItem); setMenuItem(null); } },
-            menuItem.type==='file' && { Icon:MessageCircle, label:'WhatsApp',      action:() => { addHistory(menuItem.id, 'Shared via WhatsApp', undefined, '💬'); shareOnWhatsApp(menuItem); setMenuItem(null); }, color:'#25D366' },
-            menuItem.type==='file' && { Icon:Mail,          label:'Send Email',    action:() => { setEmailFile(menuItem); setMenuItem(null); } },
-            { Icon:Share2,          label:'Share via Chat',      action:() => { setShareFile(menuItem); setMenuItem(null); } },
-            { Icon:Tag,             label:'Add Label…',          action:() => { setLabelTarget(menuItem.id); setMenuItem(null); } },
-            menuItem.type==='file' && { Icon:menuItem.offlineAvailable?Wifi:WifiOff, label:menuItem.offlineAvailable?'Remove offline':'Make offline', action:() => toggleOffline(menuItem.id) },
-            menuItem.type==='folder' && menuItem.locked && unlockedFolders.has(menuItem.id) && { Icon:Lock, label:'Lock folder', action:() => lockFolder(menuItem.id) },
-            menuItem.type==='folder' && !menuItem.locked && { Icon:Lock, label:'Lock folder…', action:() => { setItems(p=>p.map(i=>i.id===menuItem.id?{...i,locked:true,lockPassword:'admin123'}:i)); setMenuItem(null); } },
-            { Icon:Download, label:'Download',          action:() => setMenuItem(null) },
-            { Icon:Trash2,   label:'Delete',            color:'#f87171', action:() => { deleteItems([menuItem.id]); } },
-          ].filter(Boolean).map((item) => {
-            const { Icon, label, action, color } = item as { Icon:React.ComponentType<{style?:React.CSSProperties}>, label:string, action:()=>void, color?:string };
-            return (
-              <button key={label} onClick={action} style={{ display:'flex', alignItems:'center', gap:8, padding:'7px 10px', borderRadius:8, border:'none', background:'transparent', width:'100%', cursor:'pointer', textAlign:'left', transition:'background .08s' }}
-                onMouseEnter={e=>(e.currentTarget.style.background='rgba(255,255,255,.07)')}
-                onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
-                <Icon style={{ width:12, height:12, color:color||'rgba(255,255,255,.42)', flexShrink:0 }} />
-                <span style={{ fontSize:12, fontWeight:500, color:color||'rgba(255,255,255,.70)' }}>{label}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
+      {/* == CONTEXT MENU == */}
+      {menuItem && (() => {
+        const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+        const menuActions = [
+          { Icon:FolderOpen, label:'Open',        locked:false,                              action:() => { menuItem.type==='folder'?navigateInto(menuItem):openFile(menuItem); setMenuItem(null); } },
+          menuItem.type==='file' && { Icon:Eye,   label:'View',        locked:false,         action:() => { openFile(menuItem); setMenuItem(null); } },
+          { Icon:Pencil,     label:'Rename',       locked:false,                             action:() => startRename(menuItem) },
+          { Icon:Star,       label:menuItem.starred?'Unstar':'Star', locked:false,           action:() => toggleStar(menuItem.id) },
+          { Icon:menuItem.pinned?PinOff:Pin, label:menuItem.pinned?'Unpin':'Pin to top', locked:false, action:() => togglePin(menuItem.id) },
+          { Icon:Move,       label:'Move to…',     locked:!featureAvailable('fileMove'),    action:() => { if (!checkFeature('fileMove')) return; setMovingItems([menuItem.id]); setMenuItem(null); } },
+          { Icon:QrCode,     label:'Share QR',      locked:!featureAvailable('qrShare'),    action:() => { if (!checkFeature('qrShare')) return; setQrShareTarget({id:menuItem.id,name:menuItem.name,kind:menuItem.type==='folder'?'folder':'file',fileKind:menuItem.kind}); setMenuItem(null); } },
+          { Icon:Clock,      label:'View History',  locked:!featureAvailable('fileHistory'),action:() => { if (!checkFeature('fileHistory')) return; setHistoryFile(menuItem); setMenuItem(null); } },
+          menuItem.type==='file' && { Icon:MessageCircle, label:'WhatsApp', locked:!featureAvailable('whatsappShare'), color:'#4ade80', action:() => { if (!checkFeature('whatsappShare')) return; addHistory(menuItem.id,'Shared via WhatsApp',undefined,'💬'); shareOnWhatsApp(menuItem); setMenuItem(null); } },
+          menuItem.type==='file' && { Icon:Mail,   label:'Send Email',   locked:!featureAvailable('emailShare'),    action:() => { if (!checkFeature('emailShare')) return; setEmailFile(menuItem); setMenuItem(null); } },
+          { Icon:Share2,     label:'Share via Chat', locked:false,                          action:() => { setShareFile(menuItem); setMenuItem(null); } },
+          { Icon:Tag,        label:'Add Label…',    locked:!featureAvailable('fileLabels'), action:() => { if (!checkFeature('fileLabels')) return; setLabelTarget(menuItem.id); setMenuItem(null); } },
+          menuItem.type==='file' && { Icon:menuItem.offlineAvailable?Wifi:WifiOff, label:menuItem.offlineAvailable?'Remove offline':'Make offline', locked:!featureAvailable('offlineToggle'), action:() => { if (!checkFeature('offlineToggle')) return; toggleOffline(menuItem.id); } },
+          menuItem.type==='folder' && menuItem.locked && unlockedFolders.has(menuItem.id) && { Icon:Lock, label:'Lock folder', locked:!featureAvailable('folderLock'), action:() => { if (!checkFeature('folderLock')) return; lockFolder(menuItem.id); } },
+          menuItem.type==='folder' && !menuItem.locked && { Icon:Lock, label:'Lock folder…', locked:!featureAvailable('folderLock'), action:() => { if (!checkFeature('folderLock')) return; setItems(p=>p.map(i=>i.id===menuItem.id?{...i,locked:true,lockPassword:'admin123'}:i)); setMenuItem(null); } },
+          { Icon:Download,   label:'Download',      locked:false,                           action:() => setMenuItem(null) },
+          { Icon:Trash2,     label:'Delete',        locked:false, danger:true,              action:() => { deleteItems([menuItem.id]); } },
+        ].filter(Boolean) as { Icon:React.ComponentType<{style?:React.CSSProperties}>, label:string, action:()=>void, color?:string, locked:boolean, danger?:boolean }[];
 
-      {/* ══ MOVE DIALOG ══ */}
+        if (isMobile) {
+          return (
+            <div style={{ position:'fixed', inset:0, zIndex:2147483660, display:'flex', alignItems:'flex-end' }}>
+              <div onClick={() => setMenuItem(null)} style={{ position:'absolute', inset:0, background:'rgba(0,0,0,.60)', backdropFilter:'blur(6px)' }} />
+              <div data-ctx-menu="true" className="fd-mobile-drawer" style={{ position:'relative', width:'100%', background:'rgba(6,6,11,.99)', borderRadius:'22px 22px 0 0', overflow:'hidden', boxShadow:'0 -8px 48px rgba(0,0,0,.85)', border:'1px solid rgba(255,255,255,.08)', borderBottom:'none', maxHeight:'82vh', display:'flex', flexDirection:'column' }}>
+                {/* Pull handle */}
+                <div style={{ display:'flex', justifyContent:'center', padding:'10px 0 6px', flexShrink:0 }}>
+                  <div style={{ width:36, height:3.5, borderRadius:99, background:'rgba(255,255,255,.13)' }} />
+                </div>
+                {/* File header */}
+                <div style={{ display:'flex', alignItems:'center', gap:12, padding:'4px 18px 14px', borderBottom:'1px solid rgba(255,255,255,.06)', flexShrink:0 }}>
+                  {menuItem.type==='folder'
+                    ? <div style={{ width:40, height:40, borderRadius:12, background:`${menuItem.folderColor??'#a78bfa'}18`, border:`1px solid ${menuItem.folderColor??'#a78bfa'}30`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                        <Folder style={{ width:18, height:18, color:menuItem.folderColor??'#a78bfa' }} />
+                      </div>
+                    : <div style={{ flexShrink:0 }}><KindIcon kind={menuItem.kind!} sz={16} /></div>}
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <p style={{ margin:0, fontSize:14, fontWeight:600, color:'rgba(255,255,255,.88)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{menuItem.name}</p>
+                    <p style={{ margin:'2px 0 0', fontSize:11, color:'rgba(255,255,255,.28)' }}>{menuItem.type==='file'?(menuItem.size??'—'):'Folder'} · {fmtDate(menuItem.updatedAt)}</p>
+                  </div>
+                </div>
+                {/* Actions scroll list */}
+                <div className="fd-scroll" style={{ overflowY:'auto', padding:'6px 0 24px' }}>
+                  {menuActions.map(({ Icon, label, action, color, locked, danger }) => (
+                    <button key={label} onClick={action}
+                      style={{ display:'flex', alignItems:'center', gap:14, padding:'13px 18px', border:'none', background:'transparent', width:'100%', cursor:'pointer', textAlign:'left', transition:'background .08s' }}
+                      onTouchStart={e=>(e.currentTarget.style.background='rgba(255,255,255,.05)')}
+                      onTouchEnd={e=>(e.currentTarget.style.background='transparent')}
+                      onMouseEnter={e=>(e.currentTarget.style.background='rgba(255,255,255,.04)')}
+                      onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
+                      <div style={{ width:40, height:40, borderRadius:13, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', opacity: locked ? 0.38 : 1,
+                        background: danger ? 'rgba(239,68,68,.08)' : 'rgba(255,255,255,.04)',
+                        border: `1px solid ${danger ? 'rgba(239,68,68,.16)' : 'rgba(255,255,255,.07)'}` }}>
+                        <Icon style={{ width:16, height:16, color: danger ? '#f87171' : color || 'rgba(255,255,255,.52)' }} />
+                      </div>
+                      <span style={{ fontSize:15, fontWeight:500, flex:1, opacity: locked ? 0.45 : 1,
+                        color: danger ? '#f87171' : color || 'rgba(255,255,255,.80)' }}>{label}</span>
+                      {locked && <Lock style={{ width:12, height:12, color:'rgba(255,255,255,.22)', flexShrink:0 }} />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        return (
+          <div data-ctx-menu="true" className="fd-ctx-menu"
+            style={{ position:'fixed', zIndex:2147483660, left:Math.min(menuPos.x, window.innerWidth-200), top:Math.min(menuPos.y, window.innerHeight-300), background:'rgba(8,8,13,.98)', border:'1px solid rgba(255,255,255,.09)', borderRadius:12, boxShadow:'0 10px 40px rgba(0,0,0,.80)', padding:'4px', minWidth:190, fontFamily:'system-ui,sans-serif' }}>
+            {menuActions.map(({ Icon, label, action, color, locked, danger }) => (
+              <button key={label} onClick={action}
+                style={{ display:'flex', alignItems:'center', gap:8, padding:'7px 10px', borderRadius:8, border:'none', background:'transparent', width:'100%', cursor:'pointer', textAlign:'left', transition:'background .08s', opacity: locked ? 0.50 : 1 }}
+                onMouseEnter={e=>(e.currentTarget.style.background='rgba(255,255,255,.06)')}
+                onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
+                <Icon style={{ width:12, height:12, color: danger ? '#f87171' : color || 'rgba(255,255,255,.40)', flexShrink:0 }} />
+                <span style={{ fontSize:12, fontWeight:500, color: danger ? '#f87171' : color || 'rgba(255,255,255,.68)', flex:1 }}>{label}</span>
+                {locked && <Lock style={{ width:9, height:9, color:'rgba(255,255,255,.24)', flexShrink:0 }} />}
+              </button>
+            ))}
+          </div>
+        );
+      })()}
+
+      {/* == MOVE DIALOG == */}
       {movingItems.length > 0 && (
         <div style={{ position:'fixed', inset:0, zIndex:2147483655, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
           <div onClick={() => setMovingItems([])} style={{ position:'absolute', inset:0, background:'rgba(0,0,0,.60)' }} />
@@ -1585,7 +2593,7 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
               <button onClick={() => moveItems(movingItems, null)} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'9px 12px', borderRadius:9, border:'1px solid rgba(255,255,255,.08)', background:'rgba(255,255,255,.03)', cursor:'pointer', marginBottom:6, textAlign:'left', transition:'background .10s' }}
                 onMouseEnter={e=>(e.currentTarget.style.background='rgba(255,255,255,.08)')} onMouseLeave={e=>(e.currentTarget.style.background='rgba(255,255,255,.03)')}>
                 <Home style={{width:14,height:14,color:'#a78bfa'}} />
-                <span style={{ fontSize:13, fontWeight:600, color:'rgba(255,255,255,.75)' }}>My Drive (root)</span>
+                <span style={{ fontSize:13, fontWeight:600, color:'rgba(255,255,255,.75)' }}>My Ddrive (root)</span>
               </button>
               {items.filter(i => i.type === 'folder' && !movingItems.includes(i.id)).map(folder => (
                 <button key={folder.id} onClick={() => moveItems(movingItems, folder.id)} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'9px 12px', borderRadius:9, border:'1px solid rgba(255,255,255,.08)', background:'rgba(255,255,255,.03)', cursor:'pointer', marginBottom:6, textAlign:'left', transition:'background .10s' }}
@@ -1600,7 +2608,7 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
         </div>
       )}
 
-      {/* ══ NEW FOLDER DIALOG ══ */}
+      {/* == NEW FOLDER DIALOG == */}
       {newFolderOpen && (
         <div style={{ position:'fixed', inset:0, zIndex:2147483655, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
           <div onClick={() => setNewFolderOpen(false)} style={{ position:'absolute', inset:0, background:'rgba(0,0,0,.60)' }} />
@@ -1625,7 +2633,7 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
         </div>
       )}
 
-      {/* ══ UPLOAD OVERLAY ══ */}
+      {/* == UPLOAD OVERLAY == */}
       {uploadOpen && (
         <div style={{ position:'fixed', inset:0, zIndex:2147483650, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
           <div onClick={() => setUploadOpen(false)} style={{ position:'absolute', inset:0, background:'rgba(0,0,0,.60)' }} />
@@ -1659,12 +2667,16 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
             </div>
             <p style={{ margin:'0 0 8px', fontSize:10, fontWeight:700, color:'rgba(255,255,255,.35)', letterSpacing:'.08em', textTransform:'uppercase' }}>Visibility</p>
             <div style={{ display:'flex', gap:6, marginBottom:16 }}>
-              {([['public','Public',Globe,'#34d399'],['private','Private',Lock,'rgba(255,255,255,.50)'],['password','Password',Key,'#fbbf24']] as const).map(([val,label,Icon,color]) => (
-                <button key={val} onClick={() => setUploadPrivacy(val as Privacy)} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:5, padding:'8px 4px', borderRadius:10, border:`1px solid ${uploadPrivacy===val?`${color}44`:'rgba(255,255,255,.08)'}`, background:uploadPrivacy===val?`${color}14`:'transparent', cursor:'pointer' }}>
-                  <Icon style={{ width:11, height:11, color:uploadPrivacy===val?color:'rgba(255,255,255,.28)' }} />
-                  <span style={{ fontSize:11, fontWeight:600, color:uploadPrivacy===val?color:'rgba(255,255,255,.30)' }}>{label}</span>
-                </button>
-              ))}
+              {([['public','Public',Globe,'#34d399',false],['private','Private',Lock,'rgba(255,255,255,.50)',true],['password','Password',Key,'#fbbf24',true]] as const).map(([val,label,Icon,color,needsPrivacy]) => {
+                const privacyLocked = needsPrivacy && !featureAvailable('filePrivacy');
+                return (
+                  <button key={val} onClick={() => { if (privacyLocked) { checkFeature('filePrivacy'); return; } setUploadPrivacy(val as Privacy); }} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:5, padding:'8px 4px', borderRadius:10, border:`1px solid ${uploadPrivacy===val?`${color}44`:'rgba(255,255,255,.08)'}`, background:uploadPrivacy===val?`${color}14`:'transparent', cursor: privacyLocked ? 'pointer' : 'pointer', opacity: privacyLocked ? 0.45 : 1, position:'relative' }}>
+                    <Icon style={{ width:11, height:11, color:uploadPrivacy===val?color:'rgba(255,255,255,.28)' }} />
+                    <span style={{ fontSize:11, fontWeight:600, color:uploadPrivacy===val?color:'rgba(255,255,255,.30)' }}>{label}</span>
+                    {privacyLocked && <Lock style={{ width:7, height:7, color:'rgba(255,255,255,.35)', position:'absolute', top:3, right:3 }} />}
+                  </button>
+                );
+              })}
             </div>
             <button onClick={doUpload} disabled={!uploadedName||uploading} style={{ width:'100%', height:40, borderRadius:12, border:'none', background:uploadDone?'rgba(52,211,153,.18)':uploadedName?'rgba(139,92,246,.22)':'rgba(255,255,255,.04)', cursor:uploadedName&&!uploading?'pointer':'default', display:'flex', alignItems:'center', justifyContent:'center', gap:8, transition:'background .22s' }}>
               {uploadDone ? <><Check style={{width:14,height:14,color:'#34d399'}}/><span style={{fontSize:13,fontWeight:700,color:'#34d399'}}>Uploaded!</span></> : uploading ? <><div style={{width:14,height:14,border:'2px solid rgba(167,139,250,.25)',borderTopColor:'#a78bfa',borderRadius:'50%',animation:'fd-spin .7s linear infinite'}}/><span style={{fontSize:13,fontWeight:700,color:'#a78bfa'}}>Uploading…</span></> : <><Upload style={{width:13,height:13,color:uploadedName?'#a78bfa':'rgba(255,255,255,.22)'}}/><span style={{fontSize:13,fontWeight:700,color:uploadedName?'#c4b5fd':'rgba(255,255,255,.24)'}}>Upload File</span></>}
@@ -1673,7 +2685,7 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
         </div>
       )}
 
-      {/* ══ SHARE PANEL ══ */}
+      {/* == SHARE PANEL == */}
       {shareFile && (
         <div style={{ position:'fixed', inset:0, zIndex:2147483650, display:'flex', alignItems:'flex-end', justifyContent:'center' }} className="sm:items-center">
           <div onClick={() => setShareFile(null)} style={{ position:'absolute', inset:0, background:'rgba(0,0,0,.65)' }} />
@@ -1701,18 +2713,20 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
 
             {/* Quick share buttons */}
             <div style={{ padding:'10px 14px', display:'flex', gap:8 }}>
-              <button onClick={() => { addHistory(shareFile.id, 'Shared via WhatsApp', undefined, '💬'); shareOnWhatsApp(shareFile); }}
-                style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:4, padding:'10px 4px', borderRadius:11, border:'1px solid rgba(37,211,102,.28)', background:'rgba(37,211,102,.10)', cursor:'pointer', transition:'all .12s', minWidth:0 }}
+              <button onClick={() => { if (!checkFeature('whatsappShare')) return; addHistory(shareFile.id, 'Shared via WhatsApp', undefined, '💬'); shareOnWhatsApp(shareFile); }}
+                style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:4, padding:'10px 4px', borderRadius:11, border:'1px solid rgba(37,211,102,.28)', background:'rgba(37,211,102,.10)', cursor:'pointer', transition:'all .12s', minWidth:0, opacity: featureAvailable('whatsappShare') ? 1 : 0.45, position:'relative' }}
                 onMouseEnter={e=>(e.currentTarget.style.background='rgba(37,211,102,.20)')} onMouseLeave={e=>(e.currentTarget.style.background='rgba(37,211,102,.10)')}>
                 <MessageCircle style={{ width:15, height:15, color:'#25D366' }} />
                 <span style={{ fontSize:10, fontWeight:700, color:'#4ade80' }}>WhatsApp</span>
+                {!featureAvailable('whatsappShare') && <Lock style={{ width:8, height:8, color:'rgba(255,255,255,.45)', position:'absolute', top:4, right:4 }} />}
               </button>
               {shareFile.type === 'file' && (
-                <button onClick={() => { setShareFile(null); setEmailFile(shareFile); }}
-                  style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:4, padding:'10px 4px', borderRadius:11, border:'1px solid rgba(129,140,248,.25)', background:'rgba(129,140,248,.09)', cursor:'pointer', transition:'all .12s', minWidth:0 }}
+                <button onClick={() => { if (!checkFeature('emailShare')) return; setShareFile(null); setEmailFile(shareFile); }}
+                  style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:4, padding:'10px 4px', borderRadius:11, border:'1px solid rgba(129,140,248,.25)', background:'rgba(129,140,248,.09)', cursor:'pointer', transition:'all .12s', minWidth:0, opacity: featureAvailable('emailShare') ? 1 : 0.45, position:'relative' }}
                   onMouseEnter={e=>(e.currentTarget.style.background='rgba(129,140,248,.18)')} onMouseLeave={e=>(e.currentTarget.style.background='rgba(129,140,248,.09)')}>
                   <Mail style={{ width:15, height:15, color:'#818cf8' }} />
                   <span style={{ fontSize:10, fontWeight:700, color:'#a5b4fc' }}>Email</span>
+                  {!featureAvailable('emailShare') && <Lock style={{ width:8, height:8, color:'rgba(255,255,255,.45)', position:'absolute', top:4, right:4 }} />}
                 </button>
               )}
               <button onClick={() => { navigator.clipboard.writeText(`https://docrud.in/drive/${shareFile.id}`).catch(()=>{}); }}
@@ -1722,11 +2736,12 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
                 <span style={{ fontSize:10, fontWeight:700, color:'rgba(255,255,255,.55)' }}>Copy Link</span>
               </button>
               {shareFile.type === 'file' && (
-                <button onClick={() => setQrShareTarget({ id:shareFile.id, name:shareFile.name, kind:'file', fileKind:shareFile.kind })}
-                  style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:4, padding:'10px 4px', borderRadius:11, border:'1px solid rgba(52,211,153,.22)', background:'rgba(52,211,153,.08)', cursor:'pointer', transition:'all .12s', minWidth:0 }}
+                <button onClick={() => { if (!checkFeature('qrShare')) return; setQrShareTarget({ id:shareFile.id, name:shareFile.name, kind:'file', fileKind:shareFile.kind }); }}
+                  style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:4, padding:'10px 4px', borderRadius:11, border:'1px solid rgba(52,211,153,.22)', background:'rgba(52,211,153,.08)', cursor:'pointer', transition:'all .12s', minWidth:0, opacity: featureAvailable('qrShare') ? 1 : 0.45, position:'relative' }}
                   onMouseEnter={e=>(e.currentTarget.style.background='rgba(52,211,153,.18)')} onMouseLeave={e=>(e.currentTarget.style.background='rgba(52,211,153,.08)')}>
                   <QrCode style={{ width:15, height:15, color:'#34d399' }} />
                   <span style={{ fontSize:10, fontWeight:700, color:'#6ee7b7' }}>QR Code</span>
+                  {!featureAvailable('qrShare') && <Lock style={{ width:8, height:8, color:'rgba(255,255,255,.45)', position:'absolute', top:4, right:4 }} />}
                 </button>
               )}
             </div>
@@ -1803,7 +2818,7 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
         </div>
       )}
 
-      {/* ══ PASSWORD GATE ══ */}
+      {/* == PASSWORD GATE == */}
       {pwdFile && (
         <div style={{ position:'fixed', inset:0, zIndex:2147483650, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
           <div onClick={() => { setPwdFile(null); setPwdInput(''); setPwdError(false); }} style={{ position:'absolute', inset:0, background:'rgba(0,0,0,.65)' }} />
@@ -1831,7 +2846,7 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
         </div>
       )}
 
-      {/* ══ FOLDER LOCK GATE ══ */}
+      {/* == FOLDER LOCK GATE == */}
       {folderLockId && (
         <div style={{ position:'fixed', inset:0, zIndex:2147483650, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
           <div onClick={() => { setFolderLockId(null); setLockInput(''); setLockError(false); }} style={{ position:'absolute', inset:0, background:'rgba(0,0,0,.65)' }} />
@@ -1864,13 +2879,13 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
         </div>
       )}
 
-      {/* ══ UPGRADE PROMPT ══ */}
+      {/* == UPGRADE PROMPT == */}
       {upgradeOpen && (
         <div style={{ position:'fixed', inset:0, zIndex:2147483656, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
           <div onClick={() => setUpgradeOpen(false)} style={{ position:'absolute', inset:0, background:'rgba(0,0,0,.70)' }} />
           <div style={{ position:'relative', width:'100%', maxWidth:360, background:'rgba(6,6,10,.98)', border:'1px solid rgba(248,113,113,.25)', borderRadius:20, padding:'24px 22px', animation:'fd-over .22s cubic-bezier(.22,1,.36,1) both', textAlign:'center' }}>
             <div style={{ width:52, height:52, borderRadius:16, background:'rgba(248,113,113,.12)', border:'1px solid rgba(248,113,113,.22)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 14px' }}>
-              <HardDrive style={{ width:22, height:22, color:'#f87171' }} />
+              <DdriveIcon size={22} />
             </div>
             <p style={{ margin:'0 0 6px', fontSize:15, fontWeight:700, color:'rgba(255,255,255,.90)' }}>Storage Full</p>
             <p style={{ margin:'0 0 18px', fontSize:12, color:'rgba(255,255,255,.38)', lineHeight:1.6 }}>
@@ -1889,147 +2904,149 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
         </div>
       )}
 
-      {/* ══ DRIVE PLANS MODAL ══ */}
+      {/* == DRIVE PLANS MODAL == */}
       {plansOpen && (
-        <div style={{ position:'fixed', inset:0, zIndex:2147483657, display:'flex', alignItems:'center', justifyContent:'center', padding:'16px 12px' }}>
+        <div style={{ position:'fixed', inset:0, zIndex:2147483657, display:'flex', alignItems:'center', justifyContent:'center', padding:'12px 10px' }}>
           <div onClick={() => { if (!driveCheckoutBusy) setPlansOpen(false); }} style={{ position:'absolute', inset:0, background:'rgba(0,0,0,.85)', backdropFilter:'blur(18px)' }} />
-          <div style={{ position:'relative', width:'100%', maxWidth:1060, background:'rgba(5,5,9,.99)', border:'1px solid rgba(255,255,255,.09)', borderRadius:24, boxShadow:'0 32px 100px rgba(0,0,0,.95), 0 0 0 1px rgba(255,255,255,.03)', overflow:'hidden', animation:'fd-over .26s cubic-bezier(.22,1,.36,1) both', maxHeight:'92vh', display:'flex', flexDirection:'column' }}>
+          <div style={{ position:'relative', width:'100%', maxWidth:780, background:'rgba(5,5,9,.99)', border:'1px solid rgba(255,255,255,.09)', borderRadius:22, boxShadow:'0 32px 100px rgba(0,0,0,.95), 0 0 0 1px rgba(255,255,255,.03)', overflow:'hidden', animation:'fd-over .26s cubic-bezier(.22,1,.36,1) both', maxHeight:'94vh', display:'flex', flexDirection:'column' }}>
 
-            {/* ── Header ── */}
-            <div style={{ padding:'26px 32px 20px', borderBottom:'1px solid rgba(255,255,255,.065)', display:'flex', alignItems:'center', gap:18, flexShrink:0 }}>
-              <div style={{ width:46, height:46, borderRadius:14, background:'rgba(124,58,237,.18)', border:'1px solid rgba(124,58,237,.32)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                <HardDrive style={{ width:20, height:20, color:'#a78bfa' }} />
+            {/* -- Header -- */}
+            <div className="fd-plans-header" style={{ padding:'22px 28px 18px', borderBottom:'1px solid rgba(255,255,255,.06)', display:'flex', alignItems:'center', gap:14, flexShrink:0 }}>
+              <div className="fd-plans-icon" style={{ width:40, height:40, borderRadius:12, background:'rgba(255,255,255,.05)', border:'1px solid rgba(255,255,255,.10)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                <DdriveIcon size={17} />
               </div>
-              <div style={{ flex:1 }}>
-                <p style={{ margin:0, fontSize:18, fontWeight:700, color:'#ffffff', letterSpacing:'-0.02em' }}>DocRud Drive — Storage Plans</p>
-                <p style={{ margin:'3px 0 0', fontSize:12, color:'rgba(255,255,255,.38)', fontWeight:400, letterSpacing:'0.01em' }}>Billed in INR · Secure checkout via Razorpay · Invoice delivered by email</p>
+              <div style={{ flex:1, minWidth:0 }}>
+                <p className="fd-plans-title" style={{ margin:0, fontSize:16, fontWeight:700, color:'rgba(255,255,255,.90)', letterSpacing:'-0.02em' }}>Storage Plans</p>
+                <p className="fd-plans-subtitle" style={{ margin:'2px 0 0', fontSize:11.5, color:'rgba(255,255,255,.30)', fontWeight:400 }}>Billed in INR · GST incl. · Receipt via email</p>
               </div>
 
               {/* Billing period toggle */}
-              <div style={{ display:'flex', alignItems:'center', background:'rgba(255,255,255,.04)', border:'1px solid rgba(255,255,255,.09)', borderRadius:10, overflow:'hidden', flexShrink:0 }}>
+              <div style={{ display:'flex', alignItems:'center', background:'rgba(255,255,255,.04)', border:'1px solid rgba(255,255,255,.08)', borderRadius:9, overflow:'hidden', flexShrink:0 }}>
                 {(['monthly','annual'] as const).map(p => (
                   <button key={p} onClick={() => setBillingPeriod(p)}
-                    style={{ padding:'7px 16px', border:'none', background:billingPeriod===p?'rgba(124,58,237,.26)':'transparent', cursor:'pointer', fontSize:12, fontWeight:600, color:billingPeriod===p?'#c4b5fd':'rgba(255,255,255,.38)', transition:'all .14s', display:'flex', alignItems:'center', gap:6 }}>
-                    {p === 'monthly' ? 'Monthly' : <><span>Annual</span><span style={{ fontSize:9, fontWeight:700, background:'rgba(52,211,153,.18)', color:'#34d399', borderRadius:5, padding:'1px 6px' }}>–17%</span></>}
+                    style={{ padding:'6px 13px', border:'none', background:billingPeriod===p?'rgba(255,255,255,.09)':'transparent', cursor:'pointer', fontSize:11.5, fontWeight:600, color:billingPeriod===p?'rgba(255,255,255,.85)':'rgba(255,255,255,.35)', transition:'all .12s', display:'flex', alignItems:'center', gap:5, whiteSpace:'nowrap' }}>
+                    {p === 'monthly' ? 'Monthly' : <><span>Annual</span><span style={{ fontSize:8.5, fontWeight:700, background:'rgba(255,255,255,.08)', color:'rgba(255,255,255,.50)', borderRadius:4, padding:'1px 5px' }}>–17%</span></>}
                   </button>
                 ))}
               </div>
 
               <button onClick={() => { if (!driveCheckoutBusy) setPlansOpen(false); }}
-                style={{ width:32, height:32, borderRadius:'50%', border:'1px solid rgba(255,255,255,.10)', background:'rgba(255,255,255,.04)', display:'flex', alignItems:'center', justifyContent:'center', color:'rgba(255,255,255,.40)', cursor:'pointer', flexShrink:0, transition:'all .14s' }}
-                onMouseEnter={e=>{e.currentTarget.style.background='rgba(248,113,113,.14)';e.currentTarget.style.color='#f87171';}}
-                onMouseLeave={e=>{e.currentTarget.style.background='rgba(255,255,255,.04)';e.currentTarget.style.color='rgba(255,255,255,.40)';}}>
-                <X style={{width:13,height:13}}/>
+                style={{ width:30, height:30, borderRadius:'50%', border:'1px solid rgba(255,255,255,.08)', background:'rgba(255,255,255,.03)', display:'flex', alignItems:'center', justifyContent:'center', color:'rgba(255,255,255,.32)', cursor:'pointer', flexShrink:0, transition:'all .12s' }}
+                onMouseEnter={e=>{e.currentTarget.style.background='rgba(255,255,255,.08)';e.currentTarget.style.color='rgba(255,255,255,.70)';}}
+                onMouseLeave={e=>{e.currentTarget.style.background='rgba(255,255,255,.03)';e.currentTarget.style.color='rgba(255,255,255,.32)';}}>
+                <X style={{width:12,height:12}}/>
               </button>
             </div>
 
-            {/* ── Status messages ── */}
+            {/* -- Status messages -- */}
             {(driveCheckoutSuccess || driveCheckoutError) && (
-              <div style={{ padding:'12px 32px', flexShrink:0, background: driveCheckoutSuccess ? 'rgba(52,211,153,.06)' : 'rgba(239,68,68,.06)', borderBottom:'1px solid rgba(255,255,255,.05)' }}>
-                <p style={{ margin:0, fontSize:13, fontWeight:600, color: driveCheckoutSuccess ? '#34d399' : '#f87171' }}>
+              <div style={{ padding:'10px 28px', flexShrink:0, background: driveCheckoutSuccess ? 'rgba(255,255,255,.04)' : 'rgba(255,255,255,.03)', borderBottom:'1px solid rgba(255,255,255,.05)' }}>
+                <p style={{ margin:0, fontSize:12.5, fontWeight:600, color: driveCheckoutSuccess ? 'rgba(255,255,255,.80)' : 'rgba(248,113,113,.80)' }}>
                   {driveCheckoutSuccess || driveCheckoutError}
                 </p>
               </div>
             )}
 
-            {/* ── Plans grid ── */}
-            <div className="fd-scroll" style={{ padding:'24px 28px 28px', overflowY:'auto', flex:1 }}>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:14, minWidth:640 }}>
+            {/* -- Plans grid / carousel -- */}
+            <div className="fd-plans-scroll fd-scroll" style={{ padding:'20px 24px 24px', overflowY:'auto', flex:1 }}>
+              <div className="fd-plans-grid" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12 }}>
                 {DRIVE_PLANS.map(plan => {
-                  const isActive  = currentPlan === plan.id;
-                  const isBusy    = driveCheckoutBusy === plan.id;
+                  const isActive     = currentPlan === plan.id;
+                  const isBusy       = driveCheckoutBusy === plan.id;
                   const monthlyPrice = plan.price;
                   const annualPrice  = Math.round(plan.price * 10);
                   const annualFull   = plan.price * 12;
-                  const accentHex    = plan.color;
                   return (
-                    <div key={plan.id} style={{
+                    <div key={plan.id} className="fd-plan-card" style={{
                       position:'relative', display:'flex', flexDirection:'column',
-                      padding:'22px 18px 20px', borderRadius:20,
-                      border:`1px solid ${isActive ? accentHex + '55' : plan.popular ? accentHex + '28' : 'rgba(255,255,255,.08)'}`,
-                      background: isActive ? `${accentHex}12` : plan.popular ? `${accentHex}08` : 'rgba(255,255,255,.022)',
-                      boxShadow: isActive ? `0 0 0 1px ${accentHex}30, 0 8px 32px ${accentHex}12` : 'none',
-                      transition:'border-color .18s, box-shadow .18s',
+                      padding:'20px 16px 16px', borderRadius:18,
+                      border: isActive
+                        ? '1px solid rgba(255,255,255,.22)'
+                        : plan.popular
+                          ? '1px solid rgba(255,255,255,.13)'
+                          : '1px solid rgba(255,255,255,.07)',
+                      background: isActive ? 'rgba(255,255,255,.07)' : 'rgba(255,255,255,.025)',
+                      boxShadow: isActive ? '0 0 0 1px rgba(255,255,255,.08), 0 8px 24px rgba(0,0,0,.35)' : 'none',
+                      transition:'border-color .16s, background .16s',
                     }}>
 
+                      {/* Popular pill */}
                       {plan.popular && !isActive && (
-                        <div style={{ position:'absolute', top:-11, left:'50%', transform:'translateX(-50%)', background:`${accentHex}`, borderRadius:99, padding:'3px 11px', fontSize:9, fontWeight:700, color:'#fff', letterSpacing:'.06em', whiteSpace:'nowrap' }}>
-                          MOST POPULAR
+                        <div style={{ position:'absolute', top:-10, left:'50%', transform:'translateX(-50%)', background:'rgba(255,255,255,.10)', border:'1px solid rgba(255,255,255,.16)', backdropFilter:'blur(8px)', borderRadius:99, padding:'2px 10px', fontSize:8.5, fontWeight:700, color:'rgba(255,255,255,.60)', letterSpacing:'.07em', whiteSpace:'nowrap' }}>
+                          POPULAR
                         </div>
                       )}
+
+                      {/* Active chip */}
                       {isActive && (
-                        <div style={{ position:'absolute', top:14, right:14, display:'flex', alignItems:'center', gap:4, padding:'2px 8px', borderRadius:99, background:`${accentHex}22`, border:`1px solid ${accentHex}40` }}>
-                          <Check style={{ width:8, height:8, color:accentHex }} />
-                          <span style={{ fontSize:9, fontWeight:700, color:accentHex, letterSpacing:'.04em' }}>ACTIVE</span>
+                        <div style={{ position:'absolute', top:12, right:12, display:'flex', alignItems:'center', gap:3, padding:'2px 7px', borderRadius:99, background:'rgba(255,255,255,.10)', border:'1px solid rgba(255,255,255,.18)' }}>
+                          <Check style={{ width:7, height:7, color:'rgba(255,255,255,.70)' }} />
+                          <span style={{ fontSize:8.5, fontWeight:700, color:'rgba(255,255,255,.65)', letterSpacing:'.05em' }}>ACTIVE</span>
                         </div>
                       )}
 
-                      {/* Icon */}
-                      <div style={{ width:42, height:42, borderRadius:13, background:`${accentHex}18`, border:`1px solid ${accentHex}35`, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:14 }}>
-                        <HardDrive style={{ width:18, height:18, color:accentHex }} />
-                      </div>
-
-                      {/* Name + storage */}
-                      <p style={{ margin:'0 0 2px', fontSize:15, fontWeight:700, color:'rgba(255,255,255,.92)', letterSpacing:'-0.01em' }}>{plan.label}</p>
-                      <p style={{ margin:'0 0 16px', fontSize:11.5, color:'rgba(255,255,255,.38)', fontWeight:500 }}>
+                      {/* Plan name + storage */}
+                      <p style={{ margin:'0 0 2px', fontSize:14, fontWeight:700, color:'rgba(255,255,255,.88)', letterSpacing:'-0.01em' }}>{plan.label}</p>
+                      <p style={{ margin:'0 0 14px', fontSize:11, color:'rgba(255,255,255,.32)', fontWeight:500 }}>
                         {plan.gb >= 1024 ? `${plan.gb/1024} TB` : `${plan.gb} GB`} storage
                       </p>
 
                       {/* Price */}
-                      <div style={{ marginBottom:18 }}>
+                      <div style={{ marginBottom:16 }}>
                         {monthlyPrice === 0 ? (
-                          <div style={{ display:'flex', alignItems:'baseline', gap:2 }}>
-                            <span style={{ fontSize:28, fontWeight:800, color:'rgba(255,255,255,.90)', letterSpacing:'-0.03em' }}>Free</span>
-                          </div>
+                          <span style={{ fontSize:26, fontWeight:800, color:'rgba(255,255,255,.85)', letterSpacing:'-0.03em' }}>Free</span>
                         ) : billingPeriod === 'monthly' ? (
-                          <div style={{ display:'flex', alignItems:'baseline', gap:2 }}>
-                            <span style={{ fontSize:28, fontWeight:800, color:'rgba(255,255,255,.92)', letterSpacing:'-0.03em' }}>₹{monthlyPrice}</span>
-                            <span style={{ fontSize:11, color:'rgba(255,255,255,.32)', marginLeft:2 }}>/mo</span>
+                          <div style={{ display:'flex', alignItems:'baseline', gap:1 }}>
+                            <span style={{ fontSize:26, fontWeight:800, color:'rgba(255,255,255,.88)', letterSpacing:'-0.03em' }}>₹{monthlyPrice}</span>
+                            <span style={{ fontSize:11, color:'rgba(255,255,255,.28)', marginLeft:2 }}>/mo</span>
                           </div>
                         ) : (
                           <div>
-                            <div style={{ display:'flex', alignItems:'baseline', gap:2 }}>
-                              <span style={{ fontSize:28, fontWeight:800, color:'rgba(255,255,255,.92)', letterSpacing:'-0.03em' }}>₹{annualPrice}</span>
-                              <span style={{ fontSize:11, color:'rgba(255,255,255,.32)', marginLeft:2 }}>/yr</span>
+                            <div style={{ display:'flex', alignItems:'baseline', gap:1 }}>
+                              <span style={{ fontSize:26, fontWeight:800, color:'rgba(255,255,255,.88)', letterSpacing:'-0.03em' }}>₹{annualPrice}</span>
+                              <span style={{ fontSize:11, color:'rgba(255,255,255,.28)', marginLeft:2 }}>/yr</span>
                             </div>
-                            <p style={{ margin:'2px 0 0', fontSize:10.5, color:'rgba(255,255,255,.28)', textDecoration:'line-through' }}>₹{annualFull}/yr</p>
+                            <p style={{ margin:'2px 0 0', fontSize:10, color:'rgba(255,255,255,.22)', textDecoration:'line-through' }}>₹{annualFull}/yr</p>
                           </div>
                         )}
                       </div>
 
                       {/* Perks */}
-                      <div style={{ display:'flex', flexDirection:'column', gap:7, marginBottom:20, flex:1 }}>
+                      <div style={{ display:'flex', flexDirection:'column', gap:6, marginBottom:18, flex:1 }}>
                         {plan.perks.map((perk, pi) => (
-                          <div key={pi} style={{ display:'flex', alignItems:'flex-start', gap:8 }}>
-                            <div style={{ width:14, height:14, borderRadius:'50%', background:`${accentHex}18`, border:`1px solid ${accentHex}35`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, marginTop:1 }}>
-                              <Check style={{ width:7, height:7, color:accentHex }} />
-                            </div>
-                            <span style={{ fontSize:11, color:'rgba(255,255,255,.58)', lineHeight:1.45, fontWeight:400 }}>{perk}</span>
+                          <div key={pi} style={{ display:'flex', alignItems:'flex-start', gap:7 }}>
+                            <Check style={{ width:10, height:10, color:'rgba(255,255,255,.35)', flexShrink:0, marginTop:2 }} />
+                            <span style={{ fontSize:11, color:'rgba(255,255,255,.45)', lineHeight:1.45, fontWeight:400 }}>{perk}</span>
                           </div>
                         ))}
                       </div>
 
-                      {/* CTA button */}
+                      {/* CTA */}
                       <button
                         onClick={e => { e.stopPropagation(); void handleDriveUpgrade(plan.id); }}
                         disabled={!!driveCheckoutBusy || (isActive && plan.price > 0)}
                         style={{
-                          width:'100%', padding:'10px 0', borderRadius:11,
-                          border:`1px solid ${isActive ? accentHex + '60' : accentHex + '40'}`,
-                          background: isActive ? `${accentHex}30` : driveCheckoutBusy===plan.id ? `${accentHex}25` : `${accentHex}18`,
+                          width:'100%', padding:'9px 0', borderRadius:10,
+                          border: isActive ? '1px solid rgba(255,255,255,.20)' : '1px solid rgba(255,255,255,.12)',
+                          background: isActive
+                            ? 'rgba(255,255,255,.10)'
+                            : plan.popular
+                              ? 'rgba(255,255,255,.08)'
+                              : 'rgba(255,255,255,.04)',
                           cursor: (!!driveCheckoutBusy || (isActive && plan.price > 0)) ? 'not-allowed' : 'pointer',
-                          fontSize:12, fontWeight:600, color: isActive ? accentHex : `${accentHex}cc`,
-                          opacity: !!driveCheckoutBusy && !isBusy ? 0.5 : 1,
-                          transition:'all .14s', display:'flex', alignItems:'center', justifyContent:'center', gap:6,
-                        }}>
-                        {isBusy && <Loader2 style={{ width:12, height:12, animation:'spin 1s linear infinite' }} />}
+                          fontSize:12, fontWeight:600,
+                          color: isActive ? 'rgba(255,255,255,.85)' : 'rgba(255,255,255,.55)',
+                          opacity: !!driveCheckoutBusy && !isBusy ? 0.4 : 1,
+                          transition:'all .12s', display:'flex', alignItems:'center', justifyContent:'center', gap:6,
+                        }}
+                        onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,.10)'; e.currentTarget.style.color = 'rgba(255,255,255,.85)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = isActive ? 'rgba(255,255,255,.10)' : plan.popular ? 'rgba(255,255,255,.08)' : 'rgba(255,255,255,.04)'; e.currentTarget.style.color = isActive ? 'rgba(255,255,255,.85)' : 'rgba(255,255,255,.55)'; }}>
+                        {isBusy && <Loader2 style={{ width:11, height:11, animation:'fd-spin .8s linear infinite' }} />}
                         {isActive
-                          ? (plan.price === 0 ? '✓ Current Plan' : '✓ Active')
-                          : isBusy
-                            ? 'Opening checkout…'
-                            : plan.price === 0
-                              ? 'Downgrade to Free'
-                              : 'Upgrade — Pay Securely'}
+                          ? (plan.price === 0 ? '✓ Current plan' : '✓ Active')
+                          : isBusy ? 'Processing…'
+                          : plan.price === 0 ? 'Downgrade to Free'
+                          : 'Upgrade'}
                       </button>
                     </div>
                   );
@@ -2037,22 +3054,22 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
               </div>
             </div>
 
-            {/* ── Footer ── */}
-            <div style={{ padding:'14px 32px 18px', borderTop:'1px solid rgba(255,255,255,.055)', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0, background:'rgba(255,255,255,.006)' }}>
-              <p style={{ margin:0, fontSize:10.5, color:'rgba(255,255,255,.25)' }}>
-                All plans billed in INR · GST included · Storage is exclusive to DocRud Drive
+            {/* -- Footer -- */}
+            <div className="fd-plans-footer" style={{ padding:'12px 24px 16px', borderTop:'1px solid rgba(255,255,255,.05)', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
+              <p style={{ margin:0, fontSize:10, color:'rgba(255,255,255,.20)' }}>
+                All plans billed in INR · GST included
               </p>
-              <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-                <span style={{ fontSize:10, color:'rgba(255,255,255,.20)', fontWeight:500 }}>Secured by</span>
-                <span style={{ fontSize:10.5, fontWeight:700, color:'rgba(255,255,255,.40)', letterSpacing:'.01em' }}>Razorpay</span>
+              <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+                <span style={{ fontSize:10, color:'rgba(255,255,255,.16)' }}>Secured by</span>
+                <span style={{ fontSize:10, fontWeight:700, color:'rgba(255,255,255,.30)', letterSpacing:'.02em' }}>Razorpay</span>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* ══ QR Share Dialog ══ */}
-      {/* ══ LABEL PICKER ══ */}
+      {/* == QR Share Dialog == */}
+      {/* == LABEL PICKER == */}
       {labelTarget && (
         <div style={{ position:'fixed', inset:0, zIndex:2147483658, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
           <div onClick={() => setLabelTarget(null)} style={{ position:'absolute', inset:0, background:'rgba(0,0,0,.60)' }} />
@@ -2083,7 +3100,7 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
         </div>
       )}
 
-      {/* ══ EMAIL SHARE ══ */}
+      {/* == EMAIL SHARE == */}
       {emailFile && (
         <div style={{ position:'fixed', inset:0, zIndex:2147483658, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
           <div onClick={() => { if (!emailSending) { setEmailFile(null); setEmailTo(''); setEmailNotes(''); }}} style={{ position:'absolute', inset:0, background:'rgba(0,0,0,.72)', backdropFilter:'blur(8px)' }} />
@@ -2115,10 +3132,10 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
                 </div>
                 <div style={{ display:'flex', alignItems:'center', gap:10 }}>
                   <div style={{ width:32, height:32, borderRadius:9, background:'rgba(255,255,255,.12)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                    <HardDrive style={{ width:14, height:14, color:'rgba(255,255,255,.80)' }} />
+                    <DdriveIcon size={14} />
                   </div>
                   <div>
-                    <p style={{ margin:0, fontSize:12, fontWeight:700, color:'#fff' }}>DocRud Drive</p>
+                    <p style={{ margin:0, fontSize:12, fontWeight:700, color:'#fff' }}>Ddrive</p>
                     <p style={{ margin:0, fontSize:9.5, color:'rgba(255,255,255,.50)' }}>noreply@docrud.in</p>
                   </div>
                 </div>
@@ -2140,7 +3157,7 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
                 <div style={{ display:'inline-block', padding:'8px 18px', borderRadius:9, background:'linear-gradient(135deg,#7c3aed,#6d28d9)', fontSize:12, fontWeight:700, color:'#fff' }}>
                   Open File →
                 </div>
-                <p style={{ margin:'10px 0 0', fontSize:9.5, color:'rgba(255,255,255,.28)' }}>Sent via DocRud Drive · Unsubscribe</p>
+                <p style={{ margin:'10px 0 0', fontSize:9.5, color:'rgba(255,255,255,.28)' }}>Sent via Ddrive · Unsubscribe</p>
               </div>
             </div>
 
@@ -2170,7 +3187,7 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
         </div>
       )}
 
-      {/* ══ FILE HISTORY MODAL ══ */}
+      {/* == FILE HISTORY MODAL == */}
       {historyFile && (
         <div style={{ position:'fixed', inset:0, zIndex:2147483658, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
           <div onClick={() => setHistoryFile(null)} style={{ position:'absolute', inset:0, background:'rgba(0,0,0,.72)', backdropFilter:'blur(8px)' }} />
@@ -2233,18 +3250,18 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
         </div>
       )}
 
-      {/* ══ IMPORT CONFIRMATION (drive-import deep link) ══ */}
+      {/* == IMPORT CONFIRMATION (drive-import deep link) == */}
       {importConfirm && (
         <div style={{ position:'fixed', inset:0, zIndex:2147483662, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
           <div onClick={() => setImportConfirm(null)} style={{ position:'absolute', inset:0, background:'rgba(0,0,0,.74)', backdropFilter:'blur(10px)' }} />
           <div style={{ position:'relative', width:'100%', maxWidth:400, background:'rgba(5,5,9,.99)', border:'1px solid rgba(255,255,255,.09)', borderRadius:22, overflow:'hidden', animation:'fd-over .22s cubic-bezier(.22,1,.36,1) both', boxShadow:'0 24px 72px rgba(0,0,0,.90)', padding:'28px 28px 24px' }}>
             {/* Icon */}
             <div style={{ width:52, height:52, borderRadius:16, background:'linear-gradient(135deg,rgba(99,102,241,.22),rgba(139,92,246,.14))', border:'1px solid rgba(139,92,246,.28)', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:16 }}>
-              <HardDrive style={{ width:22, height:22, color:'#a78bfa' }} />
+              <DdriveIcon size={22} />
             </div>
-            <p style={{ margin:'0 0 6px', fontSize:18, fontWeight:800, color:'rgba(255,255,255,.92)' }}>Add to Your Drive?</p>
+            <p style={{ margin:'0 0 6px', fontSize:18, fontWeight:800, color:'rgba(255,255,255,.92)' }}>Add to Your Ddrive?</p>
             <p style={{ margin:'0 0 20px', fontSize:13, color:'rgba(255,255,255,.45)', lineHeight:1.6 }}>
-              A file was shared with you via email. Would you like to add it to your DocRud Drive for easy access?
+              A file was shared with you via email. Would you like to add it to your Ddrive for easy access?
             </p>
             <div style={{ display:'flex', gap:10 }}>
               <button onClick={() => setImportConfirm(null)}
@@ -2268,10 +3285,10 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
                 addHistory(importConfirm.id, 'Added to Drive', 'Imported from email link', '📥');
                 setImportConfirm(null);
                 setSection('my-drive');
-                setNavStack([{ id: null, name: 'My Drive' }]);
+                setNavStack([{ id: null, name: 'My Ddrive' }]);
               }}
                 style={{ flex:1, padding:'10px 0', borderRadius:11, border:'none', background:'linear-gradient(135deg,#7c3aed,#6d28d9)', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer' }}>
-                Add to Drive
+                Add to Ddrive
               </button>
             </div>
           </div>
@@ -2280,11 +3297,95 @@ export default function FileDriveCenter({ open, onClose }: FileDriveCenterProps)
 
       <QRShareDialog open={!!qrShareTarget} onClose={() => setQrShareTarget(null)} target={qrShareTarget ?? {id:'',name:'',kind:'file'}} />
 
-      {/* ══ QR Scanner Dialog ══ */}
+      {/* == QR Scanner Dialog == */}
       <QRScannerDialog open={scannerOpen} onClose={() => setScannerOpen(false)} onFileAdded={handleScannerFileAdded} />
 
-      {/* ══ Universal File Viewer ══ */}
+      {/* == Universal File Viewer == */}
       <UniversalFileViewer open={!!viewerFile} file={viewerFile} onClose={() => setViewerFile(null)} />
+
+      {/* == FEATURE LOCK TOAST == */}
+      {featureLocked && (
+        <div style={{
+          position: 'fixed',
+          bottom: 32,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 2147483670,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          background: 'rgba(8,8,15,.97)',
+          border: '1px solid rgba(139,92,246,.38)',
+          borderRadius: 18,
+          padding: '13px 14px 13px 14px',
+          boxShadow: '0 12px 48px rgba(0,0,0,.85), 0 0 0 1px rgba(139,92,246,.12), inset 0 1px 0 rgba(255,255,255,.05)',
+          backdropFilter: 'blur(28px)',
+          maxWidth: 420,
+          width: 'calc(100vw - 40px)',
+          animation: 'fd-over .22s cubic-bezier(.22,1,.36,1) both',
+        }}>
+          {/* Lock icon badge */}
+          <div style={{
+            flexShrink: 0,
+            width: 38, height: 38,
+            borderRadius: 11,
+            background: 'linear-gradient(135deg,rgba(124,58,237,.26),rgba(99,102,241,.16))',
+            border: '1px solid rgba(139,92,246,.38)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Lock style={{ width: 15, height: 15, color: '#c4b5fd' }} />
+          </div>
+
+          {/* Text */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,.93)', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {featureLocked.requiredPlan} plan required
+            </p>
+            <p style={{ margin: '2px 0 0', fontSize: 11.5, color: 'rgba(255,255,255,.38)', lineHeight: 1.4 }}>
+              Upgrade to unlock this feature
+            </p>
+          </div>
+
+          {/* Upgrade CTA */}
+          <button
+            onClick={() => { setPlansOpen(true); setFeatureLocked(null); }}
+            style={{
+              flexShrink: 0,
+              padding: '8px 15px',
+              borderRadius: 10,
+              border: 'none',
+              background: 'linear-gradient(135deg,#7c3aed,#6d28d9)',
+              color: '#fff',
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: 'pointer',
+              letterSpacing: '-0.01em',
+              whiteSpace: 'nowrap',
+              boxShadow: '0 2px 12px rgba(124,58,237,.45)',
+            }}
+          >
+            Upgrade →
+          </button>
+
+          {/* Dismiss */}
+          <button
+            onClick={() => setFeatureLocked(null)}
+            style={{
+              flexShrink: 0,
+              width: 28, height: 28,
+              borderRadius: 8,
+              border: '1px solid rgba(255,255,255,.08)',
+              background: 'rgba(255,255,255,.04)',
+              color: 'rgba(255,255,255,.35)',
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: 0,
+            }}
+          >
+            <X style={{ width: 11, height: 11 }} />
+          </button>
+        </div>
+      )}
     </>,
     document.body,
   );

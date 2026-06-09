@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { getAuthSession } from '@/lib/server/auth';
-import { createAccessEvent, getHistoryEntries, updateHistoryEntry } from '@/lib/server/history';
+import { createAccessEvent, getHistoryEntryById, updateHistoryEntry } from '@/lib/server/history';
 import { getMailSettings } from '@/lib/server/settings';
 import { buildEmailChrome } from '@/lib/server/email-chrome';
 import { isValidEmail } from '@/lib/server/security';
@@ -22,8 +22,7 @@ export async function POST(request: NextRequest) {
     const signerKey = String(payload.signerKey || '').trim().slice(0, 64);
     if (!historyId || !signerKey) return NextResponse.json({ error: 'History ID and signerKey are required' }, { status: 400 });
 
-    const history = await getHistoryEntries();
-    const entry = history.find((h) => h.id === historyId);
+    const entry = await getHistoryEntryById(historyId);
     if (!entry) return NextResponse.json({ error: 'History entry not found' }, { status: 404 });
 
     const allowed = session.user.role === 'admin'

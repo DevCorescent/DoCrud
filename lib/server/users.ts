@@ -2,6 +2,15 @@ import { User } from '@/types/document';
 import { createPasswordHash, normalizeEmail } from '@/lib/server/security';
 import { defaultRoleProfiles } from '@/lib/server/roles';
 import { getStoredUsersFromRepository, saveStoredUsersToRepository } from '@/lib/server/repositories';
+import { getDbPool } from '@/lib/server/database';
+import {
+  deleteUserRow,
+  reconcileUserRows,
+  selectAllUserRows,
+  selectUserRowByEmail,
+  selectUserRowById,
+  upsertUserRow,
+} from '@/lib/server/db/users-rows';
 
 export interface StoredUser extends User {
   passwordHash?: string;
@@ -51,14 +60,83 @@ const defaultUsers: StoredUser[] = [
   },
 ];
 
+let _usersCache: { data: StoredUser[]; expiresAt: number } | null = null;
+const USERS_CACHE_TTL = 3_000; // 3 s — deduplicates concurrent requests without stale risk
+
+export function invalidateUsersCache(): void {
+  _usersCache = null;
+}
+
 export async function getStoredUsers(): Promise<StoredUser[]> {
-  const users = await getStoredUsersFromRepository<StoredUser>(defaultUsers);
-  return users.map((user) => ({
-    ...user,
-    email: normalizeEmail(user.email),
-  }));
+  if (_usersCache && _usersCache.expiresAt > Date.now()) {
+    return _usersCache.data;
+  }
+  let result: StoredUser[];
+  if (getDbPool()) {
+    const rows = await selectAllUserRows();
+    result = rows.length === 0
+      ? defaultUsers.map((u) => ({ ...u, email: normalizeEmail(u.email) }))
+      : rows.map((user) => ({ ...user, email: normalizeEmail(user.email) }));
+  } else {
+    const users = await getStoredUsersFromRepository<StoredUser>(defaultUsers);
+    result = users.map((user) => ({ ...user, email: normalizeEmail(user.email) }));
+  }
+  _usersCache = { data: result, expiresAt: Date.now() + USERS_CACHE_TTL };
+  return result;
 }
 
 export async function saveStoredUsers(users: StoredUser[]) {
+  invalidateUsersCache();
+  if (getDbPool()) {
+    await reconcileUserRows(users);
+    return;
+  }
   await saveStoredUsersToRepository(users);
+}
+
+/** Per-row fetch by id — avoids loading the full table. */
+export async function getStoredUserById(id: string): Promise<StoredUser | null> {
+  if (getDbPool()) {
+    const row = await selectUserRowById(id);
+    return row ? { ...row, email: normalizeEmail(row.email) } : null;
+  }
+  const users = await getStoredUsers();
+  return users.find((u) => u.id === id) || null;
+}
+
+/** Per-row fetch by email — avoids loading the full table. */
+export async function getStoredUserByEmail(email: string): Promise<StoredUser | null> {
+  const normalized = normalizeEmail(email);
+  if (getDbPool()) {
+    const row = await selectUserRowByEmail(normalized);
+    return row ? { ...row, email: normalizeEmail(row.email) } : null;
+  }
+  const users = await getStoredUsers();
+  return users.find((u) => normalizeEmail(u.email) === normalized) || null;
+}
+
+/** Per-row upsert — for the common single-user mutation paths. */
+export async function upsertStoredUser(user: StoredUser): Promise<void> {
+  invalidateUsersCache();
+  if (getDbPool()) {
+    await upsertUserRow({ ...user, email: normalizeEmail(user.email) });
+    return;
+  }
+  const users = await getStoredUsers();
+  const idx = users.findIndex((u) => u.id === user.id);
+  const next = idx === -1 ? [...users, user] : users.map((u, i) => (i === idx ? user : u));
+  await saveStoredUsers(next);
+}
+
+/** Per-row delete — single DELETE instead of full table rewrite. */
+export async function deleteStoredUser(id: string): Promise<boolean> {
+  invalidateUsersCache();
+  if (getDbPool()) {
+    return deleteUserRow(id);
+  }
+  const users = await getStoredUsers();
+  const next = users.filter((u) => u.id !== id);
+  if (next.length === users.length) return false;
+  await saveStoredUsers(next);
+  return true;
 }

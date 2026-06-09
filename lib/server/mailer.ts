@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import type { Transporter } from 'nodemailer';
 import type { OutboundEmailEvent } from '@/lib/server/email-outbox';
 import {
   appendEmailOutboxEvent,
@@ -11,6 +12,47 @@ import { isValidEmail } from '@/lib/server/security';
 import { getMailSettings } from '@/lib/server/settings';
 import { getMailPolicies, type MailPolicyKey } from '@/lib/server/mail-policies';
 import { buildEmailChrome, escapeHtmlLite } from '@/lib/server/email-chrome';
+
+/* ─── Persistent pooled SMTP transporter ─────────────────────────────────────
+   Creating a new transporter on every send triggers a fresh TCP + TLS
+   handshake (~200–800 ms). With pool:true the connections stay alive and
+   are reused, cutting per-email overhead to ~5–30 ms.
+   The cache is keyed on the SMTP config hash; changing settings in admin
+   automatically rotates to a fresh pool.
+────────────────────────────────────────────────────────────────────────────── */
+let _cachedTransporter: Transporter | null = null;
+let _cachedConfigKey = '';
+
+export async function getCachedTransporter(): Promise<Transporter> {
+  const smtp = await getMailSettings();
+  const configKey = `${smtp.host}|${smtp.port}|${smtp.secure}|${smtp.username}`;
+
+  if (_cachedTransporter && _cachedConfigKey === configKey) {
+    return _cachedTransporter;
+  }
+
+  // Close the old pool before replacing it
+  if (_cachedTransporter) {
+    try { (_cachedTransporter as Transporter & { close?: () => void }).close?.(); } catch { /* ignore */ }
+  }
+
+  _cachedTransporter = nodemailer.createTransport({
+    host: smtp.host,
+    port: Number(smtp.port) || 465,
+    secure: Boolean(smtp.secure),
+    auth: smtp.requireAuth ? { user: smtp.username, pass: smtp.password } : undefined,
+    pool: true,           // keep TCP connections alive between sends
+    maxConnections: 5,
+    maxMessages: 200,
+    connectionTimeout: 30_000,  // GoDaddy cold-start can take 10-15 s
+    greetingTimeout:   20_000,
+    socketTimeout:     30_000,
+    tls: { rejectUnauthorized: false },
+  });
+
+  _cachedConfigKey = configKey;
+  return _cachedTransporter;
+}
 
 type SendTrackedMailInput = {
   policyKey: MailPolicyKey;
@@ -39,7 +81,6 @@ export async function sendTrackedMail(input: SendTrackedMailInput) {
 
   const policies = await getMailPolicies();
   if (!policies[input.policyKey]) {
-    console.log(`[mailer] policy "${input.policyKey}" disabled — skipping mail to ${to}`);
     const outboxId = createOutboundEmailId('skip');
     await appendEmailOutboxEvent({
       id: outboxId,
@@ -59,10 +100,7 @@ export async function sendTrackedMail(input: SendTrackedMailInput) {
   }
 
   const smtp = await getMailSettings();
-  console.log(`[mailer] smtp config — host=${smtp.host} port=${smtp.port} secure=${smtp.secure} requireAuth=${smtp.requireAuth} from=${smtp.fromEmail} user=${smtp.username}`);
-
   if (!smtp.host || !smtp.fromEmail) {
-    console.error('[mailer] mail not configured — host or fromEmail missing');
     throw new Error('Mail settings are not configured.');
   }
 
@@ -81,15 +119,7 @@ export async function sendTrackedMail(input: SendTrackedMailInput) {
     metadata: input.metadata,
   });
 
-  const transporter = nodemailer.createTransport({
-    host: smtp.host,
-    port: Number(smtp.port) || 465,
-    secure: Boolean(smtp.secure),
-    auth: smtp.requireAuth ? { user: smtp.username, pass: smtp.password } : undefined,
-    tls: { rejectUnauthorized: false },
-  });
-
-  console.log(`[mailer] sending "${subject}" → ${to} (outboxId=${outboxId})`);
+  const transporter = await getCachedTransporter();
 
   const trackedText = rewriteLinksForTracking(input.origin, outboxId, text);
   const baseBody = (input.html && input.html.trim())
@@ -117,7 +147,6 @@ export async function sendTrackedMail(input: SendTrackedMailInput) {
         : undefined,
     });
 
-    console.log(`[mailer] sent ok — messageId=${info.messageId}`);
     await updateEmailOutboxEvent(outboxId, (ev) => ({
       ...ev,
       status: 'sent',
@@ -128,8 +157,6 @@ export async function sendTrackedMail(input: SendTrackedMailInput) {
 
     return { skipped: false, messageId: info.messageId, outboxId };
   } catch (err) {
-    const e = err as NodeJS.ErrnoException & { code?: string; command?: string; response?: string; responseCode?: number };
-    console.error(`[mailer] sendMail FAILED — code=${e.code} command=${e.command} responseCode=${e.responseCode} response="${e.response}" message="${e.message}"`);
     await updateEmailOutboxEvent(outboxId, (ev) => ({
       ...ev,
       status: 'failed',

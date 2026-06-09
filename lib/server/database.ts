@@ -74,24 +74,21 @@ export function isDatabaseConfigured() {
 
 function createPool() {
   const connectionString = getDatabaseUrl();
+  const isSupabase = connectionString.includes('supabase.co');
   const poolConfig = {
     connectionString,
-    ssl: (connectionString.includes('supabase.co') || connectionString.includes('prisma.io'))
-      ? { rejectUnauthorized: false }
-      : undefined,
-    max: 5,
+    ssl: isSupabase ? { rejectUnauthorized: false } : undefined,
+    max: Number(process.env.DATABASE_POOL_MAX) || 20,
+    idleTimeoutMillis: 30_000,
+    connectionTimeoutMillis: 10_000,
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 10_000,
     lookup(hostname: string, _options: unknown, callback: (error: NodeJS.ErrnoException | null, address: string, family: number) => void) {
       dns.lookup(hostname, { family: 4 }, callback);
     },
   };
 
-  const pool = new Pool(poolConfig as ConstructorParameters<typeof Pool>[0]);
-  // Without this handler, a failed idle client emits an unhandled 'error'
-  // event which crashes the Node.js process — including during Vercel builds.
-  pool.on('error', (err) => {
-    console.error('[pg pool] background client error:', err.message);
-  });
-  return pool;
+  return new Pool(poolConfig as ConstructorParameters<typeof Pool>[0]);
 }
 
 export function getDbPool() {
@@ -108,7 +105,7 @@ export function getDbPool() {
 
 let schemaReadyPromise: Promise<void> | null = null;
 
-async function ensureDatabaseSchema() {
+export async function ensureDatabaseSchema() {
   const pool = getDbPool();
   if (!pool) {
     return;

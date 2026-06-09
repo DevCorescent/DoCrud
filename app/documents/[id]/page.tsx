@@ -1098,7 +1098,7 @@ export default function SharedDocumentPage() {
   };
 
   const openCameraCapture = async () => {
-    if (!password.trim()) {
+    if (!signingToken && !password.trim()) {
       setErrorMessage('Enter the signing password first, then open the live camera capture.');
       setSuccessMessage('');
       return;
@@ -1474,35 +1474,40 @@ export default function SharedDocumentPage() {
 
         {/* Mobile step bar */}
         {showSigningStepper && (
-          <div className="flex gap-1 overflow-x-auto no-scrollbar border-t border-white/[0.05] px-4 py-2 sm:hidden">
-            {(enableSigningStep
-              ? [
-                  { key: 'unlock' as const, label: 'Access', done: isUnlocked },
-                  { key: 'review' as const, label: 'Review', done: isUnlocked && activeStep !== 'unlock' },
-                  { key: 'complete' as const, label: 'Sign', done: isSigned },
-                ]
-              : [
-                  { key: 'unlock' as const, label: 'Access', done: isUnlocked },
-                  { key: 'review' as const, label: 'Review', done: isUnlocked && activeStep !== 'unlock' },
-                ]
-            ).map((s) => (
-              <button
-                key={s.key}
-                type="button"
-                disabled={!isUnlocked && s.key !== 'unlock'}
-                onClick={() => { if (isUnlocked || s.key === 'unlock') setActiveStep(s.key); }}
-                className={[
-                  'shrink-0 rounded-full px-3 py-1.5 text-[10.5px] font-semibold transition-all',
-                  s.key === activeStep
-                    ? 'bg-white text-slate-950'
-                    : s.done
-                      ? 'bg-emerald-500/15 text-emerald-400'
-                      : 'bg-white/[0.05] text-white/30',
-                ].join(' ')}
-              >
-                {s.done && s.key !== activeStep ? '✓ ' : ''}{s.label}
-              </button>
-            ))}
+          <div className="border-t border-white/[0.05] px-4 py-2.5 sm:hidden">
+            <div className="flex items-center gap-1.5">
+              {(enableSigningStep
+                ? [
+                    { key: 'unlock' as const, label: 'Access', done: isUnlocked },
+                    { key: 'review' as const, label: 'Review', done: isUnlocked && activeStep !== 'unlock' },
+                    { key: 'complete' as const, label: 'Sign', done: isSigned },
+                  ]
+                : [
+                    { key: 'unlock' as const, label: 'Access', done: isUnlocked },
+                    { key: 'review' as const, label: 'Review', done: isUnlocked && activeStep !== 'unlock' },
+                  ]
+              ).map((s, idx, arr) => (
+                <div key={s.key} className="flex flex-1 items-center gap-1.5">
+                  <button
+                    type="button"
+                    disabled={!isUnlocked && s.key !== 'unlock'}
+                    onClick={() => { if (isUnlocked || s.key === 'unlock') setActiveStep(s.key); }}
+                    className={[
+                      'flex flex-1 items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] font-semibold transition-all',
+                      s.key === activeStep
+                        ? 'bg-white text-slate-950 shadow-[0_2px_8px_rgba(255,255,255,0.15)]'
+                        : s.done
+                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/15'
+                          : 'bg-white/[0.04] text-white/30 border border-white/[0.06]',
+                    ].join(' ')}
+                  >
+                    {s.done && s.key !== activeStep && <CheckCircle2 className="h-3 w-3 shrink-0" />}
+                    {s.label}
+                  </button>
+                  {idx < arr.length - 1 && <ChevronRight className="h-3 w-3 shrink-0 text-white/20" />}
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </header>
@@ -2003,33 +2008,33 @@ export default function SharedDocumentPage() {
                       {verificationChecklist.filter((i) => i.done).length}/{verificationChecklist.length} complete
                     </span>
                   </div>
-                  <div className="grid gap-2 p-5 sm:grid-cols-2">
+                  <div className="grid gap-2 p-4 sm:grid-cols-2">
                     {verificationChecklist.map((item) => (
                       <div key={item.key} className={[
-                        'flex items-center gap-3 rounded-xl border px-4 py-3 text-sm transition',
+                        'flex items-center gap-3 rounded-xl border px-4 py-3.5 text-sm transition',
                         item.done
                           ? 'border-emerald-500/20 bg-emerald-500/[0.06] text-emerald-300'
                           : 'border-white/[0.07] bg-white/[0.02] text-white/50',
                       ].join(' ')}>
                         {item.done
-                          ? <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
-                          : <div className="h-4 w-4 shrink-0 rounded-full border border-white/20" />}
-                        <span className="flex-1">{item.label}</span>
+                          ? <CheckCircle2 className="h-4.5 w-4.5 shrink-0 text-emerald-400" />
+                          : <div className="h-4 w-4 shrink-0 rounded-full border-2 border-white/20" />}
+                        <span className="flex-1 text-[13px]">{item.label}</span>
                         {!item.done && item.key === 'otp' && (
                           <button type="button" onClick={() => setEmailOtpDialogOpen(true)}
-                            className="text-[10.5px] font-semibold text-white/50 hover:text-white underline underline-offset-2">
+                            className="shrink-0 rounded-lg border border-white/[0.12] bg-white/[0.06] px-3 py-1.5 text-[11px] font-semibold text-white/70 transition hover:bg-white/[0.12] hover:text-white">
                             Verify
                           </button>
                         )}
                         {!item.done && item.key === 'location' && (
                           <button type="button" onClick={() => void captureLocation()} disabled={isCapturingLocation}
-                            className="text-[10.5px] font-semibold text-white/50 hover:text-white underline underline-offset-2">
+                            className="shrink-0 rounded-lg border border-white/[0.12] bg-white/[0.06] px-3 py-1.5 text-[11px] font-semibold text-white/70 transition hover:bg-white/[0.12] hover:text-white disabled:opacity-40">
                             {isCapturingLocation ? 'Capturing…' : 'Enable'}
                           </button>
                         )}
                         {!item.done && item.key === 'camera' && (
                           <button type="button" onClick={() => void openCameraCapture()} disabled={isStartingCamera}
-                            className="text-[10.5px] font-semibold text-white/50 hover:text-white underline underline-offset-2">
+                            className="shrink-0 rounded-lg border border-white/[0.12] bg-white/[0.06] px-3 py-1.5 text-[11px] font-semibold text-white/70 transition hover:bg-white/[0.12] hover:text-white disabled:opacity-40">
                             {isStartingCamera ? 'Opening…' : 'Capture'}
                           </button>
                         )}
@@ -2041,29 +2046,37 @@ export default function SharedDocumentPage() {
 
               {/* Camera capture */}
               {cameraOpen && (
-                <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02]">
-                  <div className="border-b border-white/[0.06] px-5 py-4">
-                    <p className="text-[10.5px] font-semibold uppercase tracking-[0.22em] text-white/30">Live Camera Capture</p>
-                    <p className="mt-0.5 text-xs text-white/40">A fresh live photo is required as signing evidence.</p>
+                <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0a0b0c]">
+                  <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-3.5">
+                    <div>
+                      <p className="text-[10.5px] font-semibold uppercase tracking-[0.22em] text-white/30">Live Camera Capture</p>
+                      <p className="mt-0.5 text-xs text-white/35">Look directly at the camera and click Capture.</p>
+                    </div>
+                    <button type="button" onClick={closeCameraCapture}
+                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/[0.10] bg-white/[0.05] text-white/40 transition hover:bg-white/[0.10] hover:text-white">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
                   </div>
-                  <div className="p-5">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-                      <div className="flex-1 overflow-hidden rounded-xl bg-black">
-                        <video ref={videoRef} playsInline muted autoPlay className="h-[260px] w-full object-cover" />
+                  <div className="p-4">
+                    {/* Live preview */}
+                    <div className="relative overflow-hidden rounded-xl bg-black aspect-video max-h-[320px] sm:max-h-[280px]">
+                      <video ref={videoRef} playsInline muted autoPlay className="h-full w-full object-cover" />
+                      {/* Face guide overlay */}
+                      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                        <div className="h-40 w-32 rounded-full border-2 border-white/20 sm:h-36 sm:w-28" />
                       </div>
-                      <div className="flex flex-col gap-2 sm:w-48">
-                        {displayedPhotoEvidence && (
-                          <div className="overflow-hidden rounded-xl border border-emerald-500/20">
-                            <Image src={displayedPhotoEvidence.photoDataUrl} alt="Captured" width={192} height={140} unoptimized className="h-36 w-full object-cover" />
-                          </div>
-                        )}
+                    </div>
+                    {/* Captured preview + actions */}
+                    <div className="mt-3 flex items-center gap-3">
+                      {displayedPhotoEvidence && (
+                        <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-emerald-500/25">
+                          <Image src={displayedPhotoEvidence.photoDataUrl} alt="Captured" width={56} height={56} unoptimized className="h-full w-full object-cover" />
+                        </div>
+                      )}
+                      <div className="flex flex-1 gap-2">
                         <button type="button" onClick={() => void captureLiveEvidencePhoto()} disabled={isSavingEvidencePhoto}
-                          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-white/[0.12] bg-white px-4 text-sm font-semibold text-slate-950 transition hover:bg-white/90 disabled:opacity-50">
-                          {isSavingEvidencePhoto ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving…</> : <><Camera className="h-3.5 w-3.5" /> Capture</>}
-                        </button>
-                        <button type="button" onClick={closeCameraCapture}
-                          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 text-sm font-semibold text-white/50 transition hover:bg-white/[0.08]">
-                          <X className="h-3.5 w-3.5" /> Close
+                          className="flex-1 inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-white/[0.12] bg-white text-sm font-semibold text-slate-950 transition hover:bg-white/90 active:scale-[0.98] disabled:opacity-50">
+                          {isSavingEvidencePhoto ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving…</> : <><Camera className="h-4 w-4" /> {displayedPhotoEvidence ? 'Retake' : 'Capture Photo'}</>}
                         </button>
                       </div>
                     </div>
@@ -2280,22 +2293,24 @@ export default function SharedDocumentPage() {
           {isUnlocked && documentData?.hasRecipientSignature && (!showSigningStepper || activeStep === 'complete') && (
             <div className="space-y-4">
               {/* Completion banner */}
-              <div className="flex items-center gap-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.05] px-5 py-5">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.08]">
-                  <CheckCircle2 className="h-6 w-6 text-emerald-400" />
+              <div className="overflow-hidden rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.05]">
+                <div className="flex items-center gap-4 px-5 py-5">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.10]">
+                    <CheckCircle2 className="h-6 w-6 text-emerald-400" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-base font-semibold text-emerald-300">Document signed successfully</p>
+                    <p className="mt-0.5 text-sm text-emerald-400/60 truncate">{documentData.templateName}</p>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-base font-semibold text-emerald-300">Document signed successfully</p>
-                  <p className="mt-0.5 text-sm text-emerald-400/60 truncate">{documentData.templateName}</p>
-                </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-col gap-2 border-t border-emerald-500/10 px-5 pb-5 pt-4 sm:flex-row">
                   <button type="button" onClick={() => void downloadPdf()} disabled={isDownloadingPdf}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-4 text-[11.5px] font-semibold text-emerald-300 transition hover:bg-emerald-500/20 disabled:opacity-50">
-                    {isDownloadingPdf ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />} Signed PDF
+                    className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl border border-emerald-500/25 bg-emerald-500/10 text-sm font-semibold text-emerald-300 transition hover:bg-emerald-500/20 disabled:opacity-50">
+                    {isDownloadingPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} Download Signed PDF
                   </button>
                   <button type="button" onClick={() => void downloadSignatureReceipt()} disabled={isDownloadingReceipt}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-white/[0.10] bg-white/[0.04] px-4 text-[11.5px] font-semibold text-white/60 transition hover:bg-white/[0.08] disabled:opacity-50">
-                    {isDownloadingReceipt ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />} Receipt
+                    className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl border border-white/[0.10] bg-white/[0.05] text-sm font-semibold text-white/60 transition hover:bg-white/[0.08] disabled:opacity-50">
+                    {isDownloadingReceipt ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />} Signature Receipt
                   </button>
                 </div>
               </div>
@@ -2379,59 +2394,83 @@ export default function SharedDocumentPage() {
               EMAIL OTP DIALOG
           ══════════════════════════════════════════ */}
           <Dialog open={emailOtpDialogOpen} onOpenChange={setEmailOtpDialogOpen}>
-            <DialogContent className="max-w-[480px] rounded-3xl border border-white/[0.10] bg-[#0f1012] p-0 shadow-[0_32px_80px_rgba(0,0,0,0.8)]">
-              <div className="border-b border-white/[0.07] px-6 py-5">
+            <DialogContent className="mx-auto max-w-[480px] w-[calc(100vw-32px)] rounded-3xl border border-white/[0.10] bg-[#0f1012] p-0 shadow-[0_32px_80px_rgba(0,0,0,0.8)]">
+              <div className="border-b border-white/[0.07] px-5 py-4 sm:px-6 sm:py-5">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-indigo-500/20 bg-indigo-500/[0.08]">
-                    <ShieldCheck className="h-4 w-4 text-indigo-400" />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-indigo-500/20 bg-indigo-500/[0.08]">
+                    <ShieldCheck className="h-5 w-5 text-indigo-400" />
                   </div>
                   <div>
-                    <DialogTitle className="text-[13px] font-semibold text-white">Email OTP Verification</DialogTitle>
-                    <p className="text-[11px] text-white/35">Required before signing</p>
+                    <DialogTitle className="text-[14px] font-semibold text-white">Email OTP Verification</DialogTitle>
+                    <p className="text-[11px] text-white/35">Verify your identity before signing</p>
                   </div>
                 </div>
               </div>
-              <div className="space-y-4 p-6">
-                <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3 text-sm text-white/50">
-                  OTP sent to{' '}
-                  <span className="font-semibold text-white/70">
+              <div className="space-y-4 px-5 py-5 sm:px-6">
+                <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3 text-sm text-white/50 leading-relaxed">
+                  An OTP will be sent to{' '}
+                  <span className="font-semibold text-indigo-300">
                     {documentData?.signingSession?.signerEmail?.trim() || 'your assigned signer email'}
                   </span>
                 </div>
-                <div className="flex gap-2">
-                  <input
-                    value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value)}
-                    placeholder="Enter 6-digit OTP"
-                    inputMode="numeric"
-                    className="h-11 flex-1 rounded-xl border border-white/[0.10] bg-white/[0.04] px-4 text-center font-mono text-lg tracking-[0.3em] text-white placeholder:text-sm placeholder:tracking-normal placeholder:text-white/20 focus:border-white/25 focus:outline-none"
-                  />
-                </div>
-                <div className="flex gap-2">
+
+                {/* Send OTP button (shown first) */}
+                {!otpSessionId && (
                   <button type="button" onClick={() => void requestEmailOtp()} disabled={isRequestingEmailOtp}
-                    className="flex-1 h-10 rounded-xl border border-white/[0.10] bg-white/[0.04] text-sm font-semibold text-white/60 transition hover:bg-white/[0.08] disabled:opacity-50">
-                    {isRequestingEmailOtp ? 'Sending…' : otpSessionId ? 'Resend OTP' : 'Send OTP'}
+                    className="h-11 w-full rounded-xl border border-white/[0.12] bg-white/[0.07] text-sm font-semibold text-white transition hover:bg-white/[0.12] active:scale-[0.98] disabled:opacity-50">
+                    {isRequestingEmailOtp ? 'Sending OTP…' : 'Send OTP to my email'}
                   </button>
-                  <button type="button" onClick={() => void verifyEmailOtp()} disabled={isVerifyingEmailOtp || !otpCode.trim() || !otpSessionId}
-                    className="flex-1 h-10 rounded-xl border border-white/[0.12] bg-white text-sm font-semibold text-slate-950 transition hover:bg-white/90 disabled:opacity-50">
-                    {isVerifyingEmailOtp ? 'Verifying…' : otpVerifiedAt ? 'Verified ✓' : 'Verify'}
-                  </button>
-                </div>
+                )}
+
+                {otpSessionId && (
+                  <>
+                    {/* OTP input — large touch target */}
+                    <div className="space-y-2">
+                      <label className="text-[10.5px] font-semibold uppercase tracking-[0.22em] text-white/30">Enter 6-digit OTP</label>
+                      <input
+                        value={otpCode}
+                        onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        placeholder="000000"
+                        inputMode="numeric"
+                        maxLength={6}
+                        className="h-14 w-full rounded-xl border border-white/[0.10] bg-white/[0.04] px-4 text-center font-mono text-2xl tracking-[0.4em] text-white placeholder:text-white/15 focus:border-white/30 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => void requestEmailOtp()} disabled={isRequestingEmailOtp}
+                        className="flex-1 h-11 rounded-xl border border-white/[0.10] bg-white/[0.04] text-sm font-semibold text-white/60 transition hover:bg-white/[0.08] disabled:opacity-50">
+                        {isRequestingEmailOtp ? 'Sending…' : 'Resend OTP'}
+                      </button>
+                      <button type="button" onClick={() => void verifyEmailOtp()} disabled={isVerifyingEmailOtp || otpCode.length < 6 || !otpSessionId}
+                        className="flex-1 h-11 rounded-xl border border-white/[0.12] bg-white text-sm font-semibold text-slate-950 transition hover:bg-white/90 active:scale-[0.98] disabled:opacity-50">
+                        {isVerifyingEmailOtp ? 'Verifying…' : 'Verify OTP'}
+                      </button>
+                    </div>
+                  </>
+                )}
+
                 {otpVerifiedAt && (
-                  <div className="flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] px-4 py-2.5">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                    <p className="text-sm text-emerald-300">Verified at {new Date(otpVerifiedAt).toLocaleTimeString()}</p>
+                  <div className="flex items-center gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.07] px-4 py-3">
+                    <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" />
+                    <div>
+                      <p className="text-sm font-semibold text-emerald-300">Email verified</p>
+                      <p className="text-xs text-emerald-400/60">Verified at {new Date(otpVerifiedAt).toLocaleTimeString()}</p>
+                    </div>
                   </div>
                 )}
+
                 <div className="flex gap-2 pt-1">
                   <button type="button" onClick={() => setEmailOtpDialogOpen(false)}
-                    className="flex-1 h-10 rounded-xl border border-white/[0.08] bg-white/[0.03] text-sm font-semibold text-white/40 transition hover:bg-white/[0.06]">
+                    className="flex-1 h-11 rounded-xl border border-white/[0.08] bg-white/[0.03] text-sm font-semibold text-white/40 transition hover:bg-white/[0.06]">
                     Cancel
                   </button>
-                  <button type="button" disabled={!otpVerifiedAt} onClick={() => { setEmailOtpDialogOpen(false); void signDocument(); }}
-                    className="flex-1 h-10 rounded-xl border border-white/[0.12] bg-white text-sm font-semibold text-slate-950 transition hover:bg-white/90 disabled:opacity-40">
-                    Continue to sign
-                  </button>
+                  {otpVerifiedAt && (
+                    <button type="button" onClick={() => { setEmailOtpDialogOpen(false); void signDocument(); }}
+                      className="flex-1 h-11 rounded-xl border border-white/[0.12] bg-white text-sm font-semibold text-slate-950 transition hover:bg-white/90 active:scale-[0.98]">
+                      Continue to sign →
+                    </button>
+                  )}
                 </div>
               </div>
             </DialogContent>

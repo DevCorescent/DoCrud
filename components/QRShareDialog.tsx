@@ -8,7 +8,7 @@ import {
   ChevronDown, Globe, Lock, Plus,
 } from 'lucide-react';
 import {
-  formatExpiry,
+  createShare, listSharesForItem, revokeShare, formatExpiry,
   PERMISSION_LABELS, PERMISSION_DESCRIPTIONS, PERMISSION_COLOR,
   type SharePermission, type ShareableKind, type ShareRecord,
 } from '@/lib/shareStore';
@@ -73,21 +73,13 @@ export default function QRShareDialog({ open, onClose, target, baseUrl }: QRShar
   const [qrLoaded,    setQrLoaded]    = useState(false);
   const [expiryOpen,  setExpiryOpen]  = useState(false);
 
-  /* Load existing shares from server */
-  const loadExisting = useCallback((itemId: string) => {
-    fetch(`/api/v1/shares?itemId=${encodeURIComponent(itemId)}`)
-      .then(r => r.json())
-      .then(j => { if (j.ok) setExistingShares(j.data); })
-      .catch(() => {});
-  }, []);
-
   /* Reset on open */
   useEffect(() => {
     if (!open || !target) return;
     setPermission('read'); setExpiryMs(86_400_000); setPassword('');
     setActiveShare(null); setQrLoaded(false); setActiveTab('create');
-    loadExisting(target.id);
-  }, [open, target, loadExisting]);
+    setExistingShares(listSharesForItem(target.id));
+  }, [open, target]);
 
   /* keyboard */
   useEffect(() => {
@@ -102,24 +94,34 @@ export default function QRShareDialog({ open, onClose, target, baseUrl }: QRShar
   const handleGenerate = useCallback(() => {
     if (!target) return;
     setGenerating(true); setQrLoaded(false);
-    fetch('/api/v1/shares', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        kind: target.kind, itemId: target.id, itemName: target.name, fileKind: target.fileKind,
-        permission, expiresIn: expiryMs || undefined, password: password || undefined,
-      }),
-    })
-      .then(r => r.json())
-      .then(j => {
-        if (j.ok) {
-          setActiveShare(j.data);
-          loadExisting(target.id);
-        }
-      })
-      .catch(() => {})
-      .finally(() => setGenerating(false));
-  }, [target, permission, expiryMs, password, loadExisting]);
+    setTimeout(async () => {
+      const rec = createShare(
+        target.kind, target.id, target.name, target.fileKind,
+        { permission, expiresIn: expiryMs || undefined, password: password || undefined },
+      );
+      setActiveShare(rec);
+      setExistingShares(listSharesForItem(target.id));
+      setGenerating(false);
+      /* persist to server so other devices can scan it */
+      try {
+        await fetch('/api/drive/share', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            token:      rec.token,
+            itemId:     rec.itemId,
+            itemName:   rec.itemName,
+            kind:       rec.kind,
+            fileKind:   rec.fileKind,
+            permission: rec.permission,
+            password:   rec.password,
+            expiresAt:  rec.expiresAt,
+            dataUrl:    rec.previewDataUrl,
+          }),
+        });
+      } catch { /* non-fatal — local share still works */ }
+    }, 320);
+  }, [target, permission, expiryMs, password]);
 
   const handleCopy = useCallback(() => {
     if (!activeUrl) return;
@@ -137,17 +139,10 @@ export default function QRShareDialog({ open, onClose, target, baseUrl }: QRShar
   }, [activeShare, base]);
 
   const handleRevoke = useCallback((token: string) => {
-    fetch(`/api/v1/shares/${token}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ revoke: true }),
-    })
-      .then(() => {
-        if (activeShare?.token === token) setActiveShare(null);
-        if (target) loadExisting(target.id);
-      })
-      .catch(() => {});
-  }, [activeShare, target, loadExisting]);
+    revokeShare(token);
+    if (activeShare?.token === token) setActiveShare(null);
+    if (target) setExistingShares(listSharesForItem(target.id));
+  }, [activeShare, target]);
 
   const expiryLabel = EXPIRY_OPTIONS.find(e => e.ms === expiryMs)?.label ?? 'Custom';
 
@@ -364,7 +359,7 @@ export default function QRShareDialog({ open, onClose, target, baseUrl }: QRShar
                         {[
                           { icon: Clock,  val: formatExpiry(activeShare) },
                           { icon: Shield, val: activeShare.password ? 'Password protected' : 'No password' },
-                          { icon: Users,  val: `${activeShare.addedBy.length} added to drive` },
+                          { icon: Users,  val: `${activeShare.addedBy.length} added to Ddrive` },
                         ].map(({ icon: Icon, val }) => (
                           <div key={val} style={{ display:'flex', alignItems:'center', gap:7 }}>
                             <Icon size={11} color="rgba(255,255,255,0.30)" />
@@ -404,7 +399,7 @@ export default function QRShareDialog({ open, onClose, target, baseUrl }: QRShar
                 <div style={{ padding:'32px 0', textAlign:'center' }}>
                   <QrCode size={32} color="rgba(255,255,255,0.12)" style={{ margin:'0 auto 10px' }} />
                   <p style={{ margin:0, fontSize:13, color:'rgba(255,255,255,0.38)' }}>No active shares yet</p>
-                  <p style={{ margin:'4px 0 0', fontSize:11, color:'rgba(255,255,255,0.24)' }}>Create a QR share using the &quot;New Share&quot; tab</p>
+                  <p style={{ margin:'4px 0 0', fontSize:11, color:'rgba(255,255,255,0.24)' }}>Create a QR share using the "New Share" tab</p>
                 </div>
               ) : existingShares.map(rec => {
                 const color = PERMISSION_COLOR[rec.permission];

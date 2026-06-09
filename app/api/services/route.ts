@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getStoredUsers, getAuthSession } from '@/lib/server/auth';
 import { getUserServices, createService, type Service } from '@/lib/server/services';
+import { hasInfinity } from '@/lib/server/infinity';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,6 +34,14 @@ export async function POST(req: NextRequest) {
     if (!body.title?.trim()) return NextResponse.json({ error: 'Title is required.' }, { status: 400 });
     if (!body.description?.trim()) return NextResponse.json({ error: 'Description is required.' }, { status: 400 });
     if (!body.category) return NextResponse.json({ error: 'Category is required.' }, { status: 400 });
+
+    const infinity = await hasInfinity(actor.id);
+    if (!infinity) {
+      const existing = await getUserServices(actor.id);
+      if (existing.length >= 2) {
+        return NextResponse.json({ error: 'Docrud Infinity required', code: 'INFINITY_REQUIRED', feature: 'services_limit', currentCount: existing.length }, { status: 403 });
+      }
+    }
 
     const service = await createService(actor.id, {
       title: body.title.trim(),

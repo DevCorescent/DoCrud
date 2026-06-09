@@ -2,6 +2,24 @@
   "redemptions": [],
   "invites": [
     {
+      "id": "f06fefa3-2d20-400d-b926-f7645a6b0337",
+      "referrerUserId": "individual-1780404674760",
+      "inviteeEmail": "shikhar@yopmail.com",
+      "sentAt": "2026-06-02T12:55:52.224Z"
+    },
+    {
+      "id": "751bde39-b21c-4adc-b2d6-bdb3645ba29b",
+      "referrerUserId": "individual-1780403102793",
+      "inviteeEmail": "test@yopmail.com",
+      "sentAt": "2026-06-02T12:43:00.646Z"
+    },
+    {
+      "id": "95aa77a8-88d8-43dd-a3f1-4d64762fd0c8",
+      "referrerUserId": "individual-1780387880722",
+      "inviteeEmail": "shashank@yopmail.com",
+      "sentAt": "2026-06-02T08:27:26.868Z"
+    },
+    {
       "id": "f00c5155-da60-4f4b-b1c7-169a159efed0",
       "referrerUserId": "individual-1779109829969",
       "inviteeEmail": "kushagra123@yopmail.com",
@@ -15,6 +33,15 @@
     }
   ],
   "activations": [
+    {
+      "id": "7d9ce616-dbef-4d72-945e-b1a2d8ab280b",
+      "referrerUserId": "individual-1780404674760",
+      "refereeUserId": "individual-1780405061392",
+      "refereeEmail": "carry@yopmail.com",
+      "referralCode": "E89ACAF6AC",
+      "activatedAt": "2026-06-02T12:57:41.452Z",
+      "bonusGrantedAt": "2026-06-02T12:57:41.452Z"
+    },
     {
       "id": "7c8af808-d9e2-4e23-a000-4d685b7304c2",
       "referrerUserId": "individual-1778758936957",

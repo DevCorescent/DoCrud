@@ -2,6 +2,19 @@ import { createCipheriv, createDecipheriv, randomBytes, scryptSync, randomUUID, 
 import { FileTransferAccessEvent, SecureFileTransfer } from '@/types/document';
 import { fileTransfersPath, readJsonFile, writeJsonFile } from '@/lib/server/storage';
 import { generateSharePassword } from '@/lib/server/history';
+import { getDbPool } from '@/lib/server/database';
+import {
+  bulkReplaceFileTransferRows,
+  reconcileFileTransferRows,
+  selectAllFileTransferRows,
+  selectFileTransferRowById,
+  upsertFileTransferRow,
+  deleteFileTransferRow,
+  patchFileTransfersByFolderId,
+  patchFileTransfersByLockerId,
+} from '@/lib/server/db/file-transfers-rows';
+
+export { deleteFileTransferRow, patchFileTransfersByFolderId, patchFileTransfersByLockerId };
 
 const ENCRYPTION_ALGORITHM = 'aes-256-gcm';
 
@@ -86,10 +99,17 @@ export function resolveFileTransferDataUrl(
 }
 
 export async function getFileTransfers(): Promise<SecureFileTransfer[]> {
+  if (getDbPool()) {
+    return selectAllFileTransferRows();
+  }
   return readJsonFile<SecureFileTransfer[]>(fileTransfersPath, []);
 }
 
 export async function saveFileTransfers(transfers: SecureFileTransfer[]): Promise<void> {
+  if (getDbPool()) {
+    await reconcileFileTransferRows(transfers);
+    return;
+  }
   await writeJsonFile(fileTransfersPath, transfers);
 }
 
@@ -152,7 +172,10 @@ export async function appendFileTransfer(
     maxDownloads: input.maxDownloads,
     expiresAt: input.expiresAt,
     uploadedBy: input.uploadedBy,
+    uploadedByName: input.uploadedByName,
     uploadedByUserId: input.uploadedByUserId,
+    avatarUrl: input.avatarUrl,
+    businessPageSlug: input.businessPageSlug,
     organizationId: input.organizationId,
     organizationName: input.organizationName,
     thumbnailUrl: input.thumbnailUrl || undefined,
@@ -163,7 +186,11 @@ export async function appendFileTransfer(
     updatedAt: now,
   };
 
-  await writeJsonFile(fileTransfersPath, [transfer, ...transfers]);
+  if (getDbPool()) {
+    await upsertFileTransferRow(transfer);
+  } else {
+    await writeJsonFile(fileTransfersPath, [transfer, ...transfers]);
+  }
   return transfer;
 }
 
@@ -171,6 +198,15 @@ export async function updateFileTransfer(
   id: string,
   patchOrUpdater: Partial<SecureFileTransfer> | ((entry: SecureFileTransfer) => Partial<SecureFileTransfer> | null),
 ): Promise<SecureFileTransfer | null> {
+  if (getDbPool()) {
+    const current = await selectFileTransferRowById(id);
+    if (!current) return null;
+    const patch = typeof patchOrUpdater === 'function' ? patchOrUpdater(current) : patchOrUpdater;
+    if (!patch) return null;
+    const next = { ...current, ...patch, updatedAt: new Date().toISOString() };
+    await upsertFileTransferRow(next);
+    return next;
+  }
   const transfers = await getFileTransfers();
   const idx = transfers.findIndex((t) => t.id === id || t.shareId === id);
   if (idx === -1) return null;
@@ -185,11 +221,13 @@ export async function recordFileTransferEvent(
   transferId: string,
   eventType: FileTransferAccessEvent['eventType'],
 ): Promise<void> {
-  const transfers = await getFileTransfers();
-  const idx = transfers.findIndex((t) => t.id === transferId || t.shareId === transferId);
-  if (idx === -1) return;
+  const usingDb = Boolean(getDbPool());
+  const transfers = usingDb ? [] : await getFileTransfers();
+  const entry = usingDb
+    ? await selectFileTransferRowById(transferId)
+    : transfers.find((t) => t.id === transferId || t.shareId === transferId) || null;
+  if (!entry) return;
 
-  const entry = transfers[idx];
   const event: FileTransferAccessEvent = {
     id: `fte-${Date.now()}-${randomBytes(3).toString('hex')}`,
     eventType,
@@ -211,6 +249,12 @@ export async function recordFileTransferEvent(
     updatedEntry.lastDownloadedAt = event.createdAt;
   }
 
+  if (usingDb) {
+    await upsertFileTransferRow(updatedEntry);
+    return;
+  }
+
+  const idx = transfers.findIndex((t) => t.id === transferId || t.shareId === transferId);
   transfers[idx] = updatedEntry;
   await writeJsonFile(fileTransfersPath, transfers);
 }
@@ -272,16 +316,84 @@ export function isPreviewableFile(mimeType: string) {
 /* ── Engagement + featuring helpers ── */
 
 export async function toggleLike(transferId: string, identifier: string): Promise<{ liked: boolean; likesCount: number }> {
-  const transfers = await getFileTransfers();
-  const idx = transfers.findIndex((t) => t.id === transferId || t.shareId === transferId);
-  if (idx === -1) throw new Error('Post not found.');
-  const t = transfers[idx];
-  const likedBy: string[] = t.likedBy ?? [];
+  const usingDb = Boolean(getDbPool());
+  const transfers = usingDb ? [] : await getFileTransfers();
+  const current = usingDb
+    ? await selectFileTransferRowById(transferId)
+    : transfers.find((t) => t.id === transferId || t.shareId === transferId) || null;
+  if (!current) throw new Error('Post not found.');
+  const likedBy: string[] = current.likedBy ?? [];
   const alreadyLiked = likedBy.includes(identifier);
   const nextLikedBy = alreadyLiked ? likedBy.filter((x) => x !== identifier) : [...likedBy, identifier];
-  transfers[idx] = { ...t, likedBy: nextLikedBy, likesCount: nextLikedBy.length, updatedAt: new Date().toISOString() };
-  await writeJsonFile(fileTransfersPath, transfers);
+  const next = { ...current, likedBy: nextLikedBy, likesCount: nextLikedBy.length, updatedAt: new Date().toISOString() };
+  if (usingDb) {
+    await upsertFileTransferRow(next);
+  } else {
+    const idx = transfers.findIndex((t) => t.id === transferId || t.shareId === transferId);
+    transfers[idx] = next;
+    await writeJsonFile(fileTransfersPath, transfers);
+  }
   return { liked: !alreadyLiked, likesCount: nextLikedBy.length };
+}
+
+export async function toggleTrend(transferId: string, identifier: string): Promise<{ trended: boolean; trendCount: number }> {
+  const usingDb = Boolean(getDbPool());
+  const transfers = usingDb ? [] : await getFileTransfers();
+  const current = usingDb
+    ? await selectFileTransferRowById(transferId)
+    : transfers.find((t) => t.id === transferId || t.shareId === transferId) || null;
+  if (!current) throw new Error('Post not found.');
+  const trendedBy: string[] = current.trendedBy ?? [];
+  const alreadyTrended = trendedBy.includes(identifier);
+  const nextTrendedBy = alreadyTrended ? trendedBy.filter((x) => x !== identifier) : [...trendedBy, identifier];
+  const next = { ...current, trendedBy: nextTrendedBy, trendCount: nextTrendedBy.length, updatedAt: new Date().toISOString() };
+  if (usingDb) {
+    await upsertFileTransferRow(next);
+  } else {
+    const idx = transfers.findIndex((t) => t.id === transferId || t.shareId === transferId);
+    transfers[idx] = next;
+    await writeJsonFile(fileTransfersPath, transfers);
+  }
+  return { trended: !alreadyTrended, trendCount: nextTrendedBy.length };
+}
+
+export async function toggleInterest(
+  transferId: string,
+  identifier: string,
+  name: string,
+): Promise<{ interested: boolean; interestedCount: number }> {
+  const usingDb = Boolean(getDbPool());
+  const transfers = usingDb ? [] : await getFileTransfers();
+  const current = usingDb
+    ? await selectFileTransferRowById(transferId)
+    : transfers.find((t) => t.id === transferId || t.shareId === transferId) || null;
+  if (!current) throw new Error('Post not found.');
+  const interestedBy: string[] = current.interestedBy ?? [];
+  const alreadyInterested = interestedBy.includes(identifier);
+  const nextInterestedBy = alreadyInterested
+    ? interestedBy.filter((x) => x !== identifier)
+    : [...interestedBy, identifier];
+  // Store name alongside id so profile page can show it without extra lookups
+  const interestedUsers: Array<{ id: string; name: string; markedAt: string }> =
+    (current as unknown as { interestedUsers?: Array<{ id: string; name: string; markedAt: string }> }).interestedUsers ?? [];
+  const nextInterestedUsers = alreadyInterested
+    ? interestedUsers.filter((u) => u.id !== identifier)
+    : [...interestedUsers.filter((u) => u.id !== identifier), { id: identifier, name, markedAt: new Date().toISOString() }];
+  const next = {
+    ...current,
+    interestedBy: nextInterestedBy,
+    interestedCount: nextInterestedBy.length,
+    interestedUsers: nextInterestedUsers,
+    updatedAt: new Date().toISOString(),
+  };
+  if (usingDb) {
+    await upsertFileTransferRow(next);
+  } else {
+    const idx = transfers.findIndex((t) => t.id === transferId || t.shareId === transferId);
+    transfers[idx] = next as typeof transfers[0];
+    await writeJsonFile(fileTransfersPath, transfers);
+  }
+  return { interested: !alreadyInterested, interestedCount: nextInterestedBy.length };
 }
 
 export async function addComment(
@@ -291,11 +403,13 @@ export async function addComment(
   text: string,
   parentId?: string,
 ): Promise<SecureFileTransfer> {
-  const transfers = await getFileTransfers();
-  const idx = transfers.findIndex((t) => t.id === transferId || t.shareId === transferId);
-  if (idx === -1) throw new Error('Post not found.');
-  const t = transfers[idx];
-  const comments = t.comments ?? [];
+  const usingDb = Boolean(getDbPool());
+  const transfers = usingDb ? [] : await getFileTransfers();
+  const current = usingDb
+    ? await selectFileTransferRowById(transferId)
+    : transfers.find((t) => t.id === transferId || t.shareId === transferId) || null;
+  if (!current) throw new Error('Post not found.');
+  const comments = current.comments ?? [];
   const entry: { id: string; userId: string; userName: string; text: string; createdAt: string; parentId?: string } = {
     id: randomUUID(),
     userId,
@@ -305,9 +419,15 @@ export async function addComment(
   };
   if (parentId) entry.parentId = parentId;
   comments.push(entry);
-  transfers[idx] = { ...t, comments, commentsCount: comments.filter((c) => !c.parentId).length, updatedAt: new Date().toISOString() };
-  await writeJsonFile(fileTransfersPath, transfers);
-  return transfers[idx];
+  const next = { ...current, comments, commentsCount: comments.filter((c) => !c.parentId).length, updatedAt: new Date().toISOString() };
+  if (usingDb) {
+    await upsertFileTransferRow(next);
+  } else {
+    const idx = transfers.findIndex((t) => t.id === transferId || t.shareId === transferId);
+    transfers[idx] = next;
+    await writeJsonFile(fileTransfersPath, transfers);
+  }
+  return next;
 }
 
 export async function toggleCommentLike(
@@ -315,11 +435,13 @@ export async function toggleCommentLike(
   commentId: string,
   identifier: string,
 ): Promise<{ liked: boolean; likesCount: number }> {
-  const transfers = await getFileTransfers();
-  const idx = transfers.findIndex((t) => t.id === transferId || t.shareId === transferId);
-  if (idx === -1) throw new Error('Post not found.');
-  const t = transfers[idx];
-  const comments = (t.comments ?? []).map((c) => {
+  const usingDb = Boolean(getDbPool());
+  const transfers = usingDb ? [] : await getFileTransfers();
+  const current = usingDb
+    ? await selectFileTransferRowById(transferId)
+    : transfers.find((t) => t.id === transferId || t.shareId === transferId) || null;
+  if (!current) throw new Error('Post not found.');
+  const comments = (current.comments ?? []).map((c) => {
     if (c.id !== commentId) return c;
     const likedBy = c.likedBy ?? [];
     const alreadyLiked = likedBy.includes(identifier);
@@ -328,8 +450,14 @@ export async function toggleCommentLike(
   const updated = comments.find((c) => c.id === commentId);
   const liked = updated ? (updated.likedBy ?? []).includes(identifier) : false;
   const likesCount = updated ? (updated.likedBy ?? []).length : 0;
-  transfers[idx] = { ...t, comments, updatedAt: new Date().toISOString() };
-  await writeJsonFile(fileTransfersPath, transfers);
+  const next = { ...current, comments, updatedAt: new Date().toISOString() };
+  if (usingDb) {
+    await upsertFileTransferRow(next);
+  } else {
+    const idx = transfers.findIndex((t) => t.id === transferId || t.shareId === transferId);
+    transfers[idx] = next;
+    await writeJsonFile(fileTransfersPath, transfers);
+  }
   return { liked, likesCount };
 }
 
@@ -338,13 +466,16 @@ export async function featureTransfer(
   plan: 'spotlight' | 'boost' | 'prime',
   orderId: string,
 ): Promise<SecureFileTransfer> {
-  const transfers = await getFileTransfers();
-  const idx = transfers.findIndex((t) => t.id === transferId || t.shareId === transferId);
-  if (idx === -1) throw new Error('Post not found.');
+  const usingDb = Boolean(getDbPool());
+  const transfers = usingDb ? [] : await getFileTransfers();
+  const current = usingDb
+    ? await selectFileTransferRowById(transferId)
+    : transfers.find((t) => t.id === transferId || t.shareId === transferId) || null;
+  if (!current) throw new Error('Post not found.');
   const durationDays = plan === 'spotlight' ? 3 : plan === 'boost' ? 7 : 30;
   const featuredUntil = new Date(Date.now() + durationDays * 86400000).toISOString();
-  transfers[idx] = {
-    ...transfers[idx],
+  const next: SecureFileTransfer = {
+    ...current,
     featured: true,
     featuredPlan: plan,
     featuredAt: new Date().toISOString(),
@@ -352,8 +483,14 @@ export async function featureTransfer(
     featuredOrderId: orderId,
     updatedAt: new Date().toISOString(),
   };
-  await writeJsonFile(fileTransfersPath, transfers);
-  return transfers[idx];
+  if (usingDb) {
+    await upsertFileTransferRow(next);
+  } else {
+    const idx = transfers.findIndex((t) => t.id === transferId || t.shareId === transferId);
+    transfers[idx] = next;
+    await writeJsonFile(fileTransfersPath, transfers);
+  }
+  return next;
 }
 
 export async function getPublicAnalyticsForUser(userId: string): Promise<{

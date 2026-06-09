@@ -1,10 +1,31 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
+import Image from 'next/image';
 import GlobalSearchBar, { type GlobalSearchBarHandle, type LocalSearchResult } from '@/components/GlobalSearchBar';
 import { useSession } from 'next-auth/react';
+
+/* ── Ddrive premium "D" icon ──────────────────────────────────────── */
+function DdriveIcon({ size = 12 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Ddrive">
+      <defs>
+        <linearGradient id="nav-ddrive-g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%"   stopColor="#a78bfa" />
+          <stop offset="100%" stopColor="#6366f1" />
+        </linearGradient>
+      </defs>
+      <rect x="1" y="1" width="22" height="22" rx="6" ry="6" fill="url(#nav-ddrive-g)" opacity="0.18" />
+      <rect x="1" y="1" width="22" height="22" rx="6" ry="6" fill="none" stroke="url(#nav-ddrive-g)" strokeWidth="1.4" />
+      <text x="12" y="17" textAnchor="middle" dominantBaseline="auto"
+        fontFamily="system-ui,-apple-system,sans-serif" fontSize="14" fontWeight="800" letterSpacing="-0.5"
+        fill="url(#nav-ddrive-g)">D</text>
+    </svg>
+  );
+}
 
 /* ── Greeting helpers ──────────────────────────────────────────────── */
 function getGreetingData(d: Date) {
@@ -27,6 +48,7 @@ import {
   Bell,
   BriefcaseBusiness,
   Briefcase,
+  Building2,
   Check,
   ChevronDown,
   CreditCard,
@@ -35,13 +57,15 @@ import {
   FileText,
   FolderLock,
   Globe,
-  HardDrive,
   Heart,
+  Home,
+  LayoutGrid,
   Layers,
   Mail,
   Menu,
   MessageCircle,
   MessageSquare,
+  Newspaper,
   PenLine,
   Plus,
   Search,
@@ -132,6 +156,7 @@ interface HomepageNavProps {
   onESignClick?: () => void;
   onFileDriveClick?: () => void;
   onMobileMenuClick?: () => void;
+  onAllToolsClick?: () => void;
   guestMode?: boolean;
 }
 
@@ -141,7 +166,6 @@ const TOOLS_ITEMS = [
   { id: 'docsheets', label: 'DocSheets',      desc: 'Smart spreadsheets',     Icon: Sheet,         color: '#34d399', bg: 'rgba(52,211,153,0.11)',  bd: 'rgba(52,211,153,0.20)'  },
   { id: 'esign',     label: 'E-Sign',         desc: 'Digital signatures',     Icon: FileSignature, color: '#a78bfa', bg: 'rgba(167,139,250,0.13)', bd: 'rgba(167,139,250,0.22)' },
   { id: 'scratchpad',label: 'Scratchpad',     desc: 'Canvas & quick notes',   Icon: PenLine,       color: '#fb923c', bg: 'rgba(251,146,60,0.11)',  bd: 'rgba(251,146,60,0.20)'  },
-  { id: 'sharing',   label: 'File Sharing',   desc: 'Send & receive files',   Icon: Share2,        color: '#38bdf8', bg: 'rgba(56,189,248,0.11)',  bd: 'rgba(56,189,248,0.20)'  },
   { id: 'directory', label: 'File Directory', desc: 'Browse your workspace',  Icon: Layers,        color: '#fbbf24', bg: 'rgba(251,191,36,0.11)',  bd: 'rgba(251,191,36,0.20)'  },
 ] as const;
 
@@ -154,11 +178,14 @@ export default function HomepageNav({
   onESignClick,
   onFileDriveClick,
   onMobileMenuClick,
+  onAllToolsClick,
   guestMode,
 }: HomepageNavProps) {
   const { data: session, status } = useSession();
   const isAuthenticated = status === 'authenticated';
+  const pathname = usePathname();
 
+  const [isMounted, setIsMounted] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState<WorkspaceNotification[]>([]);
   const notifRef = useRef<HTMLDivElement>(null);
@@ -166,7 +193,18 @@ export default function HomepageNav({
   const [msgUnread, setMsgUnread] = useState(0);
   const [toolsOpen, setToolsOpen] = useState(false);
 
+  useEffect(() => { setIsMounted(true); }, []);
+
   const searchBarRef = useRef<GlobalSearchBarHandle>(null);
+
+  // Mobile dock (in PublicHomepage) opens the search overlay by dispatching
+  // this window event — handled here because the search bar ref lives in this
+  // component.
+  useEffect(() => {
+    const handler = () => searchBarRef.current?.openMobile();
+    window.addEventListener('homepage:open-search', handler);
+    return () => window.removeEventListener('homepage:open-search', handler);
+  }, []);
 
   // ⌘K / Ctrl+K shortcut to open search
   useEffect(() => {
@@ -238,12 +276,15 @@ export default function HomepageNav({
 
   useEffect(() => {
     if (!isAuthenticated || guestMode) return;
-    fetch('/api/me/badge')
-      .then((r) => r.ok ? r.json() : null)
-      .then((d: { docrudGo?: boolean; avatarUrl?: string | null } | null) => {
-        if (d) setBadge({ docrudGo: d.docrudGo ?? false, avatarUrl: d.avatarUrl ?? null });
-      })
-      .catch(() => {});
+    const id = setTimeout(() => {
+      fetch('/api/me/badge')
+        .then((r) => r.ok ? r.json() : null)
+        .then((d: { docrudGo?: boolean; avatarUrl?: string | null } | null) => {
+          if (d) setBadge({ docrudGo: d.docrudGo ?? false, avatarUrl: d.avatarUrl ?? null });
+        })
+        .catch(() => {});
+    }, 800);
+    return () => clearTimeout(id);
   }, [isAuthenticated, guestMode]);
 
   const fetchMsgUnread = useCallback(async () => {
@@ -284,15 +325,16 @@ export default function HomepageNav({
       };
     }
 
-    connect();
-
-    // Fetch once immediately (SSE may take a moment to deliver initial payload)
-    fetchNotifications();
-    fetchMsgUnread();
+    // Delay initial fetches by 1.5s so they don't compete with page paint
+    const initTimer = setTimeout(() => {
+      connect();
+      fetchNotifications();
+      fetchMsgUnread();
+    }, 1500);
 
     // Fallback poll every 60s — SSE covers real-time, this is a safety net
     const pollId = setInterval(fetchNotifications, 60_000);
-    const msgId = setInterval(fetchMsgUnread, 15_000);
+    const msgId = setInterval(fetchMsgUnread, 30_000);
 
     function onVisible() {
       if (document.visibilityState === 'visible') {
@@ -303,6 +345,7 @@ export default function HomepageNav({
     document.addEventListener('visibilitychange', onVisible);
 
     return () => {
+      clearTimeout(initTimer);
       es?.close();
       if (reconnectTimer) clearTimeout(reconnectTimer);
       clearInterval(pollId);
@@ -356,7 +399,14 @@ export default function HomepageNav({
   }
 
   return (
-    <header className="shrink-0 h-14 border-b border-white/[0.05] bg-[#08090a]/90 backdrop-blur-[60px] flex items-center justify-between px-3 sm:px-4 z-30 relative shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_24px_rgba(0,0,0,0.35)]">
+    <header className="shrink-0 h-14 flex items-center justify-between px-4 sm:px-6 lg:px-10 xl:px-12 z-30 relative" style={{
+      background: 'rgba(6,6,10,0.52)',
+      backdropFilter: 'blur(56px) saturate(200%) brightness(0.90)',
+      WebkitBackdropFilter: 'blur(56px) saturate(200%) brightness(0.90)',
+      borderBottom: '1px solid rgba(255,255,255,0.07)',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 1px 0 rgba(255,255,255,0.03), 0 8px 32px rgba(0,0,0,0.28)',
+    }}>
+
 
       {/* ── LEFT group: menu + logo ── */}
       <div className="flex items-center gap-2 min-w-0">
@@ -383,104 +433,70 @@ export default function HomepageNav({
                 animation: 'goldenRingSpin 3.2s linear infinite',
                 pointerEvents: 'none',
                 zIndex: 0,
+                willChange: 'transform',
               }}
             />
             {/* Icon image */}
-            <img
+            <Image
               src="/docrud-icon.png"
               alt="Docrud"
               width={28}
               height={28}
-              style={{ borderRadius: 9, display: 'block', position: 'relative', zIndex: 1, width: 28, height: 28, objectFit: 'cover' }}
+              priority
+              style={{ borderRadius: 9, display: 'block', position: 'relative', zIndex: 1, objectFit: 'cover' }}
             />
           </div>
-          <span className="text-[13.5px] font-bold text-white/90 tracking-[-0.01em]">{softwareName}</span>
-          {/* ── Live greeting chip ── */}
-          {now && (() => {
-            const { text, emoji } = getGreetingData(now);
-            const timeStr = fmtTime(now);
-            const dateStr = fmtDate(now);
-            return (
-              <div
-                className="hidden lg:flex items-center gap-1.5 shrink-0 select-none overflow-hidden"
-                style={{
-                  borderRadius: 20,
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  background: 'rgba(255,255,255,0.034)',
-                  padding: '3px 10px 3px 8px',
-                  backdropFilter: 'blur(8px)',
-                }}
-              >
-                {/* Emoji + greeting — keyed to phase so it re-animates on change */}
-                <span
-                  key={greetPhase}
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 600,
-                    color: 'rgba(255,255,255,0.60)',
-                    letterSpacing: '0.01em',
-                    animation: 'greetSlideIn 0.45s cubic-bezier(0.22,1,0.36,1) both',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 4,
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  <span style={{ fontSize: 11 }}>{emoji}</span>
-                  {text}
-                </span>
-                {/* Divider */}
-                <span style={{ width: 1, height: 10, background: 'rgba(255,255,255,0.12)', borderRadius: 1, flexShrink: 0 }} />
-                {/* Date */}
-                <span style={{ fontSize: 10, fontWeight: 500, color: 'rgba(255,255,255,0.38)', whiteSpace: 'nowrap', letterSpacing: '0.01em' }}>
-                  {dateStr}
-                </span>
-                {/* Divider */}
-                <span style={{ width: 1, height: 10, background: 'rgba(255,255,255,0.12)', borderRadius: 1, flexShrink: 0 }} />
-                {/* Time — keyed to minute so it re-animates on tick */}
-                <span
-                  key={timeStr}
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 600,
-                    color: 'rgba(255,255,255,0.55)',
-                    whiteSpace: 'nowrap',
-                    letterSpacing: '0.03em',
-                    fontVariantNumeric: 'tabular-nums',
-                    animation: 'greetSlideIn 0.35s cubic-bezier(0.22,1,0.36,1) both',
-                  }}
-                >
-                  {timeStr}
-                </span>
-              </div>
-            );
-          })()}
+          <span className="hidden sm:block text-[13.5px] font-bold text-white/90 tracking-[-0.01em]">{softwareName}</span>
         </Link>
       </div>
 
-      {/* ── CENTER: live search bar (md+) ── */}
+      {/* ── CENTER: live search bar (md+) — hidden below md, handled by the pill ── */}
       <GlobalSearchBar
         ref={searchBarRef}
         getLocalResults={getLocalResults}
         className="mx-3"
       />
 
-      {/* ── Mobile search trigger (shown below md) ── */}
+      {/* Mobile search pill — visible below md only, matches GlobalSearchBar's md:flex breakpoint */}
       <button
         type="button"
-        aria-label="Search"
         onClick={() => searchBarRef.current?.openMobile()}
-        className="md:hidden flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.04] text-white/50 transition hover:bg-white/[0.09] hover:text-white/80 active:scale-95"
+        className="md:hidden flex flex-1 items-center gap-2 mx-2 h-[36px] min-w-0 rounded-[12px] px-3"
+        style={{
+          background: 'rgba(255,255,255,0.06)',
+          border: '1px solid rgba(255,255,255,0.10)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
+        }}
       >
-        <Search className="h-[14px] w-[14px]" />
+        <Search className="h-[13px] w-[13px] shrink-0 text-white/40" />
+        <span className="text-[13px] font-medium text-white/32 truncate flex-1 text-left">Search people, gigs & docs…</span>
       </button>
 
       {/* ── RIGHT group: nav links + bell + avatar ── */}
       <div className="flex items-center gap-1.5 shrink-0">
 
         {/* Desktop-only nav links — Publish/Gigs/People moved to the bottom dock */}
-        <Link href="/published" className="hidden sm:flex h-8 items-center gap-1.5 rounded-[10px] border border-white/[0.08] bg-white/[0.04] px-3 text-[12px] font-medium text-white/50 transition hover:bg-white/[0.09] hover:text-white/75 active:scale-95">
+        <Link href="/published" className={`hidden sm:flex h-8 items-center gap-1.5 rounded-[10px] border px-3 text-[12px] font-medium transition active:scale-95 ${
+          pathname?.startsWith('/published')
+            ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-300'
+            : 'border-white/[0.08] bg-white/[0.04] text-white/50 hover:bg-white/[0.09] hover:text-white/75'
+        }`}>
           <Globe className="h-3 w-3" />Feed
+        </Link>
+
+        {/* ── Businesses button ── */}
+        <Link
+          href="/businesses"
+          className={`hidden sm:flex h-8 items-center gap-1.5 rounded-[10px] border px-3 text-[12px] font-semibold transition active:scale-95 ${
+            pathname?.startsWith('/businesses')
+              ? 'border-indigo-500/30 bg-indigo-500/10 text-indigo-300'
+              : 'border-white/[0.08] bg-white/[0.04] text-white/50 hover:bg-white/[0.09] hover:text-white/75'
+          }`}
+        >
+          <Building2 className="h-3 w-3" />
+          Businesses
         </Link>
 
         {/* ── File Drive button ── */}
@@ -489,15 +505,15 @@ export default function HomepageNav({
           onClick={() => onFileDriveClick?.()}
           className="hidden sm:flex h-8 items-center gap-1.5 rounded-[10px] border border-white/[0.08] bg-white/[0.04] px-3 text-[12px] font-medium text-white/50 transition hover:bg-white/[0.09] hover:text-white/75 active:scale-95"
         >
-          <HardDrive className="h-3 w-3" />
-          <span className="font-semibold">Drive</span>
+          <DdriveIcon size={13} />
+          <span className="font-semibold">Ddrive</span>
         </button>
 
-        {/* ── Tools dropdown trigger ── */}
+        {/* ── Tools dropdown trigger (desktop only — mobile has it in the bottom dock as "Features") ── */}
         <button
           type="button"
           onClick={() => setToolsOpen(o => !o)}
-          className={`flex h-8 items-center gap-1.5 rounded-[10px] border px-2.5 sm:px-3 text-[12px] font-medium transition active:scale-95 ${
+          className={`hidden sm:flex h-8 items-center gap-1.5 rounded-[10px] border px-2.5 sm:px-3 text-[12px] font-medium transition active:scale-95 ${
             toolsOpen
               ? 'border-violet-500/[0.32] bg-violet-500/[0.12] text-violet-300'
               : 'border-white/[0.08] bg-white/[0.04] text-white/55 hover:bg-white/[0.09] hover:text-white/80'
@@ -598,11 +614,11 @@ export default function HomepageNav({
           document.body
         )}
 
-        {/* Messages icon */}
+        {/* Messages icon (desktop only — mobile uses the bottom dock) */}
         {isAuthenticated && !guestMode && (
           <Link
             href="/messages"
-            className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.04] text-white/50 transition hover:bg-white/[0.09] hover:text-white/80 active:scale-95"
+            className="relative hidden sm:flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.04] text-white/50 transition hover:bg-white/[0.09] hover:text-white/80 active:scale-95"
             aria-label={`Messages${msgUnread > 0 ? ` (${msgUnread} unread)` : ''}`}
           >
             <MessageSquare className="h-[15px] w-[15px]" />
@@ -811,33 +827,34 @@ export default function HomepageNav({
 
         {/* Profile avatar — authenticated users only */}
         {isAuthenticated && !guestMode && (
-          <div className="relative shrink-0" title={badge?.docrudGo ? 'Docrud Go ✦ Profile' : 'My profile'}>
-            {/* Gold ring for Docrud Go users */}
+          <div className="relative shrink-0" title={badge?.docrudGo ? 'Docrud Infinity ∞ Profile' : 'My profile'}>
+            {/* Infinity ring for Docrud Infinity users */}
             {badge?.docrudGo && (
               <>
                 <div
                   className="absolute inset-[-2.5px] rounded-full"
                   style={{
-                    background: 'conic-gradient(from 0deg, #C9A84C 0%, #F0D878 25%, #E8CC7A 50%, #F0D878 75%, #C9A84C 100%)',
+                    background: 'conic-gradient(from 0deg, #4f46e5 0%, #818cf8 25%, #a5b4fc 50%, #818cf8 75%, #4f46e5 100%)',
                     animation: 'goRingSpin 4s linear infinite',
+                    willChange: 'transform',
                   }}
                 />
                 <div
                   className="absolute inset-[-2.5px] rounded-full opacity-60"
-                  style={{ background: 'conic-gradient(from 0deg, #C9A84C, #F0D878, #C9A84C)', filter: 'blur(5px)' }}
+                  style={{ background: 'conic-gradient(from 0deg, #4f46e5, #818cf8, #4f46e5)', filter: 'blur(5px)', willChange: 'transform' }}
                 />
               </>
             )}
             <Link
               href="/profile"
               className="relative z-10 flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.14] bg-gradient-to-br from-white/[0.14] to-white/[0.06] text-white/70 transition hover:from-white/[0.20] hover:to-white/[0.10] hover:text-white shadow-[0_2px_8px_rgba(0,0,0,0.3)] active:scale-95 overflow-hidden"
-              style={badge?.docrudGo ? { boxShadow: '0 0 0 2px #08090a, 0 2px 12px rgba(201,168,76,0.4)' } : undefined}
+              style={badge?.docrudGo ? { boxShadow: '0 0 0 2px #08090a, 0 2px 12px rgba(99,102,241,0.4)' } : undefined}
             >
               {(badge?.avatarUrl || session?.user?.image) ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={badge?.avatarUrl || session!.user!.image!} alt="Profile" className="h-full w-full object-cover" />
               ) : session?.user?.name ? (
-                <span className="text-[11px] font-bold leading-none select-none" style={badge?.docrudGo ? { color: '#E8CC7A' } : { color: 'rgba(255,255,255,0.8)' }}>
+                <span className="text-[11px] font-bold leading-none select-none" style={badge?.docrudGo ? { color: '#a5b4fc' } : { color: 'rgba(255,255,255,0.8)' }}>
                   {session.user.name.charAt(0).toUpperCase()}
                 </span>
               ) : (
@@ -847,8 +864,8 @@ export default function HomepageNav({
             {badge?.docrudGo && (
               <span
                 className="absolute -bottom-0.5 -right-0.5 z-20 flex h-3.5 w-3.5 items-center justify-center rounded-full text-[7px] font-black"
-                style={{ background: 'linear-gradient(135deg,#C9A84C,#F0D878)', color: '#1a1208', boxShadow: '0 0 0 1.5px #08090a' }}
-              >✦</span>
+                style={{ background: 'linear-gradient(135deg,#4f46e5,#818cf8)', color: '#ffffff', boxShadow: '0 0 0 1.5px #08090a', fontSize: 9 }}
+              >∞</span>
             )}
           </div>
         )}

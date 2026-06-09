@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'node:crypto';
 import nodemailer from 'nodemailer';
 import { getAuthSession } from '@/lib/server/auth';
-import { createAccessEvent, getHistoryEntries, updateHistoryEntry } from '@/lib/server/history';
+import { createAccessEvent, getHistoryEntryById, updateHistoryEntry } from '@/lib/server/history';
 import { getMailSettings } from '@/lib/server/settings';
-import { buildEmailChrome } from '@/lib/server/email-chrome';
 import { isValidEmail } from '@/lib/server/security';
 import { getDeviceLabel, getRequestIp, getRequestUserAgent } from '@/lib/server/public-documents';
+import { hasInfinity } from '@/lib/server/infinity';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -30,9 +30,13 @@ export async function POST(request: NextRequest) {
     const historyId = String(payload.historyId || '').trim();
     if (!historyId) return NextResponse.json({ error: 'History ID is required' }, { status: 400 });
 
-    const history = await getHistoryEntries();
-    const entry = history.find((h) => h.id === historyId);
+    const entry = await getHistoryEntryById(historyId);
     if (!entry) return NextResponse.json({ error: 'History entry not found' }, { status: 404 });
+
+    const infinity = await hasInfinity(session.user.id!);
+    if (!infinity) {
+      return NextResponse.json({ error: 'Docrud Infinity required', code: 'INFINITY_REQUIRED', feature: 'esign' }, { status: 403 });
+    }
 
     const allowed = session.user.role === 'admin'
       || entry.generatedBy === session.user.email
@@ -146,40 +150,155 @@ export async function POST(request: NextRequest) {
         continue;
       }
       const signingLink = `${origin}/documents/${encodeURIComponent(entry.shareId || entry.id)}?token=${encodeURIComponent(invite.token)}`;
-      const subject = `${entry.templateName || 'Document'} — Signature Requested`;
-      const preheader = `Action required: complete your assigned signing fields for ${entry.templateName || 'this document'}.`;
+      const subject = 'Action Required: Sign "' + (entry.templateName || 'Document') + '"';
+      const preheader = `${toName}, your signature is requested on ${entry.templateName || 'a document'}. Secure link enclosed.`;
+      const expiryDate = new Date(invite.expiresAt).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      const stepsHtml = [
+        ['1', 'Click the button below to open your personal secure signing link.'],
+        ['2', 'Verify your identity via email OTP if required.'],
+        ['3', 'Review the document carefully before signing.'],
+        ['4', 'Complete all assigned signature fields to finish.'],
+      ].map(([n, text]) =>
+        '<tr>' +
+        '<td style="padding:5px 14px 5px 0;vertical-align:top;width:24px;">' +
+        '<div style="width:22px;height:22px;border-radius:50%;background:#f1f5f9;border:1px solid #e2e8f0;font-size:11px;font-weight:800;color:#475569;text-align:center;line-height:22px;">' + n + '</div>' +
+        '</td>' +
+        '<td style="padding:5px 0;font-size:13px;color:#475569;line-height:1.6;vertical-align:top;">' + text + '</td>' +
+        '</tr>'
+      ).join('');
+      const refHtml = entry.referenceNumber ? '<div style="margin-top:6px;font-size:13px;color:#64748b;">Ref&nbsp;#' + entry.referenceNumber + '</div>' : '';
+      const roleHtml = role ? '&nbsp;<span style="font-weight:400;color:#64748b;">(' + role + ')</span>' : '';
 
       const bodyHtml = `
-        <div style="padding: 4px 0 18px 0;">
-          <div style="font-size:12px; letter-spacing:0.18em; text-transform:uppercase; color:#64748b; font-weight:700;">DocRud • Secure Signing</div>
-          <h1 style="margin:10px 0 0 0; font-size:20px; line-height:1.2; color:#0f172a;">Signature requested</h1>
-          <p style="margin:10px 0 0 0; color:#334155; font-size:14px; line-height:1.6;">
-            Hi ${toName}${role ? ` (${role})` : ''}, you’ve been assigned signing fields in <strong>${entry.templateName || 'a document'}</strong>.
-          </p>
-          <div style="margin:16px 0 0 0; padding:14px; border:1px solid rgba(15,23,42,0.12); border-radius:16px; background:#f8fafc;">
-            <div style="font-size:12px; color:#475569; font-weight:700; letter-spacing:0.14em; text-transform:uppercase;">Execution Record</div>
-            <div style="margin-top:6px; font-size:13px; color:#0f172a; word-break:break-word;">${entry.shareId || entry.id}</div>
-            <div style="margin-top:10px; font-size:12px; color:#475569;">This secure link expires on <strong>${new Date(invite.expiresAt).toLocaleString()}</strong>.</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+</head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:32px 16px;">
+<tr><td align="center">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 4px 40px rgba(0,0,0,0.10);">
+
+<!-- header -->
+<tr>
+  <td style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);padding:28px 32px 26px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td>
+          <div style="font-size:11px;font-weight:800;letter-spacing:0.20em;text-transform:uppercase;color:#64748b;margin-bottom:10px;">
+            Secure E-Sign Platform
           </div>
-          <div style="margin:18px 0 0 0;">
-            <a href="${signingLink}" style="display:inline-block; background:#0f172a; color:white; text-decoration:none; padding:12px 16px; border-radius:999px; font-weight:700; font-size:14px;">Review & Sign</a>
+          <div style="font-size:24px;font-weight:800;color:#f8fafc;letter-spacing:-0.03em;line-height:1.2;">
+            Signature Requested
           </div>
-          <p style="margin:14px 0 0 0; color:#64748b; font-size:12px; line-height:1.6;">
-            If the button doesn’t work, copy and paste this link into your browser:<br/>
-            <span style="word-break:break-all; color:#0f172a;">${signingLink}</span>
-          </p>
-        </div>
+          ${refHtml}
+        </td>
+        <td align="right" valign="top">
+          <div style="display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);">
+            <span style="font-size:22px;">✍️</span>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
+
+<!-- salutation -->
+<tr>
+  <td style="padding:28px 32px 0;">
+    <p style="margin:0 0 6px;font-size:16px;color:#0f172a;font-weight:600;">Hi ${toName}${roleHtml},</p>
+    <p style="margin:0;font-size:14px;color:#475569;line-height:1.7;">
+      You have been invited to review and sign a document. Please complete your signature at your earliest convenience.
+    </p>
+  </td>
+</tr>
+
+<!-- document card -->
+<tr>
+  <td style="padding:20px 32px 0;">
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:20px;">
+      <div style="font-size:10px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#94a3b8;margin-bottom:8px;">Document</div>
+      <div style="font-size:18px;font-weight:800;color:#0f172a;letter-spacing:-0.02em;line-height:1.3;">${entry.templateName || 'Signing Request'}</div>
+      <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:14px;width:100%;">
+        <tr>
+          <td style="padding-right:24px;">
+            <div style="font-size:11px;font-weight:600;color:#94a3b8;letter-spacing:0.08em;text-transform:uppercase;">Envelope ID</div>
+            <div style="font-size:12px;color:#334155;font-family:ui-monospace,monospace;margin-top:3px;word-break:break-all;">${entry.shareId || entry.id}</div>
+          </td>
+          <td>
+            <div style="font-size:11px;font-weight:600;color:#94a3b8;letter-spacing:0.08em;text-transform:uppercase;">Expires</div>
+            <div style="font-size:12px;color:#334155;margin-top:3px;">${expiryDate}</div>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </td>
+</tr>
+
+<!-- CTA -->
+<tr>
+  <td style="padding:24px 32px 0;text-align:center;">
+    <a href="${signingLink}" style="display:inline-block;background:#0f172a;color:#ffffff;text-decoration:none;padding:16px 36px;border-radius:999px;font-weight:800;font-size:15px;letter-spacing:-0.01em;box-shadow:0 4px 24px rgba(15,23,42,0.25);">
+      Review &amp; Sign Document →
+    </a>
+    <p style="margin:12px 0 0;font-size:12px;color:#94a3b8;">This is a personal secure link. Do not share it.</p>
+  </td>
+</tr>
+
+<!-- steps -->
+<tr>
+  <td style="padding:24px 32px 0;">
+    <div style="border:1px solid #e2e8f0;border-radius:16px;padding:20px;">
+      <div style="font-size:10px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#94a3b8;margin-bottom:14px;">How to complete</div>
+      <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+        ${stepsHtml}
+      </table>
+    </div>
+  </td>
+</tr>
+
+<!-- link fallback -->
+<tr>
+  <td style="padding:20px 32px 0;">
+    <div style="background:#f8fafc;border-radius:12px;padding:14px 16px;">
+      <div style="font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#94a3b8;margin-bottom:6px;">
+        If the button above doesn't work, open this link in your browser
+      </div>
+      <div style="font-size:12px;word-break:break-all;color:#0f172a;font-family:ui-monospace,monospace;">${signingLink}</div>
+    </div>
+  </td>
+</tr>
+
+<!-- footer -->
+<tr>
+  <td style="padding:24px 32px 28px;border-top:1px solid #f1f5f9;margin-top:24px;">
+    <p style="margin:24px 0 0;font-size:12px;color:#94a3b8;line-height:1.7;">
+      This signing request was sent via a secure document platform on behalf of <strong style="color:#64748b;">${smtp.fromName || 'the sender'}</strong>.
+      If you believe this was sent in error, please ignore this message -- your information will not be shared.
+    </p>
+    <p style="margin:10px 0 0;font-size:11px;color:#cbd5e1;">
+      Secured with end-to-end audit trail &nbsp;·&nbsp; IP &amp; device logging &nbsp;·&nbsp; OTP identity verification
+    </p>
+  </td>
+</tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>
       `;
 
       try {
-        const html = buildEmailChrome({ origin, subject, preheader, bodyHtml });
         await transporter.sendMail({
           from: `"${smtp.fromName}" <${smtp.fromEmail}>`,
           to: toEmail,
           replyTo: smtp.replyTo || undefined,
           subject,
-          text: `Signature requested for ${entry.templateName || 'document'}.\n\nOpen: ${signingLink}\nExpires: ${invite.expiresAt}`,
-          html,
+          text: `Signature requested: ${entry.templateName || 'Document'}\n\nHi ${toName},\nPlease review and sign the document using the secure link below.\n\nSigning link: ${signingLink}\nExpires: ${expiryDate}\nEnvelope: ${entry.shareId || entry.id}\n\nThis is a personal secure link -- do not share it.`,
+          html: bodyHtml,
         });
         results.push({ signerKey: key, toEmail, status: 'sent' });
       } catch (error) {

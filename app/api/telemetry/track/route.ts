@@ -30,22 +30,28 @@ export async function POST(request: NextRequest) {
     const surface: TelemetrySurface = surfaceValue === 'workspace' ? 'workspace' : 'public';
     const path = String(payload?.path || '/');
 
+    const queryStr = payload?.query ? String(payload.query).trim() : undefined;
     await appendWebTelemetryEvent({
       type,
       surface,
       path,
-      title: payload?.title ? String(payload.title) : undefined,
-      referrer: payload?.referrer ? String(payload.referrer) : undefined,
+      title:     payload?.title     ? String(payload.title)     : undefined,
+      referrer:  payload?.referrer  ? String(payload.referrer)  : undefined,
       visitorId: payload?.visitorId ? String(payload.visitorId) : undefined,
       sessionId: payload?.sessionId ? String(payload.sessionId) : undefined,
       durationMs: payload?.durationMs,
-      query: payload?.query ? String(payload.query) : undefined,
+      query:     queryStr,
       featureId: payload?.featureId ? String(payload.featureId) : undefined,
-      ctaId: payload?.ctaId ? String(payload.ctaId) : undefined,
+      ctaId:     payload?.ctaId     ? String(payload.ctaId)     : undefined,
       userAgent: request.headers.get('user-agent') || undefined,
       ip,
-      userId: payload?.userId ? String(payload.userId) : undefined,
-      userRole: payload?.userRole ? String(payload.userRole) : undefined,
+      userId:    payload?.userId    ? String(payload.userId)    : undefined,
+      userRole:  payload?.userRole  ? String(payload.userRole)  : undefined,
+      // Search enrichment
+      searchContext: payload?.searchContext ? String(payload.searchContext).slice(0, 64) : undefined,
+      resultsCount:  typeof payload?.resultsCount === 'number' ? Math.max(0, Math.round(payload.resultsCount)) : undefined,
+      hasResults:    typeof payload?.hasResults === 'boolean' ? payload.hasResults : undefined,
+      queryLength:   queryStr ? queryStr.length : undefined,
     });
 
     return NextResponse.json({ ok: true });

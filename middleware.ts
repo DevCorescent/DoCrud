@@ -1,9 +1,22 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { getToken } from 'next-auth/jwt';
 
-export function middleware(request: NextRequest) {
+/* ─── Paths that unverified-but-authenticated users may still access ──────── */
+const UNVERIFIED_ALLOWED_PREFIXES = [
+  '/onboarding',
+  '/login',
+  '/api/auth',
+  '/api/onboarding/send-otp',
+  '/api/onboarding/verify-otp',
+  '/api/individual/signup',
+  '/_next',
+];
+
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Redirect unauthenticated users away from the home feed before Next.js
+  // ─── 1. Fast cookie-only gate for the homepage ────────────────────────────
+  // Redirect unauthenticated visitors away from the home feed before Next.js
   // compiles the heavy PublicHomepage module graph. Cookie-only check —
   // no network calls, no heavy imports.
   if (pathname === '/') {
@@ -13,6 +26,26 @@ export function middleware(request: NextRequest) {
     const isGuest = request.cookies.get('guestMode')?.value === '1';
 
     if (!hasSession && !isGuest) {
+      return NextResponse.redirect(new URL('/onboarding', request.url));
+    }
+  }
+
+  // ─── 2. Email-verification gate for individual accounts ───────────────────
+  // Only applies to page routes (not API routes — they have their own guards).
+  // Unverified individual users are sent back to /onboarding regardless of
+  // which page they try to reach.
+  const isApiRoute = pathname.startsWith('/api/');
+  const isAllowedPath = UNVERIFIED_ALLOWED_PREFIXES.some(
+    (p) => pathname === p || pathname.startsWith(p + '/'),
+  );
+
+  if (!isApiRoute && !isAllowedPath) {
+    const token = await getToken({ req: request });
+    if (
+      token &&
+      token.accountType === 'individual' &&
+      token.emailVerified !== true
+    ) {
       return NextResponse.redirect(new URL('/onboarding', request.url));
     }
   }

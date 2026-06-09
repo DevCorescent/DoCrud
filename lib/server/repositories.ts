@@ -181,55 +181,89 @@ export async function saveBusinessSettingsToRepository(settings: BusinessSetting
   );
 }
 
-export async function getCustomTemplatesFromRepository(): Promise<DocumentTemplate[]> {
-  const pool = getDbPool();
-  if (!pool) {
-    return readJsonFile<DocumentTemplate[]>(customTemplatesPath, []);
-  }
+let _templatesCache: { data: DocumentTemplate[]; expiresAt: number } | null = null;
+const TEMPLATES_CACHE_TTL = 60_000; // 60 s — templates change rarely
 
-  const result = await pool.query(`
-    SELECT id, name, category, description, is_custom, organization_id, created_by, version, fields, template_html, metadata, created_at, updated_at
-    FROM templates
-    ORDER BY updated_at DESC, id ASC
-  `);
-  return result.rows.map((row) => {
-    const metadata = row.metadata && typeof row.metadata === 'object' ? row.metadata as Record<string, unknown> : {};
-    return {
-      ...metadata,
-      id: String(row.id),
-      name: String(row.name),
-      category: String(row.category || 'General'),
-      description: row.description ? String(row.description) : undefined,
-      isCustom: Boolean(row.is_custom),
-      organizationId: row.organization_id ? String(row.organization_id) : undefined,
-      createdBy: row.created_by ? String(row.created_by) : undefined,
-      version: Number(row.version || 1),
-      fields: Array.isArray(row.fields) ? row.fields : [],
-      template: String(row.template_html || ''),
-      createdAt: String((metadata.createdAt as string) || row.created_at || new Date().toISOString()),
-      updatedAt: String((metadata.updatedAt as string) || row.updated_at || new Date().toISOString()),
-    } as DocumentTemplate;
-  });
+export function invalidateTemplatesCache(): void {
+  _templatesCache = null;
+}
+
+export async function getCustomTemplatesFromRepository(): Promise<DocumentTemplate[]> {
+  if (_templatesCache && _templatesCache.expiresAt > Date.now()) {
+    return _templatesCache.data;
+  }
+  const pool = getDbPool();
+  let data: DocumentTemplate[];
+  if (!pool) {
+    data = await readJsonFile<DocumentTemplate[]>(customTemplatesPath, []);
+  } else {
+    const result = await pool.query(`
+      SELECT id, name, category, description, is_custom, organization_id, created_by, version, fields, template_html, metadata, created_at, updated_at
+      FROM templates
+      ORDER BY updated_at DESC, id ASC
+    `);
+    data = result.rows.map((row) => {
+      const metadata = row.metadata && typeof row.metadata === 'object' ? row.metadata as Record<string, unknown> : {};
+      return {
+        ...metadata,
+        id: String(row.id),
+        name: String(row.name),
+        category: String(row.category || 'General'),
+        description: row.description ? String(row.description) : undefined,
+        isCustom: Boolean(row.is_custom),
+        organizationId: row.organization_id ? String(row.organization_id) : undefined,
+        createdBy: row.created_by ? String(row.created_by) : undefined,
+        version: Number(row.version || 1),
+        fields: Array.isArray(row.fields) ? row.fields : [],
+        template: String(row.template_html || ''),
+        createdAt: String((metadata.createdAt as string) || row.created_at || new Date().toISOString()),
+        updatedAt: String((metadata.updatedAt as string) || row.updated_at || new Date().toISOString()),
+      } as DocumentTemplate;
+    });
+  }
+  _templatesCache = { data, expiresAt: Date.now() + TEMPLATES_CACHE_TTL };
+  return data;
 }
 
 export async function saveCustomTemplatesToRepository(templates: DocumentTemplate[]) {
+  invalidateTemplatesCache();
   const pool = getDbPool();
   if (!pool) {
     await writeJsonFile(customTemplatesPath, templates);
     return;
   }
 
+  const incomingIds = new Set(templates.map((t) => t.id));
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    await client.query('DELETE FROM templates');
+    // Diff-based reconcile: delete only the templates that aren't in the new
+    // list, upsert the rest. Avoids rewriting every row when callers do the
+    // common load-all → mutate-one → save-all pattern.
+    const existing = await client.query<{ id: string }>(`SELECT id FROM templates`);
+    const toDelete = existing.rows.map((r) => r.id).filter((id) => !incomingIds.has(id));
+    if (toDelete.length) {
+      await client.query(`DELETE FROM templates WHERE id = ANY($1::text[])`, [toDelete]);
+    }
     for (const template of templates) {
       await client.query(
         `INSERT INTO templates (
           id, name, category, description, is_custom, organization_id, created_by, version, fields, template_html, metadata, created_at, updated_at
         ) VALUES (
           $1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, $11::jsonb, COALESCE($12::timestamptz, NOW()), COALESCE($13::timestamptz, NOW())
-        )`,
+        )
+        ON CONFLICT (id) DO UPDATE SET
+          name = EXCLUDED.name,
+          category = EXCLUDED.category,
+          description = EXCLUDED.description,
+          is_custom = EXCLUDED.is_custom,
+          organization_id = EXCLUDED.organization_id,
+          created_by = EXCLUDED.created_by,
+          version = EXCLUDED.version,
+          fields = EXCLUDED.fields,
+          template_html = EXCLUDED.template_html,
+          metadata = EXCLUDED.metadata,
+          updated_at = COALESCE(EXCLUDED.updated_at, NOW())`,
         [
           template.id,
           template.name,
@@ -345,14 +379,29 @@ export async function saveSaasPlansToRepository(plans: SaasPlan[]) {
     return;
   }
 
+  const incomingIds = new Set(plans.map((p) => p.id));
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    await client.query('DELETE FROM saas_plans');
+    // Diff-based reconcile: delete only the plans that aren't in the new list,
+    // upsert the rest. Avoids rewriting every row on every settings save.
+    const existing = await client.query<{ id: string }>(`SELECT id FROM saas_plans`);
+    const toDelete = existing.rows.map((r) => r.id).filter((id) => !incomingIds.has(id));
+    if (toDelete.length) {
+      await client.query(`DELETE FROM saas_plans WHERE id = ANY($1::text[])`, [toDelete]);
+    }
     for (const plan of plans) {
       await client.query(
         `INSERT INTO saas_plans (id, name, billing_model, price_label, features, plan_data, active, updated_at)
-         VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7, NOW())`,
+         VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7, NOW())
+         ON CONFLICT (id) DO UPDATE SET
+           name = EXCLUDED.name,
+           billing_model = EXCLUDED.billing_model,
+           price_label = EXCLUDED.price_label,
+           features = EXCLUDED.features,
+           plan_data = EXCLUDED.plan_data,
+           active = EXCLUDED.active,
+           updated_at = NOW()`,
         [
           plan.id,
           plan.name,

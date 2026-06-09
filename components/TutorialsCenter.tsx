@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchTracker, SEARCH_CONTEXTS } from '@/lib/search-tracking';
 import { BookOpen, ExternalLink, Lightbulb, Rocket, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -137,6 +138,7 @@ export default function TutorialsCenter() {
     return ['All', ...Array.from(items)] as const;
   }, []);
 
+  const trackSearch = useSearchTracker(SEARCH_CONTEXTS.TUTORIALS);
   const filteredTutorials = useMemo(() => {
     const q = query.trim().toLowerCase();
     return tutorials.filter((item) => {
@@ -150,6 +152,11 @@ export default function TutorialsCenter() {
       );
     });
   }, [category, query]);
+
+  useEffect(() => {
+    if (query.trim()) trackSearch(query, filteredTutorials.length);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, filteredTutorials.length]);
 
   const workspaceLink = useMemo(() => getWorkspaceLinkForTutorial(selected.id), [selected.id]);
 

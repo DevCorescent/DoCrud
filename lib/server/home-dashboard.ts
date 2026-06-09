@@ -1,4 +1,5 @@
-import { getAuthSession, getStoredUsers } from '@/lib/server/auth';
+import { getAuthSession } from '@/lib/server/auth';
+import { getStoredUserByEmail } from '@/lib/server/users';
 import { getEffectiveSaasPlanForUser, getRoadmapPromotionSnapshot, getUserUsageSummary } from '@/lib/server/saas';
 import { getProfileData } from '@/lib/server/user-profiles';
 import { getHistoryEntries } from '@/lib/server/history';
@@ -6,6 +7,9 @@ import { getFileTransfers } from '@/lib/server/file-transfers';
 import { getVisibleVirtualIdCards } from '@/lib/server/virtual-ids';
 import { getVisibleCertificates } from '@/lib/server/certificates';
 import { buildBillingThreshold } from '@/lib/server/billing';
+import { getDbPool } from '@/lib/server/database';
+import { selectHistoryRowsForUser } from '@/lib/server/db/history-rows';
+import { selectFileTransferRowsForUser } from '@/lib/server/db/file-transfers-rows';
 import { ProfileOverview } from '@/types/document';
 
 export interface HomeDashboardCard {
@@ -87,34 +91,47 @@ export async function getHomeDashboardSnapshot(): Promise<HomeDashboardSnapshot 
     return null;
   }
 
-  const [users, history, transfers] = await Promise.all([
-    getStoredUsers(),
-    getHistoryEntries(),
-    getFileTransfers(),
+  // In DB mode, fetch only the calling user's visible data — avoids full-table scans for non-admin roles
+  const isDbMode = Boolean(getDbPool());
+  const userRole = session.user.role;
+  const userEmail = session.user.email || '';
+
+  const [storedUser, history, transfers] = await Promise.all([
+    getStoredUserByEmail(userEmail),
+    isDbMode && userRole !== 'admin'
+      ? selectHistoryRowsForUser({ role: userRole, email: userEmail, orgId: session.user.id })
+      : getHistoryEntries(),
+    isDbMode && userRole !== 'admin'
+      ? selectFileTransferRowsForUser({ role: userRole, email: userEmail, orgId: session.user.id })
+      : getFileTransfers(),
   ]);
 
-  const storedUser = users.find((user) => user.email === session.user.email) || null;
   const plan = storedUser ? await getEffectiveSaasPlanForUser(storedUser) : null;
   const usageSummary = storedUser ? await getUserUsageSummary(storedUser, history) : null;
-  const userProfile = storedUser ? await getProfileData(storedUser.id) : null;
-  const [virtualIds, certificates] = storedUser ? await Promise.all([
+  const [userProfile, virtualIds, certificates] = storedUser ? await Promise.all([
+    getProfileData(storedUser.id),
     getVisibleVirtualIdCards(storedUser),
     getVisibleCertificates(storedUser),
-  ]) : [[], []];
+  ]) : [null, [], []];
 
-  const visibleHistory = session.user.role === 'admin'
+  // When using DB-filtered queries for non-admin roles, `history`/`transfers` are already scoped
+  const visibleHistory = isDbMode && userRole !== 'admin'
     ? history
-    : session.user.role === 'employee'
-      ? history.filter((entry) => entry.employeeEmail?.toLowerCase() === (session.user.email || '').toLowerCase())
-      : session.user.role === 'client'
-        ? history.filter((entry) => entry.organizationId === session.user.id || entry.clientEmail?.toLowerCase() === (session.user.email || '').toLowerCase())
-        : history.filter((entry) => entry.generatedBy === session.user.email);
+    : userRole === 'admin'
+      ? history
+      : userRole === 'employee'
+        ? history.filter((entry) => entry.employeeEmail?.toLowerCase() === userEmail.toLowerCase())
+        : userRole === 'client'
+          ? history.filter((entry) => entry.organizationId === session.user.id || entry.clientEmail?.toLowerCase() === userEmail.toLowerCase())
+          : history.filter((entry) => entry.generatedBy === userEmail);
 
-  const visibleTransfers = session.user.role === 'admin'
+  const visibleTransfers = isDbMode && userRole !== 'admin'
     ? transfers
-    : session.user.role === 'client'
-      ? transfers.filter((entry) => entry.organizationId === session.user.id || entry.uploadedBy.toLowerCase() === (session.user.email || '').toLowerCase())
-      : transfers.filter((entry) => entry.uploadedBy.toLowerCase() === (session.user.email || '').toLowerCase());
+    : userRole === 'admin'
+      ? transfers
+      : userRole === 'client'
+        ? transfers.filter((entry) => entry.organizationId === session.user.id || entry.uploadedBy.toLowerCase() === userEmail.toLowerCase())
+        : transfers.filter((entry) => entry.uploadedBy.toLowerCase() === userEmail.toLowerCase());
 
   const lastThirtyDays = new Date();
   lastThirtyDays.setDate(lastThirtyDays.getDate() - 30);

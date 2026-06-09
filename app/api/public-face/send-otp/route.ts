@@ -9,6 +9,7 @@ import {
   writeJsonFile,
 } from '@/lib/server/storage';
 import { sendPublicFaceOtpEmail } from '@/lib/server/public-face-emails';
+import { hasInfinity } from '@/lib/server/infinity';
 import type { PublicFaceApplication } from '@/types/document';
 
 export const dynamic = 'force-dynamic';
@@ -37,6 +38,11 @@ export async function POST(req: NextRequest) {
     const userId = session.user.id;
     const userEmail = session.user.email as string;
     const userName = session.user.name as string;
+
+    const infinity = await hasInfinity(userId);
+    if (!infinity) {
+      return NextResponse.json({ error: 'Docrud Infinity required', code: 'INFINITY_REQUIRED', feature: 'public_face' }, { status: 403 });
+    }
 
     // Block if already approved
     const applications = await readJsonFile<PublicFaceApplication[]>(publicFaceApplicationsPath, []);

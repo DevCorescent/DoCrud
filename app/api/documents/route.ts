@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/server/auth';
-import { createAccessEvent, getHistoryEntries, updateHistoryEntry } from '@/lib/server/history';
+import { createAccessEvent, getHistoryEntries, getHistoryEntryById, updateHistoryEntry } from '@/lib/server/history';
 import { DataCollectionStatus, DocumentHistory, ManagedFile } from '@/types/document';
 
 export const dynamic = 'force-dynamic';
@@ -124,8 +124,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Document id is required' }, { status: 400 });
     }
 
-    const history = await getHistoryEntries();
-    const existing = history.find((entry) => entry.id === payload.id);
+    const existing = await getHistoryEntryById(payload.id);
     if (!existing) {
       return NextResponse.json({ error: 'Document not found' }, { status: 404 });
     }

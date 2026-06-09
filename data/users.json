@@ -12,13 +12,13 @@
     "roleProfileName": "Admin Control",
     "isActive": true,
     "createdAt": "2024-01-01T00:00:00Z",
-    "lastLogin": "2026-05-13T22:33:47.482Z",
-    "passwordHash": "68d728d0863eb8e1fb2a03d2bd05289a839f9fd5f9beafc581699c0da893eac07c315005bb2cbb6a9e990dc196adc8fc415eaef05dd915295856517ae8d838bb",
-    "passwordSalt": "70e7cc3a758afbb298efa7e4febff149",
-    "lastActivityAt": "2026-05-25T01:33:06.639Z",
+    "lastLogin": "2026-05-30T14:32:29.840Z",
+    "passwordHash": "7921c62f97b49543cabbf0c13ab5223a1bc082e8b721c21fc22e7b935c6a082014336ed7edba509295e7e92d7629481aa8d7ee477cf6233fb76bac4c108f2dde",
+    "passwordSalt": "c0d9a28585a2d5c410baf0fddd3e30ef",
+    "lastActivityAt": "2026-05-30T11:59:02.156Z",
     "policyAcceptance": {
       "version": "2026.04.01",
-      "acceptedAt": "2026-05-13T22:33:47.482Z",
+      "acceptedAt": "2026-05-30T14:32:29.841Z",
       "via": "login",
       "requiredPolicyIds": [
         "terms",
@@ -31,8 +31,7 @@
         "data-privacy-policy",
         "documents-legality"
       ]
-    },
-    "referralCode": "726FE9FD00"
+    }
   },
   {
     "id": "2",
@@ -52,8 +51,8 @@
     "roleProfileName": "HR Operations",
     "isActive": true,
     "createdAt": "2024-01-01T00:00:00Z",
-    "passwordHash": "3db82246b0f50f7e85066ae3dce8bbd2fef5ec85a1849ab3d5651a9a7e45bc227d407b5628fee420e2539b2a63f900d8a145369f4a24463ac53fb8b665b1565b",
-    "passwordSalt": "b54483aaa4221438b16a5451789b1c84"
+    "passwordHash": "943fc626b9febd45cb56ffe8b442c32fec6d9e7e152aaa5878f209fd01530a0761de842892ef7e291b9908e948e5b1e441e5d650543d44d6e18d880672fa247f",
+    "passwordSalt": "9f51df42ea07ff76f972f178c92b63cf"
   },
   {
     "id": "3",
@@ -71,58 +70,14 @@
     ],
     "roleProfileId": "role-legal-governance",
     "roleProfileName": "Legal Governance",
-    "isActive": false,
-    "createdAt": "2024-01-01T00:00:00Z",
-    "passwordHash": "d6b108c08d426bf356fa6a6888b502d3e7c92c6eb44cb96e7ed6d90f96a07b22795b37b78419fa890aeb7c49c74b18800a8d9c17cec1cdfb07316c1c7104628e",
-    "passwordSalt": "103bac9c5af618861547462464ace9d2"
-  },
-  {
-    "id": "individual-1778577916064",
-    "name": "kushagra sharma",
-    "email": "kush.726@gmail.com",
-    "role": "individual",
-    "accountType": "individual",
-    "permissions": [
-      "self"
-    ],
     "isActive": true,
-    "createdAt": "2026-05-12T09:25:16.064Z",
-    "organizationName": "Individual Workspace",
-    "createdFromSignup": true,
-    "policyAcceptance": {
-      "version": "2026.04.01",
-      "acceptedAt": "2026-05-12T09:25:16.351Z",
-      "via": "login",
-      "requiredPolicyIds": [
-        "terms",
-        "privacy",
-        "refund-cancellation",
-        "generated-document-policy",
-        "shared-document-policy",
-        "signed-document-policy",
-        "encrypted-document-policy",
-        "data-privacy-policy",
-        "documents-legality"
-      ]
-    },
-    "subscription": {
-      "planId": "workspace-trial",
-      "planName": "docrud Workspace Trial",
-      "status": "trial",
-      "startedAt": "2026-05-12T09:25:16.064Z",
-      "aiTrialLimit": 6,
-      "aiTrialUsed": 0,
-      "monthlyAiCredits": 0,
-      "remainingAiCredits": 0,
-      "aiCreditsResetAt": "2026-06-11T09:25:16.064Z"
-    },
-    "passwordHash": "a8528f7b8b93d5176c28de74a610b5f1ae8feff0bf1c80db5a0a9bac89021f137e76edfd661371f89eaa6ae24fdc13547c530fa7fec99829a08f2e197a098e77",
-    "passwordSalt": "057409716a4e1e76ebf5b19bb1fbff93",
-    "lastLogin": "2026-05-12T09:25:16.351Z"
+    "createdAt": "2024-01-01T00:00:00Z",
+    "passwordHash": "f2a4a95523a1d1685c320b0361ee0c36ae72432d96886c6dafe5166f34a05247c5073cd5482724c2aa7ab39bea5f3b0f32cd9af11bb4da71dc98d0777fa54c29",
+    "passwordSalt": "7699d5387279b053bce9f3604fca53e2"
   },
   {
-    "id": "individual-1778580301732",
-    "name": "kushagra sharma",
+    "id": "individual-1780155524036",
+    "name": "kushagra Sharma",
     "email": "kushagra@corescent.in",
     "role": "individual",
     "accountType": "individual",
@@ -130,12 +85,12 @@
       "self"
     ],
     "isActive": true,
-    "createdAt": "2026-05-12T10:05:01.732Z",
+    "createdAt": "2026-05-30T15:38:44.036Z",
     "organizationName": "Individual Workspace",
     "createdFromSignup": true,
     "policyAcceptance": {
       "version": "2026.04.01",
-      "acceptedAt": "2026-05-12T10:05:01.841Z",
+      "acceptedAt": "2026-05-30T15:38:44.592Z",
       "via": "login",
       "requiredPolicyIds": [
         "terms",
@@ -153,20 +108,21 @@
       "planId": "workspace-trial",
       "planName": "docrud Workspace Trial",
       "status": "trial",
-      "startedAt": "2026-05-12T10:05:01.732Z",
+      "startedAt": "2026-05-30T15:38:44.036Z",
       "aiTrialLimit": 6,
       "aiTrialUsed": 0,
       "monthlyAiCredits": 0,
       "remainingAiCredits": 0,
-      "aiCreditsResetAt": "2026-06-11T10:05:01.732Z"
+      "aiCreditsResetAt": "2026-06-29T15:38:44.036Z"
     },
-    "passwordHash": "7cef17993234864cfa1a6e94cbf906e5fbd21c560da7568ddc176b6aca81fd2c273cbe89177509544604ad1e552d94aed663c46df4540bdd813a891453959e6e",
-    "passwordSalt": "b9bb84e7cba01658ab100ccce27b5776",
-    "lastLogin": "2026-05-12T10:05:01.841Z"
+    "passwordHash": "5b0099efa3f523f132c1d7244f907c1bf9afbd18a040a36a1970a9e8556bd1d792b7eb7c18dde6e2835672f5afa161e1212c16407d33a3d999a84f672ae475d7",
+    "passwordSalt": "d1c1df91e13e6b14fe198b3032335de3",
+    "lastLogin": "2026-05-30T15:38:44.592Z",
+    "lastActivityAt": "2026-06-04T12:41:12.324Z"
   },
   {
-    "id": "individual-1778580489243",
-    "name": "ayush mishra",
+    "id": "individual-1780159513754",
+    "name": "kushagra sharma",
     "email": "kushagrasharma.0921@gmail.com",
     "role": "individual",
     "accountType": "individual",
@@ -174,12 +130,12 @@
       "self"
     ],
     "isActive": true,
-    "createdAt": "2026-05-12T10:08:09.243Z",
+    "createdAt": "2026-05-30T16:45:13.754Z",
     "organizationName": "Individual Workspace",
     "createdFromSignup": true,
     "policyAcceptance": {
       "version": "2026.04.01",
-      "acceptedAt": "2026-05-12T11:25:02.761Z",
+      "acceptedAt": "2026-05-30T16:45:14.363Z",
       "via": "login",
       "requiredPolicyIds": [
         "terms",
@@ -197,73 +153,33 @@
       "planId": "workspace-trial",
       "planName": "docrud Workspace Trial",
       "status": "trial",
-      "startedAt": "2026-05-12T10:08:09.243Z",
+      "startedAt": "2026-05-30T16:45:13.754Z",
       "aiTrialLimit": 6,
       "aiTrialUsed": 0,
       "monthlyAiCredits": 0,
       "remainingAiCredits": 0,
-      "aiCreditsResetAt": "2026-06-11T10:08:09.243Z"
+      "aiCreditsResetAt": "2026-06-29T16:45:13.755Z"
     },
-    "passwordHash": "67347f1df690295da18e099427274809f4ab694215b8b4500aa32ea26ced92f076287c8586f9732ea86e51a355ca5000b922c2f8c88aecdacb3140ab6a20c96e",
-    "passwordSalt": "5604d954de3b69c91e3655c0eff2b76d",
-    "lastLogin": "2026-05-12T11:25:02.761Z",
-    "lastActivityAt": "2026-05-12T10:25:57.991Z"
+    "passwordHash": "1dbf377c8b9b6423aee425921244bb2df3345bc406f9f101cf81083340d2e50b074fffab95bcd88a31c9afe52bdfa0af3f5e2e4a8b3099f3d3f076cc24a05cb1",
+    "passwordSalt": "d092199b9c148538d79c80dd8f407021",
+    "lastLogin": "2026-05-30T16:45:14.363Z"
   },
   {
-    "id": "verified-001",
-    "email": "priya.sharma@docrud.in",
-    "name": "Priya Sharma",
-    "role": "individual",
-    "accountType": "individual",
-    "permissions": [],
-    "isActive": true,
-    "createdAt": "2025-06-15T00:00:00Z",
-    "lastLogin": "2026-05-12T08:00:00Z",
-    "passwordHash": "dummy",
-    "passwordSalt": "dummy"
-  },
-  {
-    "id": "verified-002",
-    "email": "arjun.mehta@docrud.in",
-    "name": "Arjun Mehta",
-    "role": "individual",
-    "accountType": "individual",
-    "permissions": [],
-    "isActive": true,
-    "createdAt": "2025-04-10T00:00:00Z",
-    "lastLogin": "2026-05-11T20:00:00Z",
-    "passwordHash": "dummy",
-    "passwordSalt": "dummy"
-  },
-  {
-    "id": "verified-003",
-    "email": "kavya.reddy@docrud.in",
-    "name": "Kavya Reddy",
-    "role": "individual",
-    "accountType": "individual",
-    "permissions": [],
-    "isActive": true,
-    "createdAt": "2025-08-20T00:00:00Z",
-    "lastLogin": "2026-05-12T06:00:00Z",
-    "passwordHash": "dummy",
-    "passwordSalt": "dummy"
-  },
-  {
-    "id": "individual-1778589478735",
-    "name": "Aman Chauhan",
-    "email": "amanchauhanrampur@gmail.com",
+    "id": "individual-1780160241154",
+    "name": "ashish sharma",
+    "email": "ashish@yopmail.com",
     "role": "individual",
     "accountType": "individual",
     "permissions": [
       "self"
     ],
     "isActive": true,
-    "createdAt": "2026-05-12T12:37:58.735Z",
+    "createdAt": "2026-05-30T16:57:21.154Z",
     "organizationName": "Individual Workspace",
     "createdFromSignup": true,
     "policyAcceptance": {
       "version": "2026.04.01",
-      "acceptedAt": "2026-05-12T13:41:42.302Z",
+      "acceptedAt": "2026-05-30T16:57:21.727Z",
       "via": "login",
       "requiredPolicyIds": [
         "terms",
@@ -281,427 +197,20 @@
       "planId": "workspace-trial",
       "planName": "docrud Workspace Trial",
       "status": "trial",
-      "startedAt": "2026-05-12T12:37:58.735Z",
+      "startedAt": "2026-05-30T16:57:21.154Z",
       "aiTrialLimit": 6,
       "aiTrialUsed": 0,
       "monthlyAiCredits": 0,
       "remainingAiCredits": 0,
-      "aiCreditsResetAt": "2026-06-11T12:37:58.735Z"
+      "aiCreditsResetAt": "2026-06-29T16:57:21.154Z"
     },
-    "passwordHash": "45dd222d98a753ef0238939b7227f69e26a874592703b78dca20368dc9bcd1c95b79a6fec3eeac34a2471663db29a1a3d440efccff52ce7e9ce334916bc60510",
-    "passwordSalt": "cf6c8d7ecc3babbdec7525bf38a9aa92",
-    "lastLogin": "2026-05-12T13:41:42.302Z"
+    "passwordHash": "3507f2fa51ebd9a53cd6d7f1092c7994d975184d74ad37208606f84ac8a3823e48e31f7446bbb9deb86e50fb2083444bf3c4843d466fe46780385f8b9b51bd96",
+    "passwordSalt": "ceace1870af9e4406d35231c14a08b54",
+    "lastLogin": "2026-05-30T16:57:21.727Z"
   },
   {
-    "id": "individual-1778593995438",
-    "name": "abhishek sharma",
-    "email": "ab8107116@gmail.com",
-    "role": "individual",
-    "accountType": "individual",
-    "permissions": [
-      "self"
-    ],
-    "isActive": true,
-    "createdAt": "2026-05-12T13:53:15.438Z",
-    "organizationName": "Individual Workspace",
-    "createdFromSignup": true,
-    "policyAcceptance": {
-      "version": "2026.04.01",
-      "acceptedAt": "2026-05-12T13:53:16.649Z",
-      "via": "login",
-      "requiredPolicyIds": [
-        "terms",
-        "privacy",
-        "refund-cancellation",
-        "generated-document-policy",
-        "shared-document-policy",
-        "signed-document-policy",
-        "encrypted-document-policy",
-        "data-privacy-policy",
-        "documents-legality"
-      ]
-    },
-    "subscription": {
-      "planId": "workspace-trial",
-      "planName": "docrud Workspace Trial",
-      "status": "trial",
-      "startedAt": "2026-05-12T13:53:15.438Z",
-      "aiTrialLimit": 6,
-      "aiTrialUsed": 0,
-      "monthlyAiCredits": 0,
-      "remainingAiCredits": 0,
-      "aiCreditsResetAt": "2026-06-11T13:53:15.439Z"
-    },
-    "passwordHash": "9602d883149bd6b572202412fc88c601dadde0eed338da77e890d75bb00e22bdb1859ae89996100e3d99e8d9d80b8a87b67c13e88732ce9ac99b97ed1908d945",
-    "passwordSalt": "9ba07e92ae22a50fc8ab1601b947d4ac",
-    "lastLogin": "2026-05-12T13:53:16.649Z",
-    "lastActivityAt": "2026-05-12T14:37:31.074Z"
-  },
-  {
-    "id": "individual-1778601331383",
-    "name": "shashank gautam",
-    "email": "shashank@corescent.in",
-    "role": "individual",
-    "accountType": "individual",
-    "permissions": [
-      "self"
-    ],
-    "isActive": true,
-    "createdAt": "2026-05-12T15:55:31.383Z",
-    "organizationName": "Individual Workspace",
-    "createdFromSignup": true,
-    "policyAcceptance": {
-      "version": "2026.04.01",
-      "acceptedAt": "2026-05-12T15:55:32.537Z",
-      "via": "login",
-      "requiredPolicyIds": [
-        "terms",
-        "privacy",
-        "refund-cancellation",
-        "generated-document-policy",
-        "shared-document-policy",
-        "signed-document-policy",
-        "encrypted-document-policy",
-        "data-privacy-policy",
-        "documents-legality"
-      ]
-    },
-    "subscription": {
-      "planId": "workspace-trial",
-      "planName": "docrud Workspace Trial",
-      "status": "trial",
-      "startedAt": "2026-05-12T15:55:31.383Z",
-      "aiTrialLimit": 6,
-      "aiTrialUsed": 0,
-      "monthlyAiCredits": 0,
-      "remainingAiCredits": 0,
-      "aiCreditsResetAt": "2026-06-11T15:55:31.383Z"
-    },
-    "passwordHash": "6e92edcf53b1b9e55511cee45c652b982277695a6611d5c1cce330a3952b609f9fea2ba5a5f34e9b6a556fcf4736ac23e31a4aaa0e822e8a82074e6073e2abb2",
-    "passwordSalt": "9ad9baf52ca537fa43e3486f6706f517",
-    "lastLogin": "2026-05-12T15:55:32.536Z",
-    "lastActivityAt": "2026-05-12T18:08:25.108Z"
-  },
-  {
-    "id": "individual-1778629652079",
-    "name": "prathmesh",
-    "email": "pr@yopmail.com",
-    "role": "individual",
-    "accountType": "individual",
-    "permissions": [
-      "self"
-    ],
-    "isActive": true,
-    "createdAt": "2026-05-12T23:47:32.079Z",
-    "organizationName": "Individual Workspace",
-    "createdFromSignup": true,
-    "policyAcceptance": {
-      "version": "2026.04.01",
-      "acceptedAt": "2026-05-12T23:47:32.255Z",
-      "via": "login",
-      "requiredPolicyIds": [
-        "terms",
-        "privacy",
-        "refund-cancellation",
-        "generated-document-policy",
-        "shared-document-policy",
-        "signed-document-policy",
-        "encrypted-document-policy",
-        "data-privacy-policy",
-        "documents-legality"
-      ]
-    },
-    "subscription": {
-      "planId": "workspace-trial",
-      "planName": "docrud Workspace Trial",
-      "status": "trial",
-      "startedAt": "2026-05-12T23:47:32.079Z",
-      "aiTrialLimit": 6,
-      "aiTrialUsed": 0,
-      "monthlyAiCredits": 0,
-      "remainingAiCredits": 0,
-      "aiCreditsResetAt": "2026-06-11T23:47:32.079Z"
-    },
-    "passwordHash": "433506271ca32ec954570725ed6d4898a29d2113024262519d1685bc7d08480b3ea1a9e89a1de53429268c71e32df20a29ed09c9f681ec0e602e31d2c2e8a979",
-    "passwordSalt": "2e23051175bb49ec119d1629d61be3d2",
-    "lastLogin": "2026-05-12T23:47:32.255Z"
-  },
-  {
-    "id": "individual-1778630558021",
-    "name": "parthib",
-    "email": "par@yopmail.com",
-    "role": "individual",
-    "accountType": "individual",
-    "permissions": [
-      "self"
-    ],
-    "isActive": true,
-    "createdAt": "2026-05-13T00:02:38.021Z",
-    "organizationName": "Individual Workspace",
-    "createdFromSignup": true,
-    "policyAcceptance": {
-      "version": "2026.04.01",
-      "acceptedAt": "2026-05-13T00:02:39.616Z",
-      "via": "login",
-      "requiredPolicyIds": [
-        "terms",
-        "privacy",
-        "refund-cancellation",
-        "generated-document-policy",
-        "shared-document-policy",
-        "signed-document-policy",
-        "encrypted-document-policy",
-        "data-privacy-policy",
-        "documents-legality"
-      ]
-    },
-    "subscription": {
-      "planId": "workspace-trial",
-      "planName": "docrud Workspace Trial",
-      "status": "trial",
-      "startedAt": "2026-05-13T00:02:38.021Z",
-      "aiTrialLimit": 6,
-      "aiTrialUsed": 0,
-      "monthlyAiCredits": 0,
-      "remainingAiCredits": 0,
-      "aiCreditsResetAt": "2026-06-12T00:02:38.021Z"
-    },
-    "passwordHash": "424a50dc91764accee998afbcddab60962a3b098f6fe3ee69aaa18f636ed535785aebc32921ae994ec41296210bce324568de3de43a736e49656da8607c1d62d",
-    "passwordSalt": "e14954d8f4d8c3e6ab178d96648bfcb0",
-    "lastLogin": "2026-05-13T00:02:39.616Z"
-  },
-  {
-    "id": "individual-1778744127141",
-    "name": "ramesh chatterjee",
-    "email": "ramesh@yopmail.com",
-    "role": "individual",
-    "accountType": "individual",
-    "permissions": [
-      "self"
-    ],
-    "isActive": true,
-    "createdAt": "2026-05-14T07:35:27.141Z",
-    "organizationName": "Individual Workspace",
-    "createdFromSignup": true,
-    "policyAcceptance": {
-      "version": "2026.04.01",
-      "acceptedAt": "2026-05-14T07:35:28.676Z",
-      "via": "login",
-      "requiredPolicyIds": [
-        "terms",
-        "privacy",
-        "refund-cancellation",
-        "generated-document-policy",
-        "shared-document-policy",
-        "signed-document-policy",
-        "encrypted-document-policy",
-        "data-privacy-policy",
-        "documents-legality"
-      ]
-    },
-    "subscription": {
-      "planId": "workspace-trial",
-      "planName": "docrud Workspace Trial",
-      "status": "trial",
-      "startedAt": "2026-05-14T07:35:27.141Z",
-      "aiTrialLimit": 6,
-      "aiTrialUsed": 0,
-      "monthlyAiCredits": 0,
-      "remainingAiCredits": 0,
-      "aiCreditsResetAt": "2026-06-13T07:35:27.142Z"
-    },
-    "passwordHash": "255f19c8eba9280586046656d9e46062bfeae1f28d1ee33adff6b3b90f242b2ab16743ebf867595507685d04e133ba084ef4450579775e45335fcb4e898be900",
-    "passwordSalt": "39fa024cc774f0710fc95edea3387005",
-    "lastLogin": "2026-05-14T07:35:28.676Z",
-    "lastActivityAt": "2026-05-14T10:51:04.066Z"
-  },
-  {
-    "id": "individual-1778758592812",
-    "name": "satvik",
-    "email": "sat123@yopmail.com",
-    "role": "individual",
-    "accountType": "individual",
-    "permissions": [
-      "self"
-    ],
-    "isActive": true,
-    "createdAt": "2026-05-14T11:36:32.812Z",
-    "organizationName": "Individual Workspace",
-    "createdFromSignup": true,
-    "policyAcceptance": {
-      "version": "2026.04.01",
-      "acceptedAt": "2026-05-14T11:36:33.525Z",
-      "via": "login",
-      "requiredPolicyIds": [
-        "terms",
-        "privacy",
-        "refund-cancellation",
-        "generated-document-policy",
-        "shared-document-policy",
-        "signed-document-policy",
-        "encrypted-document-policy",
-        "data-privacy-policy",
-        "documents-legality"
-      ]
-    },
-    "subscription": {
-      "planId": "workspace-trial",
-      "planName": "docrud Workspace Trial",
-      "status": "trial",
-      "startedAt": "2026-05-14T11:36:32.812Z",
-      "aiTrialLimit": 6,
-      "aiTrialUsed": 0,
-      "monthlyAiCredits": 0,
-      "remainingAiCredits": 0,
-      "aiCreditsResetAt": "2026-06-13T11:36:32.812Z"
-    },
-    "passwordHash": "be52188c2efa3ba3401b777876b343ad1df82eeb723db270ff7aea1b69413ce5442c760c4228801755a7529f807aa9cc33fdabeb8f35a617333538e73cf090e9",
-    "passwordSalt": "237278c37fc7adebd67d742e82bdae7a",
-    "lastLogin": "2026-05-14T11:36:33.525Z",
-    "referralCode": "257D38DB21"
-  },
-  {
-    "id": "individual-1778758936957",
-    "name": "anshul sharma",
-    "email": "anshul@yopmail.com",
-    "role": "individual",
-    "accountType": "individual",
-    "permissions": [
-      "self"
-    ],
-    "isActive": true,
-    "createdAt": "2026-05-14T11:42:16.957Z",
-    "organizationName": "Individual Workspace",
-    "createdFromSignup": true,
-    "policyAcceptance": {
-      "version": "2026.04.01",
-      "acceptedAt": "2026-05-19T12:33:37.410Z",
-      "via": "login",
-      "requiredPolicyIds": [
-        "terms",
-        "privacy",
-        "refund-cancellation",
-        "generated-document-policy",
-        "shared-document-policy",
-        "signed-document-policy",
-        "encrypted-document-policy",
-        "data-privacy-policy",
-        "documents-legality"
-      ]
-    },
-    "subscription": {
-      "planId": "workspace-trial",
-      "planName": "docrud Workspace Trial",
-      "status": "trial",
-      "startedAt": "2026-05-14T11:42:16.957Z",
-      "aiTrialLimit": 6,
-      "aiTrialUsed": 0,
-      "monthlyAiCredits": 0,
-      "remainingAiCredits": 0,
-      "aiCreditsResetAt": "2026-06-13T11:42:16.958Z"
-    },
-    "passwordHash": "35732d4d9d8c69561e7809e0d91b019110d1d701486a6d8ae31693020f39559d5c94ce37a86898552cdc923f6b1155f85614a70c0cbc3b16f64f7c1139c0b6e4",
-    "passwordSalt": "7c071a1da790e214084fa70897cbb6ee",
-    "lastLogin": "2026-05-19T12:33:37.410Z",
-    "referralCode": "C51DD83E67",
-    "referralBonusActivatedAt": "2026-05-14T11:53:37.303Z",
-    "lastActivityAt": "2026-05-15T08:15:59.820Z"
-  },
-  {
-    "id": "user-1778759617203",
-    "name": "anamay",
-    "email": "ana@yopmail.com",
-    "role": "client",
-    "accountType": "business",
-    "permissions": [
-      "all"
-    ],
-    "isActive": true,
-    "createdAt": "2026-05-14T11:53:37.203Z",
-    "organizationId": "user-1778759617203",
-    "organizationName": "merchant tech",
-    "organizationDomain": "merchant.com",
-    "createdFromSignup": true,
-    "referredByCode": "C51DD83E67",
-    "policyAcceptance": {
-      "version": "2026.04.01",
-      "acceptedAt": "2026-05-14T11:53:50.798Z",
-      "via": "login",
-      "requiredPolicyIds": [
-        "terms",
-        "privacy",
-        "refund-cancellation",
-        "generated-document-policy",
-        "shared-document-policy",
-        "signed-document-policy",
-        "encrypted-document-policy",
-        "data-privacy-policy",
-        "documents-legality"
-      ]
-    },
-    "subscription": {
-      "planId": "workspace-trial",
-      "planName": "docrud Workspace Trial",
-      "status": "trial",
-      "startedAt": "2026-05-14T11:53:37.203Z",
-      "aiTrialLimit": 6,
-      "aiTrialUsed": 0,
-      "monthlyAiCredits": 0,
-      "remainingAiCredits": 0,
-      "aiCreditsResetAt": "2026-06-13T11:53:37.203Z"
-    },
-    "passwordHash": "ec669039e45f99c34d3367bbdb15cee2ac843ae8125bdbe3f5a5220ff31defc71b3359a7687eefb9f86180119a87cefec2984edd2c8c702a3fbc5869998aff43",
-    "passwordSalt": "42bfe4075dcef26b2f57ad5c09fd6c0f",
-    "lastLogin": "2026-05-14T11:53:50.798Z",
-    "referralCode": "27C3764D4E"
-  },
-  {
-    "id": "individual-1779101460152",
-    "name": "kushagra Sharma",
-    "email": "kushagra1@yopmail.com",
-    "role": "individual",
-    "accountType": "individual",
-    "permissions": [
-      "self"
-    ],
-    "isActive": true,
-    "createdAt": "2026-05-18T10:51:00.152Z",
-    "organizationName": "Individual Workspace",
-    "createdFromSignup": true,
-    "policyAcceptance": {
-      "version": "2026.04.01",
-      "acceptedAt": "2026-05-18T10:51:00.883Z",
-      "via": "login",
-      "requiredPolicyIds": [
-        "terms",
-        "privacy",
-        "refund-cancellation",
-        "generated-document-policy",
-        "shared-document-policy",
-        "signed-document-policy",
-        "encrypted-document-policy",
-        "data-privacy-policy",
-        "documents-legality"
-      ]
-    },
-    "subscription": {
-      "planId": "workspace-trial",
-      "planName": "docrud Workspace Trial",
-      "status": "trial",
-      "startedAt": "2026-05-18T10:51:00.152Z",
-      "aiTrialLimit": 6,
-      "aiTrialUsed": 0,
-      "monthlyAiCredits": 0,
-      "remainingAiCredits": 0,
-      "aiCreditsResetAt": "2026-06-17T10:51:00.152Z"
-    },
-    "passwordHash": "13bb1119444b10f5940b0cdfc926f9b10cd33f28aa7df733cdff4fdf1b615831e2836f4c08bff110602c64de3d9048ec467b0be0e05f4e5870e0864184eaacae",
-    "passwordSalt": "dc62e27b92ed518bf5897361c54a62ff",
-    "lastLogin": "2026-05-18T10:51:00.883Z"
-  },
-  {
-    "id": "individual-1779101966386",
-    "name": "kushagra sharma",
+    "id": "individual-1780302905872",
+    "name": "kush",
     "email": "kush@yopmail.com",
     "role": "individual",
     "accountType": "individual",
@@ -709,12 +218,12 @@
       "self"
     ],
     "isActive": true,
-    "createdAt": "2026-05-18T10:59:26.386Z",
+    "createdAt": "2026-06-01T08:35:05.872Z",
     "organizationName": "Individual Workspace",
     "createdFromSignup": true,
     "policyAcceptance": {
       "version": "2026.04.01",
-      "acceptedAt": "2026-05-18T10:59:27.110Z",
+      "acceptedAt": "2026-06-01T08:35:06.451Z",
       "via": "login",
       "requiredPolicyIds": [
         "terms",
@@ -732,33 +241,33 @@
       "planId": "workspace-trial",
       "planName": "docrud Workspace Trial",
       "status": "trial",
-      "startedAt": "2026-05-18T10:59:26.386Z",
+      "startedAt": "2026-06-01T08:35:05.872Z",
       "aiTrialLimit": 6,
       "aiTrialUsed": 0,
       "monthlyAiCredits": 0,
       "remainingAiCredits": 0,
-      "aiCreditsResetAt": "2026-06-17T10:59:26.386Z"
+      "aiCreditsResetAt": "2026-07-01T08:35:05.872Z"
     },
-    "passwordHash": "b0f21dbb7493ac9ad16cc2838cb507a41808a45a83fdb771542b7fb662dd6df8c4bd6c1b4ae9a12fff789205e8a7eba585e1f53ed145d2004c55cac87612538d",
-    "passwordSalt": "71ed580e64ed8811d2de21b2adfefd30",
-    "lastLogin": "2026-05-18T10:59:27.109Z"
+    "passwordHash": "3c875c6b0d418299230886c45fbaccbf2c91475484fa20f481f5c9e85f1f136022bb2faaf95ec9b5fe77a1d6455d93cca6952fc490f2e05b18332687c1da23e2",
+    "passwordSalt": "1edbd253cebf63cd9afdaafd3550a2de",
+    "lastLogin": "2026-06-01T08:35:06.450Z"
   },
   {
-    "id": "individual-1779102244525",
-    "name": "yogesh",
-    "email": "yogesh@yopmail.com",
+    "id": "individual-1780305875072",
+    "name": "ayush mishra",
+    "email": "ayush@yopmail.com",
     "role": "individual",
     "accountType": "individual",
     "permissions": [
       "self"
     ],
     "isActive": true,
-    "createdAt": "2026-05-18T11:04:04.525Z",
+    "createdAt": "2026-06-01T09:24:35.072Z",
     "organizationName": "Individual Workspace",
     "createdFromSignup": true,
     "policyAcceptance": {
       "version": "2026.04.01",
-      "acceptedAt": "2026-05-18T11:04:04.683Z",
+      "acceptedAt": "2026-06-01T09:27:54.436Z",
       "via": "login",
       "requiredPolicyIds": [
         "terms",
@@ -776,33 +285,77 @@
       "planId": "workspace-trial",
       "planName": "docrud Workspace Trial",
       "status": "trial",
-      "startedAt": "2026-05-18T11:04:04.525Z",
+      "startedAt": "2026-06-01T09:24:35.072Z",
       "aiTrialLimit": 6,
       "aiTrialUsed": 0,
       "monthlyAiCredits": 0,
       "remainingAiCredits": 0,
-      "aiCreditsResetAt": "2026-06-17T11:04:04.526Z"
+      "aiCreditsResetAt": "2026-07-01T09:24:35.073Z"
     },
-    "passwordHash": "17fc9ed6d5e09ac12bc00a6328cd9ba68bd8c3debed55beb6f29870bac016e6e71ae838793dd08cc28f983fe148823b7cfff9c10262c2fbe57a0f701972cf281",
-    "passwordSalt": "d47e4abfd38521c640b091212035b437",
-    "lastLogin": "2026-05-18T11:04:04.683Z"
+    "passwordHash": "66651ef8e9068b863ae68bafbbfd7a6d575575f8ddb72ae73d3899dbee8bbd1aa68a95fc8ae05dd408f21fe4044eae0264e4583ce12fc2b00499f67c8ab89e84",
+    "passwordSalt": "b4abf593fca6f4b955082e2e616b2483",
+    "lastLogin": "2026-06-01T09:27:54.436Z"
   },
   {
-    "id": "individual-1779102759249",
+    "id": "individual-1780307675504",
+    "name": "purav",
+    "email": "purav@yopmail.com",
+    "role": "individual",
+    "accountType": "individual",
+    "permissions": [
+      "self"
+    ],
+    "isActive": true,
+    "createdAt": "2026-06-01T09:54:35.504Z",
+    "organizationName": "Individual Workspace",
+    "createdFromSignup": true,
+    "policyAcceptance": {
+      "version": "2026.04.01",
+      "acceptedAt": "2026-06-01T09:54:36.084Z",
+      "via": "login",
+      "requiredPolicyIds": [
+        "terms",
+        "privacy",
+        "refund-cancellation",
+        "generated-document-policy",
+        "shared-document-policy",
+        "signed-document-policy",
+        "encrypted-document-policy",
+        "data-privacy-policy",
+        "documents-legality"
+      ]
+    },
+    "subscription": {
+      "planId": "workspace-trial",
+      "planName": "docrud Workspace Trial",
+      "status": "trial",
+      "startedAt": "2026-06-01T09:54:35.504Z",
+      "aiTrialLimit": 6,
+      "aiTrialUsed": 0,
+      "monthlyAiCredits": 0,
+      "remainingAiCredits": 0,
+      "aiCreditsResetAt": "2026-07-01T09:54:35.505Z"
+    },
+    "passwordHash": "b5e8fae746234b7c9887d5cbb0cc620a798bd545124938c53aeb8df7c4574f7b0e4f11853f4523bda77881cfdb3320b18c3a3a8e402ad98fd468ea97cd0ae992",
+    "passwordSalt": "b5927286ff1a7be78506089b7b2bb51b",
+    "lastLogin": "2026-06-01T09:54:36.084Z"
+  },
+  {
+    "id": "individual-1780310294046",
     "name": "arjun mishra",
-    "email": "arjunm@yopmail.com",
+    "email": "arjun101@yopmail.com",
     "role": "individual",
     "accountType": "individual",
     "permissions": [
       "self"
     ],
     "isActive": true,
-    "createdAt": "2026-05-18T11:12:39.249Z",
+    "createdAt": "2026-06-01T10:38:14.046Z",
     "organizationName": "Individual Workspace",
     "createdFromSignup": true,
     "policyAcceptance": {
       "version": "2026.04.01",
-      "acceptedAt": "2026-05-18T11:12:39.412Z",
+      "acceptedAt": "2026-06-01T10:38:14.596Z",
       "via": "login",
       "requiredPolicyIds": [
         "terms",
@@ -820,66 +373,20 @@
       "planId": "workspace-trial",
       "planName": "docrud Workspace Trial",
       "status": "trial",
-      "startedAt": "2026-05-18T11:12:39.249Z",
+      "startedAt": "2026-06-01T10:38:14.046Z",
       "aiTrialLimit": 6,
       "aiTrialUsed": 0,
       "monthlyAiCredits": 0,
       "remainingAiCredits": 0,
-      "aiCreditsResetAt": "2026-06-17T11:12:39.250Z"
+      "aiCreditsResetAt": "2026-07-01T10:38:14.047Z"
     },
-    "passwordHash": "97a3cd6488bbde633f391f1bac8a4448929799713c70b3cc13fc8e501b74c74c1d7c97339a855da43b7136947a4afe2df6b9ca8885690380873b5be2055e11c0",
-    "passwordSalt": "06e9aa4f8e122ab0c4f907bb8f469856",
-    "lastLogin": "2026-05-18T11:12:39.412Z",
-    "referralCode": "B6A139E015"
+    "passwordHash": "35b75f8aabbec260d356045500c02278612f37a59aef39d4f493b5e08823792b03f27a188db1f4829bde172417f2331bbbb3333ebb325446982e098fa3cf508f",
+    "passwordSalt": "7168b5e6aff9a3c059fdafb912d54330",
+    "lastLogin": "2026-06-01T10:38:14.596Z"
   },
   {
-    "id": "individual-1779104110838",
-    "name": "mohan chaudhary",
-    "email": "mohan@yopmail.com",
-    "role": "individual",
-    "accountType": "individual",
-    "permissions": [
-      "self"
-    ],
-    "isActive": true,
-    "createdAt": "2026-05-18T11:35:10.838Z",
-    "organizationName": "Individual Workspace",
-    "createdFromSignup": true,
-    "policyAcceptance": {
-      "version": "2026.04.01",
-      "acceptedAt": "2026-05-18T11:35:11.178Z",
-      "via": "login",
-      "requiredPolicyIds": [
-        "terms",
-        "privacy",
-        "refund-cancellation",
-        "generated-document-policy",
-        "shared-document-policy",
-        "signed-document-policy",
-        "encrypted-document-policy",
-        "data-privacy-policy",
-        "documents-legality"
-      ]
-    },
-    "subscription": {
-      "planId": "workspace-trial",
-      "planName": "docrud Workspace Trial",
-      "status": "trial",
-      "startedAt": "2026-05-18T11:35:10.838Z",
-      "aiTrialLimit": 6,
-      "aiTrialUsed": 0,
-      "monthlyAiCredits": 0,
-      "remainingAiCredits": 0,
-      "aiCreditsResetAt": "2026-06-17T11:35:10.838Z"
-    },
-    "passwordHash": "bfcf6226b032855f7c7423d2ea45b227037e1fadaccb150f1fb84815a1e2d01dc09f4f251fc1d2dd766479be795ea7e8ba322624a0b973550cab3a7c3391a917",
-    "passwordSalt": "c4903571b8ddd84328043522b35b2af9",
-    "lastLogin": "2026-05-18T11:35:11.178Z",
-    "referralCode": "F5745293C0"
-  },
-  {
-    "id": "individual-1779105706874",
-    "name": "krish kapoor",
+    "id": "individual-1780310559057",
+    "name": "krish",
     "email": "krish@yopmail.com",
     "role": "individual",
     "accountType": "individual",
@@ -887,12 +394,12 @@
       "self"
     ],
     "isActive": true,
-    "createdAt": "2026-05-18T12:01:46.874Z",
+    "createdAt": "2026-06-01T10:42:39.057Z",
     "organizationName": "Individual Workspace",
     "createdFromSignup": true,
     "policyAcceptance": {
       "version": "2026.04.01",
-      "acceptedAt": "2026-05-18T12:01:48.766Z",
+      "acceptedAt": "2026-06-01T10:42:39.274Z",
       "via": "login",
       "requiredPolicyIds": [
         "terms",
@@ -910,33 +417,33 @@
       "planId": "workspace-trial",
       "planName": "docrud Workspace Trial",
       "status": "trial",
-      "startedAt": "2026-05-18T12:01:46.874Z",
+      "startedAt": "2026-06-01T10:42:39.057Z",
       "aiTrialLimit": 6,
       "aiTrialUsed": 0,
       "monthlyAiCredits": 0,
       "remainingAiCredits": 0,
-      "aiCreditsResetAt": "2026-06-17T12:01:46.874Z"
+      "aiCreditsResetAt": "2026-07-01T10:42:39.057Z"
     },
-    "passwordHash": "febeaca7afe907a90d19b459881634e2c5fd230f518976f1766c0051ca9491b05079d1b06202573385787a0aca11e16cc04dcec910aa5f1cbc81845ae9619340",
-    "passwordSalt": "d21c7df187c1aef4b8724ecddc04696e",
-    "lastLogin": "2026-05-18T12:01:48.766Z"
+    "passwordHash": "bd37cad85434b01a1a2cf0f38141ab41e150fde796cb8173a1a4260646fc7f0f269478af865b522c36d366a8f0f5fc92a6f49fe707c5b7260002d204b0f1332b",
+    "passwordSalt": "4506b3a50b17aaa2886353f645b9cb01",
+    "lastLogin": "2026-06-01T10:42:39.274Z"
   },
   {
-    "id": "individual-1779109829969",
-    "name": "testuser01",
-    "email": "test01@yopmail.com",
+    "id": "individual-1780311061849",
+    "name": "kumar",
+    "email": "kumar@yopmail.com",
     "role": "individual",
     "accountType": "individual",
     "permissions": [
       "self"
     ],
     "isActive": true,
-    "createdAt": "2026-05-18T13:10:29.969Z",
+    "createdAt": "2026-06-01T10:51:01.849Z",
     "organizationName": "Individual Workspace",
     "createdFromSignup": true,
     "policyAcceptance": {
       "version": "2026.04.01",
-      "acceptedAt": "2026-05-19T10:57:07.065Z",
+      "acceptedAt": "2026-06-01T10:51:02.044Z",
       "via": "login",
       "requiredPolicyIds": [
         "terms",
@@ -954,36 +461,33 @@
       "planId": "workspace-trial",
       "planName": "docrud Workspace Trial",
       "status": "trial",
-      "startedAt": "2026-05-18T13:10:29.969Z",
+      "startedAt": "2026-06-01T10:51:01.849Z",
       "aiTrialLimit": 6,
       "aiTrialUsed": 0,
       "monthlyAiCredits": 0,
       "remainingAiCredits": 0,
-      "aiCreditsResetAt": "2026-06-17T13:10:29.969Z"
+      "aiCreditsResetAt": "2026-07-01T10:51:01.849Z"
     },
-    "passwordHash": "a7b4e60d0b61099b2c918843f8d071aca206906dcf5e788589ffdb0f0d1f6696a20c08a4c6b065696cabed2a1046a9d03120ee2836892c200c17576465df2d1f",
-    "passwordSalt": "1e83d4b0ead495392a294d6a6092808c",
-    "lastLogin": "2026-05-19T10:57:07.065Z",
-    "referralCode": "E5852060CA",
-    "lastActivityAt": "2026-05-19T08:57:52.172Z",
-    "pendingDeletion": false
+    "passwordHash": "4b9e6843d02d88e9492b0298d52c23a50474efbe65c52369985fc7c3e04d170fcdf9909a86bb41efd4d98b91a8406184d7b4dcc27e2de5bc01ac24404604cc97",
+    "passwordSalt": "e1da96f202cf1360b2058e8a6de93a77",
+    "lastLogin": "2026-06-01T10:51:02.044Z"
   },
   {
-    "id": "individual-1779110985090",
-    "name": "testuser02",
-    "email": "test02@yopmail.com",
+    "id": "individual-1780311776653",
+    "name": "sagar",
+    "email": "sagar@yopmail.com",
     "role": "individual",
     "accountType": "individual",
     "permissions": [
       "self"
     ],
     "isActive": true,
-    "createdAt": "2026-05-18T13:29:45.090Z",
+    "createdAt": "2026-06-01T11:02:56.653Z",
     "organizationName": "Individual Workspace",
     "createdFromSignup": true,
     "policyAcceptance": {
       "version": "2026.04.01",
-      "acceptedAt": "2026-05-18T13:29:45.305Z",
+      "acceptedAt": "2026-06-01T11:02:57.993Z",
       "via": "login",
       "requiredPolicyIds": [
         "terms",
@@ -1001,169 +505,33 @@
       "planId": "workspace-trial",
       "planName": "docrud Workspace Trial",
       "status": "trial",
-      "startedAt": "2026-05-18T13:29:45.090Z",
+      "startedAt": "2026-06-01T11:02:56.653Z",
       "aiTrialLimit": 6,
       "aiTrialUsed": 0,
       "monthlyAiCredits": 0,
       "remainingAiCredits": 0,
-      "aiCreditsResetAt": "2026-06-17T13:29:45.090Z"
+      "aiCreditsResetAt": "2026-07-01T11:02:56.653Z"
     },
-    "passwordHash": "6486b042532d91179668c61a38ba3672e339a2d5c370fb3437d8cadec229251f9f63490b8eafa9f8399d15b277f24651eec9eeeb183226a836f9e4c1280e99a3",
-    "passwordSalt": "c3bacaefeaee719eba50fe07f0b0c6b6",
-    "lastLogin": "2026-05-18T13:29:45.305Z"
+    "passwordHash": "82db2a551c59967ef969647255227bf3cc2570ced9712e18f2d8e783b2c29dae4f7a3b07d1529d900debd2e513376dd02ba8f78deae2c800ec068c5b3e16cf59",
+    "passwordSalt": "76a0b10148f3e926da1b4f3fbde0efa5",
+    "lastLogin": "2026-06-01T11:02:57.993Z"
   },
   {
-    "id": "pf-arjun-kapoor",
-    "name": "Arjun Kapoor",
-    "email": "arjun.kapoor@pfaccount.in",
+    "id": "individual-1780312534660",
+    "name": "abc",
+    "email": "abc123@yopmail.com",
     "role": "individual",
     "accountType": "individual",
     "permissions": [
       "self"
     ],
     "isActive": true,
-    "createdAt": "2025-11-14T10:00:00Z",
-    "organizationName": "Individual Workspace",
-    "createdFromSignup": true,
-    "passwordHash": "placeholder",
-    "passwordSalt": "placeholder",
-    "lastLogin": "2026-05-18T08:20:00Z"
-  },
-  {
-    "id": "pf-priya-sharma",
-    "name": "Priya Sharma",
-    "email": "priya.sharma@pfaccount.in",
-    "role": "individual",
-    "accountType": "individual",
-    "permissions": [
-      "self"
-    ],
-    "isActive": true,
-    "createdAt": "2025-09-05T08:30:00Z",
-    "organizationName": "Individual Workspace",
-    "createdFromSignup": true,
-    "passwordHash": "placeholder",
-    "passwordSalt": "placeholder",
-    "lastLogin": "2026-05-17T19:45:00Z"
-  },
-  {
-    "id": "pf-rohit-verma",
-    "name": "Rohit Verma",
-    "email": "rohit.verma@pfaccount.in",
-    "role": "individual",
-    "accountType": "individual",
-    "permissions": [
-      "self"
-    ],
-    "isActive": true,
-    "createdAt": "2025-08-20T06:00:00Z",
-    "organizationName": "Individual Workspace",
-    "createdFromSignup": true,
-    "passwordHash": "placeholder",
-    "passwordSalt": "placeholder",
-    "lastLogin": "2026-05-19T07:10:00Z"
-  },
-  {
-    "id": "pf-ananya-singh",
-    "name": "Ananya Singh",
-    "email": "ananya.singh@pfaccount.in",
-    "role": "individual",
-    "accountType": "individual",
-    "permissions": [
-      "self"
-    ],
-    "isActive": true,
-    "createdAt": "2025-10-01T11:00:00Z",
-    "organizationName": "Individual Workspace",
-    "createdFromSignup": true,
-    "passwordHash": "placeholder",
-    "passwordSalt": "placeholder",
-    "lastLogin": "2026-05-20T06:55:00Z"
-  },
-  {
-    "id": "pf-kavitha-nair",
-    "name": "Dr. Kavitha Nair",
-    "email": "kavitha.nair@pfaccount.in",
-    "role": "individual",
-    "accountType": "individual",
-    "permissions": [
-      "self"
-    ],
-    "isActive": true,
-    "createdAt": "2025-07-12T09:00:00Z",
-    "organizationName": "Individual Workspace",
-    "createdFromSignup": true,
-    "passwordHash": "placeholder",
-    "passwordSalt": "placeholder",
-    "lastLogin": "2026-05-16T15:30:00Z"
-  },
-  {
-    "id": "pf-vikram-malhotra",
-    "name": "Vikram Malhotra",
-    "email": "vikram.malhotra@pfaccount.in",
-    "role": "individual",
-    "accountType": "business",
-    "permissions": [
-      "self"
-    ],
-    "isActive": true,
-    "createdAt": "2025-06-18T14:00:00Z",
-    "organizationName": "Malhotra Ventures",
-    "createdFromSignup": true,
-    "passwordHash": "placeholder",
-    "passwordSalt": "placeholder",
-    "lastLogin": "2026-05-19T11:20:00Z"
-  },
-  {
-    "id": "pf-neha-gupta",
-    "name": "Neha Gupta",
-    "email": "neha.gupta@pfaccount.in",
-    "role": "individual",
-    "accountType": "individual",
-    "permissions": [
-      "self"
-    ],
-    "isActive": true,
-    "createdAt": "2025-12-03T10:30:00Z",
-    "organizationName": "Individual Workspace",
-    "createdFromSignup": true,
-    "passwordHash": "placeholder",
-    "passwordSalt": "placeholder",
-    "lastLogin": "2026-05-18T13:00:00Z"
-  },
-  {
-    "id": "pf-rajan-mehta",
-    "name": "Rajan Mehta",
-    "email": "rajan.mehta@pfaccount.in",
-    "role": "individual",
-    "accountType": "individual",
-    "permissions": [
-      "self"
-    ],
-    "isActive": true,
-    "createdAt": "2025-05-30T07:45:00Z",
-    "organizationName": "Individual Workspace",
-    "createdFromSignup": true,
-    "passwordHash": "placeholder",
-    "passwordSalt": "placeholder",
-    "lastLogin": "2026-05-20T05:40:00Z"
-  },
-  {
-    "id": "individual-1779433563834",
-    "name": "naman sharma",
-    "email": "nama@yopmail.com",
-    "role": "individual",
-    "accountType": "individual",
-    "permissions": [
-      "self"
-    ],
-    "isActive": true,
-    "createdAt": "2026-05-22T07:06:03.834Z",
+    "createdAt": "2026-06-01T11:15:34.660Z",
     "organizationName": "Individual Workspace",
     "createdFromSignup": true,
     "policyAcceptance": {
       "version": "2026.04.01",
-      "acceptedAt": "2026-05-22T07:08:44.469Z",
+      "acceptedAt": "2026-06-01T11:15:35.217Z",
       "via": "login",
       "requiredPolicyIds": [
         "terms",
@@ -1181,15 +549,599 @@
       "planId": "workspace-trial",
       "planName": "docrud Workspace Trial",
       "status": "trial",
-      "startedAt": "2026-05-22T07:06:03.834Z",
+      "startedAt": "2026-06-01T11:15:34.660Z",
       "aiTrialLimit": 6,
       "aiTrialUsed": 0,
       "monthlyAiCredits": 0,
       "remainingAiCredits": 0,
-      "aiCreditsResetAt": "2026-06-21T07:06:03.834Z"
+      "aiCreditsResetAt": "2026-07-01T11:15:34.660Z"
     },
-    "passwordHash": "bd32a75c046affc9e1baa8ab89b8ba8b4ea1c7b01d291d4b8eaa3166d189f09148ce2f585a84462c7aaec5d17033c14c40768210930a91c4d6d4e7cf1c6fe0d3",
-    "passwordSalt": "f6f94b5765c17a6a2befbe4bd64e61d8",
-    "lastLogin": "2026-05-22T07:08:44.469Z"
+    "passwordHash": "ece01e138567de6374b12379964a0bd94fa728baaa8f281817732c2b7c783f5032cebf73163083b6d19a574af0d661d33863ee67ccb968e60d1f1786198889f2",
+    "passwordSalt": "4d55cf4334948b753795bc8b4c51f0d8",
+    "lastLogin": "2026-06-01T11:15:35.216Z"
+  },
+  {
+    "id": "individual-1780315878841",
+    "name": "mahesh",
+    "email": "mahesh101@yopmail.com",
+    "role": "individual",
+    "accountType": "individual",
+    "permissions": [
+      "self"
+    ],
+    "isActive": true,
+    "createdAt": "2026-06-01T12:11:18.841Z",
+    "organizationName": "Individual Workspace",
+    "createdFromSignup": true,
+    "policyAcceptance": {
+      "version": "2026.04.01",
+      "acceptedAt": "2026-06-01T12:11:19.037Z",
+      "via": "login",
+      "requiredPolicyIds": [
+        "terms",
+        "privacy",
+        "refund-cancellation",
+        "generated-document-policy",
+        "shared-document-policy",
+        "signed-document-policy",
+        "encrypted-document-policy",
+        "data-privacy-policy",
+        "documents-legality"
+      ]
+    },
+    "subscription": {
+      "planId": "workspace-trial",
+      "planName": "docrud Workspace Trial",
+      "status": "trial",
+      "startedAt": "2026-06-01T12:11:18.841Z",
+      "aiTrialLimit": 6,
+      "aiTrialUsed": 0,
+      "monthlyAiCredits": 0,
+      "remainingAiCredits": 0,
+      "aiCreditsResetAt": "2026-07-01T12:11:18.841Z"
+    },
+    "passwordHash": "440bb64fbb055f7c7bdc5e190436e64a25b7c660c6f97dfa3a389e8a8d714048462943eb01b991bf7f12d1dc359a7ffe59694221c580cefd9a9d306d264ca87b",
+    "passwordSalt": "5a57a2c7735cc05fa27e8fd9e4fb64ef",
+    "lastLogin": "2026-06-01T12:11:19.037Z",
+    "referralCode": "D461D4AD72"
+  },
+  {
+    "id": "individual-1780316793995",
+    "name": "simran",
+    "email": "simran@yopmail.com",
+    "role": "individual",
+    "accountType": "individual",
+    "permissions": [
+      "self"
+    ],
+    "isActive": true,
+    "createdAt": "2026-06-01T12:26:33.995Z",
+    "organizationName": "Individual Workspace",
+    "createdFromSignup": true,
+    "policyAcceptance": {
+      "version": "2026.04.01",
+      "acceptedAt": "2026-06-01T12:26:34.576Z",
+      "via": "login",
+      "requiredPolicyIds": [
+        "terms",
+        "privacy",
+        "refund-cancellation",
+        "generated-document-policy",
+        "shared-document-policy",
+        "signed-document-policy",
+        "encrypted-document-policy",
+        "data-privacy-policy",
+        "documents-legality"
+      ]
+    },
+    "subscription": {
+      "planId": "workspace-trial",
+      "planName": "docrud Workspace Trial",
+      "status": "trial",
+      "startedAt": "2026-06-01T12:26:33.995Z",
+      "aiTrialLimit": 6,
+      "aiTrialUsed": 0,
+      "monthlyAiCredits": 0,
+      "remainingAiCredits": 0,
+      "aiCreditsResetAt": "2026-07-01T12:26:33.995Z"
+    },
+    "passwordHash": "9d7acea5aa0e0206687f26b21f908f35759d44ddaa33bcbec9d10e838816a8243a832cb895ee942f391da3169a1c6836f79b93dc94f62e1bb7f392ce3a9b395f",
+    "passwordSalt": "644fcefcb9ba55aa6d24f7c4a936f336",
+    "lastLogin": "2026-06-01T12:26:34.576Z"
+  },
+  {
+    "id": "individual-1780332648784",
+    "name": "arjun tendulkar",
+    "email": "arjunt@yopmail.com",
+    "role": "individual",
+    "accountType": "individual",
+    "permissions": [
+      "self"
+    ],
+    "isActive": true,
+    "createdAt": "2026-06-01T16:50:48.784Z",
+    "organizationName": "Individual Workspace",
+    "createdFromSignup": true,
+    "policyAcceptance": {
+      "version": "2026.04.01",
+      "acceptedAt": "2026-06-01T16:50:48.988Z",
+      "via": "login",
+      "requiredPolicyIds": [
+        "terms",
+        "privacy",
+        "refund-cancellation",
+        "generated-document-policy",
+        "shared-document-policy",
+        "signed-document-policy",
+        "encrypted-document-policy",
+        "data-privacy-policy",
+        "documents-legality"
+      ]
+    },
+    "subscription": {
+      "planId": "workspace-trial",
+      "planName": "docrud Workspace Trial",
+      "status": "trial",
+      "startedAt": "2026-06-01T16:50:48.784Z",
+      "aiTrialLimit": 6,
+      "aiTrialUsed": 0,
+      "monthlyAiCredits": 0,
+      "remainingAiCredits": 0,
+      "aiCreditsResetAt": "2026-07-01T16:50:48.784Z"
+    },
+    "passwordHash": "6d5b1c5e37677002511c25a423f45ff2bfea5f974ed72d5c446f0a6e0ca1cb674ab25eaf29eab36919461e9a2be0f1d3aff0ed4fc8ba2759475da490e7edd7ed",
+    "passwordSalt": "b3f67d2a1a4bdfb6945fc22fd41aba40",
+    "lastLogin": "2026-06-01T16:50:48.988Z"
+  },
+  {
+    "id": "individual-1780382619136",
+    "name": "soham",
+    "email": "soham@yopmail.com",
+    "role": "individual",
+    "accountType": "individual",
+    "permissions": [
+      "self"
+    ],
+    "isActive": true,
+    "createdAt": "2026-06-02T06:43:39.136Z",
+    "organizationName": "Individual Workspace",
+    "createdFromSignup": true,
+    "policyAcceptance": {
+      "version": "2026.04.01",
+      "acceptedAt": "2026-06-02T06:43:39.327Z",
+      "via": "login",
+      "requiredPolicyIds": [
+        "terms",
+        "privacy",
+        "refund-cancellation",
+        "generated-document-policy",
+        "shared-document-policy",
+        "signed-document-policy",
+        "encrypted-document-policy",
+        "data-privacy-policy",
+        "documents-legality"
+      ]
+    },
+    "subscription": {
+      "planId": "workspace-trial",
+      "planName": "docrud Workspace Trial",
+      "status": "trial",
+      "startedAt": "2026-06-02T06:43:39.136Z",
+      "aiTrialLimit": 6,
+      "aiTrialUsed": 0,
+      "monthlyAiCredits": 0,
+      "remainingAiCredits": 0,
+      "aiCreditsResetAt": "2026-07-02T06:43:39.136Z"
+    },
+    "passwordHash": "18a772a96bdfff01b591347e0d005274925829d7b9a7e547a359c758db9f74ff1c626679490ffd1691bcdff4bd371eac5ef2088298a93841d2c6c0e1c639835d",
+    "passwordSalt": "01b8da2fc804402c8c431891534402be",
+    "lastLogin": "2026-06-02T06:43:39.327Z",
+    "referralCode": "E4DC69AE9B"
+  },
+  {
+    "id": "individual-1780384080554",
+    "name": "jeevan",
+    "email": "jeevan@yopmail.com",
+    "role": "individual",
+    "accountType": "individual",
+    "permissions": [
+      "self"
+    ],
+    "isActive": true,
+    "createdAt": "2026-06-02T07:08:00.554Z",
+    "organizationName": "Individual Workspace",
+    "createdFromSignup": true,
+    "policyAcceptance": {
+      "version": "2026.04.01",
+      "acceptedAt": "2026-06-02T07:08:00.681Z",
+      "via": "login",
+      "requiredPolicyIds": [
+        "terms",
+        "privacy",
+        "refund-cancellation",
+        "generated-document-policy",
+        "shared-document-policy",
+        "signed-document-policy",
+        "encrypted-document-policy",
+        "data-privacy-policy",
+        "documents-legality"
+      ]
+    },
+    "subscription": {
+      "planId": "workspace-trial",
+      "planName": "docrud Workspace Trial",
+      "status": "trial",
+      "startedAt": "2026-06-02T07:08:00.554Z",
+      "aiTrialLimit": 6,
+      "aiTrialUsed": 0,
+      "monthlyAiCredits": 0,
+      "remainingAiCredits": 0,
+      "aiCreditsResetAt": "2026-07-02T07:08:00.554Z"
+    },
+    "passwordHash": "c9e600acc0c324ea1a5d1be0b62f4e7827751453bd6cc217e4295b845fab3e4f1a52879a12947cef84c0321b90dc707addb639193712ebcf0450b10ee78ffa95",
+    "passwordSalt": "978a8d815bf1b99b575b491104527b7e",
+    "lastLogin": "2026-06-02T07:08:00.681Z"
+  },
+  {
+    "id": "individual-1780387880722",
+    "name": "aryan sharma",
+    "email": "aryan@yopmail.com",
+    "role": "individual",
+    "accountType": "individual",
+    "permissions": [
+      "self"
+    ],
+    "isActive": true,
+    "createdAt": "2026-06-02T08:11:20.722Z",
+    "organizationName": "Individual Workspace",
+    "createdFromSignup": true,
+    "policyAcceptance": {
+      "version": "2026.04.01",
+      "acceptedAt": "2026-06-02T08:11:21.210Z",
+      "via": "login",
+      "requiredPolicyIds": [
+        "terms",
+        "privacy",
+        "refund-cancellation",
+        "generated-document-policy",
+        "shared-document-policy",
+        "signed-document-policy",
+        "encrypted-document-policy",
+        "data-privacy-policy",
+        "documents-legality"
+      ]
+    },
+    "subscription": {
+      "planId": "workspace-trial",
+      "planName": "docrud Workspace Trial",
+      "status": "trial",
+      "startedAt": "2026-06-02T08:11:20.722Z",
+      "aiTrialLimit": 6,
+      "aiTrialUsed": 0,
+      "monthlyAiCredits": 0,
+      "remainingAiCredits": 0,
+      "aiCreditsResetAt": "2026-07-02T08:11:20.722Z"
+    },
+    "passwordHash": "bee6af794e7a436b2bad42327a7a0e1b59bfa679df532add532279a71f620c33162728e3f1d36eb3a8845ee9c94768c47f847fe207e4ebc11dad52cb920c48f9",
+    "passwordSalt": "f24b481902f4eafb5706e7a9dd34272b",
+    "lastLogin": "2026-06-02T08:11:21.210Z",
+    "referralCode": "A153FB8679"
+  },
+  {
+    "id": "individual-1780402063179",
+    "name": "sakshi",
+    "email": "sakshi@yopmail.com",
+    "role": "individual",
+    "accountType": "individual",
+    "permissions": [
+      "self"
+    ],
+    "isActive": true,
+    "createdAt": "2026-06-02T12:07:43.179Z",
+    "organizationName": "Individual Workspace",
+    "createdFromSignup": true,
+    "policyAcceptance": {
+      "version": "2026.04.01",
+      "acceptedAt": "2026-06-02T12:07:43.876Z",
+      "via": "login",
+      "requiredPolicyIds": [
+        "terms",
+        "privacy",
+        "refund-cancellation",
+        "generated-document-policy",
+        "shared-document-policy",
+        "signed-document-policy",
+        "encrypted-document-policy",
+        "data-privacy-policy",
+        "documents-legality"
+      ]
+    },
+    "subscription": {
+      "planId": "workspace-trial",
+      "planName": "docrud Workspace Trial",
+      "status": "trial",
+      "startedAt": "2026-06-02T12:07:43.179Z",
+      "aiTrialLimit": 6,
+      "aiTrialUsed": 0,
+      "monthlyAiCredits": 0,
+      "remainingAiCredits": 0,
+      "aiCreditsResetAt": "2026-07-02T12:07:43.179Z"
+    },
+    "passwordHash": "51d9a6adbeb0b5b802a2481655c17d70f3483bcdfc3bf4231da6f6127f78e1f140f1bc442c3d3759faca7ac2fdb6358427f4ab0105445e88f9e576f67c7a585f",
+    "passwordSalt": "2ec07755629e5ea869692fd1542c4759",
+    "lastLogin": "2026-06-02T12:07:43.876Z"
+  },
+  {
+    "id": "individual-1780403102793",
+    "name": "mohan singh",
+    "email": "mohans@yopmail.com",
+    "role": "individual",
+    "accountType": "individual",
+    "permissions": [
+      "self"
+    ],
+    "isActive": true,
+    "createdAt": "2026-06-02T12:25:02.793Z",
+    "organizationName": "Individual Workspace",
+    "createdFromSignup": true,
+    "policyAcceptance": {
+      "version": "2026.04.01",
+      "acceptedAt": "2026-06-02T12:25:03.014Z",
+      "via": "login",
+      "requiredPolicyIds": [
+        "terms",
+        "privacy",
+        "refund-cancellation",
+        "generated-document-policy",
+        "shared-document-policy",
+        "signed-document-policy",
+        "encrypted-document-policy",
+        "data-privacy-policy",
+        "documents-legality"
+      ]
+    },
+    "subscription": {
+      "planId": "workspace-trial",
+      "planName": "docrud Workspace Trial",
+      "status": "trial",
+      "startedAt": "2026-06-02T12:25:02.793Z",
+      "aiTrialLimit": 6,
+      "aiTrialUsed": 1,
+      "monthlyAiCredits": 0,
+      "remainingAiCredits": 0,
+      "aiCreditsResetAt": "2026-07-02T12:25:02.793Z"
+    },
+    "passwordHash": "a4bb61de9512c8c3c9310b262d45b6e820e7ab241530e73f1a035f52b7c82d14430318f8596facf9cf020aea639ca782f1fda863fc85cde40ea2b389d61c4706",
+    "passwordSalt": "545d9f02229dc2c7f49c89c281676593",
+    "lastLogin": "2026-06-02T12:25:03.014Z",
+    "referralCode": "6C2C6B145B",
+    "lastActivityAt": "2026-06-05T06:42:50.608Z"
+  },
+  {
+    "id": "individual-1780404674760",
+    "name": "shruti",
+    "email": "shruti@yopmail.com",
+    "role": "individual",
+    "accountType": "individual",
+    "permissions": [
+      "self"
+    ],
+    "isActive": true,
+    "createdAt": "2026-06-02T12:51:14.760Z",
+    "organizationName": "Individual Workspace",
+    "createdFromSignup": true,
+    "policyAcceptance": {
+      "version": "2026.04.01",
+      "acceptedAt": "2026-06-06T10:17:31.422Z",
+      "via": "login",
+      "requiredPolicyIds": [
+        "terms",
+        "privacy",
+        "refund-cancellation",
+        "generated-document-policy",
+        "shared-document-policy",
+        "signed-document-policy",
+        "encrypted-document-policy",
+        "data-privacy-policy",
+        "documents-legality"
+      ]
+    },
+    "subscription": {
+      "planId": "workspace-trial",
+      "planName": "docrud Workspace Trial",
+      "status": "trial",
+      "startedAt": "2026-06-02T12:51:14.760Z",
+      "aiTrialLimit": 6,
+      "aiTrialUsed": 0,
+      "monthlyAiCredits": 0,
+      "remainingAiCredits": 0,
+      "aiCreditsResetAt": "2026-07-02T12:51:14.760Z"
+    },
+    "passwordHash": "5ce80c6ff99f8d60b2ac01452f6bb8db237ddd1c8fbb234064d808632441fa82440f53d6a946ba89a9061af4ec8a36a8d0582478b561529353a5f642deb1c8cd",
+    "passwordSalt": "1ee978f9ee60c94749626c84117cbe46",
+    "lastLogin": "2026-06-06T10:17:31.422Z",
+    "referralCode": "E89ACAF6AC",
+    "referralBonusActivatedAt": "2026-06-02T12:57:41.452Z",
+    "lastActivityAt": "2026-06-09T05:36:42.167Z"
+  },
+  {
+    "id": "individual-1780405061392",
+    "name": "carry",
+    "email": "carry@yopmail.com",
+    "role": "individual",
+    "accountType": "individual",
+    "permissions": [
+      "self"
+    ],
+    "isActive": true,
+    "createdAt": "2026-06-02T12:57:41.392Z",
+    "organizationName": "Individual Workspace",
+    "createdFromSignup": true,
+    "referredByCode": "E89ACAF6AC",
+    "policyAcceptance": {
+      "version": "2026.04.01",
+      "acceptedAt": "2026-06-02T12:57:47.789Z",
+      "via": "login",
+      "requiredPolicyIds": [
+        "terms",
+        "privacy",
+        "refund-cancellation",
+        "generated-document-policy",
+        "shared-document-policy",
+        "signed-document-policy",
+        "encrypted-document-policy",
+        "data-privacy-policy",
+        "documents-legality"
+      ]
+    },
+    "subscription": {
+      "planId": "workspace-trial",
+      "planName": "docrud Workspace Trial",
+      "status": "trial",
+      "startedAt": "2026-06-02T12:57:41.392Z",
+      "aiTrialLimit": 6,
+      "aiTrialUsed": 0,
+      "monthlyAiCredits": 0,
+      "remainingAiCredits": 0,
+      "aiCreditsResetAt": "2026-07-02T12:57:41.392Z"
+    },
+    "passwordHash": "863dc60385b5d8cbfa0835b99b5e9871f56f17eb1bf8b0adc88e27c53446e819aac6cbc85b1a877fe31242a3a6e0c8936513b3c5389557015513ee33f1428982",
+    "passwordSalt": "7abad6c9741d50de2fad4f76e855dccf",
+    "lastLogin": "2026-06-02T12:57:47.789Z"
+  },
+  {
+    "id": "individual-1780405646682",
+    "name": "virat",
+    "email": "virat@yopmail.com",
+    "role": "individual",
+    "accountType": "individual",
+    "permissions": [
+      "self"
+    ],
+    "isActive": true,
+    "createdAt": "2026-06-02T13:07:26.682Z",
+    "organizationName": "Individual Workspace",
+    "createdFromSignup": true,
+    "policyAcceptance": {
+      "version": "2026.04.01",
+      "acceptedAt": "2026-06-02T13:07:26.886Z",
+      "via": "login",
+      "requiredPolicyIds": [
+        "terms",
+        "privacy",
+        "refund-cancellation",
+        "generated-document-policy",
+        "shared-document-policy",
+        "signed-document-policy",
+        "encrypted-document-policy",
+        "data-privacy-policy",
+        "documents-legality"
+      ]
+    },
+    "subscription": {
+      "planId": "workspace-trial",
+      "planName": "docrud Workspace Trial",
+      "status": "trial",
+      "startedAt": "2026-06-02T13:07:26.682Z",
+      "aiTrialLimit": 6,
+      "aiTrialUsed": 0,
+      "monthlyAiCredits": 0,
+      "remainingAiCredits": 0,
+      "aiCreditsResetAt": "2026-07-02T13:07:26.682Z"
+    },
+    "passwordHash": "e3925f5de608fad2eafef815511b473e5152ffbc83712ad6fa3d4e1e9fa66ef46a6d5bcfdc12bbcb93cacb4de7290c4495003b630fe1246ef091a94ce3db30a3",
+    "passwordSalt": "316dc93f61c8d45792431f7d01759397",
+    "lastLogin": "2026-06-02T13:07:26.886Z",
+    "referralCode": "AD671AD3A2"
+  },
+  {
+    "id": "individual-1780663284582",
+    "name": "mihir sharma",
+    "email": "mihir@yopmail.com",
+    "role": "individual",
+    "accountType": "individual",
+    "permissions": [
+      "self"
+    ],
+    "isActive": true,
+    "createdAt": "2026-06-05T12:41:24.582Z",
+    "organizationName": "Individual Workspace",
+    "createdFromSignup": true,
+    "policyAcceptance": {
+      "version": "2026.04.01",
+      "acceptedAt": "2026-06-05T12:46:01.456Z",
+      "via": "login",
+      "requiredPolicyIds": [
+        "terms",
+        "privacy",
+        "refund-cancellation",
+        "generated-document-policy",
+        "shared-document-policy",
+        "signed-document-policy",
+        "encrypted-document-policy",
+        "data-privacy-policy",
+        "documents-legality"
+      ]
+    },
+    "subscription": {
+      "planId": "workspace-trial",
+      "planName": "docrud Workspace Trial",
+      "status": "trial",
+      "startedAt": "2026-06-05T12:41:24.582Z",
+      "aiTrialLimit": 6,
+      "aiTrialUsed": 0,
+      "monthlyAiCredits": 0,
+      "remainingAiCredits": 0,
+      "aiCreditsResetAt": "2026-07-05T12:41:24.582Z"
+    },
+    "passwordHash": "6635be10b16a412919dd9b25211c338881759bfb5fe6e10a6899a4995f77d48b3b4b2e340fd2fc602392ea336c96a9a3a2b005e981a393b831ac20d229f136ad",
+    "passwordSalt": "948cfc94cb3d0490ac28a754f0edcbf7",
+    "lastLogin": "2026-06-05T12:46:01.456Z",
+    "lastActivityAt": "2026-06-05T17:09:51.652Z"
+  },
+  {
+    "id": "individual-1780742115806",
+    "name": "vikram singh",
+    "email": "vikram@yopmail.com",
+    "role": "individual",
+    "accountType": "individual",
+    "permissions": [
+      "self"
+    ],
+    "isActive": true,
+    "createdAt": "2026-06-06T10:35:15.806Z",
+    "organizationName": "Individual Workspace",
+    "createdFromSignup": true,
+    "policyAcceptance": {
+      "version": "2026.04.01",
+      "acceptedAt": "2026-06-06T10:35:16.095Z",
+      "via": "login",
+      "requiredPolicyIds": [
+        "terms",
+        "privacy",
+        "refund-cancellation",
+        "generated-document-policy",
+        "shared-document-policy",
+        "signed-document-policy",
+        "encrypted-document-policy",
+        "data-privacy-policy",
+        "documents-legality"
+      ]
+    },
+    "subscription": {
+      "planId": "workspace-trial",
+      "planName": "docrud Workspace Trial",
+      "status": "trial",
+      "startedAt": "2026-06-06T10:35:15.806Z",
+      "aiTrialLimit": 6,
+      "aiTrialUsed": 0,
+      "monthlyAiCredits": 0,
+      "remainingAiCredits": 0,
+      "aiCreditsResetAt": "2026-07-06T10:35:15.806Z"
+    },
+    "passwordHash": "2da1389e2d6178278711be28b574bab5904d0d5c925cd6bad3cc088c3ff249d96e33f824d15ae19ef750c39411464ea073724d17810b3f856fd1b2777ab029c2",
+    "passwordSalt": "1fc312cdf2ab887425e98856b5cbb3a5",
+    "lastLogin": "2026-06-06T10:35:16.095Z",
+    "lastActivityAt": "2026-06-08T15:58:37.663Z"
   }
 ]

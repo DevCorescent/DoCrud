@@ -5,8 +5,9 @@ import { User } from '@/types/document';
 import { normalizeEmail, verifyPassword } from '@/lib/server/security';
 import { applyRoadmapPromotionToSubscription, getDefaultPublicPlan, getEffectiveSaasPlanForUser, isSubscriptionPeriodExpired } from '@/lib/server/saas-plans';
 import { buildPolicyAcceptance } from '@/lib/policy-consent';
-import { getAuthSettingsSync } from '@/lib/server/settings';
-import { getStoredUsers, saveStoredUsers, type StoredUser } from '@/lib/server/users';
+import { getAuthSettings, getAuthSettingsSync } from '@/lib/server/settings';
+import { getStoredUsers, getStoredUserByEmail, saveStoredUsers, upsertStoredUser, type StoredUser } from '@/lib/server/users';
+import { getProfileData, updateProfileData } from '@/lib/server/user-profiles';
 
 export type { StoredUser };
 export { getStoredUsers, saveStoredUsers };
@@ -28,35 +29,41 @@ function getGoogleProviderConfig() {
   if (!settings.googleEnabled || !settings.googleClientId || !settings.googleClientSecret) {
     return null;
   }
+  return { clientId: settings.googleClientId, clientSecret: settings.googleClientSecret };
+}
 
-  return {
-    clientId: settings.googleClientId,
-    clientSecret: settings.googleClientSecret,
-  };
+/** Warm the auth-settings cache from DB so getAuthSettingsSync() returns accurate values. */
+async function warmAuthSettingsCache() {
+  try {
+    await getAuthSettings();
+  } catch {
+    // Non-fatal — cached defaults will be used
+  }
 }
 
 async function upsertGoogleUser(profile: { email: string; name?: string | null }) {
   const normalizedEmail = normalizeEmail(profile.email);
-  const users = await getStoredUsers();
-  const existing = users.find((entry) => entry.email === normalizedEmail);
+  const existing = await getStoredUserByEmail(normalizedEmail);
   const now = new Date().toISOString();
 
   if (existing) {
-    const updatedUsers = users.map((entry) =>
-      entry.id === existing.id
-        ? {
-            ...entry,
-            name: profile.name?.trim() || entry.name,
-            lastLogin: now,
-            isActive: true,
-            policyAcceptance: buildPolicyAcceptance('login'),
-            subscription: applyRoadmapPromotionToSubscription(entry.subscription, now),
-          }
-        : entry,
-    );
-    await saveStoredUsers(updatedUsers);
-    const refreshedUser = updatedUsers.find((entry) => entry.id === existing.id) || existing;
-    const { passwordHash, passwordSalt, ...safeUser } = refreshedUser;
+    const updated: StoredUser = {
+      ...existing,
+      name: profile.name?.trim() || existing.name,
+      lastLogin: now,
+      isActive: true,
+      policyAcceptance: buildPolicyAcceptance('login'),
+      subscription: applyRoadmapPromotionToSubscription(existing.subscription, now),
+    };
+    await upsertStoredUser(updated);
+
+    // Ensure existing Google users are also marked email-verified (idempotent)
+    await updateProfileData(existing.id, {
+      emailVerified: true,
+      emailVerifiedAt: now,
+    }).catch(() => { /* non-fatal */ });
+
+    const { passwordHash, passwordSalt, ...safeUser } = updated;
     return safeUser;
   }
 
@@ -84,7 +91,14 @@ async function upsertGoogleUser(profile: { email: string; name?: string | null }
       : undefined,
   };
 
-  await saveStoredUsers([...users, createdUser]);
+  await upsertStoredUser(createdUser);
+
+  // Google has already verified the email address — mark it verified immediately
+  await updateProfileData(createdUser.id, {
+    emailVerified: true,
+    emailVerifiedAt: now,
+  }).catch(() => { /* non-fatal */ });
+
   const { passwordHash, passwordSalt, ...safeUser } = createdUser;
   return safeUser;
 }
@@ -130,25 +144,21 @@ export async function authenticateUser(identifier: string, password: string, pol
   const isDeactivated = user.isActive === false;
   const now = new Date().toISOString();
 
-  const updatedUsers = users.map((entry) =>
-    entry.id === user.id
-      ? {
-          ...entry,
-          isActive: true,                           // always re-enable on login
-          // Clear deactivation metadata
-          ...(isDeactivated && {
-            deactivatedAt: undefined,
-            deactivationDeadline: undefined,
-            deactivationWarningEmailSentAt: undefined,
-            pendingDeletion: false,
-          }),
-          lastLogin: now,
-          subscription: applyRoadmapPromotionToSubscription(entry.subscription, now),
-          policyAcceptance: buildPolicyAcceptance('login'),
-        }
-      : entry
-  );
-  await saveStoredUsers(updatedUsers);
+  const updatedUser: StoredUser = {
+    ...user,
+    isActive: true,                           // always re-enable on login
+    // Clear deactivation metadata
+    ...(isDeactivated && {
+      deactivatedAt: undefined,
+      deactivationDeadline: undefined,
+      deactivationWarningEmailSentAt: undefined,
+      pendingDeletion: false,
+    }),
+    lastLogin: now,
+    subscription: applyRoadmapPromotionToSubscription(user.subscription, now),
+    policyAcceptance: buildPolicyAcceptance('login'),
+  };
+  await upsertStoredUser(updatedUser);
 
   // Fire reactivation email non-blocking
   if (isDeactivated) {
@@ -159,8 +169,7 @@ export async function authenticateUser(identifier: string, password: string, pol
       .catch(() => {});
   }
 
-  const refreshedUser = updatedUsers.find((entry) => entry.id === user.id) || user;
-  const { passwordHash, passwordSalt, ...safeUser } = refreshedUser;
+  const { passwordHash, passwordSalt, ...safeUser } = updatedUser;
   return {
     ...safeUser,
     lastLogin: now,
@@ -220,10 +229,12 @@ export function buildAuthOptions(): NextAuthOptions {
     async jwt({ token, user }) {
       const lookupEmail = normalizeEmail(String(user?.email || token.email || ''));
       if (lookupEmail) {
-        const users = await getStoredUsers();
-        const storedUser = users.find((entry) => entry.email === lookupEmail);
+        const storedUser = await getStoredUserByEmail(lookupEmail);
         if (storedUser) {
-          const plan = await getEffectiveSaasPlanForUser(storedUser);
+          const [plan, profile] = await Promise.all([
+            getEffectiveSaasPlanForUser(storedUser),
+            getProfileData(storedUser.id).catch(() => null),
+          ]);
           const expired = isSubscriptionPeriodExpired(storedUser.subscription);
           const suspended = Boolean(storedUser.safety?.suspendedUntil && new Date(storedUser.safety.suspendedUntil).getTime() > Date.now());
           const disabled = storedUser.isActive === false;
@@ -238,6 +249,10 @@ export function buildAuthOptions(): NextAuthOptions {
           token.accountType = storedUser.accountType;
           token.workspaceAccessMode = storedUser.workspaceAccessMode;
           token.boardRoomIds = storedUser.boardRoomIds || [];
+          // Non-individual accounts (admin, client, employee) are always considered verified
+          token.emailVerified = storedUser.accountType !== 'individual'
+            ? true
+            : profile?.emailVerified === true;
         }
       } else if (user) {
         const plan = await getEffectiveSaasPlanForUser(user);
@@ -255,6 +270,8 @@ export function buildAuthOptions(): NextAuthOptions {
         token.accountType = user.accountType;
         token.workspaceAccessMode = user.workspaceAccessMode;
         token.boardRoomIds = user.boardRoomIds || [];
+        // emailVerified will be populated on next token refresh from profile
+        token.emailVerified = user.accountType !== 'individual' ? true : false;
       }
 
       return token;
@@ -270,6 +287,7 @@ export function buildAuthOptions(): NextAuthOptions {
         session.user.accountType = token.accountType === 'individual' ? 'individual' : 'business';
         session.user.workspaceAccessMode = token.workspaceAccessMode === 'board_room_only' ? 'board_room_only' : 'standard';
         session.user.boardRoomIds = Array.isArray(token.boardRoomIds) ? token.boardRoomIds.map(String) : [];
+        session.user.emailVerified = token.emailVerified === true;
       }
 
       return session;
@@ -283,6 +301,9 @@ export function buildAuthOptions(): NextAuthOptions {
 
 export const authOptions: NextAuthOptions = buildAuthOptions();
 
+// Warm the cache immediately so Google OAuth config from DB is reflected on the first request.
+warmAuthSettingsCache();
+
 export function getAuthSession() {
-  return getServerSession(buildAuthOptions());
+  return getServerSession(authOptions);
 }

@@ -3,6 +3,8 @@ import { getAuthSession, getStoredUsers } from '@/lib/server/auth';
 import { compactDashboard, compactHistory, generateAiText, getAiModelName, isAiConfigured, normalizeAiList, normalizeAiText, parseStructuredJson } from '@/lib/server/ai';
 import { buildDashboardMetrics } from '@/lib/server/dashboard';
 import { getHistoryEntries } from '@/lib/server/history';
+import { getDbPool } from '@/lib/server/database';
+import { selectHistoryRowsForUser } from '@/lib/server/db/history-rows';
 import { consumeAiUsageByEmail, getAiEntitlementSnapshot } from '@/lib/server/saas';
 
 export const dynamic = 'force-dynamic';
@@ -35,7 +37,11 @@ export async function GET() {
       return NextResponse.json({ error: 'AI is not configured. Add GROQ_API_KEY to enable AI features.' }, { status: 503 });
     }
 
-    const history = getVisibleHistory(await getHistoryEntries(), session);
+    const userEmail = session.user.email || '';
+    const userRole = session.user.role;
+    const history = getDbPool()
+      ? await selectHistoryRowsForUser({ role: userRole, email: userEmail, orgId: session.user.id })
+      : getVisibleHistory(await getHistoryEntries(), session);
     const dashboard = buildDashboardMetrics(history);
     const signedDocuments = dashboard.documentSummary.filter((item) => item.signCount > 0).length;
     const pendingFeedback = dashboard.documentSummary.reduce((total, item) => total + (item.pendingFeedbackCount || 0), 0);

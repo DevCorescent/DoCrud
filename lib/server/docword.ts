@@ -1,6 +1,14 @@
 import { randomBytes } from 'crypto';
 import { DocWordAccessGroup, DocWordBlock, DocWordDocument, DocWordDocumentVersion, DocWordGroupMember, DocWordSharedAccess } from '@/types/document';
 import { docwordDocumentsPath, readJsonFile, writeJsonFile } from '@/lib/server/storage';
+import { getDbPool } from '@/lib/server/database';
+import {
+  deleteDocWordRow,
+  selectAllDocWordRows,
+  selectDocWordRowById,
+  selectDocWordRowByShareToken,
+  upsertDocWordRow,
+} from '@/lib/server/db/docword-rows';
 
 type DocWordActor =
   | { type: 'user'; userId?: string; email?: string }
@@ -188,6 +196,10 @@ export function normalizeDocWordDocument(input: Partial<DocWordDocument>): DocWo
 }
 
 export async function getDocWordDocuments() {
+  if (getDbPool()) {
+    const records = await selectAllDocWordRows();
+    return records.map(normalizeDocWordDocument);
+  }
   const records = await readJsonFile<DocWordDocument[]>(docwordDocumentsPath, []);
   const normalized = records.map(normalizeDocWordDocument);
   if (JSON.stringify(records) !== JSON.stringify(normalized)) {
@@ -250,7 +262,6 @@ export async function createDocWordDocument(
   actor: DocWordActor,
   input?: Partial<DocWordDocument>,
 ) {
-  const records = await getDocWordDocuments();
   const now = new Date().toISOString();
   const document = normalizeDocWordDocument({
     ...input,
@@ -262,6 +273,11 @@ export async function createDocWordDocument(
     versions: [],
     sharedAccess: [],
   });
+  if (getDbPool()) {
+    await upsertDocWordRow(document);
+    return document;
+  }
+  const records = await getDocWordDocuments();
   await saveDocWordDocuments([document, ...records]);
   return document;
 }
@@ -272,9 +288,13 @@ export async function updateDocWordDocument(
   updates: Partial<DocWordDocument>,
   source: DocWordDocumentVersion['source'] = 'manual',
 ) {
-  const records = await getDocWordDocuments();
-  const current = records.find((document) => document.id === id && actorCanEditDocument(document, actor));
-  if (!current) {
+  const usingDb = Boolean(getDbPool());
+  const records = usingDb ? [] : await getDocWordDocuments();
+  const rawCurrent = usingDb
+    ? await selectDocWordRowById(id)
+    : records.find((document) => document.id === id) || null;
+  const current = rawCurrent ? normalizeDocWordDocument(rawCurrent) : null;
+  if (!current || !actorCanEditDocument(current, actor)) {
     throw new Error('Document not found.');
   }
 
@@ -310,11 +330,23 @@ export async function updateDocWordDocument(
     versions: nextVersions,
   };
 
-  await saveDocWordDocuments(records.map((document) => (document.id === id ? nextDocument : document)));
+  if (usingDb) {
+    await upsertDocWordRow(nextDocument);
+  } else {
+    await saveDocWordDocuments(records.map((document) => (document.id === id ? nextDocument : document)));
+  }
   return nextDocument;
 }
 
 export async function deleteDocWordDocument(id: string, actor: DocWordActor) {
+  if (getDbPool()) {
+    const current = await selectDocWordRowById(id);
+    if (!current || !actorOwnsDocument(current, actor)) {
+      throw new Error('Document not found.');
+    }
+    await deleteDocWordRow(id);
+    return;
+  }
   const records = await getDocWordDocuments();
   const exists = records.find((document) => document.id === id && actorOwnsDocument(document, actor));
   if (!exists) {
@@ -324,11 +356,21 @@ export async function deleteDocWordDocument(id: string, actor: DocWordActor) {
 }
 
 export async function getPublicDocWordDocument(token: string) {
+  if (getDbPool()) {
+    const row = await selectDocWordRowByShareToken(token);
+    if (!row) return null;
+    const normalized = normalizeDocWordDocument(row);
+    return normalized.shareMode !== 'private' ? normalized : null;
+  }
   const records = await getDocWordDocuments();
   return records.find((document) => document.shareToken === token && document.shareMode !== 'private') || null;
 }
 
 export async function getDocWordDocumentByShareToken(token: string) {
+  if (getDbPool()) {
+    const row = await selectDocWordRowByShareToken(token);
+    return row ? normalizeDocWordDocument(row) : null;
+  }
   const records = await getDocWordDocuments();
   return records.find((document) => document.shareToken === token) || null;
 }
@@ -418,8 +460,12 @@ export async function registerDocWordSharedAccess(
   token: string,
   actor: Extract<DocWordActor, { type: 'user' }>,
 ) {
-  const records = await getDocWordDocuments();
-  const current = records.find((document) => document.shareToken === token && document.shareMode !== 'private');
+  const usingDb = Boolean(getDbPool());
+  const records = usingDb ? [] : await getDocWordDocuments();
+  const rawCurrent = usingDb
+    ? await selectDocWordRowByShareToken(token)
+    : records.find((document) => document.shareToken === token) || null;
+  const current = rawCurrent && rawCurrent.shareMode !== 'private' ? normalizeDocWordDocument(rawCurrent) : null;
   if (!current) {
     throw new Error('Shared document not found.');
   }
@@ -446,7 +492,11 @@ export async function registerDocWordSharedAccess(
     ],
   });
 
-  await saveDocWordDocuments(records.map((document) => (document.id === current.id ? nextDocument : document)));
+  if (usingDb) {
+    await upsertDocWordRow(nextDocument);
+  } else {
+    await saveDocWordDocuments(records.map((document) => (document.id === current.id ? nextDocument : document)));
+  }
   return nextDocument;
 }
 
@@ -455,8 +505,12 @@ export async function updateDocWordDocumentByShareToken(
   updates: Partial<DocWordDocument>,
   source: DocWordDocumentVersion['source'] = 'manual',
 ) {
-  const records = await getDocWordDocuments();
-  const current = records.find((document) => document.shareToken === token);
+  const usingDb = Boolean(getDbPool());
+  const records = usingDb ? [] : await getDocWordDocuments();
+  const rawCurrent = usingDb
+    ? await selectDocWordRowByShareToken(token)
+    : records.find((document) => document.shareToken === token) || null;
+  const current = rawCurrent ? normalizeDocWordDocument(rawCurrent) : null;
   if (!current) {
     throw new Error('Shared document not found.');
   }
@@ -489,7 +543,11 @@ export async function updateDocWordDocumentByShareToken(
       : current.versions || [],
   };
 
-  await saveDocWordDocuments(records.map((document) => (document.id === current.id ? nextDocument : document)));
+  if (usingDb) {
+    await upsertDocWordRow(nextDocument);
+  } else {
+    await saveDocWordDocuments(records.map((document) => (document.id === current.id ? nextDocument : document)));
+  }
   return nextDocument;
 }
 
@@ -498,8 +556,12 @@ export async function joinDocWordGroupByInviteToken(
   inviteToken: string,
   memberInput: { userId: string; name?: string; password: string },
 ) {
-  const records = await getDocWordDocuments();
-  const current = records.find((document) => document.shareToken === documentToken);
+  const usingDb = Boolean(getDbPool());
+  const records = usingDb ? [] : await getDocWordDocuments();
+  const rawCurrent = usingDb
+    ? await selectDocWordRowByShareToken(documentToken)
+    : records.find((document) => document.shareToken === documentToken) || null;
+  const current = rawCurrent ? normalizeDocWordDocument(rawCurrent) : null;
   if (!current) {
     throw new Error('Shared document not found.');
   }
@@ -545,7 +607,11 @@ export async function joinDocWordGroupByInviteToken(
     updatedAt: new Date().toISOString(),
   });
 
-  await saveDocWordDocuments(records.map((document) => (document.id === current.id ? nextDocument : document)));
+  if (usingDb) {
+    await upsertDocWordRow(nextDocument);
+  } else {
+    await saveDocWordDocuments(records.map((document) => (document.id === current.id ? nextDocument : document)));
+  }
 
   return {
     document: nextDocument,

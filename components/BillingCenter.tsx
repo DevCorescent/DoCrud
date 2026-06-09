@@ -25,11 +25,8 @@ type BillingCenterProps = {
   initialPlanId?: string;
 };
 
-const primaryPlanNames = new Set([
-  'docrud Workspace Trial',
-  'docrud Workspace Pro',
-  'Build Your Own Workspace',
-]);
+const INFINITY_MONTHLY_PAISE = 29900;
+const INFINITY_ANNUAL_PAISE  = 249900;
 
 export default function BillingCenter({ initialPlanId }: BillingCenterProps) {
   const router = useRouter();
@@ -38,10 +35,10 @@ export default function BillingCenter({ initialPlanId }: BillingCenterProps) {
   const [referral, setReferral] = useState<{ code: string; link: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [busyPlanId, setBusyPlanId] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [tab, setTab] = useState<'overview' | 'plans' | 'invoices'>('overview');
-  const [planSection, setPlanSection] = useState<'workspace' | 'talent' | 'gigs'>('workspace');
+  const [infinityPeriod, setInfinityPeriod] = useState<'monthly' | 'annual'>('annual');
+  const [infinityBusy, setInfinityBusy] = useState(false);
   const [invoiceQuery, setInvoiceQuery] = useState('');
   const [invoiceStatus, setInvoiceStatus] = useState<'all' | 'paid' | 'created' | 'failed' | 'cancelled'>('all');
   const [invoicePage, setInvoicePage] = useState(1);
@@ -81,55 +78,16 @@ export default function BillingCenter({ initialPlanId }: BillingCenterProps) {
     void loadState();
   }, [loadState]);
 
-  const visiblePlans = useMemo(() => {
-    if (!billing) return [];
-    return billing.availablePlans.filter((plan) => plan.active);
-  }, [billing]);
-
-  const workspacePlans = useMemo(
-    () => visiblePlans.filter((plan) => plan.id.startsWith('workspace-')),
-    [visiblePlans],
-  );
-  const talentPlans = useMemo(
-    () => visiblePlans.filter((plan) => plan.id === 'talent-directory-pass'),
-    [visiblePlans],
-  );
-  const gigsPlans = useMemo(
-    () => visiblePlans.filter((plan) => plan.id === 'gigs-pass'),
-    [visiblePlans],
-  );
-
-  useEffect(() => {
-    const planId = profile?.subscription?.planId || billing?.currentPlan?.id || '';
-    if (planId === 'talent-directory-pass') setPlanSection('talent');
-    else if (planId === 'gigs-pass') setPlanSection('gigs');
-    else setPlanSection('workspace');
-  }, [billing?.currentPlan?.id, profile?.subscription?.planId]);
-
-  const handleCheckout = useCallback(async (planId: string) => {
+  const handleInfinityCheckout = useCallback(async () => {
     try {
-      setBusyPlanId(planId);
+      setInfinityBusy(true);
       setError('');
-      setSuccessMessage('');
-      router.push(`/checkout?plan=${encodeURIComponent(planId)}`);
-    } catch (checkoutError) {
-      setError(checkoutError instanceof Error ? checkoutError.message : 'Unable to complete checkout.');
-      setBusyPlanId('');
+      router.push(`/checkout?plan=docrud-infinity&period=${infinityPeriod}`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Unable to start checkout.');
+      setInfinityBusy(false);
     }
-  }, [router]);
-
-  useEffect(() => {
-    if (!initialPlanId || !billing || busyPlanId) {
-      return;
-    }
-
-    const targetPlan = billing.availablePlans.find((plan) => plan.id === initialPlanId);
-    if (!targetPlan || targetPlan.billingModel === 'free' || targetPlan.billingModel === 'custom') {
-      return;
-    }
-
-    router.replace(`/checkout?plan=${encodeURIComponent(initialPlanId)}`);
-  }, [busyPlanId, initialPlanId, billing, router]);
+  }, [router, infinityPeriod]);
 
   const transactions = billing?.transactions ?? emptyTransactions;
 
@@ -245,33 +203,21 @@ export default function BillingCenter({ initialPlanId }: BillingCenterProps) {
         </CardHeader>
 
         <CardContent className="pt-0">
-          {renewalNeeded || renewalSoon ? (
-            <div className={`mb-4 rounded-2xl border px-4 py-4 backdrop-blur ${renewalNeeded ? 'border-amber-200 bg-amber-50/70' : 'border-sky-200 bg-sky-50/70'}`}>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-slate-950">
-                    {renewalNeeded ? 'Renewal required' : 'Plan ending soon'}
-                  </p>
+          {billing.infinity?.active && billing.infinity.expiresAt ? (
+            (() => {
+              const daysToExpiry = Math.ceil((new Date(billing.infinity.expiresAt).getTime() - Date.now()) / 86400000);
+              return daysToExpiry <= 7 ? (
+                <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50/70 px-4 py-4 backdrop-blur">
+                  <p className="text-sm font-semibold text-slate-950">Infinity renewing soon</p>
                   <p className="mt-1 text-sm text-slate-700">
-                    {renewalNeeded
-                      ? 'Your plan period has ended. Renew or upgrade to restore access and reset limits.'
-                      : `Ends in ${Math.max(0, daysLeft || 0)} day${(daysLeft || 0) === 1 ? '' : 's'}. Renew now to avoid interruption.`}
+                    Your Docrud Infinity subscription expires in {Math.max(0, daysToExpiry)} day{daysToExpiry === 1 ? '' : 's'}. Renew to keep access uninterrupted.
                   </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button
-                    className="rounded-xl bg-slate-950 text-white hover:bg-slate-900"
-                    onClick={() => void handleCheckout(billing.currentPlan?.id || profile.subscription.planId || '')}
-                    disabled={!billing.currentPlan?.id && !profile.subscription.planId}
-                  >
-                    Renew now
-                  </Button>
-                  <Button variant="outline" className="rounded-xl" onClick={() => router.push('/pricing')}>
-                    Upgrade plans
+                  <Button className="mt-3 rounded-xl bg-slate-950 text-white hover:bg-slate-900" onClick={() => setTab('plans')}>
+                    Renew Infinity
                   </Button>
                 </div>
-              </div>
-            </div>
+              ) : null;
+            })()
           ) : null}
 
           <Tabs value={tab} onValueChange={(value) => setTab(value as typeof tab)}>
@@ -308,7 +254,7 @@ export default function BillingCenter({ initialPlanId }: BillingCenterProps) {
                 </div>
               ) : (
                 <Button variant="outline" className="rounded-xl" onClick={() => setTab('plans')}>
-                  Upgrade
+                  {billing.infinity?.active ? 'Manage Infinity' : 'Get Infinity'}
                 </Button>
               )}
             </div>
@@ -373,129 +319,113 @@ export default function BillingCenter({ initialPlanId }: BillingCenterProps) {
               ) : null}
             </TabsContent>
 
-            <TabsContent value="plans" className="mt-4 space-y-3">
-              <div className="flex flex-wrap items-center gap-2">
-                {([
-                  { key: 'workspace' as const, label: 'Workspace' },
-                  { key: 'talent' as const, label: 'Talent Directory' },
-                  { key: 'gigs' as const, label: 'Gigs' },
-                ]).map((item) => (
-                  <button
-                    key={item.key}
-                    type="button"
-                    onClick={() => setPlanSection(item.key)}
-                    className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
-                      planSection === item.key
-                        ? 'border-slate-900 bg-slate-950 text-white'
-                        : 'border-slate-200 bg-white/70 text-slate-700 hover:bg-white'
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-
-              <div className="grid gap-3 lg:grid-cols-3">
-                {(planSection === 'workspace' ? workspacePlans : planSection === 'talent' ? talentPlans : gigsPlans).map((plan) => {
-                  const isCurrent = plan.id === billing.currentPlan?.id;
-                  const canRenewCurrent = isCurrent && renewalNeeded && plan.billingModel !== 'free';
-                  const primaryTone = plan.name === 'docrud Workspace Pro'
-                    ? 'bg-slate-950 text-white hover:bg-slate-900'
-                    : 'bg-white/80 text-slate-950 hover:bg-white';
-
-                  return (
-                    <div key={plan.id} className="cloud-panel rounded-2xl p-5">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-slate-950">{plan.name}</p>
-                          <p className="mt-1 text-sm text-slate-600">{plan.priceLabel}</p>
-                        </div>
-                        {isCurrent ? (
-                          <span className="rounded-full border border-emerald-200 bg-emerald-50/70 px-3 py-1 text-xs font-medium text-emerald-800 backdrop-blur">
-                            Current
-                          </span>
-                        ) : null}
+            <TabsContent value="plans" className="mt-4 space-y-4">
+              {/* Infinity status card (if active) */}
+              {billing.infinity?.active ? (
+                <div className="cloud-panel rounded-2xl p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-amber-500" />
+                        <p className="text-sm font-semibold text-slate-950">Docrud Infinity</p>
+                        <span className="rounded-full border border-emerald-200 bg-emerald-50/70 px-2.5 py-0.5 text-xs font-medium text-emerald-800">Active</span>
                       </div>
-
-                      <div className="mt-4 grid gap-2 text-sm text-slate-700">
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-slate-600">Generations</span>
-                          <span className="font-semibold text-slate-950">{plan.maxDocumentGenerations}</span>
-                        </div>
-                        {planSection === 'workspace' ? (
-                          <>
-                            <div className="flex items-center justify-between gap-3">
-                              <span className="text-slate-600">Users</span>
-                              <span className="font-semibold text-slate-950">{plan.maxInternalUsers ?? 1}</span>
-                            </div>
-                            <div className="flex items-center justify-between gap-3">
-                              <span className="text-slate-600">Mailbox</span>
-                              <span className="font-semibold text-slate-950">{plan.maxMailboxThreads ?? 0}</span>
-                            </div>
-                            <div className="flex items-center justify-between gap-3">
-                              <span className="text-slate-600">Talent connects</span>
-                              <span className="font-semibold text-slate-950">{plan.maxTalentConnectsPerCycle ?? 0}</span>
-                            </div>
-                            <div className="flex items-center justify-between gap-3">
-                              <span className="text-slate-600">Gig proposals</span>
-                              <span className="font-semibold text-slate-950">{plan.maxGigProposalsPerCycle ?? 0}</span>
-                            </div>
-                          </>
-                        ) : null}
-                        {planSection === 'talent' ? (
-                          <div className="flex items-center justify-between gap-3">
-                            <span className="text-slate-600">Connects</span>
-                            <span className="font-semibold text-slate-950">{plan.maxTalentConnectsPerCycle ?? 0}</span>
-                          </div>
-                        ) : null}
-                        {planSection === 'gigs' ? (
-                          <div className="flex items-center justify-between gap-3">
-                            <span className="text-slate-600">Proposals</span>
-                            <span className="font-semibold text-slate-950">{plan.maxGigProposalsPerCycle ?? 0}</span>
-                          </div>
-                        ) : null}
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-slate-600">AI credits</span>
-                          <span className="font-semibold text-slate-950">{plan.monthlyAiCredits ?? 0}</span>
-                        </div>
-                      </div>
-
-	                      <div className="mt-5 flex flex-wrap items-center gap-2">
-	                        <Button
-	                          className={`rounded-xl ${primaryTone}`}
-	                          onClick={() => {
-	                            if (plan.billingModel === 'free') {
-	                              router.push('/pricing');
-	                              return;
-	                            }
-	                            void handleCheckout(plan.id);
-	                          }}
-	                          disabled={busyPlanId === plan.id || (isCurrent && !canRenewCurrent) || plan.billingModel === 'free'}
-	                        >
-	                          {plan.billingModel === 'free'
-	                            ? 'Trial'
-	                            : busyPlanId === plan.id
-	                              ? 'Opening checkout...'
-	                              : isCurrent && !canRenewCurrent
-	                                ? 'Active'
-	                                : isCurrent && canRenewCurrent
-	                                  ? 'Renew'
-	                                : (plan.ctaLabel || 'Upgrade')}
-	                        </Button>
-                        <Button variant="outline" className="rounded-xl" onClick={() => router.push('/pricing')}>
-                          Compare
-                        </Button>
-                      </div>
+                      <p className="mt-1 text-sm text-slate-600">
+                        {billing.infinity.period === 'annual' ? '₹2,499 / year' : '₹299 / month'} · Renews{' '}
+                        {billing.infinity.expiresAt
+                          ? new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium' }).format(new Date(billing.infinity.expiresAt))
+                          : '—'}
+                      </p>
                     </div>
-                  );
-                })}
-              </div>
-
-              {planSection !== 'workspace' ? (
-                <div className="cloud-panel rounded-2xl p-5 text-sm text-slate-700">
-                  Want everything in one place? Upgrade to a Workspace plan to bundle both Talent Directory and Gigs limits together.
+                  </div>
+                  <div className="mt-4 grid gap-2 text-sm">
+                    {[
+                      { label: 'Period', value: billing.infinity.period === 'annual' ? 'Annual' : 'Monthly' },
+                      { label: 'Drive storage', value: '5 GB' },
+                      { label: 'Renewals', value: String(billing.infinity.renewalCount ?? 0) },
+                      { label: 'Purchased', value: billing.infinity.purchasedAt ? new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium' }).format(new Date(billing.infinity.purchasedAt)) : '—' },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="flex items-center justify-between gap-3">
+                        <span className="text-slate-500">{label}</span>
+                        <span className="font-semibold text-slate-950">{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <div className="flex rounded-2xl border border-slate-200 bg-white/60 p-1 text-xs">
+                      {(['monthly', 'annual'] as const).map((p) => (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => setInfinityPeriod(p)}
+                          className={`rounded-xl px-3 py-1.5 font-semibold transition ${infinityPeriod === p ? 'bg-slate-950 text-white' : 'text-slate-600 hover:text-slate-950'}`}
+                        >
+                          {p === 'monthly' ? '₹299 / mo' : '₹2,499 / yr'}
+                        </button>
+                      ))}
+                    </div>
+                    <Button
+                      className="rounded-xl bg-slate-950 text-white hover:bg-slate-900"
+                      onClick={() => void handleInfinityCheckout()}
+                      disabled={infinityBusy}
+                    >
+                      {infinityBusy ? 'Opening...' : 'Renew Infinity'}
+                    </Button>
+                  </div>
                 </div>
-              ) : null}
+              ) : (
+                /* Infinity upgrade card (if not active) */
+                <div className="cloud-panel rounded-2xl p-6">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-amber-500" />
+                    <p className="text-base font-semibold text-slate-950">Docrud Infinity</p>
+                  </div>
+                  <p className="mt-2 text-sm text-slate-600">
+                    Unlock business pages, unlimited services, direct messaging, public face badge, e-sign, and 5 GB drive storage.
+                  </p>
+
+                  <div className="mt-5 grid gap-2 text-sm">
+                    {[
+                      '✓ Business Pages',
+                      '✓ Unlimited Services',
+                      '✓ Direct Messaging',
+                      '✓ Public Face Badge',
+                      '✓ E-Sign Documents',
+                      '✓ 5 GB Drive Storage',
+                    ].map((perk) => (
+                      <p key={perk} className="text-slate-700">{perk}</p>
+                    ))}
+                  </div>
+
+                  <div className="mt-5 flex flex-wrap items-center gap-3">
+                    <div className="flex rounded-2xl border border-slate-200 bg-white/60 p-1 text-xs">
+                      {(['monthly', 'annual'] as const).map((p) => (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => setInfinityPeriod(p)}
+                          className={`rounded-xl px-3 py-1.5 font-semibold transition ${infinityPeriod === p ? 'bg-slate-950 text-white' : 'text-slate-600 hover:text-slate-950'}`}
+                        >
+                          {p === 'monthly' ? '₹299 / mo' : '₹2,499 / yr'}
+                        </button>
+                      ))}
+                    </div>
+                    <Button
+                      className="rounded-xl bg-slate-950 text-white hover:bg-slate-900"
+                      onClick={() => void handleInfinityCheckout()}
+                      disabled={infinityBusy}
+                    >
+                      {infinityBusy ? 'Opening...' : 'Get Infinity'}
+                    </Button>
+                  </div>
+
+                  {infinityPeriod === 'annual' && (
+                    <p className="mt-3 text-xs text-emerald-700 font-medium">
+                      Save ₹{((INFINITY_MONTHLY_PAISE * 12 - INFINITY_ANNUAL_PAISE) / 100).toFixed(0)} with annual billing (30% off)
+                    </p>
+                  )}
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="invoices" className="mt-4 space-y-3">

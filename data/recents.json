@@ -1,0 +1,52 @@
+[
+  {
+    "id": "rc_1780560635410_rpzbmt",
+    "userId": "individual-1780403102793",
+    "userName": "mohan singh",
+    "userAvatar": null,
+    "type": "text",
+    "mediaUrl": null,
+    "caption": "I Don't Know .. I feel .. i fool ... i create",
+    "bgGradient": "linear-gradient(160deg,#040c10 0%,#08202c 55%,#040e16 100%)",
+    "textColor": "#ffffff",
+    "fontStyle": "wide",
+    "fontSize": 31,
+    "expiryHours": 48,
+    "category": "General",
+    "visibility": "public",
+    "viewCount": 3,
+    "viewedBy": [
+      "individual-1780403102793",
+      "individual-1780404674760",
+      "individual-1780663284582"
+    ],
+    "likedBy": [],
+    "createdAt": "2026-06-04T08:10:35.410Z",
+    "expiresAt": "2026-06-06T08:10:35.410Z"
+  },
+  {
+    "id": "rc_1780560854906_jlchhu",
+    "userId": "individual-1780403102793",
+    "userName": "mohan singh",
+    "userAvatar": null,
+    "type": "text",
+    "mediaUrl": null,
+    "caption": "READ THIS",
+    "bgGradient": "#000000",
+    "textColor": "#ffffff",
+    "fontStyle": "wide",
+    "fontSize": 46,
+    "expiryHours": 48,
+    "category": "General",
+    "visibility": "public",
+    "viewCount": 3,
+    "viewedBy": [
+      "individual-1780403102793",
+      "individual-1780404674760",
+      "individual-1780663284582"
+    ],
+    "likedBy": [],
+    "createdAt": "2026-06-04T08:14:14.906Z",
+    "expiresAt": "2026-06-06T08:14:14.906Z"
+  }
+]

@@ -9,9 +9,12 @@ import VerifiedBadge from '@/components/VerifiedBadge';
 import PublicFaceBadge, { PublicFaceStarIcon, PUBLIC_FACE_CATEGORY_LABELS } from '@/components/PublicFaceBadge';
 import PublicFaceApplicationForm from '@/components/PublicFaceApplicationForm';
 import FeaturePostPanel from '@/components/FeaturePostPanel';
+import ProfilePublishedFeed from '@/components/ProfilePublishedFeed';
+import { PresenceBadge } from '@/components/PresenceBadge';
 import {
   ArrowLeft,
   BarChart3,
+  ChevronDown,
   Briefcase,
   Check,
   Clock,
@@ -61,7 +64,146 @@ import {
   Mail,
   PauseCircle,
   Trash2,
+  Upload,
+  RotateCcw,
+  Loader2,
+  Sparkles,
+  Building2,
+  BadgeCheck,
+  Users,
+  PenLine,
 } from 'lucide-react';
+
+/* ─── BusinessPagesTab ──────────────────────────────────────────────── */
+interface BizPageSummary {
+  id: string; slug: string; name: string; tagline?: string; industry: string;
+  logoUrl?: string; followerCount: number; jobCount: number; postCount: number;
+  verified: boolean; status: string; createdAt: string;
+}
+
+function BusinessPagesTab({ userId, isOwnProfile }: { userId: string; isOwnProfile: boolean }) {
+  const [pages, setPages] = React.useState<BizPageSummary[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    fetch(`/api/business-pages?ownerUserId=${userId}&limit=50&sortBy=newest`)
+      .then((r) => r.json())
+      .then((d: { pages?: BizPageSummary[] }) => setPages(d.pages || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [userId]);
+
+  const INDUSTRY_COLORS: Record<string, string> = {
+    technology: '#818cf8', finance: '#34d399', healthcare: '#f472b6',
+    legal: '#fbbf24', education: '#60a5fa', manufacturing: '#fb923c',
+    retail: '#a78bfa', real_estate: '#2dd4bf', media: '#f87171', consulting: '#c084fc',
+  };
+
+  if (loading) {
+    return (
+      <div className="flex gap-4 flex-wrap mt-2">
+        {[1,2,3].map((i) => <div key={i} className="h-[130px] w-[280px] rounded-[16px] bg-white/[0.03] border border-white/[0.06] animate-pulse" />)}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-5">
+        <h3 className="text-[15px] font-bold text-white/80">
+          {isOwnProfile ? 'My Business Pages' : 'Business Pages'}
+          {pages.length > 0 && <span className="ml-2 text-[12px] font-normal text-white/30">{pages.length} page{pages.length !== 1 ? 's' : ''}</span>}
+        </h3>
+        {isOwnProfile && (
+          <Link href="/businesses/create" className="flex items-center gap-1.5 px-3 py-1.5 rounded-[9px] text-[12px] font-semibold text-white/60 border border-white/[0.09] bg-white/[0.04] hover:bg-white/[0.08] hover:text-white/80 transition-all">
+            <Plus className="w-3 h-3" /> New Page
+          </Link>
+        )}
+      </div>
+
+      {pages.length === 0 ? (
+        <div className="rounded-[20px] border border-white/[0.06] bg-white/[0.03] p-14 text-center">
+          <div className="w-14 h-14 rounded-[16px] bg-white/[0.04] border border-white/[0.07] flex items-center justify-center mx-auto mb-4">
+            <Building2 className="w-6 h-6 text-white/20" />
+          </div>
+          <p className="text-[14px] font-semibold text-white/35 mb-2">{isOwnProfile ? 'No business pages yet' : 'No business pages'}</p>
+          {isOwnProfile && (
+            <>
+              <p className="text-[13px] text-white/22 mb-5">Create a page to showcase your company, post jobs, and share updates.</p>
+              <Link href="/businesses/create" className="inline-flex items-center gap-2 px-4 py-2 rounded-[10px] text-[13px] font-bold text-white bg-gradient-to-r from-indigo-500 to-violet-500 hover:opacity-90 transition-opacity">
+                <Plus className="w-3.5 h-3.5" /> Create Business Page
+              </Link>
+            </>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {pages.map((page) => {
+            const accentColor = INDUSTRY_COLORS[page.industry] || 'rgba(255,255,255,0.4)';
+            return (
+              <div key={page.id} className="group relative rounded-[16px] border border-white/[0.07] bg-white/[0.025] overflow-hidden hover:border-white/[0.12] hover:bg-white/[0.04] transition-all">
+                {/* Accent strip */}
+                <div className="h-[3px]" style={{ background: `linear-gradient(90deg,${accentColor}55,transparent)` }} />
+
+                <div className="p-4">
+                  <div className="flex items-start gap-3">
+                    {/* Logo */}
+                    <div className="w-11 h-11 rounded-[11px] border border-white/[0.08] flex-shrink-0 flex items-center justify-center text-[16px] font-bold text-white/60 overflow-hidden"
+                      style={{ background: page.logoUrl ? `url(${page.logoUrl}) center/cover` : `linear-gradient(135deg,${accentColor}28,${accentColor}15)` }}>
+                      {!page.logoUrl && page.name.charAt(0).toUpperCase()}
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-[13.5px] font-bold text-white/88 truncate">{page.name}</p>
+                        {page.verified && <BadgeCheck className="w-3.5 h-3.5 flex-shrink-0" style={{ color: accentColor }} />}
+                      </div>
+                      {page.tagline && <p className="text-[11.5px] text-white/35 truncate mt-0.5">{page.tagline}</p>}
+                      <span className="inline-block mt-1.5 text-[10px] font-700 px-2 py-0.5 rounded-full" style={{ color: accentColor, background: `${accentColor}15`, border: `1px solid ${accentColor}22` }}>
+                        {page.industry.charAt(0).toUpperCase() + page.industry.slice(1)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Stats */}
+                  <div className="flex gap-3 mt-3 pt-3 border-t border-white/[0.05]">
+                    <div className="flex items-center gap-1.5 text-[11px] text-white/35">
+                      <Users className="w-3 h-3" /> {page.followerCount.toLocaleString()}
+                    </div>
+                    {page.jobCount > 0 && (
+                      <div className="flex items-center gap-1.5 text-[11px] text-white/35">
+                        <Briefcase className="w-3 h-3" /> {page.jobCount} jobs
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1.5 text-[11px] text-white/35">
+                      <PenLine className="w-3 h-3" /> {page.postCount} posts
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-2 mt-3">
+                    <Link href={`/businesses/${page.slug}`}
+                      className="flex-1 text-center py-1.5 rounded-[8px] text-[11.5px] font-semibold text-white/55 border border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.08] hover:text-white/75 transition-all">
+                      View Page
+                    </Link>
+                    {isOwnProfile && (
+                      <Link href={`/businesses/${page.slug}/edit`}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-[8px] text-[11.5px] font-semibold border transition-all"
+                        style={{ color: accentColor, borderColor: `${accentColor}30`, background: `${accentColor}0d` }}>
+                        <Edit2 className="w-3 h-3" /> Edit
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 /* ─── types ─────────────────────────────────────────────────────────── */
 interface ConnectionCard {
@@ -99,6 +241,29 @@ interface UserProfileData {
     category: string;
     approvedAt: string;
   };
+  resumeFiles?: Array<{
+    id: string;
+    fileName: string;
+    url: string;
+    uploadedAt: string;
+    atsScore?: {
+      score: number;
+      grade: string;
+      breakdown: { contact: number; summary: number; skills: number; experience: number; education: number; achievements: number };
+      tips: string[];
+    };
+    parsedData?: {
+      headline?: string | null;
+      bio?: string | null;
+      location?: string | null;
+      website?: string | null;
+      skills?: string[];
+      experience?: Array<{ title: string; company: string; period: string; desc?: string }>;
+      education?: Array<{ degree: string; school: string; year?: string }>;
+      achievements?: Array<{ title: string; desc?: string }>;
+      socialLinks?: { linkedin?: string | null; github?: string | null; twitter?: string | null };
+    };
+  }>;
 }
 
 interface ProfileStats {
@@ -106,6 +271,9 @@ interface ProfileStats {
   following: number;
   publishedCount: number;
   gigsCount: number;
+  totalViews: number;
+  totalLikes: number;
+  totalComments: number;
 }
 
 interface GigCard {
@@ -185,15 +353,15 @@ const CAT_ICON: Record<string, string> = {
 };
 
 function PublisherTrackingPanel() {
-  type SubTab = 'overview' | 'registrations' | 'applications' | 'bookmarks' | 'cta';
+  type SubTab = 'overview' | 'registrations' | 'applications' | 'bookmarks' | 'activity';
   const [subTab, setSubTab] = useState<SubTab>('overview');
   const [registrations, setRegistrations] = useState<Array<{itemId: string; title: string; category: string; registeredAt: number}>>([]);
-  const [applications, setApplications] = useState<Array<{itemId: string; title: string; appliedAt: number; url: string; status?: string}>>([]);
-  const [ctaData, setCtaData] = useState<Record<string, Record<string, number>>>({});
-  const [bookmarks, setBookmarks] = useState<Record<string, {category: string; savedAt: number}>>({});
-  const [appStatuses, setAppStatuses] = useState<Record<string, AppStatus>>({});
-  const [appNotes, setAppNotes] = useState<Record<string, string>>({});
-  const [expandedApp, setExpandedApp] = useState<string | null>(null);
+  const [applications, setApplications]   = useState<Array<{itemId: string; title: string; appliedAt: number; url: string}>>([]);
+  const [ctaData, setCtaData]             = useState<Record<string, Record<string, number>>>({});
+  const [bookmarks, setBookmarks]         = useState<Record<string, {category: string; savedAt: number}>>({});
+  const [appStatuses, setAppStatuses]     = useState<Record<string, AppStatus>>({});
+  const [appNotes, setAppNotes]           = useState<Record<string, string>>({});
+  const [expandedApp, setExpandedApp]     = useState<string | null>(null);
 
   useEffect(() => {
     try { setRegistrations(JSON.parse(localStorage.getItem('pub_registrations') || '[]')); } catch {}
@@ -209,182 +377,180 @@ function PublisherTrackingPanel() {
     setAppStatuses(next);
     try { localStorage.setItem('pub_app_statuses', JSON.stringify(next)); } catch {}
   };
-
   const updateAppNote = (itemId: string, note: string) => {
     const next = { ...appNotes, [itemId]: note };
     setAppNotes(next);
     try { localStorage.setItem('pub_app_notes', JSON.stringify(next)); } catch {}
   };
-
   const removeRegistration = (itemId: string) => {
     const next = registrations.filter(r => r.itemId !== itemId);
     setRegistrations(next);
     try { localStorage.setItem('pub_registrations', JSON.stringify(next)); } catch {}
   };
-
   const removeApplication = (itemId: string) => {
     const next = applications.filter(a => a.itemId !== itemId);
     setApplications(next);
     try { localStorage.setItem('pub_job_applications', JSON.stringify(next)); } catch {}
   };
 
-  const totalCta = Object.values(ctaData).flatMap(Object.values).reduce((a, b) => a + b, 0);
+  const totalCta    = Object.values(ctaData).flatMap(Object.values).reduce((a, b) => a + b, 0);
   const bookmarkList = Object.entries(bookmarks).sort((a, b) => b[1].savedAt - a[1].savedAt);
-  const hirings = applications.filter(a => (appStatuses[a.itemId] || 'applied') === 'hired').length;
+  const hirings     = applications.filter(a => (appStatuses[a.itemId] || 'applied') === 'hired').length;
   const shortlisted = applications.filter(a => (appStatuses[a.itemId] || 'applied') === 'shortlisted').length;
 
-  const subTabs: { id: SubTab; label: string; icon: string; count: number; color: string }[] = [
-    { id: 'overview',       label: 'Overview',       icon: '⚡', count: 0,                    color: 'text-white/60' },
-    { id: 'registrations',  label: 'Registrations',  icon: '🎟️', count: registrations.length,  color: 'text-emerald-400' },
-    { id: 'applications',   label: 'Applications',   icon: '💼', count: applications.length,   color: 'text-blue-400' },
-    { id: 'bookmarks',      label: 'Saved Items',    icon: '🔖', count: bookmarkList.length,   color: 'text-amber-400' },
-    { id: 'cta',            label: 'Activity Log',   icon: '📊', count: totalCta,              color: 'text-violet-400' },
+  const subTabs: { id: SubTab; label: string; count?: number }[] = [
+    { id: 'overview',      label: 'Overview' },
+    { id: 'registrations', label: 'Registrations', count: registrations.length },
+    { id: 'applications',  label: 'Applications',  count: applications.length },
+    { id: 'bookmarks',     label: 'Saved',          count: bookmarkList.length },
+    { id: 'activity',      label: 'Activity',       count: totalCta || undefined },
   ];
 
-  const fmt = (ms: number) => new Date(ms).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  const fmt    = (ms: number) => new Date(ms).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
   const fmtRel = (ms: number) => {
     const d = Math.floor((Date.now() - ms) / 86400000);
     if (d === 0) return 'Today';
     if (d === 1) return 'Yesterday';
-    if (d < 7) return `${d}d ago`;
+    if (d < 7)  return `${d}d ago`;
     if (d < 30) return `${Math.floor(d / 7)}w ago`;
     return fmt(ms);
   };
 
-  return (
-    <div className="rounded-[22px] border border-white/[0.07] overflow-hidden" style={{ background: 'linear-gradient(180deg,rgba(139,92,246,0.04) 0%,rgba(0,0,0,0) 60%)' }}>
+  /* ── stat card helper ── */
+  const StatCard = ({ label, value, sub, onClick }: { label: string; value: number; sub: string; onClick: () => void }) => (
+    <button type="button" onClick={onClick}
+      className="group text-left rounded-[14px] border border-white/[0.07] bg-white/[0.025] p-4 hover:bg-white/[0.04] hover:border-white/[0.11] transition-all">
+      <p className="text-[28px] font-black tabular-nums text-white/90 leading-none mb-1.5" style={{ letterSpacing: '-0.04em' }}>{value}</p>
+      <p className="text-[12px] font-semibold text-white/55">{label}</p>
+      <p className="text-[10.5px] text-white/28 mt-0.5">{sub}</p>
+      <div className="mt-3 flex items-center justify-between">
+        <div className="h-px flex-1 bg-white/[0.07] rounded-full overflow-hidden">
+          <div className="h-full bg-white/30 rounded-full transition-all" style={{ width: value > 0 ? '100%' : '0%' }} />
+        </div>
+        <ExternalLink className="ml-3 h-3 w-3 text-white/15 group-hover:text-white/35 transition shrink-0" />
+      </div>
+    </button>
+  );
 
-      {/* ── Panel header ── */}
-      <div className="flex items-center gap-3.5 px-5 py-4 border-b border-white/[0.06]">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px]" style={{ background: 'linear-gradient(135deg,rgba(139,92,246,0.25),rgba(99,102,241,0.25))', border: '1px solid rgba(139,92,246,0.25)', boxShadow: '0 4px 16px rgba(139,92,246,0.12)' }}>
-          <TrendingUp className="h-4.5 w-4.5 text-violet-400" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[14px] font-black text-white/90" style={{ letterSpacing: '-0.01em' }}>My Engagement Tracker</p>
-          <p className="text-[11px] text-white/30 mt-0.5">Registrations · Applications · Saved items · Activity</p>
-        </div>
+  /* ── empty state helper ── */
+  const EmptyState = ({ message, sub, href, cta }: { message: string; sub: string; href: string; cta: string }) => (
+    <div className="py-14 text-center">
+      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-white/[0.07] bg-white/[0.03]">
+        <TrendingUp className="h-5 w-5 text-white/15" />
+      </div>
+      <p className="text-[13.5px] font-semibold text-white/35">{message}</p>
+      <p className="text-[11.5px] text-white/20 mt-1.5 max-w-[240px] mx-auto leading-relaxed">{sub}</p>
+      <a href={href}
+        className="mt-5 inline-flex items-center gap-1.5 h-8 px-4 rounded-[10px] text-[11.5px] font-semibold text-white/45 hover:text-white/75 transition border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06]">
+        {cta} <ExternalLink className="h-3 w-3" />
+      </a>
+    </div>
+  );
+
+  return (
+    <div className="rounded-[20px] border border-white/[0.08] bg-[#0f0f11] overflow-hidden">
+
+      {/* ── Sub-nav ── */}
+      <div className="flex items-center border-b border-white/[0.06] px-1 overflow-x-auto [scrollbar-width:none]">
+        {subTabs.map(t => (
+          <button key={t.id} type="button" onClick={() => setSubTab(t.id)}
+            className={`relative flex shrink-0 items-center gap-2 px-4 py-3.5 text-[12px] font-semibold whitespace-nowrap transition-colors ${
+              subTab === t.id ? 'text-white/90' : 'text-white/30 hover:text-white/55'
+            }`}>
+            {t.label}
+            {t.count !== undefined && t.count > 0 && (
+              <span className={`rounded-full px-1.5 py-px text-[9px] font-bold tabular-nums ${
+                subTab === t.id ? 'bg-white/10 text-white/50' : 'bg-white/[0.05] text-white/22'
+              }`}>{t.count}</span>
+            )}
+            {subTab === t.id && <span className="absolute bottom-0 inset-x-4 h-px rounded-full bg-white/40" />}
+          </button>
+        ))}
+        <div className="flex-1" />
         <a href="/published" target="_blank" rel="noopener noreferrer"
-          className="hidden sm:flex items-center gap-1.5 h-7 px-3 rounded-[9px] text-[11px] font-semibold transition hover:bg-white/[0.08]"
-          style={{ border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.35)' }}>
-          <ExternalLink className="h-3 w-3" /> Published Feed
+          className="mr-2 shrink-0 flex items-center gap-1.5 h-7 px-3 rounded-[8px] text-[11px] font-medium text-white/25 hover:text-white/55 hover:bg-white/[0.05] border border-white/[0.06] transition">
+          <ExternalLink className="h-3 w-3" /> Feed
         </a>
       </div>
 
-      {/* ── Sub-tabs ── */}
-      <div className="flex overflow-x-auto [scrollbar-width:none] border-b border-white/[0.05]">
-        {subTabs.map(t => (
-          <button key={t.id} type="button" onClick={() => setSubTab(t.id)}
-            className={`relative flex shrink-0 items-center gap-1.5 px-4 py-2.5 text-[11.5px] font-semibold whitespace-nowrap transition-colors ${
-              subTab === t.id ? 'text-white' : 'text-white/32 hover:text-white/60'
-            }`}>
-            <span className="text-[13px]">{t.icon}</span>
-            <span>{t.label}</span>
-            {t.count > 0 && (
-              <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold tabular-nums ${
-                subTab === t.id ? 'bg-white/12 text-white/60' : 'bg-white/[0.06] text-white/25'
-              }`}>{t.count}</span>
-            )}
-            {subTab === t.id && <span className="absolute bottom-0 left-2 right-2 h-[2px] rounded-full bg-violet-400" />}
-          </button>
-        ))}
-      </div>
-
       {/* ── Content ── */}
-      <div className="p-4">
+      <div className="p-5">
 
         {/* ═══ OVERVIEW ═══ */}
         {subTab === 'overview' && (
-          <div className="space-y-4">
-            {/* Stat cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {[
-                { label: 'Registrations', value: registrations.length, icon: '🎟️', sub: `${registrations.filter(r => r.registeredAt > Date.now() - 30*86400000).length} this month`, accent: '#10b981', onClick: () => setSubTab('registrations') },
-                { label: 'Applications', value: applications.length, icon: '💼', sub: hirings > 0 ? `${hirings} hired!` : shortlisted > 0 ? `${shortlisted} shortlisted` : 'Track status', accent: '#3b82f6', onClick: () => setSubTab('applications') },
-                { label: 'Saved Items', value: bookmarkList.length, icon: '🔖', sub: 'Bookmarked posts', accent: '#f59e0b', onClick: () => setSubTab('bookmarks') },
-                { label: 'CTA Actions', value: totalCta, icon: '📊', sub: `${Object.keys(ctaData).length} categories`, accent: '#8b5cf6', onClick: () => setSubTab('cta') },
-              ].map(s => (
-                <button key={s.label} type="button" onClick={s.onClick}
-                  className="text-left rounded-[16px] border border-white/[0.06] bg-white/[0.02] p-4 hover:bg-white/[0.04] transition group">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[18px]">{s.icon}</span>
-                    <ExternalLink className="h-3 w-3 text-white/15 group-hover:text-white/40 transition" />
-                  </div>
-                  <p className="text-[24px] font-black tabular-nums text-white/85" style={{ letterSpacing: '-0.03em' }}>{s.value}</p>
-                  <p className="text-[11px] font-semibold text-white/40 mt-0.5">{s.label}</p>
-                  <p className="text-[10px] text-white/22 mt-0.5">{s.sub}</p>
-                  <div className="mt-3 h-0.5 rounded-full" style={{ background: `${s.accent}30` }}>
-                    <div className="h-full rounded-full transition-all" style={{ background: s.accent, width: s.value > 0 ? '100%' : '0%' }} />
-                  </div>
-                </button>
-              ))}
+          <div className="space-y-5">
+            {/* KPI grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <StatCard label="Registrations" value={registrations.length}
+                sub={`${registrations.filter(r => r.registeredAt > Date.now() - 30*86400000).length} this month`}
+                onClick={() => setSubTab('registrations')} />
+              <StatCard label="Applications" value={applications.length}
+                sub={hirings > 0 ? `${hirings} offer${hirings > 1 ? 's' : ''} received` : shortlisted > 0 ? `${shortlisted} shortlisted` : 'Track your pipeline'}
+                onClick={() => setSubTab('applications')} />
+              <StatCard label="Saved Items" value={bookmarkList.length}
+                sub="Bookmarked posts"
+                onClick={() => setSubTab('bookmarks')} />
+              <StatCard label="Interactions" value={totalCta}
+                sub={`${Object.keys(ctaData).length} content categor${Object.keys(ctaData).length === 1 ? 'y' : 'ies'}`}
+                onClick={() => setSubTab('activity')} />
             </div>
 
             {/* Application pipeline */}
             {applications.length > 0 && (
-              <div className="rounded-[16px] border border-white/[0.06] bg-white/[0.02] p-4">
-                <p className="text-[11px] font-black uppercase tracking-[0.14em] text-white/30 mb-3">Application Pipeline</p>
-                <div className="flex items-center gap-1 mb-2">
-                  {APP_STATUS_ORDER.filter(s => s !== 'rejected').map((s, i) => {
+              <div className="rounded-[14px] border border-white/[0.07] bg-white/[0.02] p-4">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/25 mb-4">Application Pipeline</p>
+                <div className="flex items-end gap-1">
+                  {[...APP_STATUS_ORDER.filter(s => s !== 'rejected'), 'rejected'].map(s => {
                     const count = applications.filter(a => (appStatuses[a.itemId] || 'applied') === s).length;
-                    const pct = applications.length > 0 ? (count / applications.length) * 100 : 0;
-                    const meta = STATUS_META[s];
+                    const meta  = STATUS_META[s];
+                    const isRej = s === 'rejected';
                     return (
-                      <div key={s} className="relative flex-1 group/bar" title={`${meta.label}: ${count}`}>
-                        <div className="h-6 rounded-[6px] flex items-center justify-center text-[9px] font-bold tabular-nums transition-all"
-                          style={{ background: count > 0 ? meta.pillBg : 'rgba(255,255,255,0.03)', color: count > 0 ? meta.pillText : 'rgba(255,255,255,0.15)', border: `1px solid ${count > 0 ? meta.pillText + '25' : 'rgba(255,255,255,0.05)'}` }}>
+                      <div key={s} className="flex-1 text-center">
+                        <div className="mx-auto mb-1.5 flex h-7 items-center justify-center rounded-[6px] text-[10px] font-bold tabular-nums"
+                          style={{
+                            background: count > 0 ? (isRej ? 'rgba(244,63,94,0.08)' : meta.pillBg) : 'rgba(255,255,255,0.025)',
+                            color: count > 0 ? (isRej ? '#fb7185' : meta.pillText) : 'rgba(255,255,255,0.15)',
+                            border: `1px solid ${count > 0 ? (isRej ? 'rgba(251,113,133,0.15)' : meta.pillText + '20') : 'rgba(255,255,255,0.04)'}`,
+                          }}>
                           {count > 0 ? count : '—'}
                         </div>
-                        <p className="text-center text-[8.5px] text-white/20 mt-1 font-semibold">{meta.label.replace('! 🎉','')}</p>
+                        <p className="text-[8.5px] font-medium text-white/18 truncate">{isRej ? 'Declined' : meta.label.replace('! 🎉','')}</p>
                       </div>
                     );
                   })}
-                  <div className="relative flex-1">
-                    {(() => { const count = applications.filter(a => (appStatuses[a.itemId] || 'applied') === 'rejected').length; return (
-                      <div>
-                        <div className="h-6 rounded-[6px] flex items-center justify-center text-[9px] font-bold tabular-nums"
-                          style={{ background: count > 0 ? 'rgba(244,63,94,0.10)' : 'rgba(255,255,255,0.03)', color: count > 0 ? '#fb7185' : 'rgba(255,255,255,0.15)', border: `1px solid ${count > 0 ? 'rgba(251,113,133,0.2)' : 'rgba(255,255,255,0.05)'}` }}>
-                          {count > 0 ? count : '—'}
-                        </div>
-                        <p className="text-center text-[8.5px] text-white/20 mt-1 font-semibold">Not Sel.</p>
-                      </div>
-                    ); })()}
-                  </div>
                 </div>
               </div>
             )}
 
-            {/* Recent activity list */}
+            {/* Empty */}
             {registrations.length === 0 && applications.length === 0 && bookmarkList.length === 0 && totalCta === 0 && (
-              <div className="py-10 text-center">
-                <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-white/[0.03]">
-                  <TrendingUp className="h-6 w-6 text-white/15" />
-                </div>
-                <p className="text-[13px] font-semibold text-white/25">No activity yet</p>
-                <p className="text-[11px] text-white/15 mt-1.5 max-w-[220px] mx-auto leading-relaxed">
-                  Visit the Published Feed to register for events, apply to jobs, and interact with content — it all tracks here.
-                </p>
-                <a href="/published" className="mt-4 inline-flex items-center gap-1.5 h-8 px-4 rounded-[10px] text-[11.5px] font-semibold text-white/50 hover:text-white/80 transition border border-white/[0.08] bg-white/[0.04]">
-                  Go to Published Feed <ExternalLink className="h-3 w-3" />
-                </a>
-              </div>
+              <EmptyState
+                message="No activity recorded yet"
+                sub="Register for events, apply to jobs, and bookmark content on the Published Feed — it all appears here."
+                href="/published"
+                cta="Browse Published Feed"
+              />
             )}
 
-            {/* Recent items quick list */}
+            {/* Recent */}
             {(registrations.length > 0 || applications.length > 0) && (
-              <div className="space-y-1.5">
-                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-white/25 px-1">Recent</p>
+              <div className="space-y-1">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/22 mb-2">Recent Activity</p>
                 {[
                   ...registrations.slice(0, 3).map(r => ({ type: 'reg' as const, title: r.title, cat: r.category, ms: r.registeredAt, id: r.itemId })),
-                  ...applications.slice(0, 3).map(a => ({ type: 'app' as const, title: a.title, cat: 'job', ms: a.appliedAt, id: a.itemId })),
-                ].sort((a,b) => b.ms - a.ms).slice(0, 5).map((item, i) => (
-                  <div key={i} className="flex items-center gap-3 rounded-[12px] border border-white/[0.04] bg-white/[0.015] px-3.5 py-2.5">
-                    <span className="text-[15px] shrink-0">{CAT_ICON[item.cat] || '📄'}</span>
-                    <p className="flex-1 min-w-0 text-[12px] font-semibold text-white/65 truncate">{item.title}</p>
-                    <span className={`shrink-0 text-[9.5px] font-bold rounded-full px-2 py-0.5 ${item.type === 'reg' ? 'text-emerald-400 bg-emerald-500/10' : 'text-blue-400 bg-blue-500/10'}`}>
-                      {item.type === 'reg' ? 'Registered' : 'Applied'}
-                    </span>
-                    <span className="shrink-0 text-[9.5px] text-white/20 tabular-nums">{fmtRel(item.ms)}</span>
-                  </div>
+                  ...applications.slice(0, 2).map(a => ({ type: 'app' as const, title: a.title, cat: 'job', ms: a.appliedAt, id: a.itemId })),
+                ].sort((a, b) => b.ms - a.ms).slice(0, 5).map((item, i) => (
+                  <a key={i} href={`/published/${item.id}`}
+                    className="group flex items-center gap-3 rounded-[11px] border border-white/[0.04] bg-white/[0.015] px-3.5 py-2.5 hover:bg-white/[0.04] hover:border-white/[0.08] transition-all">
+                    <span className="shrink-0 text-[14px]">{CAT_ICON[item.cat] || '📄'}</span>
+                    <p className="flex-1 min-w-0 text-[12px] font-medium text-white/60 truncate group-hover:text-white/85 transition-colors">{item.title}</p>
+                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-semibold ${
+                      item.type === 'reg'
+                        ? 'bg-white/[0.06] text-white/40'
+                        : 'bg-white/[0.06] text-white/40'
+                    }`}>{item.type === 'reg' ? 'Registered' : 'Applied'}</span>
+                    <span className="shrink-0 text-[10px] text-white/20 tabular-nums">{fmtRel(item.ms)}</span>
+                  </a>
                 ))}
               </div>
             )}
@@ -393,270 +559,211 @@ function PublisherTrackingPanel() {
 
         {/* ═══ REGISTRATIONS ═══ */}
         {subTab === 'registrations' && (
-          registrations.length === 0 ? (
-            <div className="py-12 text-center">
-              <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-white/[0.03]"><span className="text-3xl">🎟️</span></div>
-              <p className="text-[14px] font-semibold text-white/30">No registrations yet</p>
-              <p className="text-[11px] text-white/18 mt-1.5">Register for events or hackathons from the Published page.</p>
-              <a href="/published" className="mt-4 inline-flex items-center gap-1.5 h-8 px-4 rounded-[10px] text-[11.5px] font-semibold text-white/50 hover:text-white/80 transition border border-white/[0.08] bg-white/[0.04]">
-                Browse Published Feed <ExternalLink className="h-3 w-3" />
-              </a>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {/* Column header */}
-              <div className="hidden sm:grid grid-cols-[1fr_90px_90px_80px] gap-3 px-4 pb-1">
-                {['Event / Hackathon', 'Category', 'Date', 'Status'].map(h => (
-                  <span key={h} className="text-[9px] font-black uppercase tracking-[0.16em] text-white/22">{h}</span>
-                ))}
-              </div>
-              {registrations.slice().reverse().map((r, i) => {
-                const isUpcoming = r.registeredAt > Date.now();
-                const catIcon = CAT_ICON[r.category] || '🎟️';
-                return (
-                  <div key={i} className="group flex items-center gap-3 rounded-[14px] border border-white/[0.05] bg-white/[0.02] px-4 py-3 hover:bg-white/[0.04] transition-colors">
-                    {/* serial */}
-                    <span className="shrink-0 w-5 text-[10px] font-bold tabular-nums text-white/20">{i + 1}</span>
-                    {/* icon */}
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-white/[0.05] text-[15px]">{catIcon}</div>
-                    {/* title */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[12.5px] font-semibold text-white/80 truncate">{r.title}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[10px] capitalize text-white/28">{r.category}</span>
-                        <span className="text-white/12">·</span>
-                        <span className="text-[10px] text-white/28">{fmt(r.registeredAt)}</span>
-                      </div>
+          registrations.length === 0
+            ? <EmptyState message="No registrations yet" sub="Register for events or hackathons from the Published Feed." href="/published" cta="Browse Events" />
+            : (
+              <div className="space-y-1.5">
+                <div className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-3 px-3 pb-2">
+                  {['#', 'Event', 'Date', 'Status', ''].map((h, i) => (
+                    <span key={i} className="text-[9px] font-semibold uppercase tracking-[0.18em] text-white/20">{h}</span>
+                  ))}
+                </div>
+                {registrations.slice().reverse().map((r, i) => (
+                  <a key={i} href={`/published/${r.itemId}`}
+                    className="group grid grid-cols-[auto_1fr_auto_auto_auto] items-center gap-3 rounded-[12px] border border-white/[0.05] bg-white/[0.02] px-3 py-2.5 hover:bg-white/[0.04] hover:border-white/[0.09] transition-all">
+                    <span className="text-[10px] font-medium tabular-nums text-white/20 w-4">{i + 1}</span>
+                    <div className="min-w-0">
+                      <p className="text-[12.5px] font-medium text-white/75 truncate group-hover:text-white/90 transition-colors">{r.title}</p>
+                      <p className="text-[10px] text-white/28 mt-0.5 capitalize">{r.category}</p>
                     </div>
-                    {/* status */}
-                    {isUpcoming
-                      ? <span className="shrink-0 rounded-[8px] px-2.5 py-1 text-[9.5px] font-bold" style={{ background: 'rgba(245,158,11,0.12)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.2)' }}>⏰ Upcoming</span>
-                      : <span className="shrink-0 rounded-[8px] px-2.5 py-1 text-[9.5px] font-bold" style={{ background: 'rgba(16,185,129,0.10)', color: '#34d399', border: '1px solid rgba(52,211,153,0.2)' }}>✓ Registered</span>
-                    }
-                    {/* remove */}
-                    <button type="button" onClick={() => removeRegistration(r.itemId)}
-                      className="shrink-0 opacity-0 group-hover:opacity-100 flex h-6 w-6 items-center justify-center rounded-full border border-white/[0.08] text-white/25 hover:text-rose-400 hover:border-rose-500/30 transition-all">
+                    <span className="text-[10px] text-white/25 whitespace-nowrap">{fmt(r.registeredAt)}</span>
+                    <span className="rounded-full px-2.5 py-0.5 text-[9.5px] font-semibold bg-white/[0.06] text-white/40 border border-white/[0.07] whitespace-nowrap">
+                      {r.registeredAt > Date.now() ? 'Upcoming' : 'Registered'}
+                    </span>
+                    <button type="button" onClick={e => { e.preventDefault(); e.stopPropagation(); removeRegistration(r.itemId); }}
+                      className="opacity-0 group-hover:opacity-100 flex h-6 w-6 items-center justify-center rounded-full border border-white/[0.07] text-white/20 hover:text-white/60 hover:border-white/[0.15] transition-all">
                       <X className="h-3 w-3" />
                     </button>
-                  </div>
-                );
-              })}
-            </div>
-          )
+                  </a>
+                ))}
+              </div>
+            )
         )}
 
         {/* ═══ APPLICATIONS ═══ */}
         {subTab === 'applications' && (
-          applications.length === 0 ? (
-            <div className="py-12 text-center">
-              <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-white/[0.03]"><span className="text-3xl">💼</span></div>
-              <p className="text-[14px] font-semibold text-white/30">No applications tracked yet</p>
-              <p className="text-[11px] text-white/18 mt-1.5">Apply to jobs from the Published page to track them here.</p>
-              <a href="/published" className="mt-4 inline-flex items-center gap-1.5 h-8 px-4 rounded-[10px] text-[11.5px] font-semibold text-white/50 hover:text-white/80 transition border border-white/[0.08] bg-white/[0.04]">
-                Browse Jobs <ExternalLink className="h-3 w-3" />
-              </a>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {applications.slice().reverse().map((a, i) => {
-                const statusKey: AppStatus = (appStatuses[a.itemId] || 'applied') as AppStatus;
-                const meta = STATUS_META[statusKey] || STATUS_META.applied;
-                const isExpanded = expandedApp === a.itemId;
-                const note = appNotes[a.itemId] || '';
-                return (
-                  <div key={i} className="rounded-[16px] border border-white/[0.05] bg-white/[0.02] overflow-hidden transition-colors hover:border-white/[0.08]">
-                    {/* Main row */}
-                    <div className="flex items-center gap-3 px-4 py-3">
-                      <span className="shrink-0 w-5 text-[10px] font-bold tabular-nums text-white/20">{i + 1}</span>
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-white/[0.05] text-[15px]">💼</div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[12.5px] font-semibold text-white/80 truncate">{a.title}</p>
-                        <p className="text-[10px] text-white/28 mt-0.5">Applied {fmtRel(a.appliedAt)} · {fmt(a.appliedAt)}</p>
+          applications.length === 0
+            ? <EmptyState message="No applications tracked" sub="Apply to jobs from the Published Feed to track them here." href="/published" cta="Browse Jobs" />
+            : (
+              <div className="space-y-2">
+                {applications.slice().reverse().map((a, i) => {
+                  const statusKey: AppStatus = (appStatuses[a.itemId] || 'applied') as AppStatus;
+                  const meta       = STATUS_META[statusKey] || STATUS_META.applied;
+                  const isExpanded = expandedApp === a.itemId;
+                  const note       = appNotes[a.itemId] || '';
+                  const order      = APP_STATUS_ORDER.filter(s => s !== 'rejected');
+                  const curIdx     = order.indexOf(statusKey as typeof order[number]);
+                  return (
+                    <div key={i} className="rounded-[14px] border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+                      {/* Main row */}
+                      <div className="flex items-center gap-3 px-4 py-3">
+                        <span className="shrink-0 w-4 text-[10px] font-medium tabular-nums text-white/20">{i + 1}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[13px] font-medium text-white/80 truncate">{a.title}</p>
+                          <p className="text-[10px] text-white/28 mt-0.5">{fmtRel(a.appliedAt)} · {fmt(a.appliedAt)}</p>
+                        </div>
+                        {/* Status select */}
+                        <select value={statusKey} onChange={e => updateAppStatus(a.itemId, e.target.value as AppStatus)}
+                          className="shrink-0 h-7 rounded-[8px] border px-2 text-[10.5px] font-semibold outline-none cursor-pointer appearance-none"
+                          style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                          <option value="applied">Applied</option>
+                          <option value="pending">Under Review</option>
+                          <option value="shortlisted">Shortlisted</option>
+                          <option value="hired">Hired</option>
+                          <option value="rejected">Not Selected</option>
+                        </select>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {a.url && (
+                            <a href={a.url} target="_blank" rel="noopener noreferrer"
+                              className="flex h-7 w-7 items-center justify-center rounded-[8px] border border-white/[0.06] text-white/20 hover:text-white/60 hover:bg-white/[0.05] transition">
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          )}
+                          <button type="button" onClick={() => setExpandedApp(isExpanded ? null : a.itemId)}
+                            className={`flex h-7 w-7 items-center justify-center rounded-[8px] border border-white/[0.06] transition ${isExpanded ? 'bg-white/[0.07] text-white/55' : 'text-white/20 hover:text-white/55 hover:bg-white/[0.04]'}`}>
+                            <svg className={`h-3 w-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                          </button>
+                          <button type="button" onClick={() => removeApplication(a.itemId)}
+                            className="flex h-7 w-7 items-center justify-center rounded-[8px] border border-white/[0.06] text-white/15 hover:text-white/50 transition">
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
                       </div>
-                      {/* Status select */}
-                      <select
-                        value={statusKey}
-                        onChange={e => updateAppStatus(a.itemId, e.target.value as AppStatus)}
-                        className="shrink-0 rounded-[9px] border px-2.5 py-1.5 text-[10.5px] font-bold outline-none cursor-pointer transition-colors appearance-none"
-                        style={{ background: meta.pillBg, color: meta.pillText, border: `1px solid ${meta.pillText}22` }}
-                      >
-                        <option value="applied">📨 Applied</option>
-                        <option value="pending">⏳ Under Review</option>
-                        <option value="shortlisted">⭐ Shortlisted</option>
-                        <option value="hired">🎉 Hired!</option>
-                        <option value="rejected">✕ Not Selected</option>
-                      </select>
-                      {/* Actions */}
-                      <div className="flex items-center gap-1 shrink-0">
-                        {a.url && (
-                          <a href={a.url} target="_blank" rel="noopener noreferrer"
-                            className="flex h-7 w-7 items-center justify-center rounded-[8px] border border-white/[0.07] text-white/25 hover:text-white/70 hover:bg-white/[0.06] transition">
-                            <ExternalLink className="h-3 w-3" />
-                          </a>
-                        )}
-                        <button type="button" onClick={() => setExpandedApp(isExpanded ? null : a.itemId)}
-                          className={`flex h-7 w-7 items-center justify-center rounded-[8px] border border-white/[0.07] transition ${isExpanded ? 'bg-white/[0.08] text-white/60' : 'text-white/25 hover:text-white/60 hover:bg-white/[0.05]'}`}>
-                          <svg className={`h-3 w-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                        </button>
-                        <button type="button" onClick={() => removeApplication(a.itemId)}
-                          className="flex h-7 w-7 items-center justify-center rounded-[8px] border border-white/[0.07] text-white/20 hover:text-rose-400 hover:border-rose-500/30 hover:bg-rose-500/[0.06] transition">
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    </div>
 
-                    {/* Progress track */}
-                    <div className="px-4 pb-3">
-                      <div className="flex items-center gap-1">
-                        {APP_STATUS_ORDER.filter(s => s !== 'rejected').map((s, idx) => {
-                          const order = APP_STATUS_ORDER.filter(s => s !== 'rejected');
-                          const curIdx = order.indexOf(statusKey as typeof order[number]);
-                          const stepIdx = order.indexOf(s);
-                          const isActive = s === statusKey;
-                          const isPast = statusKey !== 'rejected' && stepIdx < curIdx;
-                          return (
-                            <React.Fragment key={s}>
-                              <div className={`flex items-center justify-center h-5 w-5 rounded-full text-[8px] font-bold shrink-0 transition-all ${
-                                isActive ? '' : isPast ? 'bg-white/20 text-white/50' : 'bg-white/[0.05] text-white/20'
-                              }`} style={isActive ? { background: meta.pillBg, color: meta.pillText, boxShadow: `0 0 8px ${meta.pillText}30` } : {}}>
-                                {isPast ? '✓' : idx + 1}
+                      {/* Progress bar */}
+                      {statusKey !== 'rejected' && (
+                        <div className="px-4 pb-3">
+                          <div className="flex items-center">
+                            {order.map((s, idx) => {
+                              const isPast   = idx < curIdx;
+                              const isActive = s === statusKey;
+                              return (
+                                <React.Fragment key={s}>
+                                  <div className={`h-1 w-1 rounded-full transition-all ${
+                                    isActive ? 'bg-white/70 scale-125' : isPast ? 'bg-white/40' : 'bg-white/[0.10]'
+                                  }`} />
+                                  {idx < order.length - 1 && (
+                                    <div className={`flex-1 h-px mx-1 rounded-full transition-all ${isPast ? 'bg-white/25' : 'bg-white/[0.07]'}`} />
+                                  )}
+                                </React.Fragment>
+                              );
+                            })}
+                          </div>
+                          <div className="flex mt-1">
+                            {order.map((s, idx) => (
+                              <div key={s} className={`flex-1 text-[8px] font-medium ${idx === 0 ? 'text-left' : idx === order.length-1 ? 'text-right' : 'text-center'} ${s === statusKey ? 'text-white/45' : 'text-white/18'}`}>
+                                {STATUS_META[s].label.replace('! 🎉','')}
                               </div>
-                              {idx < order.length - 1 && (
-                                <div className="flex-1 h-[2px] rounded-full" style={{ background: isPast || isActive ? `${meta.pillText}30` : 'rgba(255,255,255,0.05)' }} />
-                              )}
-                            </React.Fragment>
-                          );
-                        })}
-                        {statusKey === 'rejected' && (
-                          <div className="ml-2 text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(244,63,94,0.10)', color: '#fb7185' }}>Not Selected</div>
-                        )}
-                      </div>
-                      <div className="flex gap-1 mt-1">
-                        {APP_STATUS_ORDER.filter(s => s !== 'rejected').map(s => (
-                          <span key={s} className="flex-1 text-center text-[8px] text-white/18 font-semibold">{STATUS_META[s].label.replace('! 🎉','')}</span>
-                        ))}
-                      </div>
-                    </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {statusKey === 'rejected' && (
+                        <p className="px-4 pb-3 text-[10.5px] text-white/25">Not selected for this role</p>
+                      )}
 
-                    {/* Expanded: notes */}
-                    {isExpanded && (
-                      <div className="border-t border-white/[0.05] px-4 py-3">
-                        <label className="block text-[9px] font-black uppercase tracking-[0.16em] text-white/25 mb-1.5">Notes</label>
-                        <textarea
-                          value={note}
-                          onChange={e => updateAppNote(a.itemId, e.target.value)}
-                          rows={2}
-                          placeholder="Add your notes, interview dates, contacts…"
-                          className="w-full rounded-[10px] border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-[12px] text-white/70 placeholder:text-white/18 outline-none focus:border-violet-500/30 focus:ring-1 focus:ring-violet-500/[0.10] transition resize-none"
-                        />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )
+                      {/* Notes */}
+                      {isExpanded && (
+                        <div className="border-t border-white/[0.05] px-4 py-3">
+                          <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-white/22 mb-2">Notes</p>
+                          <textarea value={note} onChange={e => updateAppNote(a.itemId, e.target.value)} rows={2}
+                            placeholder="Interview dates, contacts, next steps…"
+                            className="w-full rounded-[10px] border border-white/[0.07] bg-white/[0.03] px-3 py-2 text-[12px] text-white/65 placeholder:text-white/18 outline-none focus:border-white/[0.15] transition resize-none" />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )
         )}
 
         {/* ═══ BOOKMARKS ═══ */}
         {subTab === 'bookmarks' && (
-          bookmarkList.length === 0 ? (
-            <div className="py-12 text-center">
-              <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-white/[0.03]"><span className="text-3xl">🔖</span></div>
-              <p className="text-[14px] font-semibold text-white/30">No saved items yet</p>
-              <p className="text-[11px] text-white/18 mt-1.5">Bookmark posts on the Published page to save them here.</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <div className="hidden sm:grid grid-cols-[1fr_100px_90px] gap-3 px-4 pb-1">
-                {['Saved Item', 'Category', 'Saved On'].map(h => (
-                  <span key={h} className="text-[9px] font-black uppercase tracking-[0.16em] text-white/22">{h}</span>
+          bookmarkList.length === 0
+            ? <EmptyState message="Nothing saved yet" sub="Bookmark any post on the Published Feed to save it here." href="/published" cta="Browse Feed" />
+            : (
+              <div className="space-y-1.5">
+                {bookmarkList.map(([id, bm], i) => (
+                  <a key={id} href={`/published/${id}`}
+                    className="group flex items-center gap-3 rounded-[12px] border border-white/[0.05] bg-white/[0.02] px-3.5 py-2.5 hover:bg-white/[0.04] hover:border-white/[0.09] transition-all">
+                    <span className="shrink-0 w-4 text-[10px] font-medium tabular-nums text-white/18">{i + 1}</span>
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[9px] bg-white/[0.04] text-[13px]">{CAT_ICON[bm.category] || '📄'}</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[12.5px] font-medium text-white/65 truncate group-hover:text-white/85 transition-colors">{(bm as any).title || `${id.slice(0, 12)}…`}</p>
+                      <p className="text-[10px] text-white/25 mt-0.5 capitalize">{bm.category} · {fmt(bm.savedAt)}</p>
+                    </div>
+                    <ExternalLink className="shrink-0 h-3.5 w-3.5 text-white/12 group-hover:text-white/35 transition" />
+                  </a>
                 ))}
               </div>
-              {bookmarkList.map(([id, bm], i) => (
-                <div key={id} className="group flex items-center gap-3 rounded-[14px] border border-white/[0.05] bg-white/[0.02] px-4 py-3 hover:bg-white/[0.04] transition-colors">
-                  <span className="shrink-0 w-5 text-[10px] font-bold tabular-nums text-white/20">{i + 1}</span>
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-white/[0.05] text-[15px]">{CAT_ICON[bm.category] || '📄'}</div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-semibold text-white/60 truncate font-mono">{id.slice(0, 8)}…</p>
-                    <p className="text-[10px] text-white/25 mt-0.5 capitalize">{bm.category} · {fmt(bm.savedAt)}</p>
-                  </div>
-                  <span className="shrink-0 text-[9.5px] font-bold rounded-full px-2.5 py-1 capitalize" style={{ background: 'rgba(245,158,11,0.10)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.18)' }}>
-                    {bm.category}
-                  </span>
-                  <a href={`/published/${id}`} target="_blank" rel="noopener noreferrer"
-                    className="shrink-0 flex h-7 w-7 items-center justify-center rounded-[8px] border border-white/[0.07] text-white/25 hover:text-white/70 hover:bg-white/[0.06] transition">
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-                </div>
-              ))}
-            </div>
-          )
+            )
         )}
 
-        {/* ═══ CTA ACTIVITY ═══ */}
-        {subTab === 'cta' && (
-          totalCta === 0 ? (
-            <div className="py-12 text-center">
-              <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-white/[0.03]"><span className="text-3xl">📊</span></div>
-              <p className="text-[14px] font-semibold text-white/30">No activity logged yet</p>
-              <p className="text-[11px] text-white/18 mt-1.5">Interact with posts on the Published Feed — likes, shares, views — all tracked here.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {/* Summary */}
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { label: 'Total Actions', value: totalCta, color: '#8b5cf6' },
-                  { label: 'Categories', value: Object.keys(ctaData).length, color: '#6366f1' },
-                  { label: 'Action Types', value: Object.values(ctaData).flatMap(Object.keys).filter((v,i,a)=>a.indexOf(v)===i).length, color: '#a78bfa' },
-                ].map(s => (
-                  <div key={s.label} className="rounded-[14px] border border-white/[0.06] bg-white/[0.02] px-3.5 py-3">
-                    <p className="text-[22px] font-black tabular-nums" style={{ color: s.color, letterSpacing: '-0.03em' }}>{s.value}</p>
-                    <p className="text-[10px] font-semibold text-white/30 mt-0.5">{s.label}</p>
-                  </div>
-                ))}
-              </div>
+        {/* ═══ ACTIVITY ═══ */}
+        {subTab === 'activity' && (
+          totalCta === 0
+            ? <EmptyState message="No interactions recorded" sub="Like, share, and engage with content on the Published Feed to see your activity here." href="/published" cta="Browse Feed" />
+            : (
+              <div className="space-y-4">
+                {/* Summary row */}
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { label: 'Total', value: totalCta },
+                    { label: 'Categories', value: Object.keys(ctaData).length },
+                    { label: 'Action Types', value: Object.values(ctaData).flatMap(Object.keys).filter((v,i,a) => a.indexOf(v)===i).length },
+                  ].map(s => (
+                    <div key={s.label} className="rounded-[12px] border border-white/[0.06] bg-white/[0.02] px-3.5 py-3">
+                      <p className="text-[22px] font-black tabular-nums text-white/80" style={{ letterSpacing: '-0.03em' }}>{s.value}</p>
+                      <p className="text-[10px] font-medium text-white/28 mt-0.5">{s.label}</p>
+                    </div>
+                  ))}
+                </div>
 
-              {/* Per-category breakdown */}
-              <div className="space-y-2">
-                {Object.entries(ctaData)
-                  .filter(([, v]) => Object.values(v).some(n => n > 0))
-                  .sort((a, b) => Object.values(b[1]).reduce((x,y)=>x+y,0) - Object.values(a[1]).reduce((x,y)=>x+y,0))
-                  .map(([cat, actions]) => {
-                    const catTotal = Object.values(actions).reduce((a, b) => a + b, 0);
-                    const catTextClass = CAT_TEXT[cat] || 'text-white/50';
-                    const maxCount = Math.max(...Object.values(actions));
-                    return (
-                      <div key={cat} className="rounded-[16px] border border-white/[0.05] bg-white/[0.02] px-4 py-3.5">
-                        {/* Category header */}
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[16px]">{CAT_ICON[cat] || '📄'}</span>
-                            <span className={`text-[12.5px] font-bold capitalize ${catTextClass}`}>{cat}</span>
+                {/* Category breakdown */}
+                <div className="space-y-1.5">
+                  {Object.entries(ctaData)
+                    .filter(([, v]) => Object.values(v).some(n => n > 0))
+                    .sort((a, b) => Object.values(b[1]).reduce((x,y)=>x+y,0) - Object.values(a[1]).reduce((x,y)=>x+y,0))
+                    .map(([cat, actions]) => {
+                      const catTotal = Object.values(actions).reduce((s, v) => s + v, 0);
+                      const maxCount = Math.max(...Object.values(actions));
+                      return (
+                        <div key={cat} className="rounded-[13px] border border-white/[0.05] bg-white/[0.02] px-4 py-3.5">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[14px]">{CAT_ICON[cat] || '📄'}</span>
+                              <span className="text-[12px] font-semibold text-white/60 capitalize">{cat}</span>
+                            </div>
+                            <span className="text-[10px] tabular-nums text-white/25">{catTotal}</span>
                           </div>
-                          <span className="text-[10px] tabular-nums text-white/30 font-semibold">{catTotal} total</span>
-                        </div>
-                        {/* Action rows */}
-                        <div className="space-y-2">
-                          {Object.entries(actions)
-                            .sort((a, b) => b[1] - a[1])
-                            .map(([action, count]) => (
+                          <div className="space-y-2">
+                            {Object.entries(actions).sort((a, b) => b[1] - a[1]).map(([action, count]) => (
                               <div key={action} className="flex items-center gap-2.5">
-                                <span className="w-3 shrink-0 text-[10px] font-bold tabular-nums text-white/35">{count}</span>
-                                <div className="relative flex-1 h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
-                                  <div className="absolute inset-y-0 left-0 rounded-full transition-all" style={{ width: `${(count / maxCount) * 100}%`, background: CAT_COLORS[cat] ? undefined : 'rgba(139,92,246,0.5)', backgroundImage: CAT_COLORS[cat] ? undefined : undefined, backgroundColor: 'rgba(139,92,246,0.45)' }} />
+                                <span className="w-5 shrink-0 text-[10px] font-semibold tabular-nums text-right text-white/30">{count}</span>
+                                <div className="flex-1 h-1 rounded-full bg-white/[0.05] overflow-hidden">
+                                  <div className="h-full rounded-full bg-white/25 transition-all" style={{ width: `${(count / maxCount) * 100}%` }} />
                                 </div>
-                                <span className="shrink-0 text-[10.5px] text-white/35 truncate max-w-[150px] text-right">{CTA_LABELS[action] || action.replace(/_/g, ' ')}</span>
+                                <span className="shrink-0 text-[10.5px] text-white/28 truncate max-w-[130px]">{CTA_LABELS[action] || action.replace(/_/g, ' ')}</span>
                               </div>
                             ))}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                </div>
               </div>
-            </div>
-          )
+            )
         )}
 
       </div>
@@ -951,25 +1058,16 @@ function SkillChip({ label }: { label: string }) {
   );
 }
 
-/* ─── docrud go badge ────────────────────────────────────────────────── */
+/* ─── docrud infinity badge ──────────────────────────────────────────── */
 function DocrudGoBadge({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
-  const dim = size === 'lg' ? 22 : size === 'md' ? 18 : 14;
+  const infSize = size === 'lg' ? 15 : size === 'md' ? 12 : 10;
   return (
     <span
-      title="Docrud Go — Verified"
-      style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'linear-gradient(135deg,#1a1208,#2d1f0a)', border: '1px solid rgba(201,168,76,0.35)', borderRadius: 999, padding: size === 'lg' ? '3px 9px 3px 5px' : '2px 7px 2px 4px', fontSize: size === 'lg' ? 11 : 10, fontWeight: 800, letterSpacing: '.05em', color: '#E8CC7A', verticalAlign: 'middle', lineHeight: 1 }}
+      title="Docrud Infinity — Verified"
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'linear-gradient(135deg,#0f0e2e,#1e1b4b)', border: '1px solid rgba(99,102,241,0.40)', borderRadius: 999, padding: size === 'lg' ? '3px 9px 3px 6px' : '2px 7px 2px 5px', fontSize: size === 'lg' ? 11 : 10, fontWeight: 800, letterSpacing: '.04em', color: '#a5b4fc', verticalAlign: 'middle', lineHeight: 1 }}
     >
-      <svg width={dim} height={dim} viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-        <defs>
-          <linearGradient id="pgob" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#C9A84C" />
-            <stop offset="100%" stopColor="#F0D878" />
-          </linearGradient>
-        </defs>
-        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="url(#pgob)" />
-        <path d="M9 12L11 14L15 10" stroke="#1a1208" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-      Go ✦
+      <span style={{ fontSize: infSize + 2, fontWeight: 900, color: '#c7d2fe', lineHeight: 1, flexShrink: 0 }}>∞</span>
+      Infinity
     </span>
   );
 }
@@ -1189,29 +1287,6 @@ function ImageAdjustModal({
   );
 }
 
-async function compressImage(dataUrl: string, maxDimension: number, quality = 0.85): Promise<string> {
-  return new Promise((resolve) => {
-    const img = new window.Image();
-    img.onload = () => {
-      let { width, height } = img;
-      if (width > height) {
-        if (width > maxDimension) { height = Math.round((height * maxDimension) / width); width = maxDimension; }
-      } else {
-        if (height > maxDimension) { width = Math.round((width * maxDimension) / height); height = maxDimension; }
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) { resolve(dataUrl); return; }
-      ctx.drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL('image/jpeg', quality));
-    };
-    img.onerror = () => resolve(dataUrl);
-    img.src = dataUrl;
-  });
-}
-
 interface EditModalProps {
   profile: UserProfileData;
   userName: string;
@@ -1228,13 +1303,24 @@ function EditProfileModal({ profile, userName, onClose, onSaved }: EditModalProp
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
 
+  // Resume state
+  const resumeInputRef = useRef<HTMLInputElement>(null);
+  const resumeSectionRef = useRef<HTMLDivElement>(null);
+  const [resumeUploading, setResumeUploading] = useState(false);
+  const [resumeErr, setResumeErr] = useState('');
+  const [resumeWarn, setResumeWarn] = useState('');
+  const [resumeSuccess, setResumeSuccess] = useState<{
+    appliedFields: string[];
+    atsScore: { score: number; grade: string; breakdown: Record<string, number>; tips: string[] } | null;
+    fileName: string;
+  } | null>(null);
+  const [rollingBack, setRollingBack] = useState<string | null>(null);
+
   function handleImageFile(file: File, field: 'avatarUrl' | 'coverGradient') {
     if (file.size > 5 * 1024 * 1024) { setError('Image must be under 5 MB'); return; }
     const reader = new FileReader();
-    reader.onload = async (e) => {
-      const rawDataUrl = e.target?.result as string;
-      const maxDim = field === 'avatarUrl' ? 300 : 1200;
-      const dataUrl = await compressImage(rawDataUrl, maxDim);
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
       const type: 'avatar' | 'banner' = field === 'avatarUrl' ? 'avatar' : 'banner';
       const initialPosition = field === 'avatarUrl' ? (form.avatarPosition ?? '50% 50%') : (form.coverPosition ?? '50% 50%');
       setAdjustTarget({ dataUrl, type, initialPosition });
@@ -1276,6 +1362,135 @@ function EditProfileModal({ profile, userName, onClose, onSaved }: EditModalProp
 
   function removeSkill(s: string) {
     set('skills', (form.skills ?? []).filter((x) => x !== s));
+  }
+
+  async function handleResumeUpload(file: File) {
+    setResumeErr('');
+    setResumeWarn('');
+    setResumeSuccess(null);
+    setResumeUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('resume', file);
+      const res = await fetch('/api/profile/upload-resume', { method: 'POST', body: fd });
+      const json = await res.json() as {
+        profile?: UserProfileData;
+        appliedFields?: string[];
+        atsScore?: { score: number; grade: string; breakdown: Record<string, number>; tips: string[] };
+        aiConfigured?: boolean;
+        warning?: string | null;
+        error?: string;
+      };
+      if (!res.ok) { setResumeErr(json.error ?? 'Upload failed'); return; }
+      if (json.warning) setResumeWarn(json.warning);
+
+      const p = json.profile;
+      if (!p) { setResumeErr('Server returned no profile data.'); return; }
+
+      // ── Deterministically update every form field from the server-saved profile ──
+      // Use direct assignment (not functional updater) to guarantee latest values
+      setForm(prev => {
+        const next = { ...prev };
+        // Scalar fields — only overwrite if server has a real value
+        if (p.headline)  next.headline  = p.headline;
+        if (p.bio)       next.bio       = p.bio;
+        if (p.location)  next.location  = p.location;
+        if (p.website)   next.website   = p.website;
+        // Arrays — only overwrite if server has data
+        if (p.skills      && p.skills.length > 0)      next.skills      = p.skills;
+        if (p.achievements && p.achievements.length > 0) next.achievements = p.achievements;
+        // Merge social links (don't clear existing)
+        if (p.socialLinks) {
+          next.socialLinks = { ...(prev.socialLinks ?? {}), ...p.socialLinks };
+        }
+        // Always sync resume file history
+        if (p.resumeFiles) next.resumeFiles = p.resumeFiles;
+        return next;
+      });
+
+      // Experience — replace entirely with AI-extracted entries
+      if (Array.isArray(p.experience) && p.experience.length > 0) {
+        const entries = p.experience.map((e, i) => ({ ...e, _key: i }));
+        setExpEntries(entries);
+        nextExpKey.current = entries.length;
+      }
+
+      // Education — replace entirely
+      if (Array.isArray(p.education) && p.education.length > 0) {
+        const entries = p.education.map((e, i) => ({ ...e, _key: i }));
+        setEduEntries(entries);
+        nextEduKey.current = entries.length;
+      }
+
+      // Update the parent profile view — sections appear immediately in the profile page
+      onSaved(p);
+
+      // Show success card
+      setResumeSuccess({
+        appliedFields: json.appliedFields ?? [],
+        atsScore:      json.atsScore ?? null,
+        fileName:      file.name,
+      });
+
+      // Scroll success card into view
+      setTimeout(() => resumeSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);
+
+    } catch (e) {
+      console.error('[handleResumeUpload]', e);
+      setResumeErr('Upload failed — please try again.');
+    } finally {
+      setResumeUploading(false);
+    }
+  }
+
+  async function handleResumeRollback(id: string) {
+    setRollingBack(id);
+    setResumeErr('');
+    setResumeSuccess(null);
+    try {
+      const res = await fetch('/api/profile/rollback-resume', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      const json = await res.json() as { profile?: UserProfileData; appliedFrom?: string; error?: string };
+      if (!res.ok) { setResumeErr(json.error ?? 'Rollback failed'); return; }
+      const p = json.profile;
+      if (!p) { setResumeErr('Server returned no profile data.'); return; }
+
+      setForm(prev => {
+        const next = { ...prev };
+        if (p.headline)  next.headline  = p.headline;
+        if (p.bio)       next.bio       = p.bio;
+        if (p.location)  next.location  = p.location;
+        if (p.website)   next.website   = p.website;
+        if (p.skills      && p.skills.length > 0)       next.skills       = p.skills;
+        if (p.achievements && p.achievements.length > 0) next.achievements = p.achievements;
+        if (p.socialLinks) next.socialLinks = { ...(prev.socialLinks ?? {}), ...p.socialLinks };
+        if (p.resumeFiles) next.resumeFiles = p.resumeFiles;
+        return next;
+      });
+      if (Array.isArray(p.experience) && p.experience.length > 0) {
+        const entries = p.experience.map((e, i) => ({ ...e, _key: i }));
+        setExpEntries(entries);
+        nextExpKey.current = entries.length;
+      }
+      if (Array.isArray(p.education) && p.education.length > 0) {
+        const entries = p.education.map((e, i) => ({ ...e, _key: i }));
+        setEduEntries(entries);
+        nextEduKey.current = entries.length;
+      }
+      onSaved(p);
+      setResumeSuccess({
+        appliedFields: [`Restored from "${json.appliedFrom ?? 'previous version'}"`],
+        atsScore: null,
+        fileName: json.appliedFrom ?? '',
+      });
+    } catch {
+      setResumeErr('Rollback failed — please try again.');
+    } finally {
+      setRollingBack(null);
+    }
   }
 
   async function handleSave() {
@@ -1379,6 +1594,206 @@ function EditProfileModal({ profile, userName, onClose, onSaved }: EditModalProp
               </div>
               <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) { handleImageFile(f, 'avatarUrl'); e.target.value = ''; } }} />
             </div>
+          </section>
+
+          {/* Resume */}
+          <section ref={resumeSectionRef}>
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/35">Resume</p>
+              {form.resumeFiles && form.resumeFiles.length > 0 && (
+                <span className="text-[10px] text-white/25">{form.resumeFiles.length}/{5} saved</span>
+              )}
+            </div>
+
+            {/* Upload card */}
+            <div
+              onClick={() => !resumeUploading && resumeInputRef.current?.click()}
+              className={`relative flex items-center gap-4 rounded-[16px] border border-dashed px-4 py-4 cursor-pointer transition-all group ${resumeUploading ? 'border-white/20 bg-white/[0.02] cursor-wait' : 'border-white/[0.12] hover:border-white/30 hover:bg-white/[0.03]'}`}
+            >
+              <div className={`h-10 w-10 rounded-[12px] flex items-center justify-center shrink-0 ${resumeUploading ? 'bg-white/[0.06]' : 'bg-white/[0.06] group-hover:bg-white/[0.10]'} transition-colors`}>
+                {resumeUploading ? <Loader2 className="h-4 w-4 text-white/50 animate-spin" /> : <Upload className="h-4 w-4 text-white/50" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-white/80">{resumeUploading ? 'Parsing resume with AI…' : 'Import from resume'}</p>
+                <p className="text-[11px] text-white/35 mt-0.5">
+                  {resumeUploading ? 'Extracting skills, experience, education — one moment' : 'PDF or Word · up to 10 MB · AI auto-fills every section'}
+                </p>
+              </div>
+              {!resumeUploading && (
+                <div className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-white/[0.07] group-hover:bg-white/[0.12] transition-colors">
+                  <Sparkles className="h-3 w-3 text-white/50" />
+                  <span className="text-[11px] font-semibold text-white/60">AI</span>
+                </div>
+              )}
+            </div>
+            <input
+              ref={resumeInputRef}
+              type="file"
+              accept=".pdf,.doc,.docx,.txt,.md,.rtf,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) { void handleResumeUpload(f); e.target.value = ''; } }}
+            />
+
+            {/* Download template link */}
+            <a
+              href="/api/profile/sample-resume"
+              target="_blank"
+              rel="noreferrer"
+              className="mt-2 flex items-center gap-1.5 text-[11px] text-white/35 hover:text-white/60 transition-colors w-fit"
+            >
+              <FileText className="h-3 w-3" />
+              Download resume template
+              <ExternalLink className="h-2.5 w-2.5 opacity-60" />
+            </a>
+            <p className="text-[10px] text-white/20 mt-0.5 ml-4">
+              Pre-filled with your profile data · optimised for AI parsing · open &amp; save as PDF
+            </p>
+
+            {/* Error */}
+            {resumeErr && (
+              <div className="mt-3 flex items-start gap-2 rounded-[13px] bg-rose-500/[0.07] border border-rose-500/20 px-3.5 py-3">
+                <X className="h-3.5 w-3.5 text-rose-400 shrink-0 mt-0.5" />
+                <p className="text-xs text-rose-400 leading-relaxed">{resumeErr}</p>
+              </div>
+            )}
+
+            {/* Warning */}
+            {resumeWarn && !resumeErr && (
+              <div className="mt-3 flex items-start gap-2 rounded-[13px] bg-amber-500/[0.07] border border-amber-500/20 px-3.5 py-3">
+                <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-400 leading-relaxed">{resumeWarn}</p>
+              </div>
+            )}
+
+            {/* ATS + Success card */}
+            {resumeSuccess && !resumeErr && (
+              <div className="mt-3 rounded-[16px] border border-white/[0.08] bg-white/[0.03] overflow-hidden">
+                {/* Header bar */}
+                <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-emerald-400" />
+                    <p className="text-sm font-semibold text-white/80">Profile updated from resume</p>
+                  </div>
+                  <button onClick={() => setResumeSuccess(null)} className="text-white/30 hover:text-white/60 transition-colors">
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+
+                {/* ATS Score */}
+                {resumeSuccess.atsScore && (
+                  <div className="px-4 pt-4 pb-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/30">ATS Score</p>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xl font-black ${resumeSuccess.atsScore.score >= 75 ? 'text-emerald-400' : resumeSuccess.atsScore.score >= 55 ? 'text-amber-400' : 'text-rose-400'}`}>
+                          {resumeSuccess.atsScore.score}
+                        </span>
+                        <span className={`text-xs font-bold px-1.5 py-0.5 rounded-[6px] ${resumeSuccess.atsScore.score >= 75 ? 'bg-emerald-500/15 text-emerald-400' : resumeSuccess.atsScore.score >= 55 ? 'bg-amber-500/15 text-amber-400' : 'bg-rose-500/15 text-rose-400'}`}>
+                          {resumeSuccess.atsScore.grade}
+                        </span>
+                      </div>
+                    </div>
+                    {/* Score bar */}
+                    <div className="h-1.5 w-full rounded-full bg-white/[0.06] overflow-hidden mb-3">
+                      <div
+                        className={`h-full rounded-full transition-all duration-700 ${resumeSuccess.atsScore.score >= 75 ? 'bg-emerald-400' : resumeSuccess.atsScore.score >= 55 ? 'bg-amber-400' : 'bg-rose-400'}`}
+                        style={{ width: `${resumeSuccess.atsScore.score}%` }}
+                      />
+                    </div>
+                    {/* Breakdown pills */}
+                    <div className="flex flex-wrap gap-1.5 mb-3">
+                      {Object.entries(resumeSuccess.atsScore.breakdown).map(([k, v]) => (
+                        <span key={k} className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/[0.07] text-[10px] text-white/45">
+                          <span className="capitalize">{k}</span>
+                          <span className="text-white/25">·</span>
+                          <span className={`font-semibold ${v >= 8 ? 'text-emerald-400/80' : v >= 5 ? 'text-amber-400/80' : 'text-rose-400/80'}`}>{v}</span>
+                        </span>
+                      ))}
+                    </div>
+                    {/* Tips */}
+                    {resumeSuccess.atsScore.tips.length > 0 && (
+                      <div className="space-y-1.5">
+                        <p className="text-[9.5px] font-bold uppercase tracking-[0.18em] text-white/25">How to improve</p>
+                        {resumeSuccess.atsScore.tips.map((tip, i) => (
+                          <div key={i} className="flex items-start gap-2">
+                            <div className="h-1 w-1 rounded-full bg-white/25 mt-1.5 shrink-0" />
+                            <p className="text-[11px] text-white/45 leading-relaxed">{tip}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Applied fields */}
+                {resumeSuccess.appliedFields.length > 0 && (
+                  <div className="px-4 pb-4">
+                    {resumeSuccess.atsScore && <div className="border-t border-white/[0.06] mb-3" />}
+                    <p className="text-[9.5px] font-bold uppercase tracking-[0.18em] text-white/25 mb-2">Auto-filled sections</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {resumeSuccess.appliedFields.map(f => (
+                        <span key={f} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[11px] font-medium text-emerald-400">
+                          <Check className="h-2.5 w-2.5" />
+                          {f}
+                        </span>
+                      ))}
+                    </div>
+                    <p className="text-[10.5px] text-white/30 mt-2.5">Data saved automatically · scroll down to review and edit any field</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Resume history */}
+            {form.resumeFiles && form.resumeFiles.length > 0 && (
+              <div className="mt-4 space-y-2">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/25 mb-2">Saved versions</p>
+                {form.resumeFiles.map((entry, idx) => (
+                  <div key={entry.id} className="flex items-center gap-3 rounded-[13px] border border-white/[0.07] bg-white/[0.03] px-3 py-2.5">
+                    <div className="h-8 w-8 rounded-[10px] bg-white/[0.06] flex items-center justify-center shrink-0 relative">
+                      <FileText className="h-3.5 w-3.5 text-white/40" />
+                      {entry.atsScore && (
+                        <span className={`absolute -top-1.5 -right-1.5 text-[8px] font-black px-1 rounded-[4px] ${entry.atsScore.score >= 75 ? 'bg-emerald-500/20 text-emerald-400' : entry.atsScore.score >= 55 ? 'bg-amber-500/20 text-amber-400' : 'bg-rose-500/20 text-rose-400'}`}>
+                          {entry.atsScore.score}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[12.5px] font-medium text-white/75 truncate">{entry.fileName}</p>
+                      <p className="text-[10.5px] text-white/30 mt-0.5">
+                        {idx === 0 && <span className="text-emerald-400/70 font-medium">Latest · </span>}
+                        {new Date(entry.uploadedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {entry.atsScore && <span className="ml-1.5">· ATS {entry.atsScore.grade}</span>}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <a
+                        href={entry.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={e => e.stopPropagation()}
+                        className="h-7 w-7 rounded-[8px] bg-white/[0.05] hover:bg-white/[0.10] flex items-center justify-center transition-colors"
+                        title="View resume"
+                      >
+                        <ExternalLink className="h-3 w-3 text-white/40" />
+                      </a>
+                      {idx > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => void handleResumeRollback(entry.id)}
+                          disabled={rollingBack === entry.id}
+                          className="flex items-center gap-1 h-7 px-2.5 rounded-[8px] bg-white/[0.05] hover:bg-white/[0.10] transition-colors text-[10.5px] font-medium text-white/45 hover:text-white/70 disabled:opacity-50"
+                          title="Apply this version to profile"
+                        >
+                          {rollingBack === entry.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RotateCcw className="h-3 w-3" />}
+                          Apply
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
 
           {/* Basic */}
@@ -1704,7 +2119,7 @@ function profileStrength(profile: UserProfileData): number {
 }
 
 /* ─── main page ──────────────────────────────────────────────────────── */
-type TabId = 'published' | 'about' | 'skills' | 'gigs' | 'services' | 'activity' | 'insights' | 'billing' | 'connections' | 'settings';
+type TabId = 'published' | 'about' | 'skills' | 'gigs' | 'services' | 'pages' | 'activity' | 'insights' | 'billing' | 'connections' | 'settings';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'published', label: 'Published' },
@@ -1712,12 +2127,68 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'skills', label: 'Work & Skills' },
   { id: 'gigs', label: 'Gigs' },
   { id: 'services', label: 'Services' },
+  { id: 'pages', label: 'Business Pages' },
   { id: 'activity', label: 'Activity' },
   { id: 'connections', label: 'Connections' },
   { id: 'insights', label: 'Insights' },
   { id: 'billing', label: 'Billing' },
   { id: 'settings', label: 'Settings' },
 ];
+
+/* ── Reusable accordion section (used in settings tab) ─────────────── */
+function AccordionSection({
+  id, open, onToggle, icon, title, subtitle, badge, badgeColor, borderColor, children,
+}: {
+  id: string;
+  open: boolean;
+  onToggle: (id: string) => void;
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+  badge?: string;
+  badgeColor?: string;
+  borderColor?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className="rounded-[18px] overflow-hidden transition-all"
+      style={{ border: `1px solid ${borderColor ?? 'rgba(255,255,255,0.07)'}`, background: 'rgba(255,255,255,0.015)' }}
+    >
+      <button
+        type="button"
+        onClick={() => onToggle(id)}
+        className="w-full flex items-center gap-3 px-5 py-4 text-left transition-colors hover:bg-white/[0.02] focus:outline-none"
+      >
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px]"
+          style={{ background: 'rgba(255,255,255,0.05)' }}>
+          {icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[13px] font-semibold text-white/80 tracking-[-0.01em]">{title}</p>
+          <p className="text-[11px] text-white/28 mt-px truncate">{subtitle}</p>
+        </div>
+        {!open && badge && (
+          <span
+            className="shrink-0 text-[10.5px] font-semibold px-2.5 py-1 rounded-full mr-1"
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: badgeColor ?? 'rgba(255,255,255,0.38)' }}
+          >
+            {badge}
+          </span>
+        )}
+        <ChevronDown className={`h-4 w-4 shrink-0 text-white/22 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      <div
+        className="overflow-hidden transition-all duration-300 ease-in-out"
+        style={{ maxHeight: open ? '1600px' : '0px', opacity: open ? 1 : 0 }}
+      >
+        <div className="border-t border-white/[0.05]">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function UserProfilePage() {
   const params = useParams();
@@ -1729,10 +2200,14 @@ export default function UserProfilePage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [tab, setTab] = useState<TabId>('about');
+  const [publishedView, setPublishedView] = useState<'feed' | 'tracker'>('feed');
+  const [openSection, setOpenSection] = useState<string>('account');
   const [editOpen, setEditOpen] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [followingState, setFollowingState] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
+  const [liveStats, setLiveStats] = useState<{ publishedCount: number; gigsCount: number; totalViews: number; totalLikes: number; totalComments: number; following: number } | null>(null);
+  const statsPollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [credits, setCredits] = useState<{ balance: number; totalEarned: number; streak: { current: number; longest: number }; milestones: string[]; verified: boolean; transactions: Array<{ id: string; type: string; amount: number; reason: string; description: string; createdAt: string }> } | null>(null);
   const [analytics, setAnalytics] = useState<{ totalViews: number; totalLikes: number; totalComments: number; publishCount: number; featuredCount: number } | null>(null);
   const [billingHistory, setBillingHistory] = useState<Array<{ id: string; productLabel?: string; planName?: string; totalAmountInPaise: number; status: string; paidAt?: string; createdAt: string; invoiceNumber?: string; productType?: string }>>([]);
@@ -1999,21 +2474,61 @@ export default function UserProfilePage() {
     ])
       .then(([json, upraiseData]) => {
         if (!json) { setNotFound(true); setLoading(false); return; }
-        setData(json as ProfileResponse);
-        setFollowingState((json as ProfileResponse).isFollowing);
-        setFollowersCount((json as ProfileResponse).stats.followers);
+        const resp = json as ProfileResponse;
+        setData(resp);
+        setFollowingState(resp.isFollowing);
+        setFollowersCount(resp.stats.followers);
+        setLiveStats({
+          publishedCount: resp.stats.publishedCount,
+          gigsCount: resp.stats.gigsCount,
+          totalViews: resp.stats.totalViews ?? 0,
+          totalLikes: resp.stats.totalLikes ?? 0,
+          totalComments: resp.stats.totalComments ?? 0,
+          following: resp.stats.following,
+        });
         if (upraiseData) { setUpraisedCount(upraiseData.count ?? 0); setHasUpraised(upraiseData.hasUpraised ?? false); }
         setLoading(false);
       })
       .catch(() => { setNotFound(true); setLoading(false); });
   }, [userId]);
 
+  /* Real-time stats polling — every 30 s, refreshes counts for all visitors */
+  useEffect(() => {
+    if (!userId) return;
+    const poll = () => {
+      Promise.all([
+        fetch(`/api/public/profile/${userId}`).then(r => r.ok ? r.json() : null),
+        fetch(`/api/upraise/${userId}`).then(r => r.ok ? r.json() : null),
+      ]).then(([json, upraiseData]) => {
+        if (!json) return;
+        const resp = json as ProfileResponse;
+        setFollowersCount(resp.stats.followers);
+        setLiveStats({
+          publishedCount: resp.stats.publishedCount,
+          gigsCount: resp.stats.gigsCount,
+          totalViews: resp.stats.totalViews ?? 0,
+          totalLikes: resp.stats.totalLikes ?? 0,
+          totalComments: resp.stats.totalComments ?? 0,
+          following: resp.stats.following,
+        });
+        if (upraiseData) { setUpraisedCount(upraiseData.count ?? 0); }
+      }).catch(() => {});
+    };
+    statsPollingRef.current = setInterval(poll, 30_000);
+    return () => { if (statsPollingRef.current) clearInterval(statsPollingRef.current); };
+  }, [userId]);
+
   useEffect(() => {
     if (!data?.isOwnProfile || !userId) return;
     // credits
     fetch('/api/credits').then(r => r.ok ? r.json() : null).then((d: { credits?: typeof credits } | null) => { if (d?.credits) setCredits(d.credits); }).catch(() => {});
-    // analytics
-    fetch(`/api/profile/analytics?userId=${userId}`).then(r => r.ok ? r.json() : null).then((d: { analytics?: typeof analytics } | null) => { if (d?.analytics) setAnalytics(d.analytics); }).catch(() => {});
+    // analytics (for insights tab detail — also keeps liveStats in sync for own profile)
+    fetch(`/api/profile/analytics?userId=${userId}`).then(r => r.ok ? r.json() : null).then((d: { analytics?: typeof analytics } | null) => {
+      if (d?.analytics) {
+        setAnalytics(d.analytics);
+        setLiveStats(prev => prev ? { ...prev, totalViews: d.analytics!.totalViews, totalLikes: d.analytics!.totalLikes, totalComments: d.analytics!.totalComments, publishedCount: d.analytics!.publishCount } : prev);
+      }
+    }).catch(() => {});
     // billing history (feature_post transactions)
     fetch('/api/billing/overview').then(r => r.ok ? r.json() : null).then((d: { transactions?: typeof billingHistory } | null) => {
       if (d?.transactions) setBillingHistory(d.transactions.filter((t) => t.status === 'paid'));
@@ -2316,7 +2831,7 @@ export default function UserProfilePage() {
                   }
                 }}
                 className="hidden sm:flex items-center h-7 px-2.5 rounded-[8px] text-[11px] font-semibold transition-all hover:bg-white/[0.06] active:scale-[0.97]"
-                style={{ color: 'rgba(232,204,122,0.70)', border: '1px solid rgba(201,168,76,0.20)' }}
+                style={{ color: 'rgba(165,180,252,0.70)', border: '1px solid rgba(99,102,241,0.20)' }}
               >
                 Earn Free
               </button>
@@ -2335,9 +2850,9 @@ export default function UserProfilePage() {
                     if (!win.Razorpay) { setGoUpgradeErr('Payment gateway not loaded. Refresh and retry.'); setGoUpgradePhase('idle'); return; }
                     const rz = new win.Razorpay({
                       key: d.keyId, amount: d.amount, currency: d.currency || 'INR',
-                      name: 'Docrud', description: 'Docrud Go — Verified Badge', order_id: d.orderId,
+                      name: 'Docrud', description: 'Docrud Infinity — Verified', order_id: d.orderId,
                       prefill: { name: d.userName || '', email: d.userEmail || '' },
-                      theme: { color: '#C9A84C' }, modal: { backdropclose: false },
+                      theme: { color: '#6366f1' }, modal: { backdropclose: false },
                       handler: async (resp: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
                         const vRes = await fetch('/api/docrud-go/verify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(resp) });
                         const vData = await vRes.json() as { success?: boolean };
@@ -2350,13 +2865,13 @@ export default function UserProfilePage() {
                   } catch { setGoUpgradeErr('Something went wrong. Please retry.'); setGoUpgradePhase('idle'); }
                 }}
                 className="relative flex items-center gap-1.5 h-8 px-3 rounded-[10px] text-[12px] font-black transition-all active:scale-[0.97] disabled:opacity-70 overflow-hidden"
-                style={{ background: 'linear-gradient(135deg,#C9A84C,#E8CC7A 55%,#C9A84C)', color: '#1a1208', boxShadow: '0 2px 12px rgba(201,168,76,0.40), inset 0 1px 0 rgba(255,255,255,0.25)' }}
+                style={{ background: 'linear-gradient(135deg,#4f46e5,#6366f1 55%,#4f46e5)', color: '#ffffff', boxShadow: '0 2px 12px rgba(99,102,241,0.40), inset 0 1px 0 rgba(255,255,255,0.15)' }}
               >
                 {/* shimmer sweep */}
-                <span className="pointer-events-none absolute inset-0" style={{ background: 'linear-gradient(105deg,transparent 30%,rgba(255,255,255,0.22) 50%,transparent 70%)', animation: 'goShimmer 2.8s ease-in-out infinite' }} />
+                <span className="pointer-events-none absolute inset-0" style={{ background: 'linear-gradient(105deg,transparent 30%,rgba(255,255,255,0.18) 50%,transparent 70%)', animation: 'goShimmer 2.8s ease-in-out infinite' }} />
                 {goUpgradePhase === 'paying'
-                  ? <><div className="h-3 w-3 rounded-full border-2 border-[#1a1208]/30 border-t-[#1a1208] animate-spin" /><span className="relative">Processing…</span></>
-                  : <><span className="relative">✦ Get Go</span><span className="relative hidden sm:inline"> — ₹99</span></>
+                  ? <><div className="h-3 w-3 rounded-full border-2 border-white/30 border-t-white animate-spin" /><span className="relative">Processing…</span></>
+                  : <><span className="relative">∞ Infinity</span><span className="relative hidden sm:inline"> — ₹99</span></>
                 }
               </button>
             </div>
@@ -2414,24 +2929,24 @@ export default function UserProfilePage() {
         >
           <div
             className="relative w-full sm:max-w-md rounded-t-[24px] sm:rounded-[24px] overflow-hidden p-[1.5px]"
-            style={{ background: 'linear-gradient(135deg,#C9A84C55,#F0D87840,#C9A84C55)' }}
+            style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.45),rgba(165,180,252,0.30),rgba(99,102,241,0.45))' }}
             onClick={e => e.stopPropagation()}
           >
-            <div className="relative rounded-t-[22.5px] sm:rounded-[22.5px] bg-[#100d06] px-5 pt-5 pb-6">
+            <div className="relative rounded-t-[22.5px] sm:rounded-[22.5px] bg-[#06060f] px-5 pt-5 pb-6">
               {/* ambient */}
-              <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse 80% 50% at 50% -5%,rgba(232,204,122,0.10) 0%,transparent 60%)' }} />
+              <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse 80% 50% at 50% -5%,rgba(99,102,241,0.10) 0%,transparent 60%)' }} />
 
               {/* Header */}
               <div className="relative flex items-center justify-between mb-5">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-[11px]" style={{ background: 'linear-gradient(135deg,#C9A84C,#F0D878)', boxShadow: '0 3px 14px rgba(201,168,76,0.45)' }}>
-                    <svg className="h-4.5 w-4.5 text-[#1a1208]" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-[11px]" style={{ background: 'linear-gradient(135deg,#4f46e5,#818cf8)', boxShadow: '0 3px 14px rgba(99,102,241,0.45)' }}>
+                    <svg className="h-4.5 w-4.5 text-white" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                     </svg>
                   </div>
                   <div>
-                    <p className="text-[14px] font-black text-white leading-tight">Refer &amp; Earn Docrud Go Free</p>
-                    <p className="text-[11px] text-white/35 mt-0.5">One referral that activates = your Go badge, free</p>
+                    <p className="text-[14px] font-black text-white leading-tight">Refer &amp; Earn Docrud Infinity Free</p>
+                    <p className="text-[11px] text-white/35 mt-0.5">One referral that activates = your Infinity badge, free</p>
                   </div>
                 </div>
                 <button type="button" onClick={() => setGoUpgradePhase('idle')} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/[0.10] bg-white/[0.04] text-white/30 hover:text-white/70 transition-colors">
@@ -2441,9 +2956,9 @@ export default function UserProfilePage() {
 
               {/* Steps */}
               <div className="relative grid grid-cols-3 gap-2 mb-5">
-                {[{ n: '1', label: 'Share your link' }, { n: '2', label: 'Friend signs up' }, { n: '3', label: 'Go badge unlocks' }].map(({ n, label }) => (
-                  <div key={n} className="flex flex-col items-center gap-1.5 rounded-[10px] py-3 px-2" style={{ background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.12)' }}>
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-black" style={{ background: 'linear-gradient(135deg,#C9A84C,#F0D878)', color: '#1a1208' }}>{n}</span>
+                {[{ n: '1', label: 'Share your link' }, { n: '2', label: 'Friend signs up' }, { n: '3', label: 'Infinity badge unlocks' }].map(({ n, label }) => (
+                  <div key={n} className="flex flex-col items-center gap-1.5 rounded-[10px] py-3 px-2" style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.12)' }}>
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-black" style={{ background: 'linear-gradient(135deg,#4f46e5,#818cf8)', color: '#fff' }}>{n}</span>
                     <span className="text-[10px] font-semibold text-white/50 text-center leading-tight">{label}</span>
                   </div>
                 ))}
@@ -2451,7 +2966,7 @@ export default function UserProfilePage() {
 
               {/* Link copy */}
               <div className="relative mb-4 rounded-[13px] border border-white/[0.08] bg-white/[0.03] p-3.5">
-                <p className="mb-2 text-[9px] font-black uppercase tracking-[0.22em]" style={{ color: '#C9A84C' }}>Your Referral Link</p>
+                <p className="mb-2 text-[9px] font-black uppercase tracking-[0.22em]" style={{ color: '#818cf8' }}>Your Referral Link</p>
                 {refLinkLoading ? (
                   <div className="h-9 animate-pulse rounded-[10px] bg-white/[0.06]" />
                 ) : (
@@ -2488,7 +3003,7 @@ export default function UserProfilePage() {
                     value={refInviteEmail}
                     onChange={(e) => setRefInviteEmail(e.target.value)}
                     placeholder="colleague@company.com"
-                    className="h-9 flex-1 rounded-[11px] border border-white/[0.08] bg-white/[0.04] px-3 text-[12px] text-white placeholder:text-white/20 outline-none transition focus:border-amber-500/25 focus:ring-1 focus:ring-amber-500/[0.08]"
+                    className="h-9 flex-1 rounded-[11px] border border-white/[0.08] bg-white/[0.04] px-3 text-[12px] text-white placeholder:text-white/20 outline-none transition focus:border-indigo-500/25 focus:ring-1 focus:ring-indigo-500/[0.08]"
                   />
                   <button
                     type="button"
@@ -2504,11 +3019,11 @@ export default function UserProfilePage() {
                         .catch((err: unknown) => setRefSendErr(err instanceof Error ? err.message : 'Failed to send.'))
                         .finally(() => setRefSending(false));
                     }}
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] border border-amber-500/25 bg-amber-500/[0.10] transition hover:bg-amber-500/[0.18] disabled:opacity-40"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] border border-indigo-500/25 bg-indigo-500/[0.10] transition hover:bg-indigo-500/[0.18] disabled:opacity-40"
                   >
                     {refSending
-                      ? <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-amber-300/30 border-t-amber-300" />
-                      : <svg className="h-3.5 w-3.5 text-amber-300" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
+                      ? <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-indigo-300/30 border-t-indigo-300" />
+                      : <svg className="h-3.5 w-3.5 text-indigo-300" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
                     }
                   </button>
                 </div>
@@ -2517,7 +3032,7 @@ export default function UserProfilePage() {
               </div>
 
               <p className="relative text-center text-[9px] text-white/18 leading-4">
-                Referrals can be sent to multiple people. Docrud Go activates <strong className="text-white/30">once per referrer</strong> the moment a referred profile is created.
+                Referrals can be sent to multiple people. Docrud Infinity activates <strong className="text-white/30">once per referrer</strong> the moment a referred profile is created.
               </p>
             </div>
           </div>
@@ -2760,8 +3275,28 @@ export default function UserProfilePage() {
       )}
 
       {/* ─── cover ─── */}
-      <div className="relative h-48 md:h-64 lg:h-80 w-full overflow-hidden" style={coverBgStyle}>
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0D0D0F] via-[#0D0D0F]/25 to-transparent" />
+      <div className="relative w-full overflow-hidden"
+        style={{ height: 'clamp(160px, 28vw, 380px)' }}>
+        {/* Image banner */}
+        {coverIsImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={coverImageUrl!}
+            alt="Profile banner"
+            className="absolute inset-0 h-full w-full object-cover"
+            style={{ objectPosition: profile.coverPosition ?? '50% 40%' }}
+            draggable={false}
+          />
+        ) : (
+          <div className="absolute inset-0" style={{ background: profile.coverGradient ? profile.coverGradient : getGradient(user.id) }} />
+        )}
+        {/* Fade bottom into page bg */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0D0D0F] via-[#0D0D0F]/20 to-transparent" />
+        {/* PF glow */}
+        {profile.publicFace && (
+          <div className="pointer-events-none absolute inset-0" style={{ background: 'linear-gradient(180deg,rgba(180,140,55,0.06) 0%,transparent 60%)' }} />
+        )}
+        {/* Pattern overlay for gradient banners */}
         {!coverIsImage && (
           <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.02%22%3E%3Cpath%20d%3D%22M36%2034v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6%2034v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6%204V0H4v4H0v2h4v4h2V6h4V4H6z%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-25" />
         )}
@@ -2787,11 +3322,14 @@ export default function UserProfilePage() {
             className="relative shrink-0 z-10 h-28 w-28 md:h-36 md:w-36 rounded-[24px] md:rounded-[28px] overflow-visible"
           >
             <div
-              className={`h-full w-full rounded-[24px] md:rounded-[28px] overflow-hidden border-[3px] border-[#0D0D0F] bg-[#18181b] flex items-center justify-center text-3xl md:text-4xl font-bold text-white/70 shadow-[0_8px_32px_rgba(0,0,0,0.6)] ${
-                profile.docrudGo
-                  ? 'shadow-[0_0_0_2.5px_rgba(201,168,76,0.55),0_8px_32px_rgba(201,168,76,0.18)]'
-                  : ''
-              }`}
+              className="h-full w-full rounded-[24px] md:rounded-[28px] overflow-hidden border-[3px] border-[#0D0D0F] bg-[#18181b] flex items-center justify-center text-3xl md:text-4xl font-bold text-white/70"
+              style={{
+                boxShadow: profile.publicFace
+                  ? '0 0 0 2px rgba(180,140,55,0.50), 0 0 0 3.5px rgba(200,165,70,0.18), 0 8px 32px rgba(0,0,0,0.65)'
+                  : profile.docrudGo
+                    ? '0 0 0 2.5px rgba(201,168,76,0.55), 0 8px 32px rgba(201,168,76,0.18)'
+                    : '0 8px 32px rgba(0,0,0,0.6)',
+              }}
             >
               {profile.avatarUrl ? (
                 <img src={profile.avatarUrl} alt={user.name} className="h-full w-full object-cover" style={{ objectPosition: profile.avatarPosition ?? '50% 50%' }} />
@@ -2805,15 +3343,16 @@ export default function UserProfilePage() {
               </div>
             )}
             {profile.publicFace && (
-              <div className="absolute -bottom-1.5 -right-1.5 z-10">
-                <PublicFaceStarIcon size={20} />
+              <div className="absolute -bottom-2 -right-2 z-10 flex items-center justify-center rounded-full"
+                style={{ width: 26, height: 26, background: 'linear-gradient(135deg,#0e0c07,#1a1508)', border: '1.5px solid rgba(180,140,55,0.40)', boxShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>
+                <PublicFaceStarIcon size={16} />
               </div>
             )}
           </div>
 
           {/* Identity */}
           <div className="flex-1 min-w-0 relative z-10 flex flex-col justify-end sm:pb-1">
-            <div className="flex flex-wrap items-center gap-2 mb-1">
+            <div className="flex flex-wrap items-center gap-2 mb-1.5">
               <h1 className="text-[24px] md:text-[32px] font-extrabold tracking-tight leading-none text-white">{user.name}</h1>
               {credits?.verified && <VerifiedBadge size="lg" />}
               {profile.docrudGo && <DocrudGoBadge size="md" />}
@@ -2823,6 +3362,10 @@ export default function UserProfilePage() {
               {profile.pronouns && (
                 <span className="text-xs text-white/30 font-normal">{profile.pronouns}</span>
               )}
+            </div>
+            {/* Presence status — below name, above headline */}
+            <div className="mb-2.5">
+              <PresenceBadge userId={user.id} />
             </div>
             {profile.headline && (
               <p className="text-white/55 text-[15px] md:text-[16px] leading-snug mb-3 max-w-2xl">{profile.headline}</p>
@@ -2867,6 +3410,16 @@ export default function UserProfilePage() {
                   <span className="hidden sm:inline">Edit profile</span>
                   <span className="sm:hidden">Edit</span>
                 </button>
+                <a
+                  href="/api/profile/sample-resume"
+                  target="_blank"
+                  rel="noreferrer"
+                  title="Download resume template pre-filled with your profile data"
+                  className="flex items-center gap-1.5 h-9 px-3 rounded-[12px] border border-white/[0.10] bg-white/[0.04] text-white/60 text-sm hover:bg-white/[0.08] hover:text-white/80 transition-colors"
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline text-xs">Resume</span>
+                </a>
                 <button
                   onClick={() => void signOut({ callbackUrl: '/onboarding' })}
                   className="flex items-center gap-2 h-9 px-3 rounded-[12px] border border-rose-500/20 bg-rose-500/[0.07] text-rose-400/80 text-sm hover:bg-rose-500/[0.14] hover:text-rose-400 transition-colors"
@@ -2930,16 +3483,12 @@ export default function UserProfilePage() {
             style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
           >
             <StatItem label="Followers" value={followersCount} onClick={() => { setTab('connections'); loadConnections(); }} />
-            <StatItem label="Following" value={stats.following} onClick={() => { setTab('connections'); loadConnections(); }} />
+            <StatItem label="Following" value={liveStats?.following ?? stats.following} onClick={() => { setTab('connections'); loadConnections(); }} />
             <StatItem label="Upraised" value={upraiseCount} />
-            <StatItem label="Gigs" value={stats.gigsCount} onClick={() => setTab('gigs')} />
-            <StatItem label="Published" value={stats.publishedCount} onClick={() => setTab('activity')} />
-            {isOwnProfile && (
-              <StatItem label="Total views" value={analytics ? analytics.totalViews : Math.floor(followersCount * 3.2 + stats.publishedCount * 8 + 47)} onClick={() => setTab('insights')} />
-            )}
-            {isOwnProfile && (
-              <StatItem label="Total likes" value={analytics?.totalLikes ?? 0} onClick={() => setTab('activity')} />
-            )}
+            <StatItem label="Gigs" value={liveStats?.gigsCount ?? stats.gigsCount} onClick={() => setTab('gigs')} />
+            <StatItem label="Published" value={liveStats?.publishedCount ?? stats.publishedCount} onClick={() => setTab('published')} />
+            <StatItem label="Total views" value={liveStats?.totalViews ?? stats.totalViews ?? 0} onClick={isOwnProfile ? () => setTab('insights') : undefined} />
+            <StatItem label="Total likes" value={liveStats?.totalLikes ?? stats.totalLikes ?? 0} onClick={isOwnProfile ? () => setTab('published') : undefined} />
           </div>
         </div>
 
@@ -2966,124 +3515,52 @@ export default function UserProfilePage() {
         {tab === 'published' && (
           <div className="space-y-5">
             {/* Header row */}
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
               <div>
                 <h3 className="text-[15px] font-bold text-white/85">
                   {isOwnProfile ? 'Your Published Posts' : `${user.name}'s Posts`}
                 </h3>
                 <p className="text-[11.5px] text-white/30 mt-0.5">
-                  {publishedPosts.length > 0 ? `${publishedPosts.length} post${publishedPosts.length !== 1 ? 's' : ''} published` : 'Nothing published yet'}
+                  {publishedPosts.length > 0 ? `${publishedPosts.length} post${publishedPosts.length !== 1 ? 's' : ''} published` : 'Shared publicly with the community'}
                 </p>
               </div>
-              {isOwnProfile && (
-                <button
-                  type="button"
-                  onClick={() => { setPublishModalOpen(true); setPublishError(''); setPublishSuccess(false); setPublishFile(null); setPublishForm({ title: '', category: 'document', tags: [], notes: '', tagInput: '' }); }}
-                  className="flex items-center gap-2 h-9 px-4 rounded-[11px] text-[12.5px] font-bold transition-all active:scale-[0.97]"
-                  style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', boxShadow: '0 3px 14px rgba(99,102,241,0.35)' }}
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  Publish
-                </button>
-              )}
-            </div>
-
-            {/* Posts grid */}
-            {publishedPosts.length === 0 ? (
-              <div className="rounded-[20px] border border-white/[0.06] bg-white/[0.02] py-16 text-center">
-                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-white/[0.04]">
-                  <Share2 className="h-6 w-6 text-white/20" />
-                </div>
-                <p className="text-[14px] font-semibold text-white/30">
-                  {isOwnProfile ? 'No posts published yet' : 'Nothing here yet'}
-                </p>
+              <div className="flex items-center gap-2 shrink-0">
                 {isOwnProfile && (
-                  <p className="text-[12px] text-white/18 mt-1.5">
-                    Hit <span className="font-bold text-white/30">Publish</span> to share your first post with the community.
-                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setPublishedView(v => v === 'tracker' ? 'feed' : 'tracker')}
+                    className={`flex items-center gap-1.5 h-9 px-3.5 rounded-[11px] text-[12px] font-semibold border transition-all ${
+                      publishedView === 'tracker'
+                        ? 'border-white/[0.18] bg-white/[0.10] text-white/85'
+                        : 'border-white/[0.09] bg-white/[0.04] text-white/45 hover:text-white/70 hover:bg-white/[0.07]'
+                    }`}
+                  >
+                    <TrendingUp className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Engagement</span>
+                  </button>
+                )}
+                {isOwnProfile && (
+                  <button
+                    type="button"
+                    onClick={() => { setPublishModalOpen(true); setPublishError(''); setPublishSuccess(false); setPublishFile(null); setPublishForm({ title: '', category: 'document', tags: [], notes: '', tagInput: '' }); }}
+                    className="flex items-center gap-1.5 h-9 px-4 rounded-[11px] text-[12.5px] font-semibold border border-white/[0.09] bg-white/[0.05] text-white/70 hover:bg-white/[0.09] hover:text-white/90 hover:border-white/[0.15] transition-all active:scale-[0.97]"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Publish
+                  </button>
                 )}
               </div>
-            ) : (
-              <div className="space-y-3">
-                {publishedPosts.map((post) => {
-                  const isActive = post.featured && post.featuredUntil && new Date(post.featuredUntil) > new Date();
-                  const daysLeft = isActive ? Math.ceil((new Date(post.featuredUntil!).getTime() - Date.now()) / 86400000) : 0;
-                  return (
-                    <div key={post.id} className="group rounded-[20px] border border-white/[0.07] bg-white/[0.025] p-5 transition hover:bg-white/[0.045] hover:border-white/[0.11]">
-                      <div className="flex items-start gap-4">
-                        {/* Icon */}
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] border border-white/[0.07] bg-white/[0.05]">
-                          <FileText className="h-5 w-5 text-white/35" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            {isActive && (
-                              <span className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider ${
-                                post.featuredPlan === 'prime' ? 'bg-amber-500/15 text-amber-300 border border-amber-500/25' :
-                                post.featuredPlan === 'boost' ? 'bg-violet-500/15 text-violet-300 border border-violet-500/25' :
-                                'bg-sky-500/15 text-sky-300 border border-sky-500/25'
-                              }`}>
-                                {post.featuredPlan === 'prime' ? '👑 Prime' : post.featuredPlan === 'boost' ? '🚀 Boost' : '⚡ Spotlight'} · {daysLeft}d left
-                              </span>
-                            )}
-                          </div>
-                          <h4 className="text-[14px] font-semibold text-white/85 truncate leading-snug">{post.title || post.fileName}</h4>
-                          <p className="text-[11px] text-white/28 mt-0.5">
-                            {new Date(post.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                          </p>
-                        </div>
-                        {/* Actions */}
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <a href={`/transfer/${post.shareId}`} target="_blank" rel="noopener noreferrer"
-                            className="flex h-8 w-8 items-center justify-center rounded-[10px] border border-white/[0.08] bg-white/[0.04] text-white/35 hover:text-white/75 hover:bg-white/[0.08] transition">
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </a>
-                          {isOwnProfile && (
-                            <button type="button"
-                              onClick={() => setFeaturePanelPost({ id: post.id, title: post.title || post.fileName })}
-                              className={`flex items-center gap-1.5 h-8 rounded-[10px] border px-3 text-[11px] font-semibold transition ${
-                                isActive
-                                  ? 'border-amber-500/25 bg-amber-500/[0.08] text-amber-400 hover:bg-amber-500/[0.14]'
-                                  : 'border-white/[0.09] bg-white/[0.03] text-white/40 hover:bg-white/[0.08] hover:text-white/70'
-                              }`}>
-                              <Rocket className="h-3 w-3" />
-                              {isActive ? 'Featured' : 'Feature'}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                      {/* Stats row */}
-                      <div className="mt-4 flex items-center gap-5 pl-[60px]">
-                        <span className="flex items-center gap-1.5 text-[11.5px] text-white/30">
-                          <Heart className="h-3.5 w-3.5" />
-                          <span className="tabular-nums font-semibold">{post.likesCount}</span>
-                          <span className="text-white/20">likes</span>
-                        </span>
-                        <span className="flex items-center gap-1.5 text-[11.5px] text-white/30">
-                          <Eye className="h-3.5 w-3.5" />
-                          <span className="tabular-nums font-semibold">{post.viewCount}</span>
-                          <span className="text-white/20">views</span>
-                        </span>
-                        <span className="flex items-center gap-1.5 text-[11.5px] text-white/30">
-                          <MessageSquare className="h-3.5 w-3.5" />
-                          <span className="tabular-nums font-semibold">{post.commentsCount}</span>
-                          <span className="text-white/20">comments</span>
-                        </span>
-                        {/* Engagement rate */}
-                        {post.viewCount > 0 && (
-                          <span className="ml-auto text-[10.5px] font-semibold text-white/20">
-                            {(((post.likesCount + post.commentsCount) / post.viewCount) * 100).toFixed(1)}% eng.
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            </div>
 
-            {/* Engagement tracker — own profile only */}
-            {isOwnProfile && <PublisherTrackingPanel />}
+            {/* Feed or Engagement Tracker */}
+            {(!isOwnProfile || publishedView === 'feed') && (
+              <ProfilePublishedFeed
+                userId={user.id}
+                isOwn={isOwnProfile}
+                onPublish={isOwnProfile ? () => { setPublishModalOpen(true); setPublishError(''); setPublishSuccess(false); setPublishFile(null); setPublishForm({ title: '', category: 'document', tags: [], notes: '', tagInput: '' }); } : undefined}
+              />
+            )}
+            {isOwnProfile && publishedView === 'tracker' && <PublisherTrackingPanel />}
           </div>
         )}
 
@@ -3319,80 +3796,122 @@ export default function UserProfilePage() {
             const reviews = serviceReviews[svc.id] ?? [];
             const canReview = !isOwnProfile && session && myServiceBookings.some(b => b.serviceId === svc.id && b.status === 'completed');
             const [showReviews, setShowReviews] = useState(false);
+
+            /* Category-aware gradient for the hero banner */
+            const CATEGORY_GRADIENTS: Record<string, string> = {
+              design:      'linear-gradient(135deg,#1a0533 0%,#2d1b5e 50%,#1a0533 100%)',
+              development: 'linear-gradient(135deg,#001233 0%,#023e8a 50%,#001233 100%)',
+              writing:     'linear-gradient(135deg,#0a2e0a 0%,#1a5c2a 50%,#0a2e0a 100%)',
+              marketing:   'linear-gradient(135deg,#2e1500 0%,#6b3500 50%,#2e1500 100%)',
+              consulting:  'linear-gradient(135deg,#160829 0%,#3b1f6e 50%,#160829 100%)',
+              photography: 'linear-gradient(135deg,#1a1400 0%,#4a3800 50%,#1a1400 100%)',
+              video:       'linear-gradient(135deg,#2e0000 0%,#6b0000 50%,#2e0000 100%)',
+              finance:     'linear-gradient(135deg,#001f1f 0%,#006060 50%,#001f1f 100%)',
+              legal:       'linear-gradient(135deg,#111827 0%,#1f2937 50%,#111827 100%)',
+              coaching:    'linear-gradient(135deg,#001a2e 0%,#004080 50%,#001a2e 100%)',
+              other:       'linear-gradient(135deg,#0f0f14 0%,#1c1c2e 50%,#0f0f14 100%)',
+            };
+            const heroBg = CATEGORY_GRADIENTS[svc.category] ?? CATEGORY_GRADIENTS.other;
+
             return (
-              <div className="group relative rounded-[22px] border border-white/[0.07] bg-gradient-to-b from-white/[0.04] to-white/[0.02] overflow-hidden hover:border-white/[0.14] hover:shadow-[0_8px_40px_rgba(0,0,0,0.5)] transition-all duration-300">
-                {svc.featured && (
-                  <div className="absolute top-3 right-3 z-10 flex items-center gap-1 rounded-full px-2.5 py-1 text-[9.5px] font-black uppercase tracking-wider" style={{ background: 'linear-gradient(135deg,#C9A84C,#F0D878)', color: '#1a1208' }}>
-                    <Star className="h-2.5 w-2.5" /> Featured
-                  </div>
-                )}
-                {/* Service image / gradient header */}
-                <div className="relative h-36 overflow-hidden">
+              <div className="group relative rounded-[20px] overflow-hidden transition-all duration-300 hover:-translate-y-[2px]"
+                style={{
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  background: '#0d0d10',
+                  boxShadow: '0 2px 12px rgba(0,0,0,0.30)',
+                  transition: 'transform 0.25s cubic-bezier(0.22,1,0.36,1), box-shadow 0.25s ease, border-color 0.25s ease',
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.14)'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 16px 48px rgba(0,0,0,0.55)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 2px 12px rgba(0,0,0,0.30)'; }}
+              >
+                {/* ── Hero banner ── */}
+                <div className="relative overflow-hidden" style={{ height: 148 }}>
                   {svc.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={svc.imageUrl} alt={svc.title} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    <img src={svc.imageUrl} alt={svc.title} className="h-full w-full object-cover transition-transform duration-600 group-hover:scale-[1.04]" />
                   ) : (
-                    <div className="h-full w-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0f0c29 0%, #302b63 60%, #24243e 100%)' }}>
-                      <span className="text-5xl opacity-60">{cat.icon}</span>
+                    <div className="h-full w-full flex items-center justify-center" style={{ background: heroBg }}>
+                      <span className="text-[56px] opacity-40 select-none" style={{ filter: 'drop-shadow(0 4px 24px rgba(0,0,0,0.6))' }}>{cat.icon}</span>
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0D0D0F]/80 to-transparent" />
-                </div>
+                  {/* Gradient scrim */}
+                  <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(13,13,16,0.95) 0%, rgba(13,13,16,0.20) 55%, transparent 100%)' }} />
 
-                <div className="p-5">
-                  {/* Category badge + rating */}
-                  <div className="flex items-center justify-between mb-3">
-                    <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${cat.color}`}>
+                  {/* Featured badge */}
+                  {svc.featured && (
+                    <div className="absolute top-3 right-3 flex items-center gap-1 rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-wider"
+                      style={{ background: 'rgba(99,102,241,0.90)', color: '#fff', backdropFilter: 'blur(8px)', boxShadow: '0 2px 12px rgba(99,102,241,0.50)' }}>
+                      <Star className="h-2.5 w-2.5 fill-white" /> Featured
+                    </div>
+                  )}
+
+                  {/* Category badge — bottom-left of hero */}
+                  <div className="absolute bottom-3 left-3">
+                    <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-[3px] text-[9.5px] font-bold backdrop-blur-sm ${cat.color}`}
+                      style={{ backdropFilter: 'blur(12px)' }}>
                       {cat.icon} {cat.label}
                     </span>
-                    {svc.reviewCount > 0 && (
-                      <div className="flex items-center gap-1.5">
-                        <StarRow rating={svc.rating} />
-                        <span className="text-[10px] text-white/35">{svc.rating} ({svc.reviewCount})</span>
-                      </div>
-                    )}
                   </div>
 
-                  <h3 className="font-bold text-white/90 text-[15px] leading-snug mb-1.5 group-hover:text-white transition-colors line-clamp-2">{svc.title}</h3>
-                  {svc.tagline && <p className="text-[12px] text-white/45 mb-3 line-clamp-2">{svc.tagline}</p>}
+                  {/* Rating — bottom-right of hero */}
+                  {svc.reviewCount > 0 && (
+                    <div className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full px-2.5 py-[3px]"
+                      style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.10)' }}>
+                      <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />
+                      <span className="text-[9.5px] font-bold text-white/80">{svc.rating}</span>
+                      <span className="text-[9px] text-white/35">({svc.reviewCount})</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* ── Card body ── */}
+                <div className="p-4">
+                  <h3 className="font-bold text-[14.5px] leading-snug text-white/90 mb-1 line-clamp-2 group-hover:text-white transition-colors">{svc.title}</h3>
+                  {svc.tagline && <p className="text-[11.5px] text-white/42 mb-3 line-clamp-2 leading-relaxed">{svc.tagline}</p>}
 
                   {/* Tags */}
                   {svc.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mb-4">
-                      {svc.tags.slice(0, 3).map((t) => (
-                        <span key={t} className="rounded-full border border-white/[0.07] bg-white/[0.04] px-2 py-0.5 text-[10px] text-white/40">{t}</span>
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {svc.tags.slice(0, 3).map(t => (
+                        <span key={t} className="rounded-full px-2 py-[2px] text-[9.5px] font-medium"
+                          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.38)' }}>{t}</span>
                       ))}
+                      {svc.tags.length > 3 && <span className="text-[9.5px] text-white/25">+{svc.tags.length - 3}</span>}
                     </div>
                   )}
 
                   {/* Testimonial highlight */}
                   {reviews.find(r => r.testimonial) && !showReviews && (
-                    <div className="mb-3 rounded-[12px] border border-amber-500/15 bg-amber-500/[0.06] px-3 py-2.5">
-                      <p className="text-[11px] text-amber-200/70 italic line-clamp-2">&quot;{reviews.find(r => r.testimonial)!.testimonial}&quot;</p>
-                      <p className="text-[10px] text-white/30 mt-1">— {reviews.find(r => r.testimonial)!.reviewerName}</p>
+                    <div className="mb-3 rounded-[10px] px-3 py-2.5"
+                      style={{ background: 'rgba(251,191,36,0.06)', border: '1px solid rgba(251,191,36,0.12)' }}>
+                      <p className="text-[10.5px] text-amber-200/65 italic line-clamp-2">"{reviews.find(r => r.testimonial)!.testimonial}"</p>
+                      <p className="text-[9.5px] text-white/28 mt-1">— {reviews.find(r => r.testimonial)!.reviewerName}</p>
                     </div>
                   )}
 
-                  {/* Price & delivery */}
-                  <div className="flex items-center justify-between pt-3 border-t border-white/[0.06]">
-                    <div>
-                      <p className="text-[13px] font-black text-white/90">{formatPrice(svc)}</p>
-                      {svc.deliveryTime && (
-                        <p className="text-[10px] text-white/35 mt-0.5 flex items-center gap-1">
-                          <Clock className="h-2.5 w-2.5" /> {svc.deliveryTime} {svc.deliveryUnit ?? 'days'} delivery
-                        </p>
-                      )}
+                  {/* Price + delivery + CTA */}
+                  <div className="flex items-end justify-between pt-3 gap-3"
+                    style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div className="min-w-0">
+                      <p className="text-[15px] font-extrabold text-white leading-none">{formatPrice(svc)}</p>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        {svc.deliveryTime && (
+                          <span className="flex items-center gap-1 text-[10px] text-white/32">
+                            <Clock className="h-2.5 w-2.5" />{svc.deliveryTime} {svc.deliveryUnit ?? 'days'}
+                          </span>
+                        )}
+                        {svc.bookingCount > 0 && (
+                          <span className="text-[10px] text-white/25">{svc.deliveryTime ? '·' : ''} {svc.bookingCount} booked</span>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {svc.bookingCount > 0 && (
-                        <span className="text-[10px] text-white/30">{svc.bookingCount} booked</span>
-                      )}
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       {!isOwnProfile && (
                         <button
                           type="button"
                           onClick={() => { setBookingServiceId(svc.id); setBookingForm({ clientName: '', clientEmail: '', clientPhone: '', clientMessage: '', packageName: '', scheduledDate: '' }); setBookingSuccess(false); setBookingError(''); fetch('/api/services/analytics/track',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({serviceId:svc.id,type:'book_click',source:'profile'})}).catch(()=>{}); }}
-                          className="flex items-center gap-1.5 rounded-[10px] px-3 py-1.5 text-[11.5px] font-bold transition-all active:scale-95"
-                          style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', boxShadow: '0 3px 12px rgba(99,102,241,0.35)' }}
+                          className="flex items-center gap-1.5 rounded-[10px] px-3.5 py-2 text-[12px] font-bold transition-all active:scale-[0.95]"
+                          style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.13)', color: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)' }}
                         >
                           Book Now
                         </button>
@@ -3442,7 +3961,7 @@ export default function UserProfilePage() {
                           <p className="text-[11px] text-white/45 leading-relaxed">{rev.body}</p>
                           {rev.testimonial && (
                             <div className="mt-2 rounded-[10px] border border-amber-500/15 bg-amber-500/[0.06] px-2.5 py-2">
-                              <p className="text-[10.5px] text-amber-200/65 italic">&quot;{rev.testimonial}&quot;</p>
+                              <p className="text-[10.5px] text-amber-200/65 italic">"{rev.testimonial}"</p>
                             </div>
                           )}
                         </div>
@@ -3458,60 +3977,93 @@ export default function UserProfilePage() {
 
           return (
             <div>
-              {/* Header with actions */}
-              <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
-                <div>
-                  <h2 className="text-[17px] font-bold text-white/90">
-                    {isOwnProfile ? 'My Services' : `Services by ${data?.user.name}`}
-                  </h2>
-                  <p className="text-[12px] text-white/35 mt-0.5">
-                    {profileServices.length} service{profileServices.length !== 1 ? 's' : ''} available
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
+              {/* ── Header ── */}
+              <div className="mb-6">
+                {/* Title row */}
+                <div className="flex items-start justify-between gap-3 mb-4">
+                  <div>
+                    <h2 className="text-[18px] font-bold text-white tracking-tight">
+                      {isOwnProfile ? 'My Services' : `Services by ${data?.user.name?.split(' ')[0]}`}
+                    </h2>
+                    <p className="text-[12px] text-white/35 mt-0.5">
+                      {profileServices.length > 0
+                        ? `${profileServices.length} service${profileServices.length !== 1 ? 's' : ''} · available for booking`
+                        : isOwnProfile ? 'Publish services clients can book directly' : 'No services listed yet'}
+                    </p>
+                  </div>
+                  {/* "Add Service" — glass-black theme */}
                   {isOwnProfile && (
-                    <>
-                      {/* Sub tabs for own profile */}
-                      <div className="flex gap-1 p-1 rounded-[12px] bg-white/[0.05] border border-white/[0.07]">
-                        {([
-                          { id: 'catalogue', label: 'Catalogue' },
-                          { id: 'bookings', label: `Bookings${serviceBookings.length > 0 ? ` (${serviceBookings.length})` : ''}` },
-                          { id: 'analytics', label: '📊 Analytics' },
-                        ] as const).map(st => (
-                          <button key={st.id} type="button" onClick={() => setServicesSubTab(st.id)}
-                            className={`px-3 py-1.5 rounded-[9px] text-[11.5px] font-semibold transition-all ${servicesSubTab === st.id ? 'bg-white/[0.12] text-white' : 'text-white/40 hover:text-white/70'}`}>
-                            {st.label}
-                          </button>
-                        ))}
-                      </div>
-                      {/* Open catalogue button */}
-                      <Link
-                        href={`/services/${userId}`}
-                        target="_blank"
-                        className="flex items-center gap-1.5 rounded-[10px] border border-white/[0.09] bg-white/[0.04] px-2.5 py-1.5 text-[11.5px] font-semibold text-white/45 hover:text-white hover:bg-white/[0.08] transition-all"
-                      >
-                        <ExternalLink className="h-3.5 w-3.5" />
-                        <span className="hidden sm:inline">View Catalogue</span>
-                      </Link>
-                      <button
-                        type="button"
-                        onClick={() => { setServiceForm({ title: '', tagline: '', description: '', category: 'design', tags: [], pricingModel: 'fixed', basePrice: 0, currency: 'USD', isActive: true, featured: false, deliveryTime: 3, deliveryUnit: 'days' }); setServiceFormError(''); }}
-                        className="flex items-center gap-1.5 rounded-[11px] px-3.5 py-2 text-[12px] font-bold transition-all active:scale-95"
-                        style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', boxShadow: '0 3px 12px rgba(99,102,241,0.35)' }}
-                      >
-                        <Plus className="h-3.5 w-3.5" /> Add Service
-                      </button>
-                    </>
+                    <button
+                      type="button"
+                      onClick={() => { setServiceForm({ title: '', tagline: '', description: '', category: 'design', tags: [], pricingModel: 'fixed', basePrice: 0, currency: 'USD', isActive: true, featured: false, deliveryTime: 3, deliveryUnit: 'days' }); setServiceFormError(''); }}
+                      className="flex items-center gap-1.5 rounded-[12px] text-[12.5px] font-semibold transition-all active:scale-[0.96] flex-shrink-0"
+                      style={{
+                        padding: '8px 14px',
+                        background: 'rgba(255,255,255,0.06)',
+                        border: '1px solid rgba(255,255,255,0.12)',
+                        backdropFilter: 'blur(16px)',
+                        WebkitBackdropFilter: 'blur(16px)',
+                        color: 'rgba(255,255,255,0.80)',
+                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 2px 12px rgba(0,0,0,0.25)',
+                      }}
+                    >
+                      <Plus className="h-3.5 w-3.5 opacity-75" />
+                      <span className="hidden xs:inline">Add Service</span>
+                      <span className="xs:hidden">Add</span>
+                    </button>
                   )}
-                  {!isOwnProfile && profileServices.length > 0 && (
+                </div>
+
+                {/* Sub-tabs + view catalogue — scroll on mobile */}
+                {isOwnProfile && (
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    {/* Segmented tabs */}
+                    <div className="flex gap-0.5 p-[3px] rounded-[12px] flex-shrink-0"
+                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                      {([
+                        { id: 'catalogue' as const, label: 'Catalogue', icon: '◈' },
+                        { id: 'bookings'  as const, label: serviceBookings.length > 0 ? `Bookings · ${serviceBookings.length}` : 'Bookings', icon: '◉' },
+                        { id: 'analytics' as const, label: 'Analytics', icon: '▲' },
+                      ]).map(st => (
+                        <button key={st.id} type="button" onClick={() => setServicesSubTab(st.id)}
+                          className="flex items-center gap-1.5 rounded-[9px] px-3 py-1.5 text-[11.5px] font-semibold transition-all whitespace-nowrap"
+                          style={{
+                            background: servicesSubTab === st.id ? 'rgba(255,255,255,0.10)' : 'transparent',
+                            color: servicesSubTab === st.id ? 'rgba(255,255,255,0.88)' : 'rgba(255,255,255,0.38)',
+                            boxShadow: servicesSubTab === st.id ? 'inset 0 1px 0 rgba(255,255,255,0.08)' : 'none',
+                          }}>
+                          <span className="text-[9px] opacity-60">{st.icon}</span>
+                          {st.label}
+                        </button>
+                      ))}
+                    </div>
+                    {/* View catalogue link */}
                     <Link
                       href={`/services/${userId}`}
-                      className="flex items-center gap-1.5 rounded-[11px] border border-white/[0.10] bg-white/[0.05] px-3.5 py-2 text-[12px] font-semibold text-white/60 hover:text-white hover:bg-white/[0.08] transition-all"
+                      target="_blank"
+                      className="flex items-center gap-1.5 rounded-[10px] text-[11.5px] font-semibold transition-all whitespace-nowrap flex-shrink-0"
+                      style={{
+                        padding: '6px 12px',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        background: 'rgba(255,255,255,0.03)',
+                        color: 'rgba(255,255,255,0.40)',
+                        backdropFilter: 'blur(8px)',
+                      }}
                     >
-                      <ExternalLink className="h-3.5 w-3.5" /> Full Catalogue
+                      <ExternalLink className="h-3 w-3" />
+                      <span>View Public Catalogue</span>
                     </Link>
-                  )}
-                </div>
+                  </div>
+                )}
+                {!isOwnProfile && profileServices.length > 0 && (
+                  <Link
+                    href={`/services/${userId}`}
+                    className="inline-flex items-center gap-1.5 rounded-[10px] text-[11.5px] font-semibold transition-all"
+                    style={{ padding: '6px 12px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.40)' }}
+                  >
+                    <ExternalLink className="h-3 w-3" /> Full Catalogue
+                  </Link>
+                )}
               </div>
 
               {/* Bookings sub-tab (own profile only) */}
@@ -3828,35 +4380,70 @@ export default function UserProfilePage() {
                       {[1,2,3].map(i => <div key={i} className="h-64 rounded-[22px] animate-pulse bg-white/[0.04]" />)}
                     </div>
                   ) : profileServices.length === 0 ? (
-                    <div className="rounded-[20px] border border-white/[0.06] bg-white/[0.03] p-16 text-center">
-                      <div className="h-12 w-12 rounded-[14px] border border-white/[0.08] bg-white/[0.04] flex items-center justify-center mx-auto mb-4">
-                        <Briefcase className="h-5 w-5 text-white/30" />
+                    /* ── Premium empty state ── */
+                    <div className="rounded-[22px] p-8 sm:p-12 text-center flex flex-col items-center"
+                      style={{ border: '1px solid rgba(255,255,255,0.06)', background: 'linear-gradient(160deg,rgba(255,255,255,0.025) 0%,rgba(0,0,0,0.02) 100%)' }}>
+                      {/* Icon */}
+                      <div className="relative mb-5">
+                        <div className="h-16 w-16 rounded-[20px] flex items-center justify-center mx-auto"
+                          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}>
+                          <Briefcase className="h-7 w-7 text-white/25" />
+                        </div>
+                        {isOwnProfile && (
+                          <div className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full flex items-center justify-center"
+                            style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}>
+                            <Plus className="h-3.5 w-3.5 text-white/55" />
+                          </div>
+                        )}
                       </div>
-                      <p className="text-white/40 text-sm">{isOwnProfile ? 'No services listed yet.' : 'No services available.'}</p>
+                      <p className="text-[15px] font-bold text-white/55 mb-1.5">
+                        {isOwnProfile ? 'No services yet' : 'No services available'}
+                      </p>
+                      <p className="text-[12.5px] text-white/28 max-w-xs leading-relaxed mb-5">
+                        {isOwnProfile
+                          ? 'Publish your first service and let clients book you directly from your profile.'
+                          : 'This professional hasn\'t listed any services yet.'}
+                      </p>
                       {isOwnProfile && (
-                        <button type="button" onClick={() => { setServiceForm({ title: '', tagline: '', description: '', category: 'design', tags: [], pricingModel: 'fixed', basePrice: 0, currency: 'USD', isActive: true, featured: false, deliveryTime: 3, deliveryUnit: 'days' }); setServiceFormError(''); }}
-                          className="inline-flex items-center gap-1.5 mt-4 text-[13px] font-semibold text-violet-400 hover:text-violet-300 transition">
-                          <Plus className="h-4 w-4" /> Add your first service
+                        <button
+                          type="button"
+                          onClick={() => { setServiceForm({ title: '', tagline: '', description: '', category: 'design', tags: [], pricingModel: 'fixed', basePrice: 0, currency: 'USD', isActive: true, featured: false, deliveryTime: 3, deliveryUnit: 'days' }); setServiceFormError(''); }}
+                          className="flex items-center gap-2 rounded-[12px] text-[13px] font-semibold transition-all active:scale-[0.96]"
+                          style={{
+                            padding: '10px 20px',
+                            background: 'rgba(255,255,255,0.07)',
+                            border: '1px solid rgba(255,255,255,0.13)',
+                            backdropFilter: 'blur(16px)',
+                            color: 'rgba(255,255,255,0.80)',
+                            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
+                          }}
+                        >
+                          <Plus className="h-4 w-4 opacity-70" /> Publish your first service
                         </button>
                       )}
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    /* ── Services grid — 1 col mobile, 2 tablet, 3 desktop ── */
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                       {profileServices.map(svc => (
                         <div key={svc.id} className="relative">
                           <ServiceCard svc={svc} />
+                          {/* Owner overlay controls */}
                           {isOwnProfile && (
-                            <div className="absolute top-3 left-3 flex gap-1.5">
+                            <div className="absolute top-3 left-3 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                              style={{ opacity: 1 }}>
                               <button type="button" onClick={() => { setServiceForm(svc); setServiceFormError(''); }}
-                                className="flex items-center gap-1 rounded-[8px] border border-white/[0.12] bg-black/60 backdrop-blur-sm px-2.5 py-1 text-[10px] font-semibold text-white/60 hover:text-white transition">
+                                className="flex items-center gap-1 rounded-[8px] px-2.5 py-1 text-[10px] font-semibold transition-all active:scale-95"
+                                style={{ background: 'rgba(0,0,0,0.72)', border: '1px solid rgba(255,255,255,0.14)', backdropFilter: 'blur(12px)', color: 'rgba(255,255,255,0.72)' }}>
                                 <Edit2 className="h-2.5 w-2.5" /> Edit
                               </button>
                               <button type="button" onClick={async () => {
                                 if (!confirm('Delete this service?')) return;
                                 await fetch(`/api/services/${svc.id}`, { method: 'DELETE' });
                                 setProfileServices(prev => prev.filter(s => s.id !== svc.id));
-                              }} className="flex items-center gap-1 rounded-[8px] border border-red-500/20 bg-red-500/10 backdrop-blur-sm px-2.5 py-1 text-[10px] font-semibold text-red-400 hover:bg-red-500/20 transition">
-                                <X className="h-2.5 w-2.5" /> Del
+                              }} className="flex items-center gap-1 rounded-[8px] px-2.5 py-1 text-[10px] font-semibold transition-all active:scale-95"
+                                style={{ background: 'rgba(127,0,0,0.65)', border: '1px solid rgba(239,68,68,0.25)', backdropFilter: 'blur(12px)', color: 'rgba(252,165,165,0.85)' }}>
+                                <X className="h-2.5 w-2.5" /> Delete
                               </button>
                             </div>
                           )}
@@ -3875,7 +4462,7 @@ export default function UserProfilePage() {
                     <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.07]">
                       <div>
                         <h3 className="font-bold text-white text-[15px]">Book: {bookingTarget.title}</h3>
-                        <p className="text-[11px] text-white/35 mt-0.5">Fill in your details and we&apos;ll get back to you</p>
+                        <p className="text-[11px] text-white/35 mt-0.5">Fill in your details and we'll get back to you</p>
                       </div>
                       <button onClick={() => setBookingServiceId(null)} className="h-8 w-8 rounded-full bg-white/[0.06] flex items-center justify-center hover:bg-white/[0.10] transition-colors">
                         <X className="h-4 w-4 text-white/60" />
@@ -4233,6 +4820,9 @@ export default function UserProfilePage() {
           );
         })()}
 
+        {/* Business Pages tab */}
+        {tab === 'pages' && userId && <BusinessPagesTab userId={userId} isOwnProfile={!!isOwnProfile} />}
+
         {/* Activity tab */}
         {tab === 'activity' && (
           <div className="space-y-4">
@@ -4435,7 +5025,7 @@ export default function UserProfilePage() {
                     style={{
                       width: `${strength}%`,
                       background: strength >= 80
-                        ? 'linear-gradient(90deg, #C9A84C, #E8CC7A)'
+                        ? 'linear-gradient(90deg, #4f46e5, #818cf8)'
                         : strength >= 50
                           ? 'linear-gradient(90deg, #ffffff88, #ffffffcc)'
                           : 'linear-gradient(90deg, #ffffff44, #ffffff77)',
@@ -4533,9 +5123,9 @@ export default function UserProfilePage() {
                   {/* Balance + streak hero */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="rounded-[20px] border border-white/[0.06] bg-white/[0.03] p-5 relative overflow-hidden">
-                      <div className="absolute inset-0 opacity-5" style={{ background: 'radial-gradient(circle at 80% 20%, #C9A84C, transparent 60%)' }} />
+                      <div className="absolute inset-0 opacity-5" style={{ background: 'radial-gradient(circle at 80% 20%, #6366f1, transparent 60%)' }} />
                       <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/30 mb-2">Credits balance</p>
-                      <p className="text-3xl font-black text-white tracking-tight" style={{ backgroundImage: 'linear-gradient(90deg,#E8CC7A,#C9A84C)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{credits.balance.toLocaleString()}</p>
+                      <p className="text-3xl font-black text-white tracking-tight" style={{ backgroundImage: 'linear-gradient(90deg,#a5b4fc,#6366f1)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{credits.balance.toLocaleString()}</p>
                       <p className="text-[11px] text-white/30 mt-1">{credits.totalEarned} earned · virtual currency</p>
                       <div className="mt-3 text-[10px] text-white/20">Spend on premium features at checkout</div>
                     </div>
@@ -4552,7 +5142,7 @@ export default function UserProfilePage() {
                           <div key={i} className={`h-1.5 flex-1 rounded-full transition-all ${i < Math.min(credits.streak.current, 10) ? 'bg-gradient-to-r from-amber-400 to-orange-400' : 'bg-white/[0.08]'}`} />
                         ))}
                       </div>
-                      <p className="text-[10px] text-white/20 mt-1.5">{credits.streak.current >= 10 ? '✦ Verified badge earned!' : `${10 - Math.min(credits.streak.current, 10)} more days to verified badge`}</p>
+                      <p className="text-[10px] text-white/20 mt-1.5">{credits.streak.current >= 10 ? '∞ Verified badge earned!' : `${10 - Math.min(credits.streak.current, 10)} more days to verified badge`}</p>
                     </div>
                   </div>
 
@@ -4560,7 +5150,7 @@ export default function UserProfilePage() {
                   {(() => {
                     const ALL_MILESTONES = [
                       { id: 'first_step', title: 'First Step', desc: 'Create your account', icon: '🚀', credits: 5 },
-                      { id: 'profile_complete', title: 'Identity Established', desc: 'Complete your profile 100%', icon: '✦', credits: 20 },
+                      { id: 'profile_complete', title: 'Identity Established', desc: 'Complete your profile 100%', icon: '∞', credits: 20 },
                       { id: 'first_publish', title: 'First Publish', desc: 'Publish your first content', icon: '📄', credits: 10 },
                       { id: 'streak_7', title: 'Week Warrior', desc: 'Post 7 days in a row', icon: '🔥', credits: 30 },
                       { id: 'streak_10', title: 'Verified Creator', desc: 'Post 10 days in a row', icon: '✓', credits: 75, grantsVerified: true },
@@ -4736,7 +5326,7 @@ export default function UserProfilePage() {
                 <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-white/40 mb-4">Docrud Credits</h3>
                 <div className="flex items-center gap-4">
                   <div>
-                    <p className="text-3xl font-black" style={{ backgroundImage: 'linear-gradient(90deg,#E8CC7A,#C9A84C)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{credits.balance.toLocaleString()}</p>
+                    <p className="text-3xl font-black" style={{ backgroundImage: 'linear-gradient(90deg,#a5b4fc,#6366f1)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{credits.balance.toLocaleString()}</p>
                     <p className="text-[11px] text-white/30 mt-1">{credits.totalEarned} credits earned · usable at checkout</p>
                   </div>
                   <div className="ml-auto text-right">
@@ -4750,337 +5340,310 @@ export default function UserProfilePage() {
         )}
 
         {/* ── Settings tab ──────────────────────────────────────────── */}
-        {tab === 'settings' && isOwnProfile && (
-          <div className="space-y-4">
+        {tab === 'settings' && isOwnProfile && (() => {
+          const toggle = (id: string) => setOpenSection(prev => prev === id ? '' : id);
 
-            {/* Account overview card */}
-            <div className="rounded-[20px] border border-white/[0.06] bg-white/[0.02] overflow-hidden">
-              {/* Header strip */}
-              <div className="flex items-center gap-3 px-6 py-4 border-b border-white/[0.05]">
-                <div className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-white/[0.06] border border-white/[0.08]">
-                  <Settings2 className="h-4 w-4 text-white/50" />
-                </div>
-                <div>
-                  <p className="text-[13px] font-bold text-white/80">Account</p>
-                  <p className="text-[11px] text-white/35">Your profile and login details</p>
-                </div>
-              </div>
-              <div className="divide-y divide-white/[0.04]">
-                {[
-                  { label: 'Name', value: user.name || session?.user?.name || '—' },
-                  { label: 'Email', value: session?.user?.email || '—' },
-                  { label: 'Account type', value: user.accountType === 'business' ? 'Business' : 'Individual' },
-                  { label: 'Member since', value: user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : '—' },
-                  { label: 'Profile ID', value: `@${userId}` },
-                ].map(({ label, value }) => (
-                  <div key={label} className="flex items-center justify-between gap-4 px-6 py-3.5">
-                    <span className="text-[12px] text-white/35 font-medium shrink-0">{label}</span>
-                    <span className="text-[12.5px] text-white/65 font-medium text-right truncate max-w-[200px] sm:max-w-none">{value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+          const enabledNotifCount = ([
+            'follows','likes','comments','mentions','gig_applied','messages','billing','system'
+          ] as string[]).filter(k => k in emailPrefs ? emailPrefs[k] : true).length;
 
-            {/* Privacy & visibility */}
-            <div className="rounded-[20px] border border-white/[0.06] bg-white/[0.02] overflow-hidden">
-              <div className="flex items-center gap-3 px-6 py-4 border-b border-white/[0.05]">
-                <div className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-white/[0.06] border border-white/[0.08]">
-                  <Shield className="h-4 w-4 text-white/50" />
-                </div>
-                <div>
-                  <p className="text-[13px] font-bold text-white/80">Privacy</p>
-                  <p className="text-[11px] text-white/35">Control your visibility and profile data</p>
-                </div>
-              </div>
-              <div className="divide-y divide-white/[0.04]">
-                {[
-                  { label: 'Profile visibility', value: 'Public', note: 'Your profile is visible to everyone on Docrud' },
-                  { label: 'Open to work', value: (profile as { openToWork?: boolean }).openToWork ? 'Enabled' : 'Off', note: 'Shown as a badge on your profile card' },
-                  { label: 'Show location', value: profile.location ? 'Visible' : 'Hidden', note: profile.location || 'No location set' },
-                ].map(({ label, value, note }) => (
-                  <div key={label} className="flex items-start justify-between gap-4 px-6 py-3.5">
-                    <div className="min-w-0">
-                      <p className="text-[12.5px] text-white/65 font-medium">{label}</p>
-                      <p className="text-[11px] text-white/30 mt-0.5 truncate">{note}</p>
+          const linkedCount = (['linkedinUrl','githubUrl','twitterUrl','websiteUrl'] as string[])
+            .filter(k => !!(profile as Record<string, string | undefined>)[k]).length;
+
+          const pfStatus = profile.publicFace ? 'Verified'
+            : pfApplication?.status === 'pending' ? 'Pending'
+            : pfApplication?.status === 'under_review' ? 'Under Review'
+            : pfApplication?.status === 'rejected' ? 'Not Approved'
+            : 'Not applied';
+
+          const Section = (props: Omit<React.ComponentProps<typeof AccordionSection>, 'open' | 'onToggle'>) =>
+            <AccordionSection {...props} open={openSection === props.id} onToggle={toggle} />;
+
+          return (
+            <div className="space-y-2">
+
+              {/* ── Account ── */}
+              <Section id="account" title="Account" subtitle="Profile and login details"
+                badge={user.name || '—'} badgeColor="rgba(255,255,255,0.50)"
+                icon={<Settings2 className="h-3.5 w-3.5 text-white/40" />}>
+                <div className="divide-y divide-white/[0.04]">
+                  {[
+                    { label: 'Name',         value: user.name || session?.user?.name || '—' },
+                    { label: 'Email',        value: session?.user?.email || '—' },
+                    { label: 'Account type', value: user.accountType === 'business' ? 'Business' : 'Individual' },
+                    { label: 'Member since', value: user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : '—' },
+                    { label: 'Profile ID',   value: `@${userId}` },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="flex items-center justify-between gap-4 px-5 py-3">
+                      <span className="text-[11.5px] text-white/30 font-medium shrink-0">{label}</span>
+                      <span className="text-[12px] text-white/60 font-medium text-right truncate max-w-[200px] sm:max-w-none">{value}</span>
                     </div>
-                    <span className="shrink-0 text-[11.5px] font-semibold px-2.5 py-1 rounded-full border"
-                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.45)' }}>
-                      {value}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
+                  ))}
+                </div>
+              </Section>
 
-            {/* Email notification preferences */}
-            <div className="rounded-[20px] border border-white/[0.06] bg-white/[0.02] overflow-hidden">
-              <div className="flex items-center gap-3 px-6 py-4 border-b border-white/[0.05]">
-                <div className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-white/[0.06] border border-white/[0.08]">
-                  <Mail className="h-4 w-4 text-white/50" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-bold text-white/80">Email Notifications</p>
-                  <p className="text-[11px] text-white/35">Choose which alerts to receive by email</p>
-                </div>
-                {emailPrefsSaving && <span className="text-[10px] text-white/25 animate-pulse">Saving&hellip;</span>}
-              </div>
-              <div className="divide-y divide-white/[0.04]">
-                {([
-                  { key: 'follows',    label: 'New followers',       desc: 'When someone follows you' },
-                  { key: 'likes',      label: 'Likes & reactions',   desc: 'When someone likes your post' },
-                  { key: 'comments',   label: 'Comments',            desc: 'When someone comments on your content' },
-                  { key: 'mentions',   label: 'Mentions',            desc: "When you're tagged or mentioned" },
-                  { key: 'gig_applied', label: 'Gig applications',   desc: 'When someone applies to your gig' },
-                  { key: 'messages',   label: 'Direct messages',     desc: 'When you receive a new message' },
-                  { key: 'billing',    label: 'Billing alerts',      desc: 'Plan usage and billing updates' },
-                  { key: 'system',     label: 'System updates',      desc: 'Account and platform announcements' },
-                ] as { key: string; label: string; desc: string }[]).map(({ key, label, desc }) => {
-                  const enabled = key in emailPrefs ? emailPrefs[key] : true;
-                  return (
-                    <div key={key} className="flex items-center justify-between gap-4 px-6 py-3.5">
+              {/* ── Privacy ── */}
+              <Section id="privacy" title="Privacy" subtitle="Visibility and profile data"
+                badge={(profile as { openToWork?: boolean }).openToWork ? 'Open to Work · Public' : 'Public'}
+                icon={<Shield className="h-3.5 w-3.5 text-white/40" />}>
+                <div className="divide-y divide-white/[0.04]">
+                  {[
+                    { label: 'Profile visibility', value: 'Public',    note: 'Visible to everyone on Docrud' },
+                    { label: 'Open to work',        value: (profile as { openToWork?: boolean }).openToWork ? 'Enabled' : 'Off', note: 'Badge shown on your profile card' },
+                    { label: 'Show location',       value: profile.location ? 'Visible' : 'Hidden', note: profile.location || 'No location set' },
+                  ].map(({ label, value, note }) => (
+                    <div key={label} className="flex items-start justify-between gap-4 px-5 py-3">
                       <div className="min-w-0">
-                        <p className="text-[12.5px] text-white/65 font-medium">{label}</p>
-                        <p className="text-[11px] text-white/30 mt-0.5">{desc}</p>
+                        <p className="text-[12px] text-white/60 font-medium">{label}</p>
+                        <p className="text-[10.5px] text-white/25 mt-0.5 truncate">{note}</p>
                       </div>
-                      {/* Toggle switch */}
-                      <button
-                        type="button"
-                        onClick={() => toggleEmailPref(key, !enabled)}
-                        className={`relative shrink-0 flex h-5 w-9 cursor-pointer rounded-full transition-colors duration-200 focus:outline-none ${enabled ? 'bg-emerald-500/80' : 'bg-white/[0.10]'}`}
-                        role="switch"
-                        aria-checked={enabled}
-                        aria-label={label}
-                      >
-                        <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform duration-200 ${enabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Linked accounts */}
-            <div className="rounded-[20px] border border-white/[0.06] bg-white/[0.02] overflow-hidden">
-              <div className="flex items-center gap-3 px-6 py-4 border-b border-white/[0.05]">
-                <div className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-white/[0.06] border border-white/[0.08]">
-                  <Link2 className="h-4 w-4 text-white/50" />
-                </div>
-                <div>
-                  <p className="text-[13px] font-bold text-white/80">Linked profiles</p>
-                  <p className="text-[11px] text-white/35">Your connected social accounts</p>
-                </div>
-              </div>
-              <div className="px-6 py-4 flex flex-wrap gap-2">
-                {[
-                  { key: 'linkedinUrl', Icon: Linkedin, label: 'LinkedIn', color: '#0a66c2' },
-                  { key: 'githubUrl',   Icon: Github,   label: 'GitHub',   color: '#e6edf3' },
-                  { key: 'twitterUrl', Icon: Twitter,  label: 'Twitter',  color: '#1da1f2' },
-                  { key: 'websiteUrl', Icon: Globe,    label: 'Website',  color: '#a78bfa' },
-                ].map(({ key, Icon, label, color }) => {
-                  const url = (profile as Record<string, string | undefined>)[key];
-                  return (
-                    <div key={key}
-                      className="flex items-center gap-2 px-3 py-2 rounded-[12px] border"
-                      style={{ background: url ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.02)', border: `1px solid ${url ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.05)'}` }}>
-                      <Icon className="h-3.5 w-3.5 shrink-0" style={{ color: url ? color : 'rgba(255,255,255,0.20)' }} />
-                      <span className="text-[12px] font-medium" style={{ color: url ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.22)' }}>{label}</span>
-                      {url
-                        ? <CheckCircle className="h-3 w-3 text-emerald-400/70" />
-                        : <span className="text-[10px] text-white/20">Not linked</span>}
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="px-6 pb-4">
-                <button type="button" onClick={() => setEditOpen(true)}
-                  className="flex items-center gap-1.5 text-[12px] text-indigo-400/70 hover:text-indigo-400 transition-colors">
-                  <Edit2 className="h-3 w-3" />
-                  Edit profile to update links
-                </button>
-              </div>
-            </div>
-
-            {/* Session */}
-            <div className="rounded-[20px] border border-white/[0.06] bg-white/[0.02] overflow-hidden">
-              <div className="flex items-center gap-3 px-6 py-4 border-b border-white/[0.05]">
-                <div className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-white/[0.06] border border-white/[0.08]">
-                  <LogOut className="h-4 w-4 text-white/50" />
-                </div>
-                <div>
-                  <p className="text-[13px] font-bold text-white/80">Session</p>
-                  <p className="text-[11px] text-white/35">Manage your active login session</p>
-                </div>
-              </div>
-              <div className="px-6 py-5 flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-[13px] text-white/65 font-medium">Sign out of Docrud</p>
-                  <p className="text-[11.5px] text-white/30 mt-0.5">You&apos;ll be redirected to the login page</p>
-                </div>
-                <button
-                  onClick={() => void signOut({ callbackUrl: '/onboarding' })}
-                  className="shrink-0 flex items-center gap-2 h-9 px-4 rounded-[12px] border border-white/[0.08] bg-white/[0.04] text-white/50 text-[12.5px] font-medium hover:bg-white/[0.09] hover:text-white/80 transition-colors"
-                >
-                  <LogOut className="h-3.5 w-3.5" />
-                  Sign out
-                </button>
-              </div>
-            </div>
-
-            {/* ── Public Face ────────────────────────────────────────── */}
-            <div className="rounded-[20px] overflow-hidden"
-              style={{ background: 'linear-gradient(135deg,rgba(124,58,237,0.08),rgba(217,70,239,0.05))', border: '1px solid rgba(168,85,247,0.2)' }}>
-              <div className="flex items-center gap-3 px-6 py-4 border-b border-white/[0.05]">
-                <div className="flex h-9 w-9 items-center justify-center rounded-[12px]"
-                  style={{ background: 'linear-gradient(135deg,rgba(124,58,237,0.25),rgba(217,70,239,0.25))', border: '1px solid rgba(168,85,247,0.35)' }}>
-                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
-                    <defs><linearGradient id="pfset" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#7c3aed"/><stop offset="50%" stopColor="#d946ef"/><stop offset="100%" stopColor="#7c3aed"/></linearGradient></defs>
-                    <circle cx="10" cy="10" r="9" fill="url(#pfset)"/>
-                    <path d="M10 4.5l1.4 3.1 3.4.3-2.5 2.2.8 3.3L10 11.8l-3.1 1.6.8-3.3-2.5-2.2 3.4-.3z" fill="white" opacity="0.95"/>
-                  </svg>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-bold text-white/80">Public Face</p>
-                  <p className="text-[11px] text-white/35">Verified public figure badge &amp; directory listing</p>
-                </div>
-              </div>
-
-              <div className="px-6 py-5">
-                {pfLoading ? (
-                  <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-violet-500/50 animate-pulse" />
-                    <span className="text-[12px] text-white/30">Checking status…</span>
-                  </div>
-                ) : profile.publicFace ? (
-                  /* ── Already a Public Face ── */
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2 rounded-full px-3 py-1.5"
-                        style={{ background: 'linear-gradient(135deg,rgba(124,58,237,0.2),rgba(217,70,239,0.2))', border: '1px solid rgba(168,85,247,0.35)' }}>
-                        <span className="text-[13px]">{['🎭','🎵','🏆','✨','🎬','📱','🏛️','💼','📖','🔬','📺','😄','✊','👨‍🍳','👗','📷','🎮','📰','⭐'][Object.keys({actor_actress:0,singer_musician:1,athlete_sportsperson:2,model:3,content_creator:4,influencer:5,politician:6,entrepreneur_ceo:7,author_writer:8,academic_scientist:9,tv_personality:10,comedian:11,social_activist:12,chef_culinary:13,fashion_designer:14,photographer_videographer:15,game_streamer:16,journalist:17,other:18}).indexOf(profile.publicFace.category)] || 0}</span>
-                        <span className="text-[11.5px] font-bold" style={{ background: 'linear-gradient(90deg,#c084fc,#f0abfc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                          {PUBLIC_FACE_CATEGORY_LABELS[profile.publicFace.category as import('@/types/document').PublicFaceCategory] || 'Public Figure'}
-                        </span>
-                      </div>
-                      <span className="text-[11px] font-bold text-emerald-400">✓ Approved</span>
-                    </div>
-                    <p className="text-[12px] text-white/35 leading-relaxed">
-                      Your profile has the Public Face badge. You are featured in the{' '}
-                      <a href="/public-faces" className="text-violet-400 hover:text-violet-300 underline underline-offset-2 transition">Public Faces directory</a>.
-                      Direct messages to your profile are disabled — you can still message anyone.
-                    </p>
-                  </div>
-                ) : pfApplication?.status === 'pending' || pfApplication?.status === 'under_review' ? (
-                  /* ── Application pending ── */
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
-                      <span className="text-[12.5px] font-bold text-amber-300">
-                        {pfApplication.status === 'under_review' ? 'Under Review' : 'Application Pending'}
+                      <span className="shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-full"
+                        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.40)' }}>
+                        {value}
                       </span>
                     </div>
-                    <p className="text-[12px] text-white/35 leading-relaxed">
-                      Your application was submitted on{' '}
-                      {pfApplication.submittedAt ? new Date(pfApplication.submittedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'}.
-                      Our team will review it within 3–5 business days and notify you by email.
-                    </p>
+                  ))}
+                </div>
+              </Section>
+
+              {/* ── Email Notifications ── */}
+              <Section id="notifications" title="Email Notifications" subtitle="Choose which alerts to receive"
+                badge={`${enabledNotifCount} / 8 on`}
+                icon={<Mail className="h-3.5 w-3.5 text-white/40" />}>
+                <div className="divide-y divide-white/[0.04]">
+                  {emailPrefsSaving && (
+                    <div className="px-5 py-2 flex items-center gap-2">
+                      <span className="h-1.5 w-1.5 rounded-full bg-indigo-400/60 animate-pulse" />
+                      <span className="text-[10px] text-white/22">Saving…</span>
+                    </div>
+                  )}
+                  {([
+                    { key: 'follows',     label: 'New followers',    desc: 'When someone follows you' },
+                    { key: 'likes',       label: 'Likes & reactions',desc: 'When someone likes your post' },
+                    { key: 'comments',    label: 'Comments',         desc: 'When someone comments on your content' },
+                    { key: 'mentions',    label: 'Mentions',         desc: "When you're tagged or mentioned" },
+                    { key: 'gig_applied', label: 'Gig applications', desc: 'When someone applies to your gig' },
+                    { key: 'messages',    label: 'Direct messages',  desc: 'When you receive a new message' },
+                    { key: 'billing',     label: 'Billing alerts',   desc: 'Plan usage and billing updates' },
+                    { key: 'system',      label: 'System updates',   desc: 'Account and platform announcements' },
+                  ] as { key: string; label: string; desc: string }[]).map(({ key, label, desc }) => {
+                    const enabled = key in emailPrefs ? emailPrefs[key] : true;
+                    return (
+                      <div key={key} className="flex items-center justify-between gap-4 px-5 py-3">
+                        <div className="min-w-0">
+                          <p className="text-[12px] text-white/60 font-medium">{label}</p>
+                          <p className="text-[10.5px] text-white/25 mt-0.5">{desc}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => toggleEmailPref(key, !enabled)}
+                          className={`relative shrink-0 flex h-5 w-9 cursor-pointer rounded-full transition-colors duration-200 focus:outline-none ${enabled ? 'bg-emerald-500/75' : 'bg-white/[0.08]'}`}
+                          role="switch" aria-checked={enabled} aria-label={label}
+                        >
+                          <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform duration-200 ${enabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </Section>
+
+              {/* ── Linked profiles ── */}
+              <Section id="linked" title="Linked Profiles" subtitle="Connected social accounts"
+                badge={linkedCount > 0 ? `${linkedCount} linked` : 'None linked'}
+                icon={<Link2 className="h-3.5 w-3.5 text-white/40" />}>
+                <div className="px-5 py-4 flex flex-wrap gap-2">
+                  {[
+                    { key: 'linkedinUrl', Icon: Linkedin, label: 'LinkedIn', color: '#0a66c2' },
+                    { key: 'githubUrl',   Icon: Github,   label: 'GitHub',   color: '#e6edf3' },
+                    { key: 'twitterUrl',  Icon: Twitter,  label: 'Twitter',  color: '#1da1f2' },
+                    { key: 'websiteUrl',  Icon: Globe,    label: 'Website',  color: '#a78bfa' },
+                  ].map(({ key, Icon, label, color }) => {
+                    const url = (profile as Record<string, string | undefined>)[key];
+                    return (
+                      <div key={key} className="flex items-center gap-2 px-3 py-2 rounded-[11px]"
+                        style={{ background: url ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.02)', border: `1px solid ${url ? 'rgba(255,255,255,0.09)' : 'rgba(255,255,255,0.05)'}` }}>
+                        <Icon className="h-3.5 w-3.5 shrink-0" style={{ color: url ? color : 'rgba(255,255,255,0.18)' }} />
+                        <span className="text-[11.5px] font-medium" style={{ color: url ? 'rgba(255,255,255,0.60)' : 'rgba(255,255,255,0.20)' }}>{label}</span>
+                        {url
+                          ? <CheckCircle className="h-3 w-3 text-emerald-400/70" />
+                          : <span className="text-[9.5px] text-white/18">Not linked</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="px-5 pb-4">
+                  <button type="button" onClick={() => setEditOpen(true)}
+                    className="flex items-center gap-1.5 text-[11.5px] text-indigo-400/65 hover:text-indigo-400 transition-colors">
+                    <Edit2 className="h-3 w-3" />
+                    Edit profile to update links
+                  </button>
+                </div>
+              </Section>
+
+              {/* ── Session ── */}
+              <Section id="session" title="Session" subtitle="Active login management"
+                badge="Signed in" badgeColor="rgba(52,211,153,0.75)"
+                icon={<LogOut className="h-3.5 w-3.5 text-white/40" />}>
+                <div className="px-5 py-4 flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-[12.5px] text-white/60 font-medium">Sign out of Docrud</p>
+                    <p className="text-[11px] text-white/25 mt-0.5">You&apos;ll be redirected to the login page</p>
                   </div>
-                ) : pfApplication?.status === 'rejected' ? (
-                  /* ── Rejected — can reapply ── */
-                  <div className="space-y-3">
+                  <button
+                    onClick={() => void signOut({ callbackUrl: '/onboarding' })}
+                    className="shrink-0 flex items-center gap-2 h-8 px-3.5 rounded-[10px] border border-white/[0.07] bg-white/[0.03] text-white/45 text-[12px] font-medium hover:bg-white/[0.07] hover:text-white/70 transition-colors"
+                  >
+                    <LogOut className="h-3.5 w-3.5" />
+                    Sign out
+                  </button>
+                </div>
+              </Section>
+
+              {/* ── Public Face ── */}
+              <Section id="publicface" title="Public Face" subtitle="Verified public figure badge & directory"
+                badge={pfStatus}
+                badgeColor={
+                  pfStatus === 'Verified' ? 'rgba(215,175,90,0.85)'
+                  : pfStatus === 'Pending' || pfStatus === 'Under Review' ? 'rgba(251,191,36,0.75)'
+                  : pfStatus === 'Not Approved' ? 'rgba(248,113,113,0.75)'
+                  : 'rgba(255,255,255,0.30)'
+                }
+                borderColor={pfStatus === 'Verified' ? 'rgba(180,140,55,0.22)' : 'rgba(255,255,255,0.07)'}
+                icon={
+                  <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+                    <defs><linearGradient id="pfhdr2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#C9A84C"/><stop offset="100%" stopColor="#E8CE8A"/></linearGradient></defs>
+                    <circle cx="10" cy="10" r="9" fill="url(#pfhdr2)"/>
+                    <path d="M10 4.5l1.4 3.1 3.4.3-2.5 2.2.8 3.3L10 11.8l-3.1 1.6.8-3.3-2.5-2.2 3.4-.3z" fill="#0e0c07" opacity="0.88"/>
+                  </svg>
+                }>
+                <div className="px-5 py-5">
+                  {pfLoading ? (
                     <div className="flex items-center gap-2">
-                      <span className="text-[12.5px] font-bold text-rose-400">Application Not Approved</span>
+                      <div className="h-1.5 w-1.5 rounded-full bg-white/20 animate-pulse" />
+                      <span className="text-[11.5px] text-white/25">Checking status…</span>
                     </div>
-                    {pfApplication.adminNote && (
-                      <p className="text-[11.5px] text-white/40 italic leading-relaxed">&quot;{pfApplication.adminNote}&quot;</p>
-                    )}
-                    <p className="text-[12px] text-white/35 mb-3">You may strengthen your application and reapply.</p>
-                    <button type="button" onClick={() => setShowPFForm(true)}
-                      className="flex items-center gap-2 rounded-[12px] px-4 py-2 text-[12.5px] font-bold transition-all hover:scale-[1.02]"
-                      style={{ background: 'linear-gradient(135deg,#7c3aed,#a855f7)', color: '#fff', boxShadow: '0 4px 14px rgba(124,58,237,0.35)' }}>
-                      <svg width="13" height="13" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" fill="white" fillOpacity="0.2"/><path d="M10 4.5l1.4 3.1 3.4.3-2.5 2.2.8 3.3L10 11.8l-3.1 1.6.8-3.3-2.5-2.2 3.4-.3z" fill="white" opacity="0.9"/></svg>
-                      Reapply for Public Face
+                  ) : profile.publicFace ? (
+                    <div className="space-y-3">
+                      <div className="inline-flex items-center gap-2 rounded-full px-3 py-1.5"
+                        style={{ background: 'rgba(180,140,55,0.10)', border: '1px solid rgba(200,165,70,0.25)' }}>
+                        <span className="text-[11px]">{['🎭','🎵','🏆','✨','🎬','📱','🏛️','💼','📖','🔬','📺','😄','✊','👨‍🍳','👗','📷','🎮','📰','⭐'][Object.keys({actor_actress:0,singer_musician:1,athlete_sportsperson:2,model:3,content_creator:4,influencer:5,politician:6,entrepreneur_ceo:7,author_writer:8,academic_scientist:9,tv_personality:10,comedian:11,social_activist:12,chef_culinary:13,fashion_designer:14,photographer_videographer:15,game_streamer:16,journalist:17,other:18}).indexOf(profile.publicFace.category)] || 0}</span>
+                        <span className="text-[11px] font-semibold" style={{ color: 'rgba(215,175,90,0.85)' }}>{PUBLIC_FACE_CATEGORY_LABELS[profile.publicFace.category as import('@/types/document').PublicFaceCategory] || 'Public Figure'}</span>
+                        <span className="text-[10px] font-semibold text-emerald-400/80 ml-0.5">✓ Verified</span>
+                      </div>
+                      <p className="text-[12px] text-white/35 leading-relaxed">
+                        Your profile carries the verified Public Face badge and is listed in the{' '}
+                        <a href="/public-faces" className="text-indigo-400 hover:text-indigo-300 underline underline-offset-2 transition">Public Faces directory</a>.
+                        Your inbox is protected — you can still initiate conversations with anyone.
+                      </p>
+                    </div>
+                  ) : pfApplication?.status === 'pending' || pfApplication?.status === 'under_review' ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+                        <span className="text-[12px] font-semibold text-amber-300/80">
+                          {pfApplication.status === 'under_review' ? 'Under Review' : 'Application Pending'}
+                        </span>
+                      </div>
+                      <p className="text-[12px] text-white/30 leading-relaxed">
+                        Submitted on {pfApplication.submittedAt ? new Date(pfApplication.submittedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'}.
+                        Our team reviews within 3–5 business days.
+                      </p>
+                    </div>
+                  ) : pfApplication?.status === 'rejected' ? (
+                    <div className="space-y-3">
+                      <span className="text-[12px] font-semibold text-rose-400/75">Application Not Approved</span>
+                      {pfApplication.adminNote && (
+                        <p className="text-[11.5px] text-white/30 italic leading-relaxed">&ldquo;{pfApplication.adminNote}&rdquo;</p>
+                      )}
+                      <p className="text-[11.5px] text-white/28">You may strengthen your application and reapply.</p>
+                      <button type="button" onClick={() => setShowPFForm(true)}
+                        className="inline-flex items-center gap-2 rounded-[10px] px-4 py-2 text-[12px] font-semibold text-white/70 transition hover:bg-white/[0.07]"
+                        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)' }}>
+                        Reapply for Public Face
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-[12px] text-white/35 leading-relaxed mb-4">
+                        A programme for recognised personalities. Apply to receive the verified{' '}
+                        <span className="text-white/60 font-medium">Public Face</span> badge and exclusive platform privileges.
+                      </p>
+                      <div className="space-y-1.5 mb-4">
+                        {[
+                          { label: 'Verified badge on your profile',   sub: 'Instantly recognisable across all your content' },
+                          { label: 'Public Faces directory listing',   sub: 'Discoverable by collaborators and followers' },
+                          { label: 'Message anyone on the platform',   sub: 'Unrestricted outreach to any member' },
+                          { label: 'Protected inbox',                  sub: 'Only approved senders can reach you directly' },
+                        ].map(b => (
+                          <div key={b.label} className="flex items-start gap-2.5 rounded-[9px] px-3 py-2.5"
+                            style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                            <span className="text-indigo-400/50 text-[7px] mt-[4px] shrink-0">◆</span>
+                            <div className="min-w-0">
+                              <p className="text-[11.5px] font-medium text-white/58">{b.label}</p>
+                              <p className="text-[10.5px] text-white/22 mt-px">{b.sub}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowPFForm(true)}
+                        className="w-full flex items-center justify-center gap-2 rounded-[10px] py-2.5 text-[12.5px] font-semibold text-white transition-all hover:opacity-90 active:scale-[0.99]"
+                        style={{ background: 'linear-gradient(135deg,#4f46e5,#6366f1)', boxShadow: '0 3px 12px rgba(79,70,229,0.28)' }}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" fill="white" fillOpacity="0.18"/><path d="M10 4.5l1.4 3.1 3.4.3-2.5 2.2.8 3.3L10 11.8l-3.1 1.6.8-3.3-2.5-2.2 3.4-.3z" fill="white" opacity="0.95"/></svg>
+                        Apply for Public Face
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </Section>
+
+              {/* ── Danger Zone ── */}
+              <Section id="danger" title="Danger Zone" subtitle="Irreversible account actions"
+                badge="OTP required" badgeColor="rgba(248,113,113,0.65)"
+                borderColor="rgba(239,68,68,0.12)"
+                icon={<AlertTriangle className="h-3.5 w-3.5 text-rose-400/60" />}>
+                <div className="divide-y divide-white/[0.04]">
+                  <div className="flex items-start justify-between gap-4 px-5 py-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <PauseCircle className="h-3.5 w-3.5 text-amber-400/65 shrink-0" />
+                        <p className="text-[12.5px] text-white/65 font-semibold">Deactivate account</p>
+                      </div>
+                      <p className="text-[11px] text-white/28 leading-relaxed">Temporarily hide your profile. All data is preserved — log in anytime to restore.</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => openAccountModal('deactivate')}
+                      className="shrink-0 flex items-center gap-1.5 h-8 px-3.5 rounded-[10px] border border-amber-500/18 bg-amber-500/[0.06] text-amber-400/80 text-[11.5px] font-semibold hover:bg-amber-500/[0.12] transition-colors"
+                    >
+                      Deactivate
                     </button>
                   </div>
-                ) : (
-                  /* ── Not applied yet ── */
-                  <div className="space-y-4">
-                    <p className="text-[12.5px] text-white/45 leading-relaxed">
-                      Are you a public figure — an actor, musician, athlete, influencer, entrepreneur, or any recognised personality?
-                      Apply for the <strong className="text-white/70">Public Face</strong> badge to get verified and featured in the exclusive
-                      Public Faces directory.
-                    </p>
-                    <div className="grid grid-cols-2 gap-2 text-[11.5px] text-white/35">
-                      {[
-                        '✨ Premium badge on your profile',
-                        '🌟 Featured in Public Faces directory',
-                        '📩 You can message anyone',
-                        '🔒 Your inbox is kept private',
-                      ].map(b => (
-                        <div key={b} className="flex items-center gap-1.5">{b}</div>
-                      ))}
+                  <div className="flex items-start justify-between gap-4 px-5 py-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Trash2 className="h-3.5 w-3.5 text-rose-400/65 shrink-0" />
+                        <p className="text-[12.5px] text-rose-400/80 font-semibold">Delete account permanently</p>
+                      </div>
+                      <p className="text-[11px] text-white/28 leading-relaxed">Permanently erase your profile, posts, gigs, and all data. This cannot be undone.</p>
                     </div>
-                    <button type="button" onClick={() => setShowPFForm(true)}
-                      className="flex items-center gap-2 rounded-[13px] px-5 py-2.5 text-[13px] font-bold transition-all hover:scale-[1.02] active:scale-95"
-                      style={{ background: 'linear-gradient(135deg,#7c3aed,#a855f7,#d946ef)', color: '#fff', boxShadow: '0 6px 20px rgba(124,58,237,0.4)' }}>
-                      <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" fill="white" fillOpacity="0.2"/><path d="M10 4.5l1.4 3.1 3.4.3-2.5 2.2.8 3.3L10 11.8l-3.1 1.6.8-3.3-2.5-2.2 3.4-.3z" fill="white" opacity="0.9"/></svg>
-                      Apply for Public Face
+                    <button
+                      type="button"
+                      onClick={() => openAccountModal('delete')}
+                      className="shrink-0 flex items-center gap-1.5 h-8 px-3.5 rounded-[10px] border border-rose-500/18 bg-rose-500/[0.06] text-rose-400/80 text-[11.5px] font-semibold hover:bg-rose-500/[0.14] transition-colors"
+                    >
+                      Delete
                     </button>
                   </div>
-                )}
-              </div>
+                </div>
+              </Section>
+
             </div>
-
-            {/* Danger zone */}
-            <div className="rounded-[20px] border border-rose-500/[0.15] bg-rose-500/[0.03] overflow-hidden">
-              <div className="flex items-center gap-3 px-6 py-4 border-b border-rose-500/[0.10]">
-                <div className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-rose-500/[0.08] border border-rose-500/[0.15]">
-                  <AlertTriangle className="h-4 w-4 text-rose-400/80" />
-                </div>
-                <div>
-                  <p className="text-[13px] font-bold text-rose-300/80">Danger Zone</p>
-                  <p className="text-[11px] text-white/30">OTP verification required for all actions below</p>
-                </div>
-              </div>
-
-              {/* Deactivate */}
-              <div className="flex items-start justify-between gap-4 px-6 py-5 border-b border-white/[0.04]">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <PauseCircle className="h-3.5 w-3.5 text-amber-400/70 shrink-0" />
-                    <p className="text-[13px] text-white/75 font-semibold">Deactivate account</p>
-                  </div>
-                  <p className="text-[11.5px] text-white/35 leading-relaxed">Temporarily hide your profile. All data is preserved — simply log in anytime to instantly restore everything.</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => openAccountModal('deactivate')}
-                  className="shrink-0 flex items-center gap-1.5 h-9 px-4 rounded-[12px] border border-amber-500/20 bg-amber-500/[0.07] text-amber-400 text-[12px] font-semibold hover:bg-amber-500/[0.15] transition-colors"
-                >
-                  Deactivate
-                </button>
-              </div>
-
-              {/* Delete */}
-              <div className="flex items-start justify-between gap-4 px-6 py-5">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Trash2 className="h-3.5 w-3.5 text-rose-400/70 shrink-0" />
-                    <p className="text-[13px] text-rose-400 font-semibold">Delete account permanently</p>
-                  </div>
-                  <p className="text-[11.5px] text-white/35 leading-relaxed">Permanently erase your profile, posts, connections, gigs, and all associated data. This action cannot be undone.</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => openAccountModal('delete')}
-                  className="shrink-0 flex items-center gap-1.5 h-9 px-4 rounded-[12px] border border-rose-500/20 bg-rose-500/[0.07] text-rose-400 text-[12px] font-semibold hover:bg-rose-500/[0.18] transition-colors"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-
-          </div>
-        )}
+          );
+        })()}
 
         {/* ── Account Management Modal (rendered at root level, always accessible) ── */}
         {accountModal && isOwnProfile && (

@@ -1,5 +1,12 @@
 import crypto from 'node:crypto';
 import { readJsonFile, templateMarketplaceIncomePath, templateMarketplaceItemsPath, templateMarketplacePurchasesPath, templateMarketplaceReviewsPath, writeJsonFile } from '@/lib/server/storage';
+import { getDbPool } from '@/lib/server/database';
+import {
+  deleteTemplateMarketplaceItemRow,
+  incrementTemplateMarketplaceItemOpens,
+  selectTemplateMarketplaceItemRowById,
+  upsertTemplateMarketplaceItemRow,
+} from '@/lib/server/db/template-marketplace-items-rows';
 import { getCustomTemplatesFromRepository, saveCustomTemplatesToRepository } from '@/lib/server/repositories';
 import { getEffectiveSaasPlanForUser } from '@/lib/server/saas';
 import { createPendingCommerceTransaction, getRazorpayConfig, verifyRazorpayPaymentSignature } from '@/lib/server/billing';
@@ -330,6 +337,9 @@ export async function listMarketplaceItemsBySeller(params: { sellerUserId: strin
 }
 
 export async function getMarketplaceItem(id: string) {
+  if (getDbPool()) {
+    return selectTemplateMarketplaceItemRowById(id);
+  }
   const raw = await readJsonFile<TemplateMarketplaceItem[]>(templateMarketplaceItemsPath, []);
   return raw.find((item) => item.id === id) || null;
 }
@@ -372,6 +382,10 @@ export async function ensureMarketplaceItemPreviewImages(params: { itemId: strin
 }
 
 export async function trackMarketplaceItemOpen(params: { itemId: string }) {
+  if (getDbPool()) {
+    await incrementTemplateMarketplaceItemOpens(params.itemId);
+    return selectTemplateMarketplaceItemRowById(params.itemId);
+  }
   const items = await readJsonFile<TemplateMarketplaceItem[]>(templateMarketplaceItemsPath, []);
   const idx = items.findIndex((i) => i.id === params.itemId);
   if (idx === -1) return null;
@@ -391,6 +405,16 @@ export async function updateMarketplaceItemStatus(params: {
   itemId: string;
   status: 'published' | 'archived';
 }) {
+  if (getDbPool()) {
+    const current = await selectTemplateMarketplaceItemRowById(params.itemId);
+    if (!current) throw new Error('Template not found.');
+    const isOwner = current.sellerUserId === params.actor.id;
+    const isAdmin = params.actor.role === 'admin';
+    if (!isOwner && !isAdmin) throw new Error('Forbidden.');
+    const next: TemplateMarketplaceItem = { ...current, status: params.status, updatedAt: nowIso() };
+    await upsertTemplateMarketplaceItemRow(next);
+    return next;
+  }
   const items = await readJsonFile<TemplateMarketplaceItem[]>(templateMarketplaceItemsPath, []);
   const idx = items.findIndex((i) => i.id === params.itemId);
   if (idx === -1) throw new Error('Template not found.');
@@ -413,6 +437,25 @@ export async function deleteMarketplaceItem(params: {
   actor: User;
   itemId: string;
 }) {
+  if (getDbPool()) {
+    const target = await selectTemplateMarketplaceItemRowById(params.itemId);
+    if (!target) throw new Error('Template not found.');
+    const isOwner = target.sellerUserId === params.actor.id;
+    const isAdmin = params.actor.role === 'admin';
+    if (!isOwner && !isAdmin) throw new Error('Forbidden.');
+    if ((target.purchaseCount || 0) > 0) {
+      throw new Error('Delete is disabled once a template has installs. Use Deactivate instead.');
+    }
+    await deleteTemplateMarketplaceItemRow(params.itemId);
+
+    // Remove reviews; purchases remain as audit history.
+    const reviews = await readJsonFile<TemplateMarketplaceReview[]>(templateMarketplaceReviewsPath, []);
+    const nextReviews = reviews.filter((r) => r.itemId !== params.itemId);
+    await writeJsonFile(templateMarketplaceReviewsPath, nextReviews.slice(0, 20_000));
+
+    return { ok: true };
+  }
+
   const items = await readJsonFile<TemplateMarketplaceItem[]>(templateMarketplaceItemsPath, []);
   const target = items.find((i) => i.id === params.itemId);
   if (!target) throw new Error('Template not found.');

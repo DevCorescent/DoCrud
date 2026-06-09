@@ -80,6 +80,7 @@ export async function GET() {
       source,
       sizeLabel: formatBytes(entry.sizeInBytes || 0),
       openCount: entry.openCount || 0,
+      interestedCount: entry.interestedCount ?? 0,
       downloadCount: entry.downloadCount || 0,
       updatedAt: entry.updatedAt,
       createdAt: entry.createdAt,

@@ -1,6 +1,127 @@
 {
   "sessions": [
     {
+      "id": "N0LmtvD9rdPlgXgIvqxpgfM5",
+      "purpose": "email_verification",
+      "email": "kushagra@corescent.in",
+      "userId": "individual-1780155524036",
+      "otpHash": "ef24221a0da4719c93bfc3551387bd93942615c238b57a93ba2d8b5a8596de77",
+      "otpSalt": "1559ebed9a8aecf087803739ad8fe183",
+      "createdAt": "2026-06-04T12:41:12.282Z",
+      "expiresAt": "2026-06-04T13:11:12.282Z",
+      "attempts": 0
+    },
+    {
+      "id": "R4qGScECRez56kgGPDHLvKL3",
+      "purpose": "email_verification",
+      "email": "arjunt@yopmail.com",
+      "userId": "individual-1780332648784",
+      "otpHash": "2b72a17c4c37ec8c8a2b18e03181e317ecf6683163eb9efcebc2b1015273ec74",
+      "otpSalt": "6c27a7edab820389a64b87971f4a71eb",
+      "createdAt": "2026-06-02T12:48:14.736Z",
+      "expiresAt": "2026-06-02T13:18:14.736Z",
+      "attempts": 0
+    },
+    {
+      "id": "dKrrf7BpKEPZ0y_4XZsjK_nN",
+      "purpose": "email_verification",
+      "email": "simran@yopmail.com",
+      "userId": "individual-1780316793995",
+      "otpHash": "d4816e67122233b8e403d33d249668e52db27a5129fb48e7d0c500665f866eb7",
+      "otpSalt": "70b9bec6343e780bf3cc55d1d4a5c953",
+      "createdAt": "2026-06-01T16:49:47.502Z",
+      "expiresAt": "2026-06-01T17:19:47.502Z",
+      "attempts": 0
+    },
+    {
+      "id": "5I1iwrB67znB_nYiWw4LR86z",
+      "purpose": "email_verification",
+      "email": "abc123@yopmail.com",
+      "userId": "individual-1780312534660",
+      "otpHash": "0a12f880cab33c17cd90155ab8d95e62a1b07a3bd5da2d6358822cf47869b5c0",
+      "otpSalt": "7b5a947d0daf620ea140ea8bc36c0151",
+      "createdAt": "2026-06-01T12:10:43.436Z",
+      "expiresAt": "2026-06-01T12:40:43.436Z",
+      "attempts": 0
+    },
+    {
+      "id": "ptHMiL5NucyMgFORgvtoOcYh",
+      "purpose": "email_verification",
+      "email": "sagar@yopmail.com",
+      "userId": "individual-1780311776653",
+      "otpHash": "10103062cd1ce14532c7311d63a8e46f4073e7f732b786cffc944bcba2891f9e",
+      "otpSalt": "8d43915718b8d072c235db314eb2299f",
+      "createdAt": "2026-06-01T11:13:59.592Z",
+      "expiresAt": "2026-06-01T11:23:59.592Z",
+      "attempts": 0
+    },
+    {
+      "id": "obaYG9UXzUxUULrydLvDMz_T",
+      "purpose": "email_verification",
+      "email": "kumar@yopmail.com",
+      "userId": "individual-1780311061849",
+      "otpHash": "f2c3ec8907f2690a8c5f5c8e1cde7216574905efb4d1cf668b678052fd2d2ef9",
+      "otpSalt": "8de4d331a0bd14e1fc264fd785a3a937",
+      "createdAt": "2026-06-01T11:02:21.552Z",
+      "expiresAt": "2026-06-01T11:12:21.552Z",
+      "attempts": 0
+    },
+    {
+      "id": "1yKODrCvfKebUkPHVJdcXWy-",
+      "purpose": "email_verification",
+      "email": "krish@yopmail.com",
+      "userId": "individual-1780310559057",
+      "otpHash": "7a541ffb81a01cf252b3d54f615e3a00d05a7a86405b20b84f2e2f818bccfb33",
+      "otpSalt": "af319659f6b56899f5609786b5f444c2",
+      "createdAt": "2026-06-01T11:01:15.316Z",
+      "expiresAt": "2026-06-01T11:11:15.317Z",
+      "attempts": 0
+    },
+    {
+      "id": "q7qk7CvBoUA6wfZ9h3oCNqgr",
+      "purpose": "email_verification",
+      "email": "arjun101@yopmail.com",
+      "userId": "individual-1780310294046",
+      "otpHash": "de74dc7ebc31bf9414c1295fc2642841f6ea678f5ac434d5dfea18b232929a7b",
+      "otpSalt": "ae0e3e43426b5108c8bfd76ca73a20c5",
+      "createdAt": "2026-06-01T10:42:22.605Z",
+      "expiresAt": "2026-06-01T10:52:22.605Z",
+      "attempts": 0
+    },
+    {
+      "id": "Axch-3Y4CGkV6oqmwMJB5evY",
+      "purpose": "email_verification",
+      "email": "purav@yopmail.com",
+      "userId": "individual-1780307675504",
+      "otpHash": "a929e56443fe5f8fb30d54ee69a00fc9c2375221be8ef751ac1afc2a92d3a7e8",
+      "otpSalt": "66019eb137c6392a72276813220a862d",
+      "createdAt": "2026-06-01T10:06:06.428Z",
+      "expiresAt": "2026-06-01T10:16:06.428Z",
+      "attempts": 0
+    },
+    {
+      "id": "JBhA1Jo1jMpZz1vPH1f47xN7",
+      "purpose": "email_verification",
+      "email": "ayush@yopmail.com",
+      "userId": "individual-1780305875072",
+      "otpHash": "47396d108d5142ca2efb46db8e3859dba399b1e7a5c48378c42d3604cb314021",
+      "otpSalt": "21bbeeba4bcf90ce45a93a09739d4020",
+      "createdAt": "2026-06-01T09:53:52.732Z",
+      "expiresAt": "2026-06-01T10:03:52.732Z",
+      "attempts": 0
+    },
+    {
+      "id": "EP4MIHTMt8OoccWcYuCI1r6X",
+      "purpose": "email_verification",
+      "email": "kush@yopmail.com",
+      "userId": "individual-1780302905872",
+      "otpHash": "f4932a06a51cb5feea16410b1ac132616fcbdaaea2530bbca486122169590285",
+      "otpSalt": "8ee6664c7d1e0340e3ebec26a5855a9a",
+      "createdAt": "2026-06-01T09:11:08.303Z",
+      "expiresAt": "2026-06-01T09:21:08.303Z",
+      "attempts": 0
+    },
+    {
       "id": "CKJoVT5PxF4TOM_la_Iofi1o",
       "purpose": "account_action",
       "email": "test01@yopmail.com",

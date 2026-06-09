@@ -1,9 +1,18 @@
 import crypto from 'crypto';
 import { getStoredUsers, saveStoredUsers } from '@/lib/server/auth';
+import { upsertStoredUser } from '@/lib/server/users';
 import { applyRoadmapPromotionToSubscription, getEffectiveSaasPlanForUser, getPublicSaasPlansByAudience, getRoadmapPromotionSnapshot, getSaasPlanById, getUserUsageSummary } from '@/lib/server/saas';
 import { billingTransactionsPath, readJsonFile, writeJsonFile } from '@/lib/server/storage';
 import { BillingOverview, BillingTransaction, CustomPlanConfiguration, SaasPlan, SaasFeatureKey, User } from '@/types/document';
 import { sendTrackedMail } from '@/lib/server/mailer';
+import { getDbPool } from '@/lib/server/database';
+import { getInfinityStatus } from '@/lib/server/infinity';
+import {
+  selectAllBillingRows,
+  selectBillingRowByProviderOrderId,
+  updateBillingRowByProviderOrderId,
+  upsertBillingRow,
+} from '@/lib/server/db/billing-rows';
 
 const DEFAULT_CURRENCY = 'INR';
 export const GST_RATE = 0.18;
@@ -163,6 +172,9 @@ export function buildBillingThreshold(percentUsed: number, remainingGenerations:
 }
 
 export async function getBillingTransactions() {
+  if (getDbPool()) {
+    return selectAllBillingRows();
+  }
   return readJsonFile<BillingTransaction[]>(billingTransactionsPath, []);
 }
 
@@ -217,7 +229,11 @@ export async function createPendingBillingTransaction(
     updatedAt: now,
   };
 
-  await saveBillingTransactions([transaction, ...transactions]);
+  if (getDbPool()) {
+    await upsertBillingRow(transaction);
+  } else {
+    await saveBillingTransactions([transaction, ...transactions]);
+  }
   return transaction;
 }
 
@@ -268,7 +284,11 @@ export async function createPendingCommerceTransaction(params: {
     updatedAt: now,
   };
 
-  await saveBillingTransactions([transaction, ...transactions]);
+  if (getDbPool()) {
+    await upsertBillingRow(transaction);
+  } else {
+    await saveBillingTransactions([transaction, ...transactions]);
+  }
   return transaction;
 }
 
@@ -277,8 +297,22 @@ export async function markBillingTransactionPaid(params: {
   providerPaymentId: string;
   providerSignature: string;
 }) {
-  const transactions = await getBillingTransactions();
   const now = new Date().toISOString();
+
+  if (getDbPool()) {
+    const current = await selectBillingRowByProviderOrderId(params.providerOrderId);
+    if (!current) return null;
+    return updateBillingRowByProviderOrderId(params.providerOrderId, {
+      status: 'paid',
+      invoiceNumber: current.invoiceNumber || `INV-${new Date().getFullYear()}-${current.id.slice(-6).toUpperCase()}`,
+      providerPaymentId: params.providerPaymentId,
+      providerSignature: params.providerSignature,
+      paidAt: now,
+      updatedAt: now,
+    });
+  }
+
+  const transactions = await getBillingTransactions();
   let updatedTransaction: BillingTransaction | null = null;
 
   const nextTransactions = transactions.map((transaction) => {
@@ -345,9 +379,14 @@ export async function sendBillingReceiptEmail(params: { transaction: BillingTran
 }
 
 export async function markBillingTransactionFailed(providerOrderId: string, status: 'failed' | 'cancelled' = 'failed') {
-  const transactions = await getBillingTransactions();
   const now = new Date().toISOString();
 
+  if (getDbPool()) {
+    await updateBillingRowByProviderOrderId(providerOrderId, { status, updatedAt: now });
+    return;
+  }
+
+  const transactions = await getBillingTransactions();
   await saveBillingTransactions(
     transactions.map((transaction) =>
       transaction.providerOrderId === providerOrderId
@@ -358,6 +397,12 @@ export async function markBillingTransactionFailed(providerOrderId: string, stat
 }
 
 export async function markBillingTransactionFulfillment(providerOrderId: string, patch: Partial<Pick<BillingTransaction, 'couponRedeemedAt' | 'referralBonusGrantedAt'>>) {
+  if (getDbPool()) {
+    return updateBillingRowByProviderOrderId(providerOrderId, {
+      ...patch,
+      updatedAt: new Date().toISOString(),
+    });
+  }
   const transactions = await getBillingTransactions();
   const next = transactions.map((t) => (
     t.providerOrderId === providerOrderId
@@ -452,10 +497,14 @@ export async function createRazorpayOrder(
 }
 
 export async function syncPaidPlanToUser(userId: string, planId: string, transaction?: BillingTransaction | null, customConfiguration?: CustomPlanConfiguration | null) {
-  const users = await getStoredUsers();
+  const { getStoredUserById } = await import('@/lib/server/users');
+  const user = await getStoredUserById(userId);
   const plan = await getSaasPlanById(planId);
   if (!plan) {
     throw new Error('Plan not found.');
+  }
+  if (!user) {
+    throw new Error('User not found.');
   }
 
   const now = new Date().toISOString();
@@ -466,51 +515,43 @@ export async function syncPaidPlanToUser(userId: string, planId: string, transac
     ? Math.max(customConfiguration?.monthlyAiCredits || 0, 0)
     : Math.max(plan.monthlyAiCredits || 0, 0);
 
-  const nextUsers = users.map((user) =>
-    user.id === userId
-      ? {
-          ...user,
-          subscription: {
-            planId: plan.id,
-            planName: plan.name,
-            status: 'active' as const,
-            billingProvider: 'razorpay' as const,
-            startedAt: now,
-            currentPeriodStart: now,
-            currentPeriodEnd,
-            renewalDate: currentPeriodEnd,
-            lastPaymentAt: now,
-            lastOrderId: transaction?.providerOrderId,
-            customConfiguration: customConfiguration || transaction?.customConfiguration,
-            roadmapPromoCampaignId: user.subscription?.roadmapPromoCampaignId,
-            roadmapPromoQualifiedAt: user.subscription?.roadmapPromoQualifiedAt,
-            roadmapPromoValidUntil: user.subscription?.roadmapPromoValidUntil,
-            roadmapPromoLabel: user.subscription?.roadmapPromoLabel,
-            aiTrialLimit: 0,
-            aiTrialUsed: 0,
-            monthlyAiCredits,
-            remainingAiCredits: monthlyAiCredits,
-            aiCreditsResetAt: currentPeriodEnd,
-          },
-        }
-      : user,
-  );
+  const updatedUser = {
+    ...user,
+    subscription: applyRoadmapPromotionToSubscription({
+      planId: plan.id,
+      planName: plan.name,
+      status: 'active' as const,
+      billingProvider: 'razorpay' as const,
+      startedAt: now,
+      currentPeriodStart: now,
+      currentPeriodEnd,
+      renewalDate: currentPeriodEnd,
+      lastPaymentAt: now,
+      lastOrderId: transaction?.providerOrderId,
+      customConfiguration: customConfiguration || transaction?.customConfiguration,
+      roadmapPromoCampaignId: user.subscription?.roadmapPromoCampaignId,
+      roadmapPromoQualifiedAt: user.subscription?.roadmapPromoQualifiedAt,
+      roadmapPromoValidUntil: user.subscription?.roadmapPromoValidUntil,
+      roadmapPromoLabel: user.subscription?.roadmapPromoLabel,
+      aiTrialLimit: 0,
+      aiTrialUsed: 0,
+      monthlyAiCredits,
+      remainingAiCredits: monthlyAiCredits,
+      aiCreditsResetAt: currentPeriodEnd,
+    }, now),
+  };
 
-  const promotedUsers = nextUsers.map((entry) => (
-    entry.id === userId
-      ? { ...entry, subscription: applyRoadmapPromotionToSubscription(entry.subscription, now) }
-      : entry
-  ));
-  await saveStoredUsers(promotedUsers);
-  return promotedUsers.find((user) => user.id === userId) || null;
+  await upsertStoredUser(updatedUser);
+  return updatedUser;
 }
 
 export async function getBillingOverview(user: User): Promise<BillingOverview> {
-  const [plan, transactions, publicPlans, usageSummary] = await Promise.all([
+  const [plan, transactions, publicPlans, usageSummary, infinityStatus] = await Promise.all([
     getEffectiveSaasPlanForUser(user),
     getBillingTransactions(),
     getPublicSaasPlansByAudience(user.accountType === 'individual' ? 'individual' : 'business'),
     getUserUsageSummary(user),
+    getInfinityStatus(user.id),
   ]);
   const config = getRazorpayConfig();
   const percentUsed = usageSummary.usage.thresholdPercentUsed ?? 0;
@@ -522,6 +563,7 @@ export async function getBillingOverview(user: User): Promise<BillingOverview> {
     publishableKeyAvailable: config.publishableKeyAvailable,
     currentPlan: plan,
     availablePlans: publicPlans.filter((entry) => entry.active),
+    infinity: infinityStatus,
     aiAllowance: {
       remainingTrialRuns: Math.max((user.subscription?.aiTrialLimit || 0) - (user.subscription?.aiTrialUsed || 0), 0),
       monthlyCredits: Math.max(user.subscription?.monthlyAiCredits || 0, 0),

@@ -1,8 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchTracker, SEARCH_CONTEXTS } from '@/lib/search-tracking';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
+const PublishAnythingDialog = dynamic(() => import('@/components/PublishAnythingDialog'), { ssr: false });
 import {
   ArrowLeft,
   ArrowRight,
@@ -123,6 +126,90 @@ async function shareItem(id: string, title: string) {
   }
   await navigator.clipboard.writeText(url).catch(() => {});
   toast('Link copied to clipboard!', 'success', '🔗');
+}
+
+/* ─── trend types + storage helpers ─────────────────────────────── */
+type TrendEntry = {
+  count: number; trendedByViewer: boolean;
+  category: string; title: string; chips: string[]; lastActive: number;
+};
+type TrendHistoryEntry = {
+  postId: string; title: string; category: string; trendedAt: number; tags: string[];
+};
+
+const readTrends       = (): Record<string, TrendEntry>       => { try { return JSON.parse(localStorage.getItem('pub_trends')        || '{}'); } catch { return {}; } };
+const readTagTrends    = (): Record<string, number>           => { try { return JSON.parse(localStorage.getItem('pub_tag_trends')    || '{}'); } catch { return {}; } };
+const readCatTrends    = (): Record<string, number>           => { try { return JSON.parse(localStorage.getItem('pub_cat_trends')    || '{}'); } catch { return {}; } };
+const readTrendHistory = (): TrendHistoryEntry[]              => { try { return JSON.parse(localStorage.getItem('pub_trend_history') || '[]'); } catch { return []; } };
+
+/* ─── useTrend hook — server-backed for real items, localStorage for mocks ── */
+function useTrend(item: PublishedItem): [number, boolean, () => Promise<void>] {
+  const [count,   setCount]   = useState(() => {
+    if (item.trendCount !== undefined) return item.trendCount;
+    try { return (readTrends()[item.id]?.count ?? 0); } catch { return 0; }
+  });
+  const [trended, setTrended] = useState(() => {
+    if (item.trendedByViewer !== undefined) return item.trendedByViewer;
+    try { return (readTrends()[item.id]?.trendedByViewer ?? false); } catch { return false; }
+  });
+  const inFlight = useRef(false);
+
+  useEffect(() => { if (item.trendCount !== undefined) setCount(item.trendCount); }, [item.trendCount]);
+  useEffect(() => { if (item.trendedByViewer !== undefined) setTrended(item.trendedByViewer); }, [item.trendedByViewer]);
+
+  const toggle = useCallback(async () => {
+    if (inFlight.current) return;
+    const next  = !trended;
+    const delta = next ? 1 : -1;
+    setTrended(next);
+    setCount(c => Math.max(0, c + delta));
+
+    if (item.isReal) {
+      inFlight.current = true;
+      try {
+        const res = await fetch(`/api/published/${item.id}/trend`, { method: 'POST' });
+        if (res.ok) {
+          const d = await res.json() as { trended: boolean; trendCount: number };
+          setTrended(d.trended);
+          setCount(d.trendCount);
+        } else {
+          // revert
+          setTrended(trended);
+          setCount(c => Math.max(0, c - delta));
+        }
+      } catch {
+        setTrended(trended);
+        setCount(c => Math.max(0, c - delta));
+      } finally { inFlight.current = false; }
+    } else {
+      // localStorage path for mock items
+      try {
+        const data   = readTrends();
+        const stored = data[item.id] ?? { count: 0, trendedByViewer: false, category: item.category, title: item.title, chips: item.chips ?? [], lastActive: 0 };
+        stored.count           = Math.max(0, stored.count + delta);
+        stored.trendedByViewer = next;
+        stored.lastActive      = Date.now();
+        localStorage.setItem('pub_trends', JSON.stringify({ ...data, [item.id]: stored }));
+      } catch {}
+      try {
+        const tagData = readTagTrends();
+        [...(item.chips ?? []), item.category].forEach(t => { tagData[t] = Math.max(0, (tagData[t] ?? 0) + delta); });
+        localStorage.setItem('pub_tag_trends', JSON.stringify(tagData));
+      } catch {}
+      try {
+        const catData = readCatTrends();
+        catData[item.category] = Math.max(0, (catData[item.category] ?? 0) + delta);
+        localStorage.setItem('pub_cat_trends', JSON.stringify(catData));
+      } catch {}
+      if (next) try {
+        const hist = readTrendHistory();
+        hist.unshift({ postId: item.id, title: item.title, category: item.category, trendedAt: Date.now(), tags: item.chips ?? [] });
+        localStorage.setItem('pub_trend_history', JSON.stringify(hist.slice(0, 200)));
+      } catch {}
+    }
+  }, [item, trended]);
+
+  return [count, trended, toggle];
 }
 
 /* ─── bookmark hook ──────────────────────────────────────────────── */
@@ -276,56 +363,150 @@ function CtaAnalyticsPanel({ onClose }: { onClose: () => void }) {
     share_item: 'Shared', apply_job: 'Applied', register_event: 'Registered',
     connect_resume: 'Connected', celebrate_milestone: 'Celebrated',
     read_article: 'Read', download_doc: 'Downloaded', watch_video: 'Watched',
-    vote_poll: 'Voted', take_survey: 'Surveyed',
+    vote_poll: 'Voted', take_survey: 'Surveyed', trend_post: 'Trended',
   };
 
-  return (
-    <div className="border-t border-white/[0.06] bg-[#0A0A0C] p-3">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-1.5">
-          <TrendingUp className="h-3.5 w-3.5 text-amber-400" />
-          <span className="text-[11px] font-bold text-white/70">My CTA Activity</span>
+  /* colour accent per category */
+  const catAccent = (cat: string): string => {
+    const cls = TAG_CLS[cat] ?? TAG_CLS.all;
+    const textCls = cls.split(' ').find(c => c.startsWith('text-')) ?? 'text-white/50';
+    const map: Record<string, string> = {
+      'text-amber-400': '#fbbf24', 'text-red-400': '#f87171',
+      'text-violet-400': '#a78bfa', 'text-blue-400': '#60a5fa',
+      'text-emerald-400': '#34d399', 'text-sky-400': '#38bdf8',
+      'text-pink-400': '#f472b6', 'text-orange-400': '#fb923c',
+      'text-purple-400': '#c084fc', 'text-rose-400': '#fb7185',
+      'text-indigo-400': '#818cf8', 'text-yellow-400': '#facc15',
+    };
+    return map[textCls] ?? 'rgba(255,255,255,0.4)';
+  };
+
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
+    <>
+      {/* backdrop — click outside to close */}
+      <div className="fixed inset-0 z-[180]" onClick={onClose} />
+
+      {/* floating panel — appears above the CTA button in bottom-left */}
+      <div
+        className="fixed z-[190] w-72 overflow-hidden rounded-2xl border border-white/[0.08] shadow-2xl animate-in slide-in-from-bottom-3 fade-in duration-200"
+        style={{
+          bottom: '112px',
+          left: '12px',
+          background: 'rgba(10,10,14,0.96)',
+          backdropFilter: 'blur(40px) saturate(180%)',
+          boxShadow: '0 0 0 1px rgba(255,255,255,0.04) inset, 0 24px 64px rgba(0,0,0,0.7)',
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
+          <div className="flex items-center gap-2">
+            <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-500/15 border border-amber-500/20">
+              <TrendingUp className="h-3.5 w-3.5 text-amber-400" />
+            </div>
+            <div>
+              <p className="text-[12px] font-bold text-white/85 leading-none">CTA Activity</p>
+              <p className="text-[9.5px] text-white/30 mt-0.5 leading-none">Your interactions</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2.5">
+            {totalClicks > 0 && (
+              <span className="rounded-full bg-white/[0.06] border border-white/[0.08] px-2 py-0.5 text-[10px] font-bold tabular-nums text-white/40">
+                {totalClicks}
+              </span>
+            )}
+            <button
+              onClick={onClose}
+              className="flex h-6 w-6 items-center justify-center rounded-lg border border-white/[0.07] bg-white/[0.04] text-white/30 transition hover:bg-white/[0.08] hover:text-white/70"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] text-white/30 tabular-nums">{totalClicks} total</span>
-          <button onClick={onClose} className="text-white/25 hover:text-white/60 transition"><X className="h-3.5 w-3.5" /></button>
-        </div>
-      </div>
-      {categories.length === 0 ? (
-        <p className="text-center text-[11px] text-white/25 py-3">No activity yet — interact with content to see stats.</p>
-      ) : (
-        <div className="space-y-3 max-h-64 overflow-y-auto [scrollbar-width:none]">
-          {categories.map(cat => {
-            const catData = data[cat];
-            const catTotal = Object.values(catData).reduce((a, b) => a + b, 0);
-            const colorCls = TAG_CLS[cat] ?? TAG_CLS.all;
-            const textCls = colorCls.split(' ').find(c => c.startsWith('text-')) ?? 'text-white/60';
-            return (
-              <div key={cat}>
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className={`text-[10.5px] font-bold capitalize ${textCls}`}>{cat}</span>
-                  <span className="text-[9px] text-white/25 tabular-nums">{catTotal}</span>
-                </div>
-                <div className="space-y-1">
-                  {Object.entries(catData).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([id, count]) => {
-                    const maxVal = Math.max(...Object.values(catData));
-                    return (
-                      <div key={id} className="flex items-center gap-2">
-                        <span className="w-20 shrink-0 truncate text-[9.5px] text-white/30">{ctaLabel[id] ?? id}</span>
-                        <div className="flex-1 h-3 rounded-full bg-white/[0.04] overflow-hidden">
-                          <div className="h-full rounded-full bg-white/20" style={{ width: `${(count / maxVal) * 100}%` }} />
-                        </div>
-                        <span className="w-5 shrink-0 text-right text-[9.5px] font-bold tabular-nums text-white/40">{count}</span>
-                      </div>
-                    );
-                  })}
-                </div>
+
+        {/* body */}
+        <div className="p-4 max-h-[320px] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {categories.length === 0 ? (
+            <div className="flex flex-col items-center gap-2.5 py-5 text-center">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.04] border border-white/[0.06]">
+                <BarChart className="h-4.5 w-4.5 text-white/20" />
               </div>
-            );
-          })}
+              <div>
+                <p className="text-[11.5px] font-semibold text-white/35">No activity yet</p>
+                <p className="text-[10px] text-white/20 mt-0.5">Interact with posts to see your stats here</p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {categories.map(cat => {
+                const catData = data[cat];
+                const catTotal = Object.values(catData).reduce((a, b) => a + b, 0);
+                const accent = catAccent(cat);
+                const maxVal = Math.max(...Object.values(catData), 1);
+                const sorted = Object.entries(catData).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+                return (
+                  <div key={cat}>
+                    {/* category header */}
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-1.5">
+                        <div className="h-1.5 w-1.5 rounded-full" style={{ background: accent }} />
+                        <span className="text-[10.5px] font-bold capitalize" style={{ color: accent }}>
+                          {cat}
+                        </span>
+                      </div>
+                      <span className="text-[9.5px] font-bold tabular-nums text-white/25">{catTotal} actions</span>
+                    </div>
+
+                    {/* action rows */}
+                    <div className="space-y-1.5">
+                      {sorted.map(([id, count]) => {
+                        const pct = (count / maxVal) * 100;
+                        return (
+                          <div key={id} className="flex items-center gap-2.5">
+                            <span className="w-[72px] shrink-0 truncate text-[10px] font-medium text-white/35">
+                              {ctaLabel[id] ?? id.replace(/_/g, ' ')}
+                            </span>
+                            {/* bar */}
+                            <div className="flex-1 h-[3px] rounded-full bg-white/[0.05] overflow-hidden">
+                              <div
+                                className="h-full rounded-full transition-all duration-500"
+                                style={{ width: `${pct}%`, background: accent, opacity: 0.65 }}
+                              />
+                            </div>
+                            <span className="w-4 shrink-0 text-right text-[10px] font-bold tabular-nums text-white/40">
+                              {count}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
-      )}
-    </div>
+
+        {/* footer */}
+        {totalClicks > 0 && (
+          <div className="border-t border-white/[0.05] px-4 py-2.5 flex items-center justify-between">
+            <span className="text-[9.5px] text-white/20">Session activity only</span>
+            <button
+              onClick={() => {
+                try { localStorage.removeItem('pub_cta_analytics'); setData({}); } catch {}
+              }}
+              className="text-[9.5px] font-semibold text-white/20 hover:text-red-400/70 transition"
+            >
+              Clear
+            </button>
+          </div>
+        )}
+      </div>
+    </>,
+    document.body
   );
 }
 
@@ -348,9 +529,17 @@ type PublishedItem = {
   mimeType?: string | null;
   likesCount?: number;
   likedByViewer?: boolean;
+  trendCount?: number;
+  trendedByViewer?: boolean;
+  commentsCount?: number;
   thumbnailUrl?: string;
   applicationUrl?: string;
   uploadedByUserId?: string;
+  uploadedByName?: string;
+  /** Avatar/logo image URL for the author — user photo or company logo */
+  avatarUrl?: string;
+  /** If this was published by a business page, route clicks to /businesses/[slug] */
+  businessPageSlug?: string;
   // gig-specific extras
   gigData?: GigItem;
 };
@@ -378,6 +567,7 @@ type GigItem = {
 /* ─── tabs ───────────────────────────────────────────────────────── */
 const TABS = [
   { id: 'all',          label: 'All',       icon: SlidersHorizontal },
+  { id: 'featured',     label: 'Featured',  icon: Sparkles },
   { id: 'news',         label: 'News',      icon: Newspaper },
   { id: 'article',      label: 'Articles',  icon: BookOpen },
   { id: 'document',     label: 'Docs',      icon: FileText },
@@ -403,6 +593,7 @@ type TabId = (typeof TABS)[number]['id'];
 
 /* ─── colour maps ────────────────────────────────────────────────── */
 const TAG_CLS: Record<string, string> = {
+  featured:     'bg-amber-500/10 text-amber-400 border-amber-500/20',
   news:         'bg-red-500/10 text-red-400 border-red-500/20',
   article:      'bg-violet-500/10 text-violet-400 border-violet-500/20',
   document:     'bg-slate-500/10 text-slate-300 border-slate-500/20',
@@ -548,21 +739,105 @@ const RECENT_COUNT = 6;
 
 /* ─── mobile bottom-nav tabs ────────────────────────────────────── */
 const MOBILE_NAV = [
-  { id: 'all',       label: 'All',      icon: SlidersHorizontal },
-  { id: 'post',      label: 'Posts',    icon: ImageIcon },
-  { id: 'poll',      label: 'Polls',    icon: ListChecks },
-  { id: 'tutorial',  label: 'Learn',    icon: BookMarked },
-  { id: 'job',       label: 'Jobs',     icon: Briefcase },
+  { id: 'all',      label: 'All',      icon: SlidersHorizontal },
+  { id: 'featured', label: 'Featured', icon: Sparkles },
+  { id: 'news',     label: 'News',     icon: Newspaper },
+  { id: 'job',      label: 'Jobs',     icon: Briefcase },
+  { id: 'gig',      label: 'Gigs',     icon: Zap },
 ] as const;
 
-/* ─── body snippet (strips Key: Value metadata lines) ───────────── */
+/* ─── structured body helpers ───────────────────────────────────── */
 const META_LINE_RE = /^[A-Za-z][A-Za-z\s\/()]{1,28}:\s+.+$/;
+
+/** Returns true if the string looks like inline "Key: Value Key2: Value2" metadata */
+function isStructuredBody(text: string): boolean {
+  return ((text.match(/\b[A-Z][A-Za-z][\w\s\/()]{1,22}:\s+/g) || []).length) >= 2;
+}
+
+/** Parse "Key: Value" pairs from a single-line structured string */
+function parseBodyPairs(raw: string): { key: string; value: string }[] {
+  const text = raw
+    .replace(/https?:\/\/\S+/gi, '')
+    .replace(/\d{4}-\d{2}-\d{2}(\s*[–\-]\s*\d{4}-\d{2}-\d{2})?/g, '')
+    .replace(/\s+/g, ' ').trim();
+  const pairs: { key: string; value: string }[] = [];
+  const re = /([A-Z][A-Za-z][\w\s\/()]{1,22}):\s+([^:]+?)(?=\s+[A-Z][A-Za-z][\w\s\/()]{1,22}:|\s*$)/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    const k = m[1].trim(); const v = m[2].trim();
+    // Skip Registration URL, Deadline, Event Dates — noisy for card view
+    if (/url|deadline|dates?$/i.test(k)) continue;
+    if (v && v.length > 0 && v.length < 55) pairs.push({ key: k, value: v });
+  }
+  return pairs;
+}
+
+/** Strip metadata and return plain prose snippet */
 function getBodySnippet(raw: string, maxLen = 180): string {
+  if (isStructuredBody(raw)) {
+    // Single-line structured metadata — strip all key labels
+    const clean = raw
+      .replace(/https?:\/\/\S+/gi, '')
+      .replace(/\d{4}-\d{2}-\d{2}(\s*[–\-]\s*\d{4}-\d{2}-\d{2})?/g, '')
+      .replace(/[A-Z][A-Za-z][\w\s\/()]{1,22}:\s+/g, '')
+      .replace(/\s+/g, ' ').trim();
+    return clean.length > maxLen ? `${clean.slice(0, maxLen).trimEnd()}…` : clean;
+  }
   const prose = raw
     .split(/\n+/)
     .filter(l => l.trim() && !META_LINE_RE.test(l.trim()))
     .join(' ');
   return prose.length > maxLen ? `${prose.slice(0, maxLen).trimEnd()}…` : prose;
+}
+
+/** Renders body as structured key-value chips OR plain prose */
+function BodyDisplay({ body, searchQuery = '' }: { body: string; searchQuery?: string }) {
+  if (!body) return null;
+
+  if (isStructuredBody(body)) {
+    const pairs = parseBodyPairs(body);
+    if (pairs.length >= 2) {
+      /* Icon hints for common keys */
+      const KEY_ICON: Record<string, string> = {
+        organiser: '👤', organizer: '👤', host: '👤', by: '👤',
+        'themes / tracks': '🎯', themes: '🎯', tracks: '🎯', track: '🎯', topic: '🎯',
+        'prize pool': '🏆', prize: '🏆', reward: '🏆',
+        mode: '📍', venue: '📍', location: '📍',
+        'team size': '👥', team: '👥',
+        hackathon: '⚡', event: '📅',
+        time: '🕐',
+      };
+      const getIcon = (k: string) => KEY_ICON[k.toLowerCase()] ?? '';
+
+      return (
+        <div className="mt-2.5 flex flex-wrap gap-1.5">
+          {pairs.slice(0, 7).map(({ key, value }) => (
+            <span
+              key={key}
+              className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1"
+              style={{ background: 'rgba(255,255,255,0.045)', border: '1px solid rgba(255,255,255,0.08)' }}
+            >
+              {getIcon(key) && <span style={{ fontSize: 9, lineHeight: 1 }}>{getIcon(key)}</span>}
+              <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.07em', color: 'rgba(255,255,255,0.28)' }}>
+                {key.length > 16 ? key.slice(0, 15) + '…' : key}
+              </span>
+              <span style={{ fontSize: 11, fontWeight: 500, color: 'rgba(255,255,255,0.65)', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                {value}
+              </span>
+            </span>
+          ))}
+        </div>
+      );
+    }
+  }
+
+  /* Plain prose */
+  const snippet = getBodySnippet(body);
+  return (
+    <p className="mt-1.5 text-[13px] leading-relaxed text-white/50 line-clamp-3">
+      {searchQuery ? highlight(snippet, searchQuery) : snippet}
+    </p>
+  );
 }
 
 /* ─── helpers ───────────────────────────────────────────────────── */
@@ -604,100 +879,337 @@ function highlight(text: string, q: string): React.ReactNode {
   );
 }
 
-/* ─── featured card ─────────────────────────────────────────────── */
-function FeaturedCard({ item }: { item: PublishedItem }) {
-  const tagCls = TAG_CLS[item.category] ?? TAG_CLS.all;
-  const TabIcon = TABS.find(t => t.id === item.category)?.icon ?? Newspaper;
-  const glow = FEAT_GLOW[item.category] ?? 'from-white/10 via-white/5';
+/* ─── avatar — monochrome, no category colours ───────────────────── */
+const AVATAR_CLS = 'bg-white/[0.08] text-white/55 ring-1 ring-white/[0.07]';
+
+/* ─── trend button ───────────────────────────────────────────────── */
+function TrendButton({ item }: { item: PublishedItem }) {
+  const [count, trended, toggle] = useTrend(item);
+  return (
+    <button
+      type="button"
+      onClick={e => {
+        e.stopPropagation();
+        void toggle();
+        if (!trended) toast('Trending! 🔥', 'success', '🔥');
+        trackCTA('trend_post', item.category);
+      }}
+      className={`flex items-center gap-1.5 text-[12px] font-semibold transition-all ${trended ? 'text-orange-400' : 'text-white/30 hover:text-orange-400'}`}
+    >
+      <TrendingUp className={`h-4 w-4 transition-transform ${trended ? 'scale-110' : ''}`} />
+      <span className="tabular-nums">{count > 0 ? (count >= 1000 ? `${(count / 1000).toFixed(1)}k` : String(count)) : ''}</span>
+    </button>
+  );
+}
+
+/* ─── right trending panel ───────────────────────────────────────── */
+function TrendingPanel({
+  allItems,
+  onTagClick,
+  onCategoryClick,
+  setSortTrending,
+}: {
+  allItems: PublishedItem[];
+  onTagClick: (tag: string) => void;
+  onCategoryClick: (cat: string) => void;
+  setSortTrending: () => void;
+}) {
+  const [trends,    setTrends]    = useState<Record<string, TrendEntry>>({});
+  const [tagTrends, setTagTrends] = useState<Record<string, number>>({});
+  const [catTrends, setCatTrends] = useState<Record<string, number>>({});
+  const [history,   setHistory]   = useState<TrendHistoryEntry[]>([]);
+
+  useEffect(() => {
+    const load = () => {
+      setTrends(readTrends());
+      setTagTrends(readTagTrends());
+      setCatTrends(readCatTrends());
+      setHistory(readTrendHistory());
+    };
+    load();
+    const iv = setInterval(load, 2000);
+    return () => clearInterval(iv);
+  }, []);
+
+  /* top news by read count */
+  const topNews = useMemo(() => {
+    const reads = (i: PublishedItem) => parseFloat(
+      (i.stats?.find(s => s.l === 'reads')?.v ?? '0').replace(/k$/i, '000').replace(/,/g, '')
+    );
+    return allItems.filter(i => i.category === 'news').sort((a, b) => reads(b) - reads(a)).slice(0, 4);
+  }, [allItems]);
+
+  /* top trending tags */
+  const topTags = useMemo(() =>
+    Object.entries(tagTrends).filter(([, c]) => c > 0).sort((a, b) => b[1] - a[1]).slice(0, 10),
+    [tagTrends]
+  );
+
+  /* posts ranked by trend count */
+  const topTrendingPosts = useMemo(() =>
+    allItems
+      .filter(i => (trends[i.id]?.count ?? 0) > 0)
+      .sort((a, b) => (trends[b.id]?.count ?? 0) - (trends[a.id]?.count ?? 0))
+      .slice(0, 5),
+    [allItems, trends]
+  );
+
+  /* category distribution */
+  const categoryStats = useMemo(() => {
+    const counts: Record<string, number> = {};
+    allItems.forEach(i => { counts[i.category] = (counts[i.category] ?? 0) + 1; });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  }, [allItems]);
+
+  const totalTrends = Object.values(catTrends).reduce((a, b) => a + b, 0);
 
   return (
-    <Link
-      href={`/published/${item.id}`}
-      className="group relative flex flex-col overflow-hidden rounded-2xl border border-white/[0.09] bg-[#111114] transition-all duration-300 hover:-translate-y-0.5 hover:border-white/[0.18] hover:shadow-2xl"
-    >
-      {/* glow fill */}
-      <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${glow} to-transparent opacity-60`} />
-      {/* shine line at top */}
-      <div className={`h-px w-full bg-gradient-to-r from-transparent via-white/20 to-transparent`} />
+    <div className="h-full overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="p-4 space-y-7 pb-20">
 
-      {/* thumbnail */}
-      {item.thumbnailUrl && (
-        <div className="relative h-44 w-full shrink-0 overflow-hidden">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={item.thumbnailUrl} alt={item.title} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#111114]/90 via-[#111114]/20 to-transparent" />
-          {/* featured badge over image */}
-          <div className="absolute left-3 top-3 flex items-center gap-2">
-            <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-[3px] text-[10px] font-semibold tracking-wide backdrop-blur-sm ${tagCls}`}>
-              <TabIcon className="h-2.5 w-2.5" />
-              {item.badge}
-            </span>
-            <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-[3px] text-[9.5px] font-semibold text-amber-400 backdrop-blur-sm">✦ Featured</span>
+        {/* ── Top News ── */}
+        <section>
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/30 mb-3">Top News</p>
+          <div className="space-y-3.5">
+            {topNews.length === 0 && <p className="text-[11px] text-white/20">No news yet</p>}
+            {topNews.map((item, i) => (
+              <Link key={item.id} href={`/published/${item.id}`} className="group flex items-start gap-2.5">
+                <span className="text-[11px] font-bold text-white/20 tabular-nums mt-0.5 w-4 shrink-0">{i + 1}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[12px] font-semibold text-white/65 leading-snug line-clamp-2 group-hover:text-white transition-colors">{item.title}</p>
+                  <p className="text-[10.5px] text-white/25 mt-0.5">
+                    {item.stats?.find(s => s.l === 'reads')?.v ?? '—'} reads · {timeAgo(item.postedAt)}
+                  </p>
+                </div>
+              </Link>
+            ))}
           </div>
-        </div>
-      )}
+        </section>
 
-      <div className="relative z-10 flex flex-col flex-1 p-5">
-        {/* top row — only when no thumbnail */}
-        {!item.thumbnailUrl && (
-          <div className="flex items-start justify-between gap-2">
-            <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-[3px] text-[10px] font-semibold tracking-wide ${tagCls}`}>
-              <TabIcon className="h-2.5 w-2.5" />
-              {item.badge}
-            </span>
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="text-[9.5px] font-semibold text-amber-400">✦ Featured</span>
-              {item.isReal && (
-                <span className="flex items-center gap-1 text-[9px] font-semibold text-emerald-400">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Live
+        {/* ── Trending Now ── */}
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/30">Trending</p>
+              {totalTrends > 0 && (
+                <span className="rounded-full bg-orange-500/15 px-2 py-0.5 text-[9.5px] font-bold text-orange-400/80">
+                  {totalTrends} 🔥
                 </span>
               )}
             </div>
+            {totalTrends > 0 && (
+              <button
+                type="button"
+                onClick={setSortTrending}
+                className="text-[10.5px] font-semibold text-orange-400/60 hover:text-orange-400 transition"
+              >
+                Sort feed →
+              </button>
+            )}
+          </div>
+
+          {topTrendingPosts.length > 0 ? (
+            <div className="space-y-3.5 mb-4">
+              {topTrendingPosts.map((item, i) => (
+                <Link key={item.id} href={`/published/${item.id}`} className="group flex items-start gap-2.5">
+                  <span className="text-[11px] font-bold text-orange-400/40 tabular-nums mt-0.5 w-4 shrink-0">{i + 1}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[12px] font-semibold text-white/65 leading-snug line-clamp-2 group-hover:text-white transition-colors">{item.title}</p>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <TrendingUp className="h-3 w-3 text-orange-400/50" />
+                      <span className="text-[10.5px] font-bold text-orange-400/60">{trends[item.id]?.count} trending</span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[11px] text-white/20 mb-4 leading-relaxed">
+              Hit 🔥 on any post to add it to trending. Top trends appear here.
+            </p>
+          )}
+
+          {/* Top tags */}
+          {topTags.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {topTags.map(([tag, count]) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => onTagClick(tag)}
+                  className="inline-flex items-center gap-1 rounded-full bg-white/[0.05] border border-white/[0.07] px-2.5 py-1 text-[10.5px] font-medium text-white/45 hover:bg-white/[0.09] hover:text-white/80 transition"
+                >
+                  #{tag}
+                  <span className="text-orange-400/70 font-bold tabular-nums">{count}</span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[11px] text-white/15">Trending tags show here once posts are trended.</p>
+          )}
+        </section>
+
+        {/* ── Top Categories ── */}
+        <section>
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/30 mb-3">Categories</p>
+          <div className="space-y-1">
+            {categoryStats.map(([cat, count]) => {
+              const tab        = TABS.find(t => t.id === cat);
+              const Icon       = tab?.icon ?? Newspaper;
+              const trendCount = catTrends[cat] ?? 0;
+              const maxCount   = Math.max(...categoryStats.map(([, c]) => c), 1);
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => onCategoryClick(cat)}
+                  className="group w-full flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-white/[0.04] transition"
+                >
+                  <Icon className="h-3.5 w-3.5 text-white/25 shrink-0" />
+                  <span className="text-[12px] font-medium text-white/50 group-hover:text-white/80 transition flex-1 capitalize truncate">
+                    {tab?.label ?? cat}
+                  </span>
+                  {/* mini bar */}
+                  <div className="w-16 h-1 rounded-full bg-white/[0.05] overflow-hidden shrink-0">
+                    <div className="h-full rounded-full bg-white/20" style={{ width: `${(count / maxCount) * 100}%` }} />
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0 min-w-[36px] justify-end">
+                    {trendCount > 0 && (
+                      <span className="flex items-center gap-0.5 text-[9.5px] font-bold text-orange-400/60">
+                        <TrendingUp className="h-2.5 w-2.5" />{trendCount}
+                      </span>
+                    )}
+                    <span className="text-[10.5px] font-semibold text-white/25 tabular-nums">{count}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* ── Your Trend History ── */}
+        {history.length > 0 && (
+          <section>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/30 mb-3">Your Trends</p>
+            <div className="space-y-3">
+              {history.slice(0, 6).map((h, i) => (
+                <div key={i} className="flex items-start gap-2.5">
+                  <TrendingUp className="h-3.5 w-3.5 text-orange-400/35 shrink-0 mt-0.5" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11.5px] font-semibold text-white/50 leading-snug line-clamp-1">{h.title}</p>
+                    <p className="text-[10px] text-white/22 mt-0.5 capitalize">{h.category} · {timeAgo(new Date(h.trendedAt).toISOString())}</p>
+                  </div>
+                </div>
+              ))}
+              {history.length > 6 && (
+                <p className="text-[10.5px] text-white/20">+{history.length - 6} more in history</p>
+              )}
+            </div>
+          </section>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── featured card — same structure as PublishedCard + featured badge ── */
+function FeaturedCard({ item }: { item: PublishedItem }) {
+  const [saved, toggleSaved] = useBookmark(item.id, item.category);
+  const TabIcon = TABS.find(t => t.id === item.category)?.icon ?? Newspaper;
+
+  const bylineParts = item.byline.split(' · ').map(s => s.trim());
+  const authorName  = (item.uploadedByName || bylineParts[0]) ?? 'Docrud';
+  const authorMeta  = bylineParts.slice(1).join(' · ');
+  const initials    = authorName.split(/\s+/).slice(0, 2).map(w => w[0]?.toUpperCase() ?? '').join('');
+  const profileHref = item.businessPageSlug
+    ? `/businesses/${item.businessPageSlug}`
+    : item.uploadedByUserId ? `/u/${item.uploadedByUserId}` : null;
+  const avatarInner = item.avatarUrl
+    ? <img src={item.avatarUrl} alt={authorName} className="h-full w-full rounded-full object-cover" />
+    : (initials.slice(0, 2) || <TabIcon className="h-3.5 w-3.5 opacity-60" />);
+
+  return (
+    <article className="group py-5">
+      {/* ── header ── */}
+      <div className="flex items-center gap-3 mb-3.5">
+        {profileHref ? (
+          <Link href={profileHref} onClick={e => e.stopPropagation()} className={`flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full text-[11px] font-bold ${AVATAR_CLS} hover:opacity-80 transition`}>
+            {avatarInner}
+          </Link>
+        ) : (
+          <div className={`flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full text-[11px] font-bold ${AVATAR_CLS}`}>
+            {avatarInner}
           </div>
         )}
-
-        {/* live badge when has thumbnail */}
-        {item.thumbnailUrl && item.isReal && (
-          <div className="mb-2 flex items-center gap-1">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-[9px] font-semibold text-emerald-400">Live</span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            {profileHref ? (
+              <Link href={profileHref} onClick={e => e.stopPropagation()} className="text-[13.5px] font-semibold text-white leading-tight truncate hover:text-white/80 transition">
+                {authorName}
+              </Link>
+            ) : (
+              <span className="text-[13.5px] font-semibold text-white leading-tight truncate">{authorName}</span>
+            )}
+            {item.isReal && <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />}
+            {/* Featured badge — clean amber pill */}
+            <span className="inline-flex items-center gap-1 rounded-full px-2 py-[2.5px] text-[9px] font-bold uppercase tracking-[0.08em] shrink-0"
+              style={{ background: 'rgba(251,191,36,0.10)', border: '1px solid rgba(251,191,36,0.22)', color: 'rgba(253,224,71,0.85)' }}>
+              <span style={{ fontSize: 8, lineHeight: 1 }}>✦</span> Featured
+            </span>
           </div>
-        )}
+          <p className="text-[11px] text-white/35 mt-0.5 truncate">
+            {item.badge}{authorMeta ? ` · ${authorMeta}` : ''}
+          </p>
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          <span className="text-[11px] text-white/25">{timeAgo(item.postedAt)}</span>
+          <button
+            type="button"
+            onClick={e => { e.stopPropagation(); toggleSaved(); }}
+            className={`transition ${saved ? 'text-white/70' : 'text-white/25 hover:text-white/60'}`}
+          >
+            {saved ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
+          </button>
+        </div>
+      </div>
 
-        {/* title */}
-        <h3 className={`${item.thumbnailUrl ? '' : 'mt-4'} text-[15px] font-bold leading-snug text-white tracking-[-0.025em] line-clamp-2`}>
+      {/* ── thumbnail — full bleed, same as PublishedCard ── */}
+      {item.thumbnailUrl && (
+        <Link href={`/published/${item.id}`} className="block mb-3.5 -mx-4 sm:mx-0 sm:rounded-xl overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={item.thumbnailUrl} alt={item.title} className="w-full max-h-[420px] object-cover transition-transform duration-500 group-hover:scale-[1.01]" />
+        </Link>
+      )}
+
+      {/* ── content ── */}
+      <Link href={`/published/${item.id}`} className="block">
+        <h3 className="text-[15px] font-bold leading-snug tracking-tight text-white line-clamp-2 group-hover:text-white/85 transition-colors">
           {item.title}
         </h3>
-        <p className="mt-1.5 text-[11.5px] text-white/40 line-clamp-1">{item.byline}</p>
-        <p className="mt-3 text-[12px] leading-relaxed text-white/55 line-clamp-3 flex-1">{getBodySnippet(item.body)}</p>
+        <BodyDisplay body={item.body} />
+      </Link>
 
-        {/* stats or chips */}
-        {item.stats ? (
-          <div className="mt-4 flex gap-5 border-t border-white/[0.07] pt-3.5">
-            {item.stats.slice(0, 3).map(s => (
-              <div key={s.l}>
-                <p className="text-[13px] font-bold text-white tabular-nums">{s.v}</p>
-                <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.15em] text-white/30">{s.l}</p>
-              </div>
-            ))}
-          </div>
-        ) : item.chips ? (
-          <div className="mt-4 flex flex-wrap gap-1.5 border-t border-white/[0.07] pt-3.5">
-            {item.chips.slice(0, 4).map(c => (
-              <span key={c} className="rounded-lg border border-white/[0.07] bg-white/[0.05] px-2 py-0.5 text-[10px] text-white/45">{c}</span>
-            ))}
-          </div>
-        ) : null}
-      </div>
-
-      {/* hover caret */}
-      <div className="absolute bottom-4 right-4 opacity-0 transition-opacity group-hover:opacity-100">
-        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-white/50">
-          Open <ArrowRight className="h-3 w-3" />
-        </span>
-      </div>
-    </Link>
+      {/* ── stats / chips ── */}
+      {item.stats ? (
+        <div className="mt-4 pt-4 border-t border-white/[0.06] flex items-center gap-5">
+          {item.stats.slice(0, 3).map(s => (
+            <div key={s.l}>
+              <p className="text-[13px] font-bold text-white/80 tabular-nums">{s.v}</p>
+              <p className="text-[9px] font-semibold uppercase tracking-widest text-white/25 mt-0.5">{s.l}</p>
+            </div>
+          ))}
+          <Link href={`/published/${item.id}`} className="ml-auto text-[11px] font-semibold text-white/25 opacity-0 group-hover:opacity-100 transition hover:text-white/60 flex items-center gap-1">
+            Read <ArrowRight className="h-3 w-3" />
+          </Link>
+        </div>
+      ) : item.chips ? (
+        <div className="mt-3.5 flex flex-wrap gap-1.5">
+          {item.chips.slice(0, 5).map(c => (
+            <span key={c} className="rounded-full bg-white/[0.05] border border-white/[0.07] px-2.5 py-0.5 text-[10.5px] text-white/38">{c}</span>
+          ))}
+        </div>
+      ) : null}
+    </article>
   );
 }
 
@@ -736,166 +1248,213 @@ function UpraiseMiniButton({ itemId, uploadedByUserId, category }: { itemId: str
     }
   };
 
-  const ghostBtnCls = 'flex h-8 flex-1 items-center justify-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.04] text-[11.5px] font-semibold text-white/50 transition hover:bg-white/[0.08] hover:text-white/80';
-  const activeCls = 'flex h-8 flex-1 items-center justify-center gap-1.5 rounded-xl border border-orange-500/30 bg-orange-500/10 text-[11.5px] font-semibold text-orange-400 transition hover:bg-orange-500/15';
+  const baseCls   = 'inline-flex h-8 items-center gap-1.5 rounded-full border border-white/[0.10] px-3.5 text-[12px] font-semibold text-white/55 transition hover:border-white/[0.20] hover:text-white/90';
+  const activeCls = 'inline-flex h-8 items-center gap-1.5 rounded-full border border-white/[0.15] px-3.5 text-[12px] font-semibold text-white/80 transition';
 
   return (
-    <button type="button" onClick={toggle} disabled={busy} className={upraised ? activeCls : ghostBtnCls}>
-      <TrendingUp className="h-3 w-3" />
+    <button type="button" onClick={toggle} disabled={busy} className={upraised ? activeCls : baseCls}>
+      <TrendingUp className="h-3.5 w-3.5" />
       Upraise {count > 0 && <span className="tabular-nums">{count}</span>}
     </button>
   );
 }
 
-/* ─── regular card ──────────────────────────────────────────────── */
+/* ─── instagram-style feed post card ────────────────────────────── */
 function PublishedCard({ item, searchQuery }: { item: PublishedItem; searchQuery: string }) {
   const [saved, toggleSaved] = useBookmark(item.id, item.category);
-  const [modal, setModal] = useState<ModalVariant | null>(null);
-  const tagCls  = TAG_CLS[item.category]  ?? TAG_CLS.all;
-  const accentBar = ACCENT_BAR[item.category] ?? 'bg-white/20';
-  const TabIcon = TABS.find(t => t.id === item.category)?.icon ?? Newspaper;
-  const cat = item.category;
+  const [modal, setModal]    = useState<ModalVariant | null>(null);
+  const [liked, setLiked]    = useState(item.likedByViewer ?? false);
+  const [likeCount, setLikeCount] = useState(item.likesCount ?? 0);
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [commentCount, setCommentCount] = useState(item.commentsCount ?? 0);
+  const likeInFlight = useRef(false);
 
-  const primaryBtnCls = 'flex h-8 flex-1 items-center justify-center gap-1.5 rounded-xl bg-white text-[11.5px] font-bold text-[#0D0D0F] transition hover:bg-white/90 active:scale-[0.98]';
-  const ghostBtnCls   = 'flex h-8 flex-1 items-center justify-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.04] text-[11.5px] font-semibold text-white/50 transition hover:bg-white/[0.08] hover:text-white/80';
-  const iconBtnCls    = 'flex h-8 w-8 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.04] text-white/35 transition hover:border-white/[0.13] hover:text-white/70';
-  const savedBtnCls   = 'flex h-8 w-8 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-400';
+  useEffect(() => { setLiked(item.likedByViewer ?? false); }, [item.likedByViewer]);
+  useEffect(() => { setLikeCount(item.likesCount ?? 0); }, [item.likesCount]);
+  useEffect(() => { if (item.commentsCount !== undefined) setCommentCount(item.commentsCount); }, [item.commentsCount]);
+
+  const TabIcon = TABS.find(t => t.id === item.category)?.icon ?? Newspaper;
+  const cat     = item.category;
+
+  const displayName = item.uploadedByName || item.byline.split(' · ')[0] || 'Docrud User';
+  const bylineParts = item.byline.split(' · ').map(s => s.trim());
+  const authorMeta  = bylineParts.slice(1).join(' · ');
+  const initials    = displayName.split(/\s+/).slice(0, 2).map(w => w[0]?.toUpperCase() ?? '').join('');
+  // Route to company page if published by a business, else to user profile
+  const profileHref = item.businessPageSlug
+    ? `/businesses/${item.businessPageSlug}`
+    : item.uploadedByUserId ? `/u/${item.uploadedByUserId}` : null;
+
+  /* button classes — clean, borderless style */
+  const primCls  = 'inline-flex h-8 items-center gap-1.5 rounded-full bg-white px-4 text-[12px] font-bold text-[#0D0D0F] transition hover:bg-white/90 active:scale-[0.98]';
+  const ghostCls = 'inline-flex h-8 items-center gap-1.5 rounded-full border border-white/[0.10] px-3.5 text-[12px] font-semibold text-white/55 transition hover:border-white/[0.20] hover:text-white/90';
+  const iconCls  = 'flex h-8 w-8 items-center justify-center rounded-full text-white/35 transition hover:bg-white/[0.06] hover:text-white/70';
+
+  /* shared avatar inner content — image when available, else initials */
+  const avatarInner = item.avatarUrl
+    ? <img src={item.avatarUrl} alt={displayName} className="h-full w-full rounded-full object-cover" />
+    : (initials.slice(0, 2) || <TabIcon className="h-3.5 w-3.5 opacity-60" />);
 
   return (
-    <Link
-      href={`/published/${item.id}`}
-      className="group relative flex flex-col overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.025] transition-all duration-200 hover:-translate-y-0.5 hover:border-white/[0.13] hover:bg-white/[0.05] hover:shadow-xl"
-    >
-      {/* category accent bar */}
-      <div className={`h-[3px] w-full ${accentBar} opacity-50 transition-opacity group-hover:opacity-90`} />
+    <>
+      {modal && <ActionModal variant={modal} itemTitle={item.title} itemId={item.id} uploadedByUserId={item.uploadedByUserId} onClose={() => setModal(null)} />}
 
-      {/* thumbnail */}
-      {item.thumbnailUrl && (
-        <div className="relative h-40 w-full overflow-hidden bg-white/[0.04]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={item.thumbnailUrl} alt={item.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0D0D0F]/85 via-[#0D0D0F]/10 to-transparent" />
-        </div>
-      )}
-
-      <div className="flex flex-1 flex-col p-4">
-        {/* badge + meta */}
-        <div className="flex items-center justify-between gap-2">
-          <span className={`inline-flex items-center gap-1 rounded-lg border px-2 py-0.5 text-[10px] font-semibold ${tagCls}`}>
-            <TabIcon className="h-2.5 w-2.5" />
-            {item.badge}
-          </span>
-          <div className="flex items-center gap-2">
-            {item.isReal && <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />}
-            <span className="text-[10px] text-white/25">{timeAgo(item.postedAt)}</span>
+      <article className="group py-5">
+        {/* ── header ── */}
+        <div className="flex items-center gap-3 mb-3.5">
+          {profileHref ? (
+            <Link href={profileHref} onClick={e => e.stopPropagation()} className={`flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full text-[11px] font-bold ${AVATAR_CLS} hover:opacity-80 transition`}>
+              {avatarInner}
+            </Link>
+          ) : (
+            <div className={`flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full text-[11px] font-bold ${AVATAR_CLS}`}>
+              {avatarInner}
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              {profileHref ? (
+                <Link href={profileHref} onClick={e => e.stopPropagation()} className="text-[13.5px] font-semibold text-white leading-tight truncate hover:text-white/80 transition">
+                  {displayName}
+                </Link>
+              ) : (
+                <span className="text-[13.5px] font-semibold text-white leading-tight truncate">{displayName}</span>
+              )}
+              {item.isReal && <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />}
+            </div>
+            <p className="text-[11px] text-white/35 mt-0.5 truncate">
+              {item.badge}{authorMeta ? ` · ${authorMeta}` : ''} · {timeAgo(item.postedAt)}
+            </p>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              type="button"
+              onClick={e => { e.stopPropagation(); toggleSaved(); }}
+              className={`transition ${saved ? 'text-white/70' : 'text-white/25 hover:text-white/60'}`}
+            >
+              {saved ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
+            </button>
           </div>
         </div>
 
-        {/* title */}
-        <h3 className="mt-3 line-clamp-2 text-[13.5px] font-bold leading-snug tracking-[-0.02em] text-white">
-          {searchQuery ? highlight(item.title, searchQuery) : item.title}
-        </h3>
+        {/* ── thumbnail — full bleed ── */}
+        {item.thumbnailUrl && (
+          <Link href={`/published/${item.id}`} className="block mb-3.5 -mx-4 sm:mx-0 sm:rounded-xl overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={item.thumbnailUrl} alt={item.title} className="w-full max-h-[420px] object-cover transition-transform duration-500 group-hover:scale-[1.01]" />
+          </Link>
+        )}
 
-        {/* byline */}
-        <p className="mt-1 line-clamp-1 text-[11px] text-white/35">
-          {searchQuery ? highlight(item.byline, searchQuery) : item.byline}
-        </p>
+        {/* ── content ── */}
+        <Link href={`/published/${item.id}`} className="block">
+          <h3 className="text-[15px] font-bold leading-snug tracking-tight text-white line-clamp-2 group-hover:text-white/85 transition-colors">
+            {searchQuery ? highlight(item.title, searchQuery) : item.title}
+          </h3>
+          <BodyDisplay body={item.body} searchQuery={searchQuery} />
+        </Link>
 
-        {/* body */}
-        <p className="mt-2.5 line-clamp-3 flex-1 text-[12px] leading-[1.65] text-white/50">
-          {searchQuery ? highlight(getBodySnippet(item.body), searchQuery) : getBodySnippet(item.body)}
-        </p>
-
-        {/* chips or stats */}
-        {item.chips ? (
-          <div className="mt-3 flex flex-wrap gap-1">
-            {item.chips.slice(0, 3).map(c => (
-              <span key={c} className={`rounded-lg px-2 py-0.5 text-[10px] font-medium ${
+        {/* ── chips ── */}
+        {item.chips && (
+          <div className="flex flex-wrap gap-1.5 mt-3">
+            {item.chips.slice(0, 5).map(c => (
+              <span key={c} className={`rounded-full px-2.5 py-0.5 text-[11px] ${
                 searchQuery && c.toLowerCase().includes(searchQuery.toLowerCase())
-                  ? 'border border-amber-500/20 bg-amber-500/10 text-amber-300'
+                  ? 'bg-white/[0.12] text-white/80'
                   : 'bg-white/[0.06] text-white/40'
               }`}>{c}</span>
             ))}
-            {(item.chips.length ?? 0) > 3 && (
-              <span className="rounded-lg bg-white/[0.04] px-2 py-0.5 text-[10px] text-white/20">+{item.chips.length - 3}</span>
+            {(item.chips.length ?? 0) > 5 && (
+              <span className="rounded-full bg-white/[0.04] px-2.5 py-0.5 text-[11px] text-white/20">+{item.chips.length - 5}</span>
             )}
           </div>
-        ) : item.stats ? (
-          <div className="mt-3 flex gap-4 border-t border-white/[0.05] pt-3">
+        )}
+
+        {/* ── stats ── */}
+        {item.stats && (
+          <div className="flex items-center gap-5 mt-3">
             {item.stats.slice(0, 3).map(s => (
-              <div key={s.l}>
-                <p className="text-xs font-bold tabular-nums text-white/80">{s.v}</p>
-                <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-wide text-white/25">{s.l}</p>
+              <div key={s.l} className="flex items-baseline gap-1.5">
+                <span className="text-[13.5px] font-bold text-white/75 tabular-nums">{s.v}</span>
+                <span className="text-[9.5px] font-semibold uppercase tracking-widest text-white/25">{s.l}</span>
               </div>
             ))}
           </div>
-        ) : null}
+        )}
 
-        {/* footer — category-specific actions */}
-        <div className="mt-3 flex items-center gap-2 border-t border-white/[0.05] pt-3" onClick={e => e.preventDefault()}>
-          {(cat === 'news' || cat === 'article') && (
-            <>
-              <Link href={`/published/${item.id}`} className={ghostBtnCls} onClick={e => { e.stopPropagation(); trackCTA('read_article', cat); }}>
-                Read Story <ArrowRight className="h-3 w-3" />
+        {/* ── engagement row ── */}
+        <div className="flex items-center gap-3 mt-3.5 pt-3.5 border-t border-white/[0.05]" onClick={e => e.preventDefault()}>
+          {/* like */}
+          <button
+            type="button"
+            onClick={async e => {
+              e.stopPropagation();
+              if (likeInFlight.current) return;
+              const newLiked = !liked;
+              setLiked(newLiked);
+              setLikeCount(c => newLiked ? c + 1 : Math.max(0, c - 1));
+              if (newLiked) toast('Liked!', 'success', '❤️');
+              trackCTA('like_post', cat);
+              if (item.isReal) {
+                likeInFlight.current = true;
+                try {
+                  const res = await fetch(`/api/published/${item.id}/like`, { method: 'POST' });
+                  if (res.ok) {
+                    const d = await res.json() as { liked: boolean; likesCount: number };
+                    setLiked(d.liked); setLikeCount(d.likesCount);
+                  } else { setLiked(liked); setLikeCount(c => newLiked ? Math.max(0, c - 1) : c + 1); }
+                } catch { setLiked(liked); } finally { likeInFlight.current = false; }
+              }
+            }}
+            className={`flex items-center gap-1.5 text-[12px] font-semibold transition ${liked ? 'text-rose-400' : 'text-white/35 hover:text-white/70'}`}
+          >
+            <Heart className={`h-4 w-4 transition-transform ${liked ? 'fill-current scale-110' : ''}`} />
+            <span>{likeCount > 0 ? (likeCount >= 1000 ? `${(likeCount/1000).toFixed(1)}k` : String(likeCount)) : (liked ? 'Liked' : 'Like')}</span>
+          </button>
+
+          {/* comments */}
+          <button
+            type="button"
+            onClick={e => { e.stopPropagation(); setCommentsOpen(v => !v); }}
+            className={`flex items-center gap-1.5 text-[12px] font-semibold transition ${commentsOpen ? 'text-white/70' : 'text-white/30 hover:text-white/60'}`}
+          >
+            <MessageSquare className="h-4 w-4" />
+            <span>{commentCount > 0 ? (commentCount >= 1000 ? `${(commentCount/1000).toFixed(1)}k` : String(commentCount)) : '0'}</span>
+          </button>
+
+          {/* trend */}
+          <TrendButton item={item} />
+
+          {/* category-specific CTA */}
+          <div className="flex items-center gap-2 ml-auto">
+            {(cat === 'news' || cat === 'article') && (
+              <Link href={`/published/${item.id}`} className={ghostCls} onClick={e => { e.stopPropagation(); trackCTA('read_article', cat); }}>
+                Read <ArrowRight className="h-3.5 w-3.5" />
               </Link>
-              <button type="button" onClick={e => { e.stopPropagation(); void shareItem(item.id, item.title); trackCTA('share_item', cat); }} className={iconBtnCls}>
-                <Share2 className="h-3.5 w-3.5" />
-              </button>
-            </>
-          )}
-          {cat === 'document' && (
-            <>
-              <button
-                type="button"
-                onClick={e => {
-                  e.stopPropagation();
-                  trackCTA('download_doc', cat);
-                  window.open(`/published/${item.id}`, '_blank');
-                }}
-                className={ghostBtnCls}
-              >
-                <Download className="h-3 w-3" /> Download
-              </button>
-              <button
-                type="button"
-                onClick={e => {
-                  e.stopPropagation();
-                  trackCTA('preview_doc', cat);
-                  window.open(`/published/${item.id}`, '_blank');
-                }}
-                className={ghostBtnCls}
-              >
-                <ExternalLink className="h-3 w-3" /> Preview
-              </button>
-            </>
-          )}
-          {cat === 'portfolio' && (
-            <>
-              <Link href={`/published/${item.id}`} className={ghostBtnCls} onClick={e => { e.stopPropagation(); trackCTA('view_portfolio', cat); }}>
-                View Work <ArrowRight className="h-3 w-3" />
+            )}
+            {cat === 'document' && (
+              <>
+                <button type="button" onClick={e => { e.stopPropagation(); trackCTA('download_doc', cat); window.open(`/published/${item.id}`, '_blank'); }} className={ghostCls}>
+                  <Download className="h-3.5 w-3.5" /> Download
+                </button>
+                <button type="button" onClick={e => { e.stopPropagation(); window.open(`/published/${item.id}`, '_blank'); }} className={iconCls}>
+                  <ExternalLink className="h-4 w-4" />
+                </button>
+              </>
+            )}
+            {cat === 'portfolio' && (
+              <Link href={`/published/${item.id}`} className={ghostCls} onClick={e => { e.stopPropagation(); trackCTA('view_portfolio', cat); }}>
+                View Work <ArrowRight className="h-3.5 w-3.5" />
               </Link>
-              <button type="button" onClick={e => { e.stopPropagation(); toggleSaved(); }} className={saved ? savedBtnCls : iconBtnCls}>
-                {saved ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
-              </button>
-            </>
-          )}
-          {cat === 'announcement' && (
-            <>
-              <Link href={`/published/${item.id}`} className={ghostBtnCls} onClick={e => { e.stopPropagation(); trackCTA('read_announcement', cat); }}>
-                Read <ArrowRight className="h-3 w-3" />
+            )}
+            {cat === 'announcement' && (
+              <Link href={`/published/${item.id}`} className={ghostCls} onClick={e => e.stopPropagation()}>
+                Read <ArrowRight className="h-3.5 w-3.5" />
               </Link>
-              <button type="button" onClick={e => { e.stopPropagation(); void shareItem(item.id, item.title); trackCTA('share_item', cat); }} className={iconBtnCls}>
-                <Share2 className="h-3.5 w-3.5" />
-              </button>
-            </>
-          )}
-          {cat === 'job' && (
-            <>
+            )}
+            {cat === 'job' && (
               <button type="button" onClick={e => {
-                e.stopPropagation();
-                trackCTA('apply_job', cat);
+                e.stopPropagation(); trackCTA('apply_job', cat);
                 if (item.applicationUrl) {
-                  // Track the application
                   try {
                     const raw = localStorage.getItem('pub_job_applications') || '[]';
                     const apps = JSON.parse(raw) as Array<{itemId: string; title: string; appliedAt: number; url: string}>;
@@ -903,138 +1462,75 @@ function PublishedCard({ item, searchQuery }: { item: PublishedItem; searchQuery
                     localStorage.setItem('pub_job_applications', JSON.stringify(apps.slice(0, 200)));
                   } catch {}
                   window.open(item.applicationUrl, '_blank', 'noopener,noreferrer');
-                  toast('Redirecting to application…', 'success', '💼');
-                } else {
-                  setModal('apply');
-                }
-              }} className={primaryBtnCls}>
-                Apply Now <ArrowRight className="h-3 w-3" />
+                  toast('Redirecting…', 'success', '💼');
+                } else setModal('apply');
+              }} className={primCls}>
+                Apply Now <ArrowRight className="h-3.5 w-3.5" />
               </button>
-              <button type="button" onClick={e => { e.stopPropagation(); toggleSaved(); }} className={saved ? savedBtnCls : iconBtnCls}>
-                {saved ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
-              </button>
-            </>
-          )}
-          {cat === 'resume' && (
-            <>
-              <Link href={`/published/${item.id}`} className={ghostBtnCls} onClick={e => { e.stopPropagation(); trackCTA('view_profile', cat); }}>
-                View Profile <ArrowRight className="h-3 w-3" />
+            )}
+            {cat === 'resume' && (
+              <>
+                <Link href={`/published/${item.id}`} className={ghostCls} onClick={e => e.stopPropagation()}>View Profile <ArrowRight className="h-3.5 w-3.5" /></Link>
+                <UpraiseMiniButton itemId={item.id} uploadedByUserId={item.uploadedByUserId} category={cat} />
+              </>
+            )}
+            {cat === 'product' && (() => {
+              const shopUrl  = item.body?.match(/^Shop URL:\s*(.+)$/im)?.[1]?.trim() || '';
+              const whatsapp = item.body?.match(/^WhatsApp:\s*(.+)$/im)?.[1]?.trim() || '';
+              return shopUrl ? (
+                <button type="button" onClick={e => { e.stopPropagation(); trackCTA('shop_product', cat); window.open(shopUrl, '_blank', 'noopener,noreferrer'); }} className={primCls}>
+                  Shop Now <ExternalLink className="h-3.5 w-3.5" />
+                </button>
+              ) : whatsapp ? (
+                <button type="button" onClick={e => { e.stopPropagation(); window.open(`https://wa.me/${whatsapp.replace(/\D/g,'')}`, '_blank'); }} className={ghostCls}>
+                  <MessageSquare className="h-3.5 w-3.5" /> WhatsApp
+                </button>
+              ) : (
+                <Link href={`/published/${item.id}`} className={primCls} onClick={e => e.stopPropagation()}>View Product <ArrowRight className="h-3.5 w-3.5" /></Link>
+              );
+            })()}
+            {cat === 'event' && (() => {
+              const regUrl = item.body?.match(/^Registration URL:\s*(.+)$/im)?.[1]?.trim() || '';
+              return (
+                <button type="button" onClick={e => {
+                  e.stopPropagation(); trackCTA('register_event', cat);
+                  try { const raw = localStorage.getItem('pub_registrations') || '[]'; const regs = JSON.parse(raw) as Array<{itemId:string;title:string;category:string;registeredAt:number}>; if (!regs.find(r=>r.itemId===item.id)){regs.unshift({itemId:item.id,title:item.title,category:cat,registeredAt:Date.now()});localStorage.setItem('pub_registrations',JSON.stringify(regs.slice(0,200)));} } catch {}
+                  if (regUrl) { window.open(regUrl,'_blank','noopener,noreferrer'); toast('Redirecting…','success','🎟️'); } else setModal('register');
+                }} className={primCls}>Register <ArrowRight className="h-3.5 w-3.5" /></button>
+              );
+            })()}
+            {cat === 'hackathon' && (() => {
+              const regUrl = item.body?.match(/^Registration URL:\s*(.+)$/im)?.[1]?.trim() || '';
+              return (
+                <button type="button" onClick={e => {
+                  e.stopPropagation(); trackCTA('register_hackathon', cat);
+                  try { const raw = localStorage.getItem('pub_registrations') || '[]'; const regs = JSON.parse(raw) as Array<{itemId:string;title:string;category:string;registeredAt:number}>; if (!regs.find(r=>r.itemId===item.id)){regs.unshift({itemId:item.id,title:item.title,category:cat,registeredAt:Date.now()});localStorage.setItem('pub_registrations',JSON.stringify(regs.slice(0,200)));} } catch {}
+                  if (regUrl) { window.open(regUrl,'_blank','noopener,noreferrer'); toast('Redirecting…','success','🏆'); } else setModal('register');
+                }} className={primCls}>Register <ArrowRight className="h-3.5 w-3.5" /></button>
+              );
+            })()}
+            {cat !== 'news' && cat !== 'article' && cat !== 'document' && cat !== 'portfolio' &&
+             cat !== 'announcement' && cat !== 'job' && cat !== 'resume' && cat !== 'product' &&
+             cat !== 'event' && cat !== 'hackathon' && (
+              <Link href={`/published/${item.id}`} className={ghostCls} onClick={e => e.stopPropagation()}>
+                Open <ArrowRight className="h-3.5 w-3.5" />
               </Link>
-              <UpraiseMiniButton itemId={item.id} uploadedByUserId={item.uploadedByUserId} category={cat} />
-            </>
-          )}
-          {cat === 'product' && (() => {
-            const shopUrl = item.body?.match(/^Shop URL:\s*(.+)$/im)?.[1]?.trim() || '';
-            const whatsapp = item.body?.match(/^WhatsApp:\s*(.+)$/im)?.[1]?.trim() || '';
-            return (
-              <>
-                {shopUrl ? (
-                  <button type="button" onClick={e => {
-                    e.stopPropagation();
-                    trackCTA('shop_product', cat);
-                    window.open(shopUrl, '_blank', 'noopener,noreferrer');
-                  }} className={primaryBtnCls}>
-                    Shop Now <ExternalLink className="h-3 w-3" />
-                  </button>
-                ) : (
-                  <Link href={`/published/${item.id}`} className={primaryBtnCls} onClick={e => { e.stopPropagation(); trackCTA('get_product', cat); }}>
-                    View Product <ArrowRight className="h-3 w-3" />
-                  </Link>
-                )}
-                {whatsapp ? (
-                  <button type="button" onClick={e => {
-                    e.stopPropagation();
-                    const num = whatsapp.replace(/\D/g, '');
-                    window.open(`https://wa.me/${num}`, '_blank', 'noopener,noreferrer');
-                  }} className={iconBtnCls} title="Chat on WhatsApp">
-                    <MessageSquare className="h-3.5 w-3.5" />
-                  </button>
-                ) : (
-                  <button type="button" onClick={e => { e.stopPropagation(); toggleSaved(); }} className={saved ? savedBtnCls : iconBtnCls}>
-                    {saved ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
-                  </button>
-                )}
-              </>
-            );
-          })()}
-          {cat === 'event' && (() => {
-            const regUrl = item.body?.match(/^Registration URL:\s*(.+)$/im)?.[1]?.trim() || '';
-            return (
-              <>
-                <button type="button" onClick={e => {
-                  e.stopPropagation();
-                  trackCTA('register_event', cat);
-                  try {
-                    const raw = localStorage.getItem('pub_registrations') || '[]';
-                    const regs = JSON.parse(raw) as Array<{itemId: string; title: string; category: string; registeredAt: number}>;
-                    if (!regs.find(r => r.itemId === item.id)) {
-                      regs.unshift({ itemId: item.id, title: item.title, category: cat, registeredAt: Date.now() });
-                      localStorage.setItem('pub_registrations', JSON.stringify(regs.slice(0, 200)));
-                    }
-                  } catch {}
-                  if (regUrl) {
-                    window.open(regUrl, '_blank', 'noopener,noreferrer');
-                    toast('Redirecting to registration…', 'success', '🎟️');
-                  } else {
-                    setModal('register');
-                  }
-                }} className={primaryBtnCls}>
-                  Register <ArrowRight className="h-3 w-3" />
-                </button>
-                <button type="button" onClick={e => { e.stopPropagation(); toggleSaved(); }} className={saved ? savedBtnCls : iconBtnCls}>
-                  {saved ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
-                </button>
-              </>
-            );
-          })()}
-          {cat === 'hackathon' && (() => {
-            const regUrl = item.body?.match(/^Registration URL:\s*(.+)$/im)?.[1]?.trim() || '';
-            return (
-              <>
-                <button type="button" onClick={e => {
-                  e.stopPropagation();
-                  trackCTA('register_hackathon', cat);
-                  try {
-                    const raw = localStorage.getItem('pub_registrations') || '[]';
-                    const regs = JSON.parse(raw) as Array<{itemId: string; title: string; category: string; registeredAt: number}>;
-                    if (!regs.find(r => r.itemId === item.id)) {
-                      regs.unshift({ itemId: item.id, title: item.title, category: cat, registeredAt: Date.now() });
-                      localStorage.setItem('pub_registrations', JSON.stringify(regs.slice(0, 200)));
-                    }
-                  } catch {}
-                  if (regUrl) {
-                    window.open(regUrl, '_blank', 'noopener,noreferrer');
-                    toast('Redirecting to registration…', 'success', '🏆');
-                  } else {
-                    setModal('register');
-                  }
-                }} className={primaryBtnCls}>
-                  Register <ArrowRight className="h-3 w-3" />
-                </button>
-                <button type="button" onClick={e => { e.stopPropagation(); void shareItem(item.id, item.title); trackCTA('share_item', cat); }} className={iconBtnCls}>
-                  <Share2 className="h-3.5 w-3.5" />
-                </button>
-              </>
-            );
-          })()}
-          {cat !== 'news' && cat !== 'article' && cat !== 'document' && cat !== 'portfolio' &&
-           cat !== 'announcement' && cat !== 'job' && cat !== 'resume' && cat !== 'product' &&
-           cat !== 'event' && cat !== 'hackathon' && (
-            <>
-              <span className={`text-[9.5px] font-bold uppercase tracking-[0.14em] ${tagCls.split(' ').find(c => c.startsWith('text-')) ?? 'text-white/40'}`}>
-                {cat}
-              </span>
-              <span className="ml-auto inline-flex items-center gap-1 text-[11px] font-semibold text-white/30 transition-colors group-hover:text-white/70">
-                Open <ArrowRight className="h-3 w-3" />
-              </span>
-            </>
-          )}
+            )}
+            <button type="button" onClick={e => { e.stopPropagation(); void shareItem(item.id, item.title); trackCTA('share_item', cat); }} className={iconCls}>
+              <Share2 className="h-4 w-4" />
+            </button>
+          </div>
         </div>
-      </div>
-      {modal && <ActionModal variant={modal} itemTitle={item.title} itemId={item.id} uploadedByUserId={item.uploadedByUserId} onClose={() => setModal(null)} />}
-    </Link>
+
+        {/* inline comment panel */}
+        {commentsOpen && item.isReal && (
+          <CardCommentPanel item={item} onClose={() => setCommentsOpen(false)} />
+        )}
+      </article>
+    </>
   );
 }
+
 
 /* ─── gig card ──────────────────────────────────────────────────── */
 function GigCard({ item }: { item: PublishedItem }) {
@@ -1203,29 +1699,226 @@ function GigCard({ item }: { item: PublishedItem }) {
   );
 }
 
-/* ─── post card ─────────────────────────────────────────────────── */
+/* ─── inline comment panel (shared by both card types) ──────────── */
+type CardComment = {
+  id: string; author: string; text: string; createdAt: string;
+  userId?: string; parentId?: string | null;
+  likesCount: number; likedByViewer: boolean;
+  replies?: CardComment[];
+};
+
+function CardCommentPanel({ item, onClose }: { item: PublishedItem; onClose: () => void }) {
+  const [comments, setComments]   = useState<CardComment[]>([]);
+  const [loading, setLoading]     = useState(true);
+  const [text, setText]           = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [replyTo, setReplyTo]     = useState<{ id: string; author: string } | null>(null);
+  const [replyText, setReplyText] = useState('');
+  const inputRef  = useRef<HTMLInputElement>(null);
+  const panelRef  = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!item.isReal) { setLoading(false); return; }
+    fetch(`/api/public/published/${item.id}/comments`)
+      .then(r => r.ok ? r.json() : { comments: [] })
+      .then((d: { comments: CardComment[] }) => {
+        // nest replies under parents
+        const byId: Record<string, CardComment> = {};
+        const roots: CardComment[] = [];
+        d.comments.forEach(c => { byId[c.id] = { ...c, replies: [] }; });
+        Object.values(byId).forEach(c => {
+          if (c.parentId && byId[c.parentId]) byId[c.parentId].replies!.push(c);
+          else roots.push(c);
+        });
+        setComments(roots);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [item.id, item.isReal]);
+
+  // close on outside click
+  useEffect(() => {
+    const h = (e: MouseEvent) => { if (panelRef.current && !panelRef.current.contains(e.target as Node)) onClose(); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [onClose]);
+
+  const submitComment = async (parentId?: string) => {
+    const body = parentId ? replyText.trim() : text.trim();
+    if (!body) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/public/published/${item.id}/comments`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ text: body, parentId }),
+      });
+      if (res.ok) {
+        const d = await res.json() as { comments: CardComment[] };
+        const byId: Record<string, CardComment> = {};
+        const roots: CardComment[] = [];
+        d.comments.forEach(c => { byId[c.id] = { ...c, replies: [] }; });
+        Object.values(byId).forEach(c => {
+          if (c.parentId && byId[c.parentId]) byId[c.parentId].replies!.push(c);
+          else roots.push(c);
+        });
+        setComments(roots);
+        if (parentId) { setReplyText(''); setReplyTo(null); }
+        else setText('');
+      }
+    } catch {} finally { setSubmitting(false); }
+  };
+
+  const likeComment = async (commentId: string, parentId?: string) => {
+    const toggle = (cs: CardComment[]): CardComment[] => cs.map(c => {
+      if (c.id === commentId) {
+        const next = !c.likedByViewer;
+        return { ...c, likedByViewer: next, likesCount: next ? c.likesCount + 1 : Math.max(0, c.likesCount - 1) };
+      }
+      if (c.replies?.length) return { ...c, replies: toggle(c.replies) };
+      return c;
+    });
+    setComments(prev => toggle(prev));
+    try {
+      await fetch(`/api/public/published/${item.id}/comments/${commentId}/like`, { method: 'POST' });
+    } catch {}
+    void parentId;
+  };
+
+  const ago = (iso: string) => {
+    const d = Date.now() - new Date(iso).getTime();
+    if (d < 60000) return 'now';
+    if (d < 3600000) return `${Math.floor(d/60000)}m`;
+    if (d < 86400000) return `${Math.floor(d/3600000)}h`;
+    return `${Math.floor(d/86400000)}d`;
+  };
+
+  const renderComment = (c: CardComment, depth = 0) => (
+    <div key={c.id} className={depth > 0 ? 'ml-7 mt-2' : 'mt-3'}>
+      <div className="flex gap-2">
+        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/10 text-[9px] font-bold text-white/60">
+          {c.author.slice(0,2).toUpperCase()}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-[11px] font-semibold text-white/80">{c.author}</span>
+            <span className="text-[10px] text-white/25">{ago(c.createdAt)}</span>
+          </div>
+          <p className="text-[12px] text-white/65 leading-relaxed mt-0.5 break-words">{c.text}</p>
+          <div className="flex items-center gap-3 mt-1">
+            <button
+              type="button"
+              onClick={() => void likeComment(c.id)}
+              className={`flex items-center gap-1 text-[10px] font-semibold transition ${c.likedByViewer ? 'text-rose-400' : 'text-white/25 hover:text-rose-400'}`}
+            >
+              <Heart className={`h-3 w-3 ${c.likedByViewer ? 'fill-current' : ''}`} />
+              {c.likesCount > 0 && <span>{c.likesCount}</span>}
+            </button>
+            {depth === 0 && (
+              <button
+                type="button"
+                onClick={() => setReplyTo(replyTo?.id === c.id ? null : { id: c.id, author: c.author })}
+                className="text-[10px] text-white/25 hover:text-white/55 font-semibold transition"
+              >
+                Reply
+              </button>
+            )}
+          </div>
+          {replyTo?.id === c.id && (
+            <div className="flex items-center gap-1.5 mt-2">
+              <input
+                autoFocus
+                value={replyText}
+                onChange={e => setReplyText(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void submitComment(c.id); } if (e.key === 'Escape') { setReplyTo(null); setReplyText(''); } }}
+                placeholder={`Reply to ${c.author}…`}
+                className="flex-1 rounded-lg bg-white/[0.07] px-2.5 py-1.5 text-[11px] text-white placeholder-white/25 outline-none border border-white/[0.08] focus:border-white/20"
+              />
+              <button
+                type="button"
+                disabled={!replyText.trim() || submitting}
+                onClick={() => void submitComment(c.id)}
+                className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-white/50 hover:bg-white/20 disabled:opacity-30 transition"
+              >
+                <Send className="h-3 w-3" />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+      {c.replies?.map(r => renderComment(r, depth + 1))}
+    </div>
+  );
+
+  return (
+    <div ref={panelRef} className="mt-3 rounded-2xl border border-white/[0.08] bg-[#0f0f14] p-4 space-y-0.5">
+      {/* comment list */}
+      <div className="max-h-52 overflow-y-auto pr-0.5 space-y-0.5 scrollbar-none">
+        {loading && <p className="text-[11px] text-white/30 py-3 text-center">Loading…</p>}
+        {!loading && comments.length === 0 && (
+          <p className="text-[11px] text-white/25 py-3 text-center">No comments yet. Be the first!</p>
+        )}
+        {!loading && comments.map(c => renderComment(c))}
+      </div>
+
+      {/* divider */}
+      <div className="border-t border-white/[0.06] pt-3 mt-3">
+        <div className="flex items-center gap-2">
+          <input
+            ref={inputRef}
+            value={text}
+            onChange={e => setText(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void submitComment(); } }}
+            placeholder="Write a comment…"
+            className="flex-1 rounded-xl bg-white/[0.07] px-3 py-2 text-[12px] text-white placeholder-white/25 outline-none border border-white/[0.07] focus:border-white/20 transition"
+          />
+          <button
+            type="button"
+            disabled={!text.trim() || submitting}
+            onClick={() => void submitComment()}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-white/60 hover:bg-white/20 disabled:opacity-30 transition"
+          >
+            <Send className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── post card — instagram-style ───────────────────────────────── */
 function PostCard({ item, searchQuery }: { item: PublishedItem; searchQuery: string }) {
-  const [liked, setLiked] = useState(false);
+  const [liked, setLiked] = useState(item.likedByViewer ?? false);
   const [bookmarked, toggleBookmarked] = useBookmark(item.id, item.category);
   const [thumbUrl, setThumbUrl] = useState<string | null>(null);
-  const likeStat = item.stats?.find(s => s.l === 'likes');
-  const commentStat = item.stats?.find(s => s.l === 'comments');
-  const localLikes = (item.likesCount ?? parseInt(likeStat?.v?.replace(/[k,]/g, v => v === 'k' ? '000' : '') ?? '0', 10)) || 0;
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [commentCount, setCommentCount] = useState(item.commentsCount ?? 0);
+  const likeStat    = item.stats?.find(s => s.l === 'likes');
+  const localLikes  = (item.likesCount ?? parseInt(likeStat?.v?.replace(/[k,]/g, v => v === 'k' ? '000' : '') ?? '0', 10)) || 0;
   const [likeCount, setLikeCount] = useState(localLikes);
+  const likeInFlight = useRef(false);
+
+  useEffect(() => { setLiked(item.likedByViewer ?? false); }, [item.likedByViewer]);
+  useEffect(() => { setLikeCount(item.likesCount ?? localLikes); }, [item.likesCount]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (item.commentsCount !== undefined) setCommentCount(item.commentsCount); }, [item.commentsCount]);
 
   const handleLike = useCallback(async (e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation();
+    if (likeInFlight.current) return;
     const newLiked = !liked;
     setLiked(newLiked);
-    setLikeCount(c => newLiked ? c + 1 : c - 1);
+    setLikeCount(c => newLiked ? c + 1 : Math.max(0, c - 1));
     trackCTA('like_post', item.category);
     if (newLiked) toast('Liked!', 'success', '❤️');
     if (item.isReal) {
+      likeInFlight.current = true;
       try {
-        await fetch(`/api/public/published/${item.id}/like`, { method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ liked: newLiked }) });
-      } catch {}
+        const res = await fetch(`/api/published/${item.id}/like`, { method: 'POST' });
+        if (res.ok) {
+          const d = await res.json() as { liked: boolean; likesCount: number };
+          setLiked(d.liked); setLikeCount(d.likesCount);
+        } else { setLiked(liked); setLikeCount(c => newLiked ? Math.max(0, c - 1) : c + 1); }
+      } catch { setLiked(liked); } finally { likeInFlight.current = false; }
     }
   }, [liked, item.id, item.isReal, item.category]);
 
@@ -1233,74 +1926,105 @@ function PostCard({ item, searchQuery }: { item: PublishedItem; searchQuery: str
     if (item.isReal && item.mimeType) {
       fetch(`/api/public/published/${item.id}/thumbnail`)
         .then(r => r.ok ? r.json() : null)
-        .then((d: { dataUrl: string | null } | null) => {
-          if (d?.dataUrl) setThumbUrl(d.dataUrl);
-        })
+        .then((d: { dataUrl: string | null } | null) => { if (d?.dataUrl) setThumbUrl(d.dataUrl); })
         .catch(() => {});
     }
   }, [item.id, item.isReal, item.mimeType]);
 
+  const displayName = item.uploadedByName || item.byline.split(' · ')[0];
+  const initials    = displayName.split(/\s+/).slice(0,2).map(w=>w[0]?.toUpperCase()??'').join('');
+  const profileHref = item.businessPageSlug
+    ? `/businesses/${item.businessPageSlug}`
+    : item.uploadedByUserId ? `/u/${item.uploadedByUserId}` : null;
+  const postAvatarInner = item.avatarUrl
+    ? <img src={item.avatarUrl} alt={displayName} className="h-full w-full rounded-full object-cover" />
+    : (initials || <ImageIcon className="h-3.5 w-3.5 opacity-60" />);
+
   return (
-    <Link
-      href={`/published/${item.id}`}
-      className="group block overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.025] transition-all hover:border-white/[0.13] hover:bg-white/[0.04]"
-    >
-      {/* image / gradient placeholder */}
-      {thumbUrl ? (
-        <img src={thumbUrl} alt={item.title} className="h-36 w-full object-cover" />
-      ) : (
-        <div className="h-36 w-full bg-gradient-to-br from-rose-500/20 via-pink-500/10 to-purple-500/20 flex items-center justify-center relative overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,rgba(244,63,94,0.25),transparent_60%)]" />
-          <ImageIcon className="h-8 w-8 text-white/10" />
+    <article className="group py-5">
+      {/* header */}
+      <div className="flex items-center gap-3 mb-3.5">
+        {/* clickable avatar */}
+        {profileHref ? (
+          <Link href={profileHref} onClick={e => e.stopPropagation()} className={`flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full text-[11px] font-bold ${AVATAR_CLS} hover:opacity-80 transition`}>
+            {postAvatarInner}
+          </Link>
+        ) : (
+          <div className={`flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full text-[11px] font-bold ${AVATAR_CLS}`}>
+            {postAvatarInner}
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          {/* clickable name */}
+          {profileHref ? (
+            <Link href={profileHref} onClick={e => e.stopPropagation()} className="text-[13.5px] font-semibold text-white hover:text-white/80 transition">
+              {displayName}
+            </Link>
+          ) : (
+            <span className="text-[13.5px] font-semibold text-white">{displayName}</span>
+          )}
+          {item.isReal && <span className="ml-2 h-1.5 w-1.5 inline-block rounded-full bg-emerald-400 animate-pulse" />}
+          <p className="text-[11px] text-white/35 mt-0.5">{item.badge} · {timeAgo(item.postedAt)}</p>
         </div>
+        <button type="button" onClick={e=>{e.stopPropagation();toggleBookmarked();}} className={`transition ${bookmarked?'text-white/70':'text-white/25 hover:text-white/60'}`}>
+          {bookmarked ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
+        </button>
+      </div>
+
+      {/* image — full bleed */}
+      {(thumbUrl || !item.isReal) && (
+        <Link href={`/published/${item.id}`} className="block mb-3.5 -mx-4 sm:mx-0 sm:rounded-xl overflow-hidden">
+          {thumbUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={thumbUrl} alt={item.title} className="w-full max-h-[480px] object-cover" />
+          ) : (
+            <div className="w-full h-52 bg-[#16161c] flex items-center justify-center">
+              <ImageIcon className="h-8 w-8 text-white/10" />
+            </div>
+          )}
+        </Link>
       )}
-      <div className="p-4">
-        <div className="flex items-center gap-2 mb-2.5">
-          <div className="h-7 w-7 rounded-full bg-white/[0.08] flex items-center justify-center text-[10px] font-bold text-white/50">
-            {item.byline.charAt(0).toUpperCase()}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[11.5px] font-semibold text-white/70 leading-tight truncate">{item.byline.split(' · ')[0]}</p>
-            <p className="text-[10px] text-white/30 leading-tight">{timeAgo(item.postedAt)}</p>
-          </div>
-        </div>
-        <p className="text-[13px] font-semibold leading-snug text-white line-clamp-2 tracking-[-0.01em]">
+
+      {/* caption */}
+      <Link href={`/published/${item.id}`} className="block">
+        <p className="text-[13.5px] font-semibold text-white leading-snug line-clamp-2 group-hover:text-white/85 transition-colors">
           {searchQuery ? highlight(item.title, searchQuery) : item.title}
         </p>
         {item.body && (
-          <p className="mt-1.5 text-[11.5px] leading-relaxed text-white/45 line-clamp-2">
+          <p className="mt-1.5 text-[13px] leading-relaxed text-white/50 line-clamp-2">
             {searchQuery ? highlight(getBodySnippet(item.body), searchQuery) : getBodySnippet(item.body)}
           </p>
         )}
-        <div className="mt-3 flex items-center gap-3 border-t border-white/[0.05] pt-3">
-          <button
-            type="button"
-            onClick={handleLike}
-            className={`flex items-center gap-1.5 text-[11px] font-semibold transition ${liked ? 'text-rose-400' : 'text-white/30 hover:text-rose-400'}`}
-          >
-            <Heart className={`h-3.5 w-3.5 transition-transform ${liked ? 'fill-current scale-110' : ''}`} />
-            {likeCount > 0 ? (likeCount >= 1000 ? `${(likeCount / 1000).toFixed(1)}k` : String(likeCount)) : (likeStat?.v ?? '0')}
-          </button>
-          <span className="flex items-center gap-1.5 text-[11px] text-white/25">
-            <MessageSquare className="h-3.5 w-3.5" />{commentStat?.v ?? '0'}
-          </span>
-          <button
-            type="button"
-            onClick={e => { e.preventDefault(); e.stopPropagation(); void shareItem(item.id, item.title); trackCTA('share_item', item.category); }}
-            className="flex items-center gap-1 text-[11px] text-white/25 hover:text-white/60 transition"
-          >
-            <Share2 className="h-3.5 w-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={e => { e.preventDefault(); e.stopPropagation(); toggleBookmarked(); }}
-            className={`ml-auto flex items-center gap-1 text-[11px] transition ${bookmarked ? 'text-amber-400' : 'text-white/25 hover:text-amber-400'}`}
-          >
-            {bookmarked ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
-          </button>
-        </div>
+      </Link>
+
+      {/* engagement */}
+      <div className="flex items-center gap-4 mt-3.5 pt-3.5 border-t border-white/[0.05]">
+        <button type="button" onClick={handleLike} className={`flex items-center gap-1.5 text-[12px] font-semibold transition ${liked?'text-rose-400':'text-white/35 hover:text-white/70'}`}>
+          <Heart className={`h-4 w-4 ${liked?'fill-current scale-110 transition-transform':''}`} />
+          {likeCount > 0 ? (likeCount >= 1000 ? `${(likeCount/1000).toFixed(1)}k` : String(likeCount)) : '0'}
+        </button>
+        <button
+          type="button"
+          onClick={e => { e.preventDefault(); e.stopPropagation(); setCommentsOpen(v => !v); }}
+          className={`flex items-center gap-1.5 text-[12px] font-semibold transition ${commentsOpen ? 'text-white/70' : 'text-white/30 hover:text-white/60'}`}
+        >
+          <MessageSquare className="h-4 w-4" />
+          {commentCount > 0 ? (commentCount >= 1000 ? `${(commentCount/1000).toFixed(1)}k` : String(commentCount)) : '0'}
+        </button>
+        <TrendButton item={item} />
+        <button type="button" onClick={e=>{e.preventDefault();e.stopPropagation();void shareItem(item.id,item.title);trackCTA('share_item',item.category);}} className="text-white/30 hover:text-white/70 transition ml-auto">
+          <Share2 className="h-4 w-4" />
+        </button>
       </div>
-    </Link>
+
+      {/* inline comment panel */}
+      {commentsOpen && item.isReal && (
+        <CardCommentPanel
+          item={item}
+          onClose={() => setCommentsOpen(false)}
+        />
+      )}
+    </article>
   );
 }
 
@@ -1313,7 +2037,7 @@ function PollCard({ item }: { item: PublishedItem }) {
   const daysLeft = item.stats?.find(s => s.l === 'days left')?.v;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4 transition-all hover:border-white/[0.13] relative group">
+    <div className="overflow-hidden rounded-2xl border border-white/[0.07] bg-[#111116] border-white/[0.06] p-4 transition-all hover:border-white/[0.12] relative group">
       <div className="flex items-center gap-2 mb-3">
         <span className={`inline-flex items-center gap-1 rounded-lg border px-2 py-0.5 text-[10px] font-semibold ${isClosed ? 'border-white/[0.08] bg-white/[0.04] text-white/35' : 'bg-violet-500/10 text-violet-400 border-violet-500/20'}`}>
           <ListChecks className="h-2.5 w-2.5" />{item.badge}
@@ -1378,7 +2102,7 @@ function SurveyCard({ item }: { item: PublishedItem }) {
   return (
     <Link
       href={`/published/${item.id}`}
-      className="group block overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4 transition-all hover:border-amber-500/20 hover:bg-white/[0.035]"
+      className="group block overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4 transition-all hover:border-white/[0.12] hover:bg-[#13131b]"
       onClick={() => trackCTA('take_survey', 'survey')}
     >
       <div className="flex items-center gap-2 mb-3">
@@ -1422,7 +2146,7 @@ function ChartCard({ item }: { item: PublishedItem }) {
   return (
     <Link
       href={`/published/${item.id}`}
-      className="group block overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4 transition-all hover:border-white/[0.13] hover:bg-white/[0.03]"
+      className="group block overflow-hidden rounded-2xl border border-white/[0.07] bg-[#111116] border-white/[0.06] p-4 transition-all hover:border-white/[0.12] hover:bg-[#13131b]"
     >
       <div className="flex items-center gap-2 mb-3">
         <span className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-400">
@@ -1466,51 +2190,69 @@ function ChartCard({ item }: { item: PublishedItem }) {
   );
 }
 
-/* ─── thread card ────────────────────────────────────────────────── */
+/* ─── thread card — instagram-style ─────────────────────────────── */
 function ThreadCard({ item, searchQuery }: { item: PublishedItem; searchQuery: string }) {
   const [threadBookmarked, toggleThreadBookmark] = useBookmark(item.id, item.category);
-  const partsStat = item.stats?.find(s => s.l === 'parts')?.v;
-  const likesStat = item.stats?.find(s => s.l === 'likes')?.v;
-  const readsStat = item.stats?.find(s => s.l === 'reads')?.v;
+  const partsStat  = item.stats?.find(s => s.l === 'parts')?.v;
+  const likesStat  = item.stats?.find(s => s.l === 'likes')?.v;
+  const readsStat  = item.stats?.find(s => s.l === 'reads')?.v;
   const firstPoint = item.body.split('\n\n')[0] ?? item.body;
+
+  const bylineParts  = item.byline.split(' · ').map(s => s.trim());
+  const authorName   = (item.uploadedByName || bylineParts[0]) ?? 'Author';
+  const initials     = authorName.split(/\s+/).slice(0,2).map(w=>w[0]?.toUpperCase()??'').join('');
+  const threadHref   = item.businessPageSlug ? `/businesses/${item.businessPageSlug}` : item.uploadedByUserId ? `/u/${item.uploadedByUserId}` : null;
+  const threadAvatar = item.avatarUrl
+    ? <img src={item.avatarUrl} alt={authorName} className="h-full w-full rounded-full object-cover" />
+    : (initials || <MessageSquare className="h-3.5 w-3.5 opacity-60" />);
+
   return (
-    <Link
-      href={`/published/${item.id}`}
-      className="group flex flex-col overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4 transition-all hover:border-white/[0.13] hover:bg-white/[0.04]"
-    >
-      <div className="flex items-center gap-2 mb-3">
-        <span className="inline-flex items-center gap-1 rounded-lg border border-sky-500/20 bg-sky-500/10 px-2 py-0.5 text-[10px] font-semibold text-sky-400">
-          <MessageSquare className="h-2.5 w-2.5" />{item.badge}
-        </span>
-        {partsStat && <span className="text-[10px] text-white/30">{partsStat} parts</span>}
-        <span className="ml-auto text-[10px] text-white/25">{timeAgo(item.postedAt)}</span>
-      </div>
-      <h3 className="text-[13.5px] font-bold leading-snug text-white tracking-[-0.02em] line-clamp-2 group-hover:text-white/90">
-        {searchQuery ? highlight(item.title, searchQuery) : item.title}
-      </h3>
-      <p className="mt-1 text-[10.5px] text-white/30">{item.byline}</p>
-      <p className="mt-2.5 text-[12px] leading-relaxed text-white/45 line-clamp-3 flex-1 font-mono border-l-2 border-sky-500/20 pl-3">
-        {firstPoint}
-      </p>
-      <div className="mt-3 flex items-center gap-3 border-t border-white/[0.05] pt-3">
-        {readsStat && <span className="flex items-center gap-1 text-[11px] text-white/25"><Eye className="h-3 w-3" />{readsStat}</span>}
-        {likesStat && <span className="flex items-center gap-1 text-[11px] text-white/25"><Heart className="h-3 w-3" />{likesStat}</span>}
-        <button
-          type="button"
-          onClick={e => { e.preventDefault(); e.stopPropagation(); toggleThreadBookmark(); }}
-          className={`flex items-center gap-1 text-[11px] transition ${threadBookmarked ? 'text-amber-400' : 'text-white/25 hover:text-amber-400'}`}
-        >
-          {threadBookmarked ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
+    <article className="group py-5">
+      {/* header */}
+      <div className="flex items-center gap-3 mb-3.5">
+        {threadHref ? (
+          <Link href={threadHref} onClick={e=>e.stopPropagation()} className={`flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full text-[11px] font-bold ${AVATAR_CLS} hover:opacity-80 transition`}>
+            {threadAvatar}
+          </Link>
+        ) : (
+          <div className={`flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full text-[11px] font-bold ${AVATAR_CLS}`}>
+            {threadAvatar}
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          {threadHref ? (
+            <Link href={threadHref} onClick={e=>e.stopPropagation()} className="text-[13.5px] font-semibold text-white hover:text-white/80 transition">{authorName}</Link>
+          ) : (
+            <span className="text-[13.5px] font-semibold text-white">{authorName}</span>
+          )}
+          <p className="text-[11px] text-white/35 mt-0.5">
+            {item.badge}{partsStat ? ` · ${partsStat} parts` : ''} · {timeAgo(item.postedAt)}
+          </p>
+        </div>
+        <button type="button" onClick={e=>{e.stopPropagation();toggleThreadBookmark();}} className={`transition ${threadBookmarked?'text-white/70':'text-white/25 hover:text-white/60'}`}>
+          {threadBookmarked ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
         </button>
-        <Link
-          href={`/published/${item.id}`}
-          onClick={e => e.stopPropagation()}
-          className="ml-auto inline-flex items-center gap-1 text-[11px] font-semibold text-white/30 transition hover:text-white/70"
-        >
-          Read thread <ArrowRight className="h-3 w-3" />
+      </div>
+
+      {/* content */}
+      <Link href={`/published/${item.id}`} className="block">
+        <h3 className="text-[15px] font-bold leading-snug tracking-tight text-white line-clamp-2 group-hover:text-white/85 transition-colors">
+          {searchQuery ? highlight(item.title, searchQuery) : item.title}
+        </h3>
+        <p className="mt-2 text-[13px] leading-relaxed text-white/50 line-clamp-3 border-l-2 border-white/[0.08] pl-3">
+          {firstPoint}
+        </p>
+      </Link>
+
+      {/* engagement */}
+      <div className="flex items-center gap-4 mt-3.5 pt-3.5 border-t border-white/[0.05]">
+        {readsStat && <span className="flex items-center gap-1.5 text-[12px] text-white/30"><Eye className="h-4 w-4" />{readsStat}</span>}
+        {likesStat && <span className="flex items-center gap-1.5 text-[12px] text-white/30"><Heart className="h-4 w-4" />{likesStat}</span>}
+        <Link href={`/published/${item.id}`} className="ml-auto inline-flex items-center gap-1.5 text-[12px] font-semibold text-white/35 hover:text-white/70 transition">
+          Read thread <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </div>
-    </Link>
+    </article>
   );
 }
 
@@ -1528,7 +2270,7 @@ function VideoCard({ item, searchQuery }: { item: PublishedItem; searchQuery: st
   const ytThumb = ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : null;
 
   return (
-    <div className="group overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.025] transition-all hover:border-white/[0.13]">
+    <div className="group overflow-hidden rounded-2xl border border-white/[0.07] bg-[#111116] border-white/[0.06] transition-all hover:border-white/[0.12]">
       {/* thumbnail */}
       <Link href={`/published/${item.id}`} className="block relative h-36 w-full overflow-hidden">
         {ytThumb && !thumbError ? (
@@ -1601,36 +2343,64 @@ function VideoCard({ item, searchQuery }: { item: PublishedItem; searchQuery: st
   );
 }
 
-/* ─── milestone card ─────────────────────────────────────────────── */
+/* ─── milestone card — instagram-style ──────────────────────────── */
 function MilestoneCard({ item, searchQuery }: { item: PublishedItem; searchQuery: string }) {
   const [celebrated, setCelebrated] = useState(false);
+  const bylineParts  = item.byline.split(' · ').map(s => s.trim());
+  const authorName   = (item.uploadedByName || bylineParts[0]) ?? 'Author';
+  const authorMeta   = bylineParts.slice(1).join(' · ');
+  const initials     = authorName.split(/\s+/).slice(0,2).map(w=>w[0]?.toUpperCase()??'').join('');
+  const milestoneHref = item.businessPageSlug ? `/businesses/${item.businessPageSlug}` : item.uploadedByUserId ? `/u/${item.uploadedByUserId}` : null;
+  const milestoneAvatar = item.avatarUrl
+    ? <img src={item.avatarUrl} alt={authorName} className="h-full w-full rounded-full object-cover" />
+    : (initials || <Award className="h-3.5 w-3.5 opacity-60" />);
+
   return (
-    <Link
-      href={`/published/${item.id}`}
-      className="group block overflow-hidden rounded-2xl border border-yellow-500/[0.12] bg-gradient-to-b from-yellow-500/[0.06] to-transparent p-4 transition-all hover:border-yellow-500/[0.22]"
-    >
-      <div className="flex items-center gap-2 mb-3">
-        <span className="inline-flex items-center gap-1 rounded-lg border border-yellow-500/20 bg-yellow-500/10 px-2 py-0.5 text-[10px] font-semibold text-yellow-400">
-          <Award className="h-2.5 w-2.5" />{item.badge}
-        </span>
-        <span className="ml-auto text-[10px] text-white/25">{timeAgo(item.postedAt)}</span>
+    <article className="group py-5">
+      {/* header */}
+      <div className="flex items-center gap-3 mb-3.5">
+        {milestoneHref ? (
+          <Link href={milestoneHref} onClick={e=>e.stopPropagation()} className={`flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full text-[11px] font-bold ${AVATAR_CLS} hover:opacity-80 transition`}>
+            {milestoneAvatar}
+          </Link>
+        ) : (
+          <div className={`flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full text-[11px] font-bold ${AVATAR_CLS}`}>
+            {milestoneAvatar}
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          {milestoneHref ? (
+            <Link href={milestoneHref} onClick={e=>e.stopPropagation()} className="text-[13.5px] font-semibold text-white hover:text-white/80 transition">{authorName}</Link>
+          ) : (
+            <span className="text-[13.5px] font-semibold text-white">{authorName}</span>
+          )}
+          <p className="text-[11px] text-white/35 mt-0.5">
+            {item.badge}{authorMeta ? ` · ${authorMeta}` : ''} · {timeAgo(item.postedAt)}
+          </p>
+        </div>
       </div>
-      <h3 className="text-[14px] font-bold leading-snug text-white tracking-[-0.025em] line-clamp-2">
-        {searchQuery ? highlight(item.title, searchQuery) : item.title}
-      </h3>
-      <p className="mt-1 text-[11px] text-white/35">{item.byline}</p>
-      <p className="mt-2.5 text-[12px] leading-relaxed text-white/50 line-clamp-3">{getBodySnippet(item.body)}</p>
+
+      {/* content */}
+      <Link href={`/published/${item.id}`} className="block">
+        <h3 className="text-[15px] font-bold leading-snug tracking-tight text-white line-clamp-2 group-hover:text-white/85 transition-colors">
+          {searchQuery ? highlight(item.title, searchQuery) : item.title}
+        </h3>
+        <p className="mt-1.5 text-[13px] leading-relaxed text-white/50 line-clamp-3">{getBodySnippet(item.body)}</p>
+      </Link>
+
       {item.stats && (
-        <div className="mt-3 flex gap-5 border-t border-yellow-500/[0.10] pt-3">
+        <div className="flex items-center gap-5 mt-3">
           {item.stats.slice(0,3).map(s => (
-            <div key={s.l}>
-              <p className="text-[13px] font-bold text-yellow-400 tabular-nums">{s.v}</p>
-              <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-white/25">{s.l}</p>
+            <div key={s.l} className="flex items-baseline gap-1.5">
+              <span className="text-[13.5px] font-bold text-white/75 tabular-nums">{s.v}</span>
+              <span className="text-[9.5px] font-semibold uppercase tracking-widest text-white/25">{s.l}</span>
             </div>
           ))}
         </div>
       )}
-      <div className="mt-3 flex items-center gap-2 border-t border-yellow-500/[0.08] pt-3">
+
+      {/* engagement */}
+      <div className="flex items-center gap-3 mt-3.5 pt-3.5 border-t border-white/[0.05]">
         <button
           type="button"
           onClick={e => {
@@ -1639,23 +2409,17 @@ function MilestoneCard({ item, searchQuery }: { item: PublishedItem; searchQuery
             setCelebrated(next);
             if (next) { toast('Celebrated! 🎉', 'success', '🏆'); trackCTA('celebrate_milestone', 'milestone'); }
           }}
-          className={`flex h-8 flex-1 items-center justify-center gap-1.5 rounded-xl text-[12px] font-semibold transition ${
-            celebrated
-              ? 'bg-amber-500/20 border border-amber-500/30 text-amber-300'
-              : 'border border-white/[0.08] bg-white/[0.04] text-white/40 hover:border-yellow-500/20 hover:bg-yellow-500/10 hover:text-yellow-300'
+          className={`inline-flex items-center gap-1.5 rounded-full px-3.5 h-8 text-[12px] font-semibold transition ${
+            celebrated ? 'bg-white/[0.10] text-white/80' : 'text-white/35 hover:text-white/70 hover:bg-white/[0.05]'
           }`}
         >
           🎉 {celebrated ? 'Celebrated!' : 'Celebrate'}
         </button>
-        <button
-          type="button"
-          onClick={e => { e.preventDefault(); e.stopPropagation(); void shareItem(item.id, item.title); trackCTA('share_item', 'milestone'); }}
-          className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.04] text-white/30 transition hover:border-white/[0.13] hover:text-white/70"
-        >
-          <Share2 className="h-3.5 w-3.5" />
+        <button type="button" onClick={e=>{e.preventDefault();e.stopPropagation();void shareItem(item.id,item.title);trackCTA('share_item','milestone');}} className="flex h-8 w-8 items-center justify-center rounded-full text-white/30 hover:text-white/70 hover:bg-white/[0.05] transition">
+          <Share2 className="h-4 w-4" />
         </button>
       </div>
-    </Link>
+    </article>
   );
 }
 
@@ -1670,7 +2434,7 @@ function TutorialCard({ item, searchQuery }: { item: PublishedItem; searchQuery:
     Advanced:     'bg-red-500/10 text-red-400 border-red-500/20',
   };
   return (
-    <div className="group flex flex-col overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4 transition-all hover:border-white/[0.13] hover:bg-white/[0.04]">
+    <div className="group flex flex-col overflow-hidden rounded-2xl border border-white/[0.07] bg-[#111116] border-white/[0.06] p-4 transition-all hover:border-white/[0.12] hover:bg-[#13131b]">
       <Link href={`/published/${item.id}`} className="flex flex-col flex-1">
         <div className="flex items-center gap-2 mb-3">
           <span className={`inline-flex items-center gap-1 rounded-lg border px-2 py-0.5 text-[10px] font-semibold ${difficultyColor[item.badge] ?? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'}`}>
@@ -1762,44 +2526,45 @@ function CategorySection({
         )}
       </div>
 
+      {/* feed layout: divide-y separator for post-style, 2-col grid for visual cards */}
       {tab.id === 'gig' ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="divide-y divide-white/[0.05]">
           {shown.map(item => <GigCard key={item.id} item={item} />)}
         </div>
       ) : tab.id === 'poll' ? (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {shown.map(item => <PollCard key={item.id} item={item} />)}
         </div>
       ) : tab.id === 'survey' ? (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {shown.map(item => <SurveyCard key={item.id} item={item} />)}
         </div>
       ) : tab.id === 'chart' ? (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {shown.map(item => <ChartCard key={item.id} item={item} />)}
         </div>
+      ) : tab.id === 'video' ? (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {shown.map(item => <VideoCard key={item.id} item={item} searchQuery={searchQuery} />)}
+        </div>
+      ) : tab.id === 'tutorial' ? (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {shown.map(item => <TutorialCard key={item.id} item={item} searchQuery={searchQuery} />)}
+        </div>
       ) : tab.id === 'post' ? (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="divide-y divide-white/[0.05]">
           {shown.map(item => <PostCard key={item.id} item={item} searchQuery={searchQuery} />)}
         </div>
       ) : tab.id === 'thread' ? (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="divide-y divide-white/[0.05]">
           {shown.map(item => <ThreadCard key={item.id} item={item} searchQuery={searchQuery} />)}
         </div>
-      ) : tab.id === 'video' ? (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {shown.map(item => <VideoCard key={item.id} item={item} searchQuery={searchQuery} />)}
-        </div>
       ) : tab.id === 'milestone' ? (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="divide-y divide-white/[0.05]">
           {shown.map(item => <MilestoneCard key={item.id} item={item} searchQuery={searchQuery} />)}
         </div>
-      ) : tab.id === 'tutorial' ? (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {shown.map(item => <TutorialCard key={item.id} item={item} searchQuery={searchQuery} />)}
-        </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="divide-y divide-white/[0.05]">
           {shown.map(item => (
             <PublishedCard key={item.id} item={item} searchQuery={searchQuery} />
           ))}
@@ -1853,7 +2618,7 @@ function SearchResults({ items, query }: { items: PublishedItem[]; query: string
       <p className="mb-5 text-xs text-white/35">
         <span className="font-semibold text-white/70">{results.length}</span> result{results.length !== 1 ? 's' : ''} — sorted by relevance
       </p>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="divide-y divide-white/[0.05]">
         {results.slice(0, limit).map(item => (
           item.category === 'gig' ? <GigCard key={item.id} item={item} />
           : item.category === 'poll' ? <PollCard key={item.id} item={item} />
@@ -1888,11 +2653,17 @@ function SearchResults({ items, query }: { items: PublishedItem[]; query: string
 export default function PublishedPage() {
   const [activeTab, setActiveTab]       = useState<TabId>('all');
   const [search, setSearch]             = useState('');
-  const [sortBy, setSortBy]             = useState<'recent' | 'popular' | 'oldest' | 'alpha'>('recent');
+  const trackSearch = useSearchTracker(SEARCH_CONTEXTS.PUBLISHED_FEED);
+  const [sortBy, setSortBy]             = useState<'recent' | 'popular' | 'oldest' | 'alpha' | 'trending'>('recent');
+  const [trendCounts, setTrendCounts]   = useState<Record<string, number>>({});
+  const [trendDrawerOpen, setTrendDrawerOpen] = useState(false);
   const [filtersOpen, setFiltersOpen]   = useState(false);
+  const [publishOpen, setPublishOpen]   = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const [realItems, setRealItems]       = useState<PublishedItem[]>([]);
   const [gigItems, setGigItems]         = useState<PublishedItem[]>([]);
+  const [visibleCount, setVisibleCount] = useState(10);
+  const loadMoreSentinelRef             = useRef<HTMLDivElement>(null);
 
   /* gig-specific filters */
   const [gigCat, setGigCat]           = useState('');
@@ -1917,16 +2688,44 @@ export default function PublishedPage() {
     }
   }, [activeTab]);
 
+
   const searchRef = useRef<HTMLInputElement>(null);
 
-  /* fetch real published items */
+  /* sync trend counts from localStorage */
   useEffect(() => {
-    fetch('/api/public/published')
-      .then(r => r.ok ? r.json() : { items: [] })
-      .then((d: { items: PublishedItem[] }) => {
-        if (Array.isArray(d.items)) setRealItems(d.items);
-      })
-      .catch(() => {});
+    const sync = () => {
+      try {
+        const data = readTrends();
+        const counts: Record<string, number> = {};
+        Object.entries(data).forEach(([id, v]) => { if (v.count > 0) counts[id] = v.count; });
+        setTrendCounts(counts);
+      } catch {}
+    };
+    sync();
+    const iv = setInterval(sync, 2000);
+    return () => clearInterval(iv);
+  }, []);
+
+  /* fetch real published items — initial + real-time polling every 30s */
+  useEffect(() => {
+    let alive = true;
+    const load = () =>
+      fetch('/api/public/published')
+        .then(r => r.ok ? r.json() : { items: [] })
+        .then((d: { items: PublishedItem[] }) => {
+          if (alive && Array.isArray(d.items)) {
+            setRealItems(prev => {
+              // only update state if content actually changed (avoid re-renders)
+              if (prev.length === d.items.length &&
+                  prev[0]?.id === d.items[0]?.id) return prev;
+              return d.items;
+            });
+          }
+        })
+        .catch(() => {});
+    load();
+    const iv = setInterval(load, 30_000);
+    return () => { alive = false; clearInterval(iv); };
   }, []);
 
   /* fetch public gig listings */
@@ -2000,7 +2799,18 @@ export default function PublishedPage() {
     setResumeAvail(''); setProductPrice('');
     setGigCat(''); setGigEngagement(''); setGigLocation('');
     setGigBidMode(''); setGigSkill(''); setGigUrgent(false); setGigSort('recent');
+    setVisibleCount(10);
   };
+
+  /* reset visible count on any filter/tab/sort/search change */
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setVisibleCount(10); }, [
+    activeTab, sortBy, search,
+    dateRange, featuredOnly, liveOnly, readTime, docFileType,
+    jobWorkMode, jobType, salaryRange, eventType, eventMode, upcomingOnly,
+    hackPrize, hackFormat, resumeAvail, productPrice,
+    gigCat, gigEngagement, gigLocation, gigBidMode, gigSkill, gigUrgent,
+  ]);
 
   /* filtered + sorted gig items */
   const filteredGigItems = useMemo(() => {
@@ -2172,34 +2982,75 @@ export default function PublishedPage() {
         map[k] = [...map[k]].sort((a, b) => new Date(a.postedAt).getTime() - new Date(b.postedAt).getTime());
       } else if (sortBy === 'alpha') {
         map[k] = [...map[k]].sort((a, b) => a.title.localeCompare(b.title));
+      } else if (sortBy === 'trending') {
+        map[k] = [...map[k]].sort((a, b) => (trendCounts[b.id] ?? 0) - (trendCounts[a.id] ?? 0));
       } else {
         map[k] = [...map[k]].sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime());
       }
     }
     return map;
-  }, [allItems, sortBy]);
+  }, [allItems, sortBy, trendCounts]);
 
-  const visibleTabs  = TABS.filter(t => t.id !== 'all');
+  const visibleTabs  = TABS.filter(t => t.id !== 'all' && t.id !== 'featured');
   const isSearching  = search.trim().length > 0;
   const tabsToRender = useMemo(
-    () => activeTab === 'all' ? visibleTabs : visibleTabs.filter(t => t.id === activeTab),
+    () => activeTab === 'all' || activeTab === 'featured' ? visibleTabs : visibleTabs.filter(t => t.id === activeTab),
     [activeTab, visibleTabs]
   );
 
-  /* featured items for active view */
-  const featuredItems = useMemo(() => {
-    const pool = activeTab === 'all' ? allItems : (itemsByCategory[activeTab] ?? []);
-    return pool.filter(i => i.featured);
-  }, [allItems, itemsByCategory, activeTab]);
-
-  /* non-featured items per category (shown below featured strip) */
-  const nonFeaturedByCategory = useMemo(() => {
-    const map: Record<string, PublishedItem[]> = {};
-    for (const [k, items] of Object.entries(itemsByCategory)) {
-      map[k] = activeTab === 'all' ? items.filter(i => !i.featured) : items;
+  /* mixed chronological feed — all items regardless of category/featured, sorted by active sort */
+  const mixedFeed = useMemo(() => {
+    const pool = activeTab === 'all'
+      ? allItems
+      : activeTab === 'featured'
+        ? allItems.filter(i => i.featured)
+        : (itemsByCategory[activeTab] ?? []);
+    const sorted = [...pool];
+    if (sortBy === 'popular') {
+      sorted.sort((a, b) => {
+        const val = (x: PublishedItem) => parseInt(x.stats?.find(s => s.l === 'reads' || s.l === 'downloads')?.v?.replace(/[k,]/g, v => v === 'k' ? '000' : '') ?? '0');
+        return val(b) - val(a);
+      });
+    } else if (sortBy === 'oldest') {
+      sorted.sort((a, b) => new Date(a.postedAt).getTime() - new Date(b.postedAt).getTime());
+    } else if (sortBy === 'alpha') {
+      sorted.sort((a, b) => a.title.localeCompare(b.title));
+    } else if (sortBy === 'trending') {
+      sorted.sort((a, b) => (trendCounts[b.id] ?? 0) - (trendCounts[a.id] ?? 0));
+    } else {
+      sorted.sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime());
     }
-    return map;
-  }, [itemsByCategory, activeTab]);
+    return sorted;
+  }, [allItems, itemsByCategory, activeTab, sortBy, trendCounts]);
+
+  /* keep these for backward-compat with category-filtered sidebar counts */
+  const featuredItems = useMemo(() => [], []);
+  const nonFeaturedByCategory = useMemo(() => ({} as Record<string, PublishedItem[]>), []);
+
+  /* IntersectionObserver — auto-load next batch when sentinel enters view */
+  useEffect(() => {
+    const el = loadMoreSentinelRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setVisibleCount(c => c + 10); },
+      { rootMargin: '200px' }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [mixedFeed]);
+
+  /* Track search queries with result counts */
+  useEffect(() => {
+    if (!search.trim()) return;
+    const searchLower = search.trim().toLowerCase();
+    const count = mixedFeed.filter(i =>
+      i.title.toLowerCase().includes(searchLower) ||
+      i.body.toLowerCase().includes(searchLower) ||
+      (i.chips ?? []).some(c => c.toLowerCase().includes(searchLower))
+    ).length;
+    trackSearch(search, count);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, activeTab]);
 
   /* ⌘K to focus search */
   useEffect(() => {
@@ -2214,12 +3065,23 @@ export default function PublishedPage() {
   }, []);
 
   /* sidebar nav item count */
-  const tabCount = (id: string) => id === 'all' ? allItems.length : (itemsByCategory[id]?.length ?? 0);
+  const tabCount = (id: string) =>
+    id === 'all'      ? allItems.length :
+    id === 'featured' ? allItems.filter(i => i.featured).length :
+    (itemsByCategory[id]?.length ?? 0);
+
+  /* sync URL when tab changes */
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const url = activeTab === 'all' ? '/published' : `/published?tab=${activeTab}`;
+    window.history.replaceState(null, '', url);
+  }, [activeTab]);
 
   return (
     /* full-viewport flex container */
     <div className="flex h-[100dvh] overflow-hidden bg-[#0A0A0C] text-white">
       <ToastContainer />
+      <PublishAnythingDialog open={publishOpen} onOpenChange={setPublishOpen} isAuthenticated={true} />
 
       {/* ── ambient glows ── */}
       <div className="pointer-events-none fixed inset-0 -z-10" aria-hidden>
@@ -2263,11 +3125,12 @@ export default function PublishedPage() {
             const isActive = activeTab === tab.id;
             const count    = tabCount(tab.id);
             const colorCls = TAG_CLS[tab.id] ?? TAG_CLS.all;
+            const isFeaturedTab = tab.id === 'featured';
             return (
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => { setActiveTab(tab.id); setSearch(''); }}
+                onClick={() => { setActiveTab(tab.id as TabId); setSearch(''); }}
                 className={`group w-full flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[12.5px] font-medium transition-all ${
                   isActive
                     ? 'bg-white/[0.08] text-white shadow-sm'
@@ -2275,7 +3138,9 @@ export default function PublishedPage() {
                 }`}
               >
                 <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border transition-colors ${
-                  isActive ? colorCls : 'border-white/[0.06] bg-transparent text-white/30 group-hover:border-white/[0.10] group-hover:text-white/50'
+                  isActive
+                    ? isFeaturedTab ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : colorCls
+                    : 'border-white/[0.06] bg-transparent text-white/30 group-hover:border-white/[0.10] group-hover:text-white/50'
                 }`}>
                   <tab.icon className="h-3.5 w-3.5" />
                 </span>
@@ -2285,12 +3150,15 @@ export default function PublishedPage() {
                     isActive ? 'bg-white/[0.12] text-white' : 'bg-white/[0.05] text-white/20'
                   }`}>{count}</span>
                 )}
+                {isFeaturedTab && (
+                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: isActive ? 'rgba(251,191,36,0.80)' : 'rgba(251,191,36,0.25)', flexShrink: 0, boxShadow: isActive ? '0 0 5px rgba(251,191,36,0.50)' : 'none' }} />
+                )}
               </button>
             );
           })}
         </nav>
 
-        {/* bottom: analytics + publish CTA */}
+        {/* bottom: analytics portal (rendered in document.body) + publish CTA */}
         {analyticsOpen && <CtaAnalyticsPanel onClose={() => setAnalyticsOpen(false)} />}
         <div className="p-3 border-t border-white/[0.05] space-y-2">
           <button
@@ -2305,19 +3173,21 @@ export default function PublishedPage() {
             <TrendingUp className="h-3.5 w-3.5 shrink-0" />
             My CTA Activity
           </button>
-          <Link
-            href="/"
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-slate-950 shadow-sm transition hover:bg-white/90 active:scale-[0.98]"
+          <button
+            type="button"
+            onClick={() => setPublishOpen(true)}
+            className="group flex w-full items-center justify-center gap-2 rounded-xl border border-white/[0.10] bg-white/[0.05] px-4 py-2.5 text-[11.5px] font-semibold text-white/55 transition hover:border-white/[0.18] hover:bg-white/[0.09] hover:text-white/85 active:scale-[0.98]"
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className="h-3.5 w-3.5 transition-transform group-hover:rotate-90 duration-200" />
             Publish something
-          </Link>
+          </button>
         </div>
       </aside>
 
       {/* ══════════════════════════════════════
-          MAIN CONTENT
+          MAIN CONTENT + RIGHT PANEL
       ══════════════════════════════════════ */}
+      <div className="flex flex-1 overflow-hidden min-w-0">
       <div className="flex flex-1 flex-col overflow-hidden min-w-0">
 
         {/* ── Desktop top bar ── */}
@@ -2355,17 +3225,27 @@ export default function PublishedPage() {
             )}
           </div>
 
+          {/* Publish button — desktop top bar */}
+          <button
+            type="button"
+            onClick={() => setPublishOpen(true)}
+            className="group inline-flex shrink-0 items-center gap-2 rounded-xl border border-white/[0.10] bg-white/[0.05] px-3.5 py-2 text-[12px] font-semibold text-white/55 transition hover:border-white/[0.18] hover:bg-white/[0.09] hover:text-white/85 active:scale-[0.97]"
+          >
+            <Plus className="h-3.5 w-3.5 transition-transform duration-200 group-hover:rotate-90" />
+            Publish
+          </button>
+
           {/* sort cycle */}
           <button
             type="button"
             onClick={() => {
-              const opts = ['recent', 'popular', 'oldest', 'alpha'] as const;
+              const opts = ['recent', 'popular', 'oldest', 'alpha', 'trending'] as const;
               setSortBy(s => opts[(opts.indexOf(s as typeof opts[number]) + 1) % opts.length]);
             }}
             className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 text-xs font-medium text-white/50 transition hover:bg-white/[0.08] hover:text-white"
           >
             <SlidersHorizontal className="h-3.5 w-3.5" />
-            <span className="capitalize">{sortBy === 'recent' ? 'Newest' : sortBy === 'popular' ? 'Popular' : sortBy === 'oldest' ? 'Oldest' : 'A–Z'}</span>
+            <span className="capitalize">{sortBy === 'recent' ? 'Newest' : sortBy === 'popular' ? 'Popular' : sortBy === 'oldest' ? 'Oldest' : sortBy === 'trending' ? '🔥 Trending' : 'A–Z'}</span>
           </button>
 
           {/* filter toggle */}
@@ -2417,6 +3297,32 @@ export default function PublishedPage() {
               )}
             </div>
 
+            {/* Publish button — mobile */}
+            <button
+              type="button"
+              onClick={() => setPublishOpen(true)}
+              className="group flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.10] bg-white/[0.05] text-white/50 transition hover:border-white/[0.18] hover:text-white/85 active:scale-95"
+              aria-label="Publish something"
+            >
+              <Plus className="h-4 w-4 transition-transform duration-200 group-hover:rotate-90" />
+            </button>
+
+            {/* trending drawer button */}
+            <button
+              type="button"
+              onClick={() => setTrendDrawerOpen(true)}
+              className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition ${
+                trendDrawerOpen
+                  ? 'border-orange-500/30 bg-orange-500/10 text-orange-400'
+                  : 'border-white/[0.08] bg-white/[0.04] text-white/45'
+              }`}
+            >
+              <TrendingUp className="h-4 w-4" />
+              {Object.keys(trendCounts).length > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-orange-500 text-[7px] font-bold text-white">🔥</span>
+              )}
+            </button>
+
             {/* filter button */}
             <button
               type="button"
@@ -2448,10 +3354,12 @@ export default function PublishedPage() {
                       key={tab.id}
                       type="button"
                       onClick={() => setActiveTab(tab.id)}
-                      className={`inline-flex items-center gap-1.5 rounded-2xl px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap transition ${
-                        isActive
-                          ? 'bg-white text-slate-950 shadow-sm'
-                          : 'border border-white/[0.08] bg-white/[0.04] text-white/45 hover:text-white'
+                      className={`inline-flex items-center gap-1.5 rounded-2xl px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap transition border ${
+                        tab.id === 'featured' && isActive
+                          ? 'border-amber-500/25 bg-amber-500/10 text-amber-400/85'
+                          : isActive
+                            ? 'border-white/[0.18] bg-white/[0.09] text-white/80'
+                            : 'border-white/[0.07] bg-white/[0.03] text-white/38 hover:text-white/65 hover:border-white/[0.12]'
                       }`}
                     >
                       <tab.icon className="h-3 w-3" />
@@ -2497,7 +3405,7 @@ export default function PublishedPage() {
                 <span className="shrink-0 w-8 text-[8px] font-bold uppercase tracking-[0.2em] text-white/20">Sort</span>
                 {([
                   {v:'recent', l:'Newest'}, {v:'oldest', l:'Oldest'},
-                  {v:'popular', l:'Popular'}, {v:'alpha', l:'A–Z'},
+                  {v:'popular', l:'Popular'}, {v:'alpha', l:'A–Z'}, {v:'trending', l:'🔥 Trending'},
                 ] as const).map(opt => (
                   <button key={opt.v} type="button" onClick={() => setSortBy(opt.v)}
                     className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold whitespace-nowrap border transition-all duration-150 ${sortBy === opt.v ? 'bg-white/[0.12] border-white/[0.18] text-white' : 'border-white/[0.06] text-white/35 hover:border-white/[0.12] hover:text-white/65'}`}
@@ -2709,7 +3617,7 @@ export default function PublishedPage() {
           <div className="shrink-0 border-b border-white/[0.04] bg-[#0A0A0C] px-4 lg:px-5 py-2 overflow-x-auto scrollbar-hide">
             <div className="flex items-center gap-1.5 min-w-max">
               <span className="shrink-0 text-[9px] font-bold uppercase tracking-[0.18em] text-white/20 pr-1">Active</span>
-              {sortBy !== 'recent' && <ActiveChip label={`Sort: ${sortBy === 'popular' ? 'Popular' : sortBy === 'oldest' ? 'Oldest' : 'A–Z'}`} onRemove={() => setSortBy('recent')} />}
+              {sortBy !== 'recent' && <ActiveChip label={`Sort: ${sortBy === 'popular' ? 'Popular' : sortBy === 'oldest' ? 'Oldest' : sortBy === 'trending' ? '🔥 Trending' : 'A–Z'}`} onRemove={() => setSortBy('recent')} />}
               {dateRange !== 'all' && <ActiveChip label={{ today:'Today', week:'This week', month:'This month', year:'This year' }[dateRange]!} onRemove={() => setDateRange('all')} />}
               {featuredOnly && <ActiveChip label="Featured only" onRemove={() => setFeaturedOnly(false)} />}
               {liveOnly     && <ActiveChip label="Live items"    onRemove={() => setLiveOnly(false)} />}
@@ -2742,48 +3650,63 @@ export default function PublishedPage() {
 
         {/* ── Scrollable content area ── */}
         <div className="flex-1 overflow-y-auto min-h-0">
-          <div className="p-4 lg:p-5 xl:p-6 pb-24 lg:pb-8 space-y-10 max-w-screen-2xl mx-auto w-full">
+          <div className="p-4 lg:py-6 lg:px-8 pb-24 lg:pb-10 space-y-10 max-w-3xl mx-auto w-full">
 
             {isSearching ? (
               <SearchResults items={allItems} query={search} />
+            ) : mixedFeed.length === 0 ? (
+              <div className="flex flex-col items-center gap-4 py-20 text-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-3xl border border-white/[0.08] bg-white/[0.04]">
+                  <Search className="h-7 w-7 text-white/20" />
+                </div>
+                <p className="text-[15px] font-semibold text-white">Nothing published yet{activeTab !== 'all' ? ' in this category' : ''}.</p>
+              </div>
             ) : (
               <>
-                {/* Featured strip */}
-                {featuredItems.length > 0 && (
-                  <section>
-                    <div className="mb-4 flex items-center gap-2">
-                      <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-                      <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/35">Featured</span>
-                    </div>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                      {featuredItems.map(item => (
-                        <FeaturedCard key={item.id} item={item} />
-                      ))}
-                    </div>
-                  </section>
+                <div className="divide-y divide-white/[0.05]">
+                  {mixedFeed.slice(0, visibleCount).map(item =>
+                    item.category === 'gig' && item.gigData
+                      ? <GigCard key={item.id} item={item} />
+                      : item.featured
+                        ? <FeaturedCard key={item.id} item={item} />
+                        : item.category === 'post'
+                          ? <PostCard key={item.id} item={item} searchQuery="" />
+                          : item.category === 'poll'
+                            ? <PollCard key={item.id} item={item} />
+                            : item.category === 'survey'
+                              ? <SurveyCard key={item.id} item={item} />
+                              : item.category === 'chart'
+                                ? <ChartCard key={item.id} item={item} />
+                                : <PublishedCard key={item.id} item={item} searchQuery="" />
+                  )}
+                </div>
+
+                {/* ── Load more / sentinel ── */}
+                {visibleCount < mixedFeed.length && (
+                  <div ref={loadMoreSentinelRef} className="flex flex-col items-center gap-3 pt-4 pb-2">
+                    <button
+                      type="button"
+                      onClick={() => setVisibleCount(c => c + 10)}
+                      className="inline-flex items-center gap-2 rounded-2xl border border-white/[0.09] bg-white/[0.04] px-6 py-2.5 text-[12.5px] font-semibold text-white/55 transition-all hover:bg-white/[0.08] hover:text-white hover:border-white/[0.16] active:scale-[0.97]"
+                    >
+                      Load more
+                      <span className="rounded-full bg-white/[0.08] px-2 py-0.5 text-[10px] font-bold text-white/40">
+                        {Math.min(10, mixedFeed.length - visibleCount)} more
+                      </span>
+                      <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+                    </button>
+                    <p className="text-[10.5px] text-white/20">
+                      Showing {Math.min(visibleCount, mixedFeed.length)} of {mixedFeed.length}
+                    </p>
+                  </div>
                 )}
 
-                {/* Category sections with non-featured items */}
-                {tabsToRender.map(tab => {
-                  const items = nonFeaturedByCategory[tab.id] ?? [];
-                  if (items.length === 0) return null;
-                  return (
-                    <CategorySection
-                      key={tab.id}
-                      tab={tab}
-                      items={items}
-                      searchQuery=""
-                    />
-                  );
-                })}
-
-                {/* empty */}
-                {tabsToRender.every(tab => (nonFeaturedByCategory[tab.id] ?? []).length === 0) && featuredItems.length === 0 && (
-                  <div className="flex flex-col items-center gap-4 py-20 text-center">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-3xl border border-white/[0.08] bg-white/[0.04]">
-                      <Search className="h-7 w-7 text-white/20" />
-                    </div>
-                    <p className="text-[15px] font-semibold text-white">Nothing published yet in this category.</p>
+                {/* All loaded indicator */}
+                {visibleCount >= mixedFeed.length && mixedFeed.length > 10 && (
+                  <div className="flex items-center gap-3 pt-4 pb-2">
+                    <div className="flex-1 h-px bg-white/[0.05]" />
+                    <p className="text-[10.5px] text-white/20 shrink-0">All {mixedFeed.length} posts loaded</p>
+                    <div className="flex-1 h-px bg-white/[0.05]" />
                   </div>
                 )}
               </>
@@ -2792,6 +3715,82 @@ export default function PublishedPage() {
         </div>
       </div>
 
+      {/* ── Right Trending Panel (xl+) ── */}
+      <aside className="hidden xl:flex w-72 2xl:w-80 shrink-0 flex-col border-l border-white/[0.06] bg-[#0A0A0C] overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3.5 border-b border-white/[0.05] shrink-0">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="h-3.5 w-3.5 text-orange-400/60" />
+            <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/40">Live Feed</span>
+          </div>
+          {sortBy === 'trending' && (
+            <span className="rounded-full bg-orange-500/15 px-2 py-0.5 text-[9.5px] font-bold text-orange-400">🔥 On</span>
+          )}
+        </div>
+        <TrendingPanel
+          allItems={allItems}
+          onTagClick={tag => setSearch(tag)}
+          onCategoryClick={cat => { setActiveTab(cat as TabId); setSearch(''); }}
+          setSortTrending={() => setSortBy('trending')}
+        />
+      </aside>
+      </div>
+
+      {/* ══════════════════════════════════════
+          MOBILE TRENDING DRAWER
+      ══════════════════════════════════════ */}
+      {trendDrawerOpen && typeof document !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 z-[150] flex flex-col justify-end xl:hidden"
+          onClick={() => setTrendDrawerOpen(false)}
+        >
+          {/* backdrop */}
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" />
+
+          {/* sheet */}
+          <div
+            className="relative flex flex-col overflow-hidden rounded-t-3xl border-t border-white/[0.09] bg-[#111116] shadow-2xl animate-in slide-in-from-bottom-4 duration-300"
+            style={{ maxHeight: '85dvh' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* handle + header */}
+            <div className="shrink-0 px-4 pt-3 pb-0">
+              {/* drag handle */}
+              <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-white/[0.12]" />
+
+              <div className="flex items-center justify-between pb-3 border-b border-white/[0.07]">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-orange-400/70" />
+                  <span className="text-[14px] font-bold text-white">Live Feed</span>
+                  {Object.keys(trendCounts).length > 0 && (
+                    <span className="rounded-full bg-orange-500/15 px-2 py-0.5 text-[10px] font-bold text-orange-400">
+                      {Object.values(trendCounts).reduce((a, b) => a + b, 0)} 🔥
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setTrendDrawerOpen(false)}
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.04] text-white/40 hover:text-white transition"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* scrollable content */}
+            <div className="flex-1 overflow-hidden">
+              <TrendingPanel
+                allItems={allItems}
+                onTagClick={tag => { setSearch(tag); setTrendDrawerOpen(false); }}
+                onCategoryClick={cat => { setActiveTab(cat as TabId); setSearch(''); setTrendDrawerOpen(false); }}
+                setSortTrending={() => { setSortBy('trending'); setTrendDrawerOpen(false); }}
+              />
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       {/* ══════════════════════════════════════
           MOBILE BOTTOM NAV
       ══════════════════════════════════════ */}
@@ -2799,19 +3798,21 @@ export default function PublishedPage() {
         <div className="flex">
           {MOBILE_NAV.map(tab => {
             const isActive = activeTab === tab.id;
+            const isFeat   = tab.id === 'featured';
+            const activeColor = isFeat ? 'text-amber-400/80' : 'text-white/75';
+            const indicatorBg = isFeat ? 'bg-amber-400/60' : 'bg-white/40';
             return (
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => { setActiveTab(tab.id); setSearch(''); }}
+                onClick={() => { setActiveTab(tab.id as TabId); setSearch(''); }}
                 className="relative flex flex-1 flex-col items-center gap-1 py-3 transition-colors"
               >
-                {/* active indicator dot */}
                 {isActive && (
-                  <span className="absolute top-0 left-1/2 h-0.5 w-8 -translate-x-1/2 rounded-full bg-white" />
+                  <span className={`absolute top-0 left-1/2 h-[1.5px] w-6 -translate-x-1/2 rounded-full ${indicatorBg}`} />
                 )}
-                <tab.icon className={`h-5 w-5 transition-all ${isActive ? 'scale-110 text-white' : 'text-white/30'}`} />
-                <span className={`text-[9.5px] font-semibold tracking-wide transition-colors ${isActive ? 'text-white' : 'text-white/30'}`}>
+                <tab.icon className={`h-5 w-5 transition-all ${isActive ? activeColor : 'text-white/28'}`} />
+                <span className={`text-[9.5px] font-semibold tracking-wide transition-colors ${isActive ? activeColor : 'text-white/28'}`}>
                   {tab.label}
                 </span>
               </button>

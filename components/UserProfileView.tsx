@@ -5,18 +5,20 @@ import Link from 'next/link';
 import {
   ArrowRight,
   Briefcase,
-  ExternalLink,
-  CheckCircle2,
   ChevronDown,
   ChevronUp,
+  CheckCircle2,
   Clock,
+  ExternalLink,
   FileText,
   MapPin,
   Pause,
   Play,
   RefreshCw,
+  Star,
   Trash2,
   User,
+  Users,
   X,
   Zap,
 } from 'lucide-react';
@@ -31,9 +33,16 @@ interface PublishedItem {
   visibility: 'public' | 'private';
   sizeLabel?: string;
   openCount?: number;
+  interestedCount?: number;
   updatedAt: string;
   createdAt: string;
   href: string;
+}
+
+interface InterestedUser {
+  id: string;
+  name: string;
+  markedAt: string;
 }
 
 interface GigBidEntry {
@@ -441,6 +450,76 @@ function GigCard({
   );
 }
 
+/* ─── Interested users panel for a single post ───────────────── */
+function InterestedUsersPanel({ postId, postTitle }: { postId: string; postTitle: string }) {
+  const [open, setOpen]           = useState(false);
+  const [users, setUsers]         = useState<InterestedUser[]>([]);
+  const [loading, setLoading]     = useState(false);
+  const [fetched, setFetched]     = useState(false);
+
+  const load = async () => {
+    if (fetched) { setOpen(v => !v); return; }
+    setOpen(true);
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/published/${postId}/interested-users`);
+      if (res.ok) {
+        const d = await res.json() as { users: InterestedUser[] };
+        setUsers(d.users);
+        setFetched(true);
+      }
+    } catch {} finally { setLoading(false); }
+  };
+
+  const ago = (iso: string) => {
+    const d = Date.now() - new Date(iso).getTime();
+    if (d < 3_600_000)  return `${Math.floor(d / 60_000)}m ago`;
+    if (d < 86_400_000) return `${Math.floor(d / 3_600_000)}h ago`;
+    return `${Math.floor(d / 86_400_000)}d ago`;
+  };
+
+  return (
+    <div className="mt-2">
+      <button
+        type="button"
+        onClick={() => void load()}
+        className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-400/70 hover:text-amber-400 transition"
+      >
+        <Star className="h-3 w-3" />
+        {open ? 'Hide interested' : 'View interested users'}
+        {open ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+      </button>
+
+      {open && (
+        <div className="mt-2 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+          {loading && <p className="text-[11px] text-white/30 py-2 text-center">Loading…</p>}
+          {!loading && users.length === 0 && (
+            <p className="text-[11px] text-white/25 py-2 text-center">No one has marked interest yet.</p>
+          )}
+          {!loading && users.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-white/25 mb-2">
+                {users.length} interested · {postTitle}
+              </p>
+              {users.map((u) => (
+                <div key={u.id} className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-[9px] font-bold text-amber-400">
+                      {u.name.slice(0, 2).toUpperCase()}
+                    </div>
+                    <span className="text-[12px] font-medium text-white/75">{u.name}</span>
+                  </div>
+                  <span className="text-[10px] text-white/25">{ago(u.markedAt)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── Main component ─────────────────────────────────────────── */
 export default function UserProfileView({ userName, userEmail, userId }: UserProfileViewProps) {
   const [activeTab, setActiveTab] = useState<'published' | 'gigs' | 'bids'>('published');
@@ -630,6 +709,11 @@ export default function UserProfileView({ userName, userEmail, userId }: UserPro
                         <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{formatDate(item.createdAt)}</span>
                         {item.sizeLabel && <span>{item.sizeLabel}</span>}
                         {(item.openCount ?? 0) > 0 && <span>{item.openCount} view{item.openCount !== 1 ? 's' : ''}</span>}
+                        {(item.interestedCount ?? 0) > 0 && (
+                          <span className="flex items-center gap-1 text-amber-400/70">
+                            <Star className="h-3 w-3" />{item.interestedCount} interested
+                          </span>
+                        )}
                       </div>
                     </div>
                     <Link
@@ -639,6 +723,9 @@ export default function UserProfileView({ userName, userEmail, userId }: UserPro
                       View <ArrowRight className="h-3 w-3" />
                     </Link>
                   </div>
+                  {(item.category === 'event' || item.category === 'hackathon') && (
+                    <InterestedUsersPanel postId={item.id} postTitle={item.title} />
+                  )}
                 </div>
               ))
             )}

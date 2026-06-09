@@ -2,27 +2,123 @@
   "email": "kushagra@corescent.in",
   "otpSessions": [
     {
-      "id": "9f2a0bfa977f31724c475f0843491023",
+      "id": "3147742786225c2798ac7463a4e0f8ad",
       "email": "kushagra@corescent.in",
-      "otpHash": "5bd91dcb368819617b36716a2dba577468fb9d4c0cb90eca19ef150577a40a99",
-      "otpSalt": "01faf71fa4d9a86e447245570dca3c03",
-      "createdAt": "2026-05-19T14:07:27.594Z",
-      "expiresAt": "2026-05-19T14:17:27.594Z",
+      "otpHash": "30109f260627e73a2f2d46ad325c941f940ca9a5326d1ec38a342e2aee23bbaf",
+      "otpSalt": "13a77fbc0f3dd2f7298101b23e61304d",
+      "createdAt": "2026-06-08T17:28:23.958Z",
+      "expiresAt": "2026-06-08T17:38:23.958Z",
       "attempts": 0,
-      "verifiedAt": "2026-05-19T14:08:23.857Z"
+      "verifiedAt": "2026-06-08T17:28:59.676Z"
     }
   ],
   "activeSessions": [
     {
-      "token": "0d1ade54ad884f6e76f284b6c3f5ccf8d311dd3ac8e9677f036d3c059698ab5f21012932cd7bdfd48ebcc9f5b453e68b",
+      "token": "d772a85914da099dc676c319c34fc536a968b060276e741e1b69927c3446a11c4e8bc6bbccb5eccbb4d98bb0098e3f5d",
       "email": "kushagra@corescent.in",
-      "createdAt": "2026-05-19T14:08:23.857Z",
-      "expiresAt": "2026-05-19T18:08:23.857Z",
+      "createdAt": "2026-06-08T17:28:59.676Z",
+      "expiresAt": "2026-06-08T21:28:59.676Z",
       "ip": "::1",
       "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
     }
   ],
   "auditLog": [
+    {
+      "id": "91fcff8dbf22fee5",
+      "timestamp": "2026-06-08T17:28:59.677Z",
+      "action": "super_admin_login",
+      "details": {
+        "email": "kushagra@corescent.in"
+      },
+      "ip": "::1"
+    },
+    {
+      "id": "934f58c0a358e467",
+      "timestamp": "2026-06-08T13:23:56.344Z",
+      "action": "super_admin_login",
+      "details": {
+        "email": "kushagra@corescent.in"
+      },
+      "ip": "::1"
+    },
+    {
+      "id": "dea33bbb56191a78",
+      "timestamp": "2026-06-08T12:52:29.034Z",
+      "action": "super_admin_login",
+      "details": {
+        "email": "kushagra@corescent.in"
+      },
+      "ip": "::1"
+    },
+    {
+      "id": "db407adededaafde",
+      "timestamp": "2026-06-05T15:38:28.448Z",
+      "action": "super_admin_login",
+      "details": {
+        "email": "kushagra@corescent.in"
+      },
+      "ip": "::1"
+    },
+    {
+      "id": "e264cd6f4f25efc6",
+      "timestamp": "2026-06-05T09:18:14.123Z",
+      "action": "super_admin_login",
+      "details": {
+        "email": "kushagra@corescent.in"
+      },
+      "ip": "::1"
+    },
+    {
+      "id": "2e2b3434ca25d46f",
+      "timestamp": "2026-06-05T08:27:21.603Z",
+      "action": "super_admin_login",
+      "details": {
+        "email": "kushagra@corescent.in"
+      },
+      "ip": "::1"
+    },
+    {
+      "id": "1a60241f04ebfedb",
+      "timestamp": "2026-06-05T08:17:48.423Z",
+      "action": "super_admin_login",
+      "details": {
+        "email": "kushagra@corescent.in"
+      },
+      "ip": "::1"
+    },
+    {
+      "id": "3536c145f48fdfb8",
+      "timestamp": "2026-06-05T08:03:03.104Z",
+      "action": "super_admin_login",
+      "details": {
+        "email": "kushagra@corescent.in"
+      },
+      "ip": "::1"
+    },
+    {
+      "id": "9263aec5c1d2eb20",
+      "timestamp": "2026-06-05T07:38:30.099Z",
+      "action": "super_admin_login",
+      "details": {
+        "email": "kushagra@corescent.in"
+      },
+      "ip": "::1"
+    },
+    {
+      "id": "24c7a18c90688655",
+      "timestamp": "2026-06-02T16:02:20.554Z",
+      "action": "super_admin_logout",
+      "ip": "::1"
+    },
+    {
+      "id": "5e598b9bf5b51d79",
+      "timestamp": "2026-06-02T16:01:26.535Z",
+      "action": "super_admin_login",
+      "details": {
+        "email": "kushagra@corescent.in"
+      },
+      "ip": "::1"
+    },
     {
       "id": "ad3fd0e728a099d8",
       "timestamp": "2026-05-19T14:08:23.857Z",

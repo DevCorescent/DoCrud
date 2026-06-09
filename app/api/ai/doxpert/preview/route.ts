@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/server/auth';
-import { getHistoryEntries } from '@/lib/server/history';
+import { getHistoryEntryById } from '@/lib/server/history';
 import { extractDocumentText } from '@/lib/server/document-parser';
 
 export const runtime = 'nodejs';
@@ -24,8 +24,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'historyId is required' }, { status: 400 });
     }
 
-    const history = await getHistoryEntries();
-    const entry = history.find((item) => item.id === historyId || item.shareId === historyId);
+    const entry = await getHistoryEntryById(historyId);
     if (!entry) {
       return NextResponse.json({ error: 'Document not found' }, { status: 404 });
     }

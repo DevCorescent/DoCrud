@@ -1,4 +1,5 @@
 import { socialEventsPath, readJsonFile, writeJsonFile } from '@/lib/server/storage';
+import { getDbPool } from '@/lib/server/database';
 
 export type SocialEventType = 'follow' | 'profile_view' | 'like' | 'comment' | 'mention' | 'gig_applied' | 'document_viewed';
 
@@ -9,11 +10,9 @@ export interface SocialEvent {
   actorName: string;
   actorAvatar?: string;
   actorHeadline?: string;
-  /** The user who should receive the notification */
   targetUserId: string;
   resourceId?: string;
   resourceTitle?: string;
-  /** Extra text (e.g. comment body snippet) */
   excerpt?: string;
   href?: string;
   createdAt: string;
@@ -22,26 +21,50 @@ export interface SocialEvent {
 type SocialEventsData = { events: SocialEvent[] };
 const empty: SocialEventsData = { events: [] };
 
-/* Keep at most 500 events total to avoid unbounded growth */
 const MAX_EVENTS = 500;
+
+function rowToEvent(row: Record<string, unknown>): SocialEvent {
+  return {
+    id: row.id as string,
+    type: row.type as SocialEventType,
+    actorId: row.actor_id as string,
+    actorName: row.actor_name as string,
+    actorAvatar: (row.actor_avatar as string | null) ?? undefined,
+    actorHeadline: (row.actor_headline as string | null) ?? undefined,
+    targetUserId: row.target_user_id as string,
+    resourceId: (row.resource_id as string | null) ?? undefined,
+    resourceTitle: (row.resource_title as string | null) ?? undefined,
+    excerpt: (row.excerpt as string | null) ?? undefined,
+    href: (row.href as string | null) ?? undefined,
+    createdAt: (row.created_at as Date).toISOString(),
+  };
+}
 
 export async function getSocialEvents(): Promise<SocialEventsData> {
   return readJsonFile<SocialEventsData>(socialEventsPath, empty);
 }
 
 export async function addSocialEvent(event: Omit<SocialEvent, 'id' | 'createdAt'>): Promise<SocialEvent> {
-  const data = await getSocialEvents();
-  const newEvent: SocialEvent = {
-    ...event,
-    id: `se_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-    createdAt: new Date().toISOString(),
-  };
-  data.events = [newEvent, ...data.events].slice(0, MAX_EVENTS);
-  await writeJsonFile(socialEventsPath, data);
+  const id = `se_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const createdAt = new Date().toISOString();
+  const newEvent: SocialEvent = { ...event, id, createdAt };
 
-  // Fire notification email non-blocking — never throws
+  const pool = getDbPool();
+  if (pool) {
+    await pool.query(
+      `INSERT INTO social_events (id, type, actor_id, actor_name, actor_avatar, actor_headline, target_user_id, resource_id, resource_title, excerpt, href, created_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+      [id, event.type, event.actorId, event.actorName, event.actorAvatar ?? null,
+        event.actorHeadline ?? null, event.targetUserId, event.resourceId ?? null,
+        event.resourceTitle ?? null, event.excerpt ?? null, event.href ?? null, createdAt]
+    );
+  } else {
+    const data = await getSocialEvents();
+    data.events = [newEvent, ...data.events].slice(0, MAX_EVENTS);
+    await writeJsonFile(socialEventsPath, data);
+  }
+
   void sendEventEmail(newEvent).catch(() => {});
-
   return newEvent;
 }
 
@@ -56,11 +79,9 @@ async function sendEventEmail(event: SocialEvent): Promise<void> {
     const target = users.find((u) => u.id === event.targetUserId);
     if (!target || !target.email) return;
 
-    // Check email preferences — default ON for all except profile_view and document_viewed
     const prefs = target.emailPreferences ?? {};
     const defaultOn = !['profile_view', 'document_viewed'].includes(event.type);
 
-    // Map SocialEventType to emailPreferences key
     const prefKeyMap: Partial<Record<SocialEventType, keyof NonNullable<typeof target.emailPreferences>>> = {
       follow: 'follows',
       like: 'likes',
@@ -84,19 +105,23 @@ async function sendEventEmail(event: SocialEvent): Promise<void> {
       href: event.href,
     });
   } catch {
-    // non-critical — never throw
+    // non-critical
   }
 }
 
-/** Returns events where targetUserId matches, newest-first, capped at 60 */
 export async function getSocialEventsForUser(userId: string): Promise<SocialEvent[]> {
+  const pool = getDbPool();
+  if (pool) {
+    const result = await pool.query<Record<string, unknown>>(
+      `SELECT * FROM social_events WHERE target_user_id = $1 ORDER BY created_at DESC LIMIT 60`,
+      [userId]
+    );
+    return result.rows.map(rowToEvent);
+  }
   const data = await getSocialEvents();
-  return data.events
-    .filter((e) => e.targetUserId === userId)
-    .slice(0, 60);
+  return data.events.filter((e) => e.targetUserId === userId).slice(0, 60);
 }
 
-/** Deduplicate follow events — only keep the most recent follow from each actor */
 export async function getDeduplicatedSocialEventsForUser(userId: string): Promise<SocialEvent[]> {
   const events = await getSocialEventsForUser(userId);
   const seen = new Set<string>();

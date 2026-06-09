@@ -1,6 +1,16 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import { getAppStateKey, isDatabaseConfigured, readAppState, writeAppState } from '@/lib/server/database';
+import { getAppStateKey, getDbPool, isDatabaseConfigured, readAppState, writeAppState } from '@/lib/server/database';
+import { reconcileHistoryRows, selectAllHistoryRows } from '@/lib/server/db/history-rows';
+import { reconcileFileTransferRows, selectAllFileTransferRows } from '@/lib/server/db/file-transfers-rows';
+import { bulkReplaceUserProfileRows, selectAllUserProfileRows } from '@/lib/server/db/user-profiles-rows';
+import { bulkReplaceBillingRows, selectAllBillingRows } from '@/lib/server/db/billing-rows';
+import { bulkReplaceEmailOutboxRows, selectEmailOutboxRows } from '@/lib/server/db/email-outbox-rows';
+import { bulkReplaceDocWordRows, selectAllDocWordRows } from '@/lib/server/db/docword-rows';
+import { reconcileUserRows, selectAllUserRows } from '@/lib/server/db/users-rows';
+import { bulkReplaceServiceReviewRows, selectAllServiceReviewRows } from '@/lib/server/db/service-reviews-rows';
+import { bulkReplaceTemplateMarketplaceItemRows, selectAllTemplateMarketplaceItemRows } from '@/lib/server/db/template-marketplace-items-rows';
+import { getSettingsValueFromRepository, saveSettingsValueToRepository } from '@/lib/server/repositories';
 
 export const dataDir = path.join(process.cwd(), 'data');
 export const customTemplatesPath = path.join(dataDir, 'custom', 'templates.json');
@@ -45,6 +55,8 @@ export const virtualIdsPath = path.join(dataDir, 'virtual-ids.json');
 export const certificatesPath = path.join(dataDir, 'certificates.json');
 export const docwordDocumentsPath = path.join(dataDir, 'docword-documents.json');
 export const blogPostsPath = path.join(dataDir, 'blog-posts.json');
+export const adBannersPath = path.join(dataDir, 'ad-banners.json');
+export const homepageConfigPath = path.join(dataDir, 'homepage-config.json');
 export const webTelemetryPath = path.join(dataDir, 'web-telemetry.json');
 export const securityBlocklistPath = path.join(dataDir, 'security-blocklist.json');
 export const knowledgeBasePath = path.join(dataDir, 'knowledge-base.json');
@@ -79,6 +91,79 @@ export const catalogueSettingsPath = path.join(dataDir, 'catalogue-settings.json
 export const publicFaceApplicationsPath = path.join(dataDir, 'public-face-applications.json');
 export const publicFaceOtpsPath = path.join(dataDir, 'public-face-otps.json');
 export const sharesPath = path.join(dataDir, 'shares.json');
+export const presencePath = path.join(dataDir, 'presence.json');
+export const behaviorEventsPath = path.join(dataDir, 'behavior-events.json');
+
+type DbAdapter = {
+  read: () => Promise<unknown>;
+  write: (value: unknown) => Promise<void>;
+};
+
+let dbAdaptersCache: Map<string, DbAdapter> | null = null;
+
+function getDbAdapters(): Map<string, DbAdapter> {
+  if (dbAdaptersCache) return dbAdaptersCache;
+  const map = new Map<string, DbAdapter>();
+  map.set(historyFilePath, {
+    read: () => selectAllHistoryRows(),
+    write: (value) => reconcileHistoryRows((value as never) || []),
+  });
+  map.set(fileTransfersPath, {
+    read: () => selectAllFileTransferRows(),
+    write: (value) => reconcileFileTransferRows((value as never) || []),
+  });
+  map.set(userProfilesPath, {
+    read: () => selectAllUserProfileRows(),
+    write: (value) => bulkReplaceUserProfileRows((value as never) || {}),
+  });
+  map.set(billingTransactionsPath, {
+    read: () => selectAllBillingRows(),
+    write: (value) => bulkReplaceBillingRows((value as never) || []),
+  });
+  map.set(emailOutboxPath, {
+    read: async () => ({ events: await selectEmailOutboxRows(500) }),
+    write: (value) => {
+      const state = (value as { events?: unknown[] }) || {};
+      return bulkReplaceEmailOutboxRows((state.events as never) || []);
+    },
+  });
+  map.set(docwordDocumentsPath, {
+    read: () => selectAllDocWordRows(),
+    write: (value) => bulkReplaceDocWordRows((value as never) || []),
+  });
+  map.set(usersPath, {
+    read: () => selectAllUserRows(),
+    // Use diff-based reconcile instead of DELETE-all-reinsert.
+    write: (value) => reconcileUserRows((value as never) || []),
+  });
+  map.set(serviceReviewsPath, {
+    read: () => selectAllServiceReviewRows(),
+    write: (value) => bulkReplaceServiceReviewRows((value as never) || []),
+  });
+  map.set(templateMarketplaceItemsPath, {
+    read: () => selectAllTemplateMarketplaceItemRows(),
+    write: (value) => bulkReplaceTemplateMarketplaceItemRows((value as never) || []),
+  });
+
+  // Settings paths — stored per-key in settings_store rather than as app_state blobs.
+  for (const [path, scope, key] of [
+    [authSettingsPath, 'auth', 'settings'],
+    [themeSettingsPath, 'theme', 'settings'],
+    [automationSettingsPath, 'automation', 'workflow'],
+    [collaborationSettingsPath, 'collaboration', 'settings'],
+    [signatureSettingsPath, 'signature', 'settings'],
+    [landingSettingsPath, 'landing', 'settings'],
+    [platformConfigPath, 'platform', 'config'],
+  ] as const) {
+    map.set(path, {
+      read: () => getSettingsValueFromRepository(scope, key, null),
+      write: (value) => saveSettingsValueToRepository(scope, key, value),
+    });
+  }
+
+  dbAdaptersCache = map;
+  return map;
+}
 
 export async function ensureDirectory(filePath: string) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
@@ -106,6 +191,25 @@ export function invalidateReadCache(filePath: string) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function readJsonFile<T>(filePath: string, fallback: T): Promise<T> {
+  if (getDbPool()) {
+    const adapter = getDbAdapters().get(filePath);
+    if (adapter) {
+      try {
+        const value = await adapter.read();
+        if (Array.isArray(value) && value.length === 0) {
+          return fallback;
+        }
+        if (value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 0) {
+          return fallback;
+        }
+        return value as T;
+      } catch (error) {
+        console.error(`Failed to read row adapter for ${filePath}`, error);
+      }
+    }
+  }
+
+
   const appStateKey = getAppStateKey(filePath);
 
   const cached = _cacheGet<T>(appStateKey);
@@ -144,6 +248,20 @@ export async function readJsonFile<T>(filePath: string, fallback: T): Promise<T>
 
 export async function writeJsonFile<T>(filePath: string, data: T) {
   invalidateReadCache(filePath);
+  if (getDbPool()) {
+    const adapter = getDbAdapters().get(filePath);
+    if (adapter) {
+      try {
+        await adapter.write(data as unknown);
+        return;
+      } catch (error) {
+        console.error(`Failed to write row adapter for ${filePath}`, error);
+        throw error;
+      }
+    }
+  }
+
+
   if (isDatabaseConfigured()) {
     try {
       await writeAppState(getAppStateKey(filePath), data);

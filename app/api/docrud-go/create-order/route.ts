@@ -25,7 +25,7 @@ export async function POST() {
 
     const profile = await getProfileData(user.id);
     if (profile.docrudGo) {
-      return NextResponse.json({ error: 'You already have Docrud Go.' }, { status: 409 });
+      return NextResponse.json({ error: 'You already have Docrud Infinity.' }, { status: 409 });
     }
 
     const { keyId, keySecret, publishableKeyAvailable } = getRazorpayConfig();
@@ -46,7 +46,7 @@ export async function POST() {
         currency: 'INR',
         receipt,
         notes: {
-          product: 'Docrud Go',
+          product: 'Docrud Infinity',
           userId: user.id,
           userEmail: user.email,
           userName: user.name || '',

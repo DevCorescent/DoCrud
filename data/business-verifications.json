@@ -1,0 +1,33 @@
+{
+  "verifications": [
+    {
+      "id": "verif-live-test-001",
+      "businessPageId": "1a5638b9-6bd3-44e6-a4b9-42a3e6bd3ea0",
+      "ownerUserId": "individual-1780404674760",
+      "status": "approved",
+      "legalName": "Corescent Technologies Private Limited",
+      "businessType": "pvt_ltd",
+      "registrationNumber": "U72900MH2020PTC341234",
+      "pan": "AABCC1234D",
+      "gstin": "27AABCC1234D1Z5",
+      "registeredAddress": "42 Tech Park, BKC",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "pincode": "400051",
+      "country": "India",
+      "website": "https://corescent.io",
+      "contactName": "Kushagra Verma",
+      "contactEmail": "kushagra@corescent.io",
+      "contactPhone": "+91 9876543210",
+      "yearsInBusiness": "3-5 years",
+      "employeeCount": "11-50",
+      "annualRevenue": "1Cr-10Cr",
+      "businessCategory": "B2B SaaS",
+      "submittedAt": "2026-06-05T08:25:04.161667Z",
+      "updatedAt": "2026-06-05T08:56:30.615Z",
+      "adminNotes": "",
+      "reviewedBy": "kushagra@corescent.in",
+      "reviewedAt": "2026-06-05T08:56:30.615Z"
+    }
+  ]
+}

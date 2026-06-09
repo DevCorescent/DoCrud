@@ -1,4 +1,12 @@
 import { readJsonFile, writeJsonFile, servicesPath, serviceBookingsPath, serviceReviewsPath, serviceAnalyticsPath, catalogueSettingsPath } from '@/lib/server/storage';
+import { getDbPool } from '@/lib/server/database';
+import {
+  existsServiceReviewForBooking,
+  selectAllServiceReviewRows,
+  selectServiceReviewAggregateForService,
+  selectServiceReviewsForService,
+  upsertServiceReviewRow,
+} from '@/lib/server/db/service-reviews-rows';
 
 export type ServiceCategory =
   | 'design'
@@ -214,10 +222,16 @@ export interface ServiceReview {
 type ReviewsStore = ServiceReview[];
 
 export async function getAllReviews(): Promise<ReviewsStore> {
+  if (getDbPool()) {
+    return selectAllServiceReviewRows();
+  }
   return readJsonFile<ReviewsStore>(serviceReviewsPath, []);
 }
 
 export async function getReviewsForService(serviceId: string): Promise<ServiceReview[]> {
+  if (getDbPool()) {
+    return selectServiceReviewsForService(serviceId);
+  }
   const all = await getAllReviews();
   return all
     .filter((r) => r.serviceId === serviceId)
@@ -225,6 +239,9 @@ export async function getReviewsForService(serviceId: string): Promise<ServiceRe
 }
 
 export async function hasReviewedBooking(bookingId: string): Promise<boolean> {
+  if (getDbPool()) {
+    return existsServiceReviewForBooking(bookingId);
+  }
   const all = await getAllReviews();
   return all.some((r) => r.bookingId === bookingId);
 }
@@ -245,14 +262,30 @@ export async function getCompletedBookingForReviewer(
 }
 
 export async function createReview(data: Omit<ServiceReview, 'id' | 'createdAt' | 'updatedAt'>): Promise<ServiceReview> {
-  const all = await getAllReviews();
-
   const review: ServiceReview = {
     ...data,
     id: `rev_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
+
+  if (getDbPool()) {
+    await upsertServiceReviewRow(review);
+    // Aggregate stays in the DB — query it instead of re-scanning every review.
+    const aggregate = await selectServiceReviewAggregateForService(data.serviceId);
+    const store = await getAllServices();
+    const list = store[data.serviceUserId] ?? [];
+    const idx = list.findIndex((s) => s.id === data.serviceId);
+    if (idx !== -1) {
+      list[idx].rating = aggregate.average;
+      list[idx].reviewCount = aggregate.count;
+      store[data.serviceUserId] = list;
+      await writeJsonFile(servicesPath, store);
+    }
+    return review;
+  }
+
+  const all = await getAllReviews();
   all.push(review);
   await writeJsonFile(serviceReviewsPath, all);
 

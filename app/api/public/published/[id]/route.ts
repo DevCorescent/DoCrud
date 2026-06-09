@@ -15,7 +15,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       (x) => (x.id === id || x.shareId === id) &&
               x.directoryVisibility === 'public' &&
               x.authMode === 'public' &&
-              !x.revokedAt,
+              !x.revokedAt &&
+              x.moderationStatus !== 'removed',
     );
     if (!t) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
@@ -25,7 +26,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       category: t.directoryCategory?.toLowerCase() || 'document',
       badge: t.directoryTags?.[0] || 'Published',
       title: t.title || t.fileName,
-      byline: `${t.uploadedBy} · ${t.fileName}`,
+      byline: `${t.uploadedByName || t.uploadedBy?.split('@')[0] || 'Docrud User'} · ${t.fileName}`,
+      uploadedByName: t.uploadedByName || t.uploadedBy?.split('@')[0] || 'Docrud User',
       body: t.notes || '',
       chips: (t.directoryTags ?? []).slice(1).length > 0 ? (t.directoryTags ?? []).slice(1) : undefined,
       postedAt: t.createdAt,
@@ -33,6 +35,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       isReal: true,
       likesCount: t.likesCount ?? 0,
       likedByViewer: viewerIdentifier ? (t.likedBy ?? []).includes(viewerIdentifier) : false,
+      trendCount: t.trendCount ?? 0,
+      viewCount: t.viewCount ?? t.openCount ?? 0,
+      trendedByViewer: viewerIdentifier ? (t.trendedBy ?? []).includes(viewerIdentifier) : false,
+      interestedCount: t.interestedCount ?? 0,
+      interestedByViewer: viewerIdentifier ? (t.interestedBy ?? []).includes(viewerIdentifier) : false,
       commentsCount: t.commentsCount ?? 0,
       comments: (t.comments ?? []).map((c) => ({
         id: c.id,
@@ -47,9 +54,26 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       dataUrl: t.dataUrl || null,
       mimeType: t.mimeType || null,
       videoUrl: t.videoUrl || null,
-      thumbnailUrl: t.thumbnailUrl || null,
+      thumbnailUrl: (() => {
+        const u = t.thumbnailUrl;
+        if (u && !u.startsWith('data:')) return u;
+        if (t.mimeType?.startsWith('image/') && t.dataUrl?.startsWith('data:image/')) {
+          return `/api/public/thumbnail/${t.id}`;
+        }
+        if (
+          t.mimeType === 'text/html' &&
+          (t.directoryCategory === 'post' || t.directoryCategory === 'product') &&
+          t.dataUrl?.startsWith('data:text/html')
+        ) {
+          return `/api/public/thumbnail/${t.id}`;
+        }
+        return null;
+      })(),
       uploadedByUserId: t.uploadedByUserId,
       canDelete: viewerUserId ? t.uploadedByUserId === viewerUserId : false,
+      interestedUsers: viewerUserId && t.uploadedByUserId === viewerUserId
+        ? ((t as unknown as { interestedUsers?: Array<{ id: string; name: string; markedAt: string }> }).interestedUsers ?? [])
+        : undefined,
     });
   } catch {
     return NextResponse.json({ error: 'Failed' }, { status: 500 });
