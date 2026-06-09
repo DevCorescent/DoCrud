@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs';
 import { getHistoryEntries } from '@/lib/server/history';
-import { getStoredUsers, saveStoredUsers, type StoredUser } from '@/lib/server/users';
+import { getStoredUsers, getStoredUserById, saveStoredUsers, upsertStoredUser, type StoredUser } from '@/lib/server/users';
 import { CustomPlanConfiguration, SaasFeatureKey, SaasOverview, SaasPlan, SaasUsageSummary, User } from '@/types/document';
 import { getAllBusinessSettings } from '@/lib/server/business';
 import { getFileTransfers } from '@/lib/server/file-transfers';
@@ -89,49 +89,46 @@ export async function assignUserPlan(
   status: 'trial' | 'active' | 'upgrade_required' | 'suspended' = 'active',
   customConfiguration?: CustomPlanConfiguration | null,
 ) {
-  const [users, plan] = await Promise.all([getStoredUsers(), getSaasPlanById(planId)]);
+  const [user, plan] = await Promise.all([getStoredUserById(userId), getSaasPlanById(planId)]);
   if (!plan) {
     throw new Error('Plan not found');
+  }
+  if (!user) {
+    throw new Error('User not found');
   }
 
   const currentPeriodStart = new Date().toISOString();
   const currentPeriodEnd = (plan.billingModel === 'subscription' || plan.billingModel === 'free' || plan.id === 'workspace-build-your-own')
     ? addDays(currentPeriodStart, 30)
     : undefined;
-  const nextUsers = users.map((user) =>
-    user.id === userId
-      ? (() => {
-          const aiEntitlements = resolveAiEntitlements(plan, customConfiguration, user.subscription);
-          return {
-            ...user,
-            subscription: {
-              planId: plan.id,
-              planName: plan.name,
-              status,
-              billingProvider: plan.billingModel === 'free' || plan.billingModel === 'custom' ? user.subscription?.billingProvider : 'razorpay',
-              startedAt: currentPeriodStart,
-              currentPeriodStart,
-              currentPeriodEnd,
-              renewalDate: currentPeriodEnd,
-              lastPaymentAt: status === 'active' && plan.billingModel !== 'free' ? currentPeriodStart : user.subscription?.lastPaymentAt,
-              lastOrderId: user.subscription?.lastOrderId,
-              customConfiguration: customConfiguration || user.subscription?.customConfiguration,
-              roadmapPromoCampaignId: user.subscription?.roadmapPromoCampaignId,
-              roadmapPromoQualifiedAt: user.subscription?.roadmapPromoQualifiedAt,
-              roadmapPromoValidUntil: user.subscription?.roadmapPromoValidUntil,
-              roadmapPromoLabel: user.subscription?.roadmapPromoLabel,
-              aiTrialLimit: aiEntitlements.aiTrialLimit,
-              aiTrialUsed: aiEntitlements.aiTrialUsed,
-              monthlyAiCredits: aiEntitlements.monthlyAiCredits,
-              remainingAiCredits: aiEntitlements.remainingAiCredits,
-              aiCreditsResetAt: currentPeriodEnd,
-            },
-          };
-        })()
-      : user,
-  );
-  await saveStoredUsers(nextUsers);
-  return nextUsers.find((user) => user.id === userId) || null;
+  const aiEntitlements = resolveAiEntitlements(plan, customConfiguration, user.subscription);
+  const updatedUser = {
+    ...user,
+    subscription: {
+      planId: plan.id,
+      planName: plan.name,
+      status,
+      billingProvider: plan.billingModel === 'free' || plan.billingModel === 'custom' ? user.subscription?.billingProvider : 'razorpay' as const,
+      startedAt: currentPeriodStart,
+      currentPeriodStart,
+      currentPeriodEnd,
+      renewalDate: currentPeriodEnd,
+      lastPaymentAt: status === 'active' && plan.billingModel !== 'free' ? currentPeriodStart : user.subscription?.lastPaymentAt,
+      lastOrderId: user.subscription?.lastOrderId,
+      customConfiguration: customConfiguration || user.subscription?.customConfiguration,
+      roadmapPromoCampaignId: user.subscription?.roadmapPromoCampaignId,
+      roadmapPromoQualifiedAt: user.subscription?.roadmapPromoQualifiedAt,
+      roadmapPromoValidUntil: user.subscription?.roadmapPromoValidUntil,
+      roadmapPromoLabel: user.subscription?.roadmapPromoLabel,
+      aiTrialLimit: aiEntitlements.aiTrialLimit,
+      aiTrialUsed: aiEntitlements.aiTrialUsed,
+      monthlyAiCredits: aiEntitlements.monthlyAiCredits,
+      remainingAiCredits: aiEntitlements.remainingAiCredits,
+      aiCreditsResetAt: currentPeriodEnd,
+    },
+  };
+  await upsertStoredUser(updatedUser);
+  return updatedUser;
 }
 
 export async function getUserUsageSummary(user: User, preloadedHistory?: Awaited<ReturnType<typeof getHistoryEntries>>) {

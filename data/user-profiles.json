@@ -823,5 +823,632 @@
     "emailVerified": true,
     "emailVerifiedAt": "2026-05-22T07:07:01.292Z",
     "updatedAt": "2026-05-22T07:07:01.307Z"
+  },
+  "individual-1780159513754": {
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-05-30T16:45:57.738Z",
+    "updatedAt": "2026-05-30T16:45:57.759Z"
+  },
+  "individual-1780160241154": {
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-05-30T16:57:58.358Z",
+    "updatedAt": "2026-06-01T08:27:14.594Z",
+    "bannerUrl": "/uploads/profile/banner_individual17_6f8fbc7bb46d.png",
+    "avatarUrl": "/uploads/profile/avatar_individual17_5eb7f8f27b6e.jpg",
+    "resumeFiles": [
+      {
+        "id": "c8a5a27e-aed7-4e13-8b35-1ce746d192cc",
+        "fileName": "Ashish_Sharma_Resume.pdf",
+        "url": "/uploads/resumes/resume_individual17_b836c5da8447.pdf",
+        "uploadedAt": "2026-06-01T08:27:14.575Z",
+        "atsScore": {
+          "score": 0,
+          "grade": "F",
+          "breakdown": {
+            "contact": 0,
+            "summary": 0,
+            "skills": 0,
+            "experience": 0,
+            "education": 0,
+            "achievements": 0
+          },
+          "tips": [
+            "Add a headline (e.g. \"Senior Engineer at Google\") — most ATS systems prioritise this",
+            "Include your city/country — location is a key recruiter filter",
+            "Add your LinkedIn URL — 87% of recruiters use LinkedIn to verify candidates",
+            "Write a professional summary — it's the first section ATS and recruiters read",
+            "Add more skills — you have 0, aim for 10–20 relevant keywords"
+          ]
+        },
+        "parsedData": {
+          "headline": null,
+          "bio": null,
+          "location": null,
+          "website": null,
+          "skills": [],
+          "experience": [],
+          "education": [],
+          "achievements": [],
+          "socialLinks": {
+            "linkedin": null,
+            "github": null,
+            "twitter": null
+          }
+        }
+      },
+      {
+        "id": "29386ec7-837b-4e6e-957c-77510b4db81f",
+        "fileName": "Ashish_Sharma_Resume.pdf",
+        "url": "/uploads/resumes/resume_individual17_bb7a6203e555.pdf",
+        "uploadedAt": "2026-06-01T08:15:57.947Z",
+        "parsedData": {
+          "headline": null,
+          "bio": null,
+          "location": null,
+          "website": null,
+          "skills": [],
+          "experience": [],
+          "education": [],
+          "achievements": [],
+          "socialLinks": {}
+        }
+      },
+      {
+        "id": "8dbd9359-5142-44f0-b2f4-dc4b4576622b",
+        "fileName": "Ashish_Sharma_Resume.pdf",
+        "url": "/uploads/resumes/resume_individual17_5c94ecea1667.pdf",
+        "uploadedAt": "2026-05-30T17:49:52.558Z",
+        "parsedData": {
+          "headline": null,
+          "bio": null,
+          "location": null,
+          "website": null,
+          "skills": [],
+          "experience": [],
+          "education": [],
+          "achievements": [],
+          "socialLinks": {}
+        }
+      },
+      {
+        "id": "c08c3ba8-84ba-42db-a78e-a73de2ac2f58",
+        "fileName": "Ashish_Sharma_Resume.pdf",
+        "url": "/uploads/resumes/resume_individual17_e19cde654b91.pdf",
+        "uploadedAt": "2026-05-30T17:41:14.847Z",
+        "parsedData": {
+          "headline": null,
+          "bio": null,
+          "location": null,
+          "website": null,
+          "skills": [],
+          "experience": [],
+          "education": []
+        }
+      }
+    ],
+    "experience": [],
+    "education": []
+  },
+  "individual-1780315878841": {
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-06-01T12:12:02.432Z",
+    "updatedAt": "2026-06-01T12:12:43.297Z",
+    "openToWork": false,
+    "headline": "",
+    "bio": "",
+    "location": "",
+    "website": "",
+    "avatarUrl": "",
+    "bannerUrl": "",
+    "skills": [
+      "React",
+      "Product Design",
+      "Legal"
+    ],
+    "interests": [
+      "Education"
+    ],
+    "onboardingDone": true,
+    "profileSetupDone": true
+  },
+  "individual-1780382619136": {
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-06-02T06:44:06.166Z",
+    "updatedAt": "2026-06-02T06:47:20.151Z",
+    "bannerUrl": "/uploads/profile/banner_individual17_d3a4b825b156.png",
+    "headline": "Founder & CEO",
+    "bio": "i am founder @ askindia.com",
+    "openToWork": false,
+    "location": "",
+    "website": "",
+    "avatarUrl": "",
+    "skills": [
+      "React",
+      "Python",
+      "Product Design",
+      "TypeScript",
+      "Content Writing"
+    ],
+    "interests": [
+      "Design",
+      "Finance"
+    ],
+    "onboardingDone": true,
+    "profileSetupDone": true
+  },
+  "individual-1780384080554": {
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-06-02T07:08:25.039Z",
+    "updatedAt": "2026-06-02T07:08:25.051Z"
+  },
+  "individual-1780387880722": {
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-06-02T08:11:46.530Z",
+    "updatedAt": "2026-06-02T08:27:11.001Z",
+    "headline": "Senior Designer",
+    "bio": "Creative and results-driven Senior Designer with 17+ years of experience in branding, visual communication, UI/UX design, marketing collateral, digital products, and design leadership.",
+    "location": "Jaipur, India",
+    "website": "www.ashishdesigns.com",
+    "skills": [
+      "Brand Identity Design",
+      "UI/UX Design",
+      "Graphic Design",
+      "Design Systems",
+      "Typography",
+      "Creative Direction",
+      "User Research",
+      "Wireframing",
+      "Prototyping",
+      "Visual Storytelling",
+      "Adobe Creative Suite",
+      "Figma",
+      "Sketch",
+      "InVision",
+      "Canva"
+    ],
+    "experience": [
+      {
+        "title": "Design Director",
+        "company": "Creative Vision Studio",
+        "period": "2018–Present",
+        "desc": "Lead a team of designers across branding, digital, and product design projects. Delivered 100+ successful brand identity and digital transformation projects. Improved client engagement metrics by up to 40% through UX-focused redesigns."
+      },
+      {
+        "title": "Senior Graphic & UI/UX Designer",
+        "company": "PixelCraft Solutions",
+        "period": "2011–2018",
+        "desc": "Managed end-to-end design lifecycle for web, mobile, and print campaigns. Collaborated with product teams to launch customer-centric digital products. Mentored junior designers and established design system standards."
+      },
+      {
+        "title": "Graphic Designer",
+        "company": "Creative Edge Communications",
+        "period": "2008–2011",
+        "desc": "Designed branding assets, brochures, advertisements, and marketing materials. Supported multiple national and regional campaigns across industries."
+      }
+    ],
+    "education": [
+      {
+        "degree": "Bachelor of Fine Arts (BFA), Visual Communication",
+        "school": "University of Rajasthan, Jaipur"
+      }
+    ],
+    "openToWork": true,
+    "avatarUrl": "",
+    "bannerUrl": "",
+    "interests": [],
+    "onboardingDone": true,
+    "profileSetupDone": true
+  },
+  "individual-1780402063179": {
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-06-02T12:08:16.216Z",
+    "updatedAt": "2026-06-02T12:15:35.480Z",
+    "headline": "Senior Designer",
+    "bio": "Creative and results-driven Senior Designer with 17+ years of experience in branding, visual communication, UI/UX design, marketing collateral, digital products, and design leadership.",
+    "location": "Jaipur, India",
+    "website": "www.ashishdesigns.com",
+    "skills": [
+      "Brand Identity Design",
+      "UI/UX Design",
+      "Graphic Design",
+      "Design Systems",
+      "Typography",
+      "Creative Direction",
+      "User Research",
+      "Wireframing",
+      "Prototyping",
+      "Visual Storytelling",
+      "Adobe Creative Suite",
+      "Figma",
+      "Sketch",
+      "InVision",
+      "Canva"
+    ],
+    "experience": [
+      {
+        "title": "Design Director",
+        "company": "Creative Vision Studio",
+        "period": "2018–Present",
+        "desc": "Lead a team of designers across branding, digital, and product design projects. Delivered 100+ successful brand identity and digital transformation projects. Improved client engagement metrics by up to 40% through UX-focused redesigns."
+      },
+      {
+        "title": "Senior Graphic & UI/UX Designer",
+        "company": "PixelCraft Solutions",
+        "period": "2011–2018",
+        "desc": "Managed end-to-end design lifecycle for web, mobile, and print campaigns. Collaborated with product teams to launch customer-centric digital products. Mentored junior designers and established design system standards."
+      },
+      {
+        "title": "Graphic Designer",
+        "company": "Creative Edge Communications",
+        "period": "2008–2011",
+        "desc": "Designed branding assets, brochures, advertisements, and marketing materials. Supported multiple national and regional campaigns across industries."
+      }
+    ],
+    "education": [
+      {
+        "degree": "Bachelor of Fine Arts (BFA), Visual Communication",
+        "school": "University of Rajasthan, Jaipur"
+      }
+    ],
+    "bannerUrl": "/uploads/profile/banner_individual17_2ca1e68e57ee.jpg",
+    "avatarUrl": "/uploads/profile/avatar_individual17_1ee36bb09d1b.png"
+  },
+  "individual-1780403102793": {
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-06-02T12:25:38.844Z",
+    "updatedAt": "2026-06-02T12:36:21.722Z",
+    "headline": "Senior Designer",
+    "bio": "Creative and results-driven Senior Designer with 17+ years of experience in branding, visual communication, UI/UX design, marketing collateral, digital products, and design leadership.",
+    "location": "Jaipur, India",
+    "website": "www.ashishdesigns.com",
+    "skills": [
+      "Brand Identity Design",
+      "UI/UX Design",
+      "Graphic Design",
+      "Design Systems",
+      "Typography",
+      "Creative Direction",
+      "User Research",
+      "Wireframing",
+      "Prototyping",
+      "Visual Storytelling",
+      "Adobe Creative Suite",
+      "Figma",
+      "Sketch",
+      "InVision",
+      "Canva"
+    ],
+    "experience": [
+      {
+        "title": "Design Director",
+        "company": "Creative Vision Studio",
+        "period": "2018–Present",
+        "desc": "Lead a team of designers across branding, digital, and product design projects. Delivered 100+ successful brand identity and digital transformation projects. Improved client engagement metrics by up to 40% through UX-focused redesigns."
+      },
+      {
+        "title": "Senior Graphic & UI/UX Designer",
+        "company": "PixelCraft Solutions",
+        "period": "2011–2018",
+        "desc": "Managed end-to-end design lifecycle for web, mobile, and print campaigns. Collaborated with product teams to launch customer-centric digital products. Mentored junior designers and established design system standards."
+      },
+      {
+        "title": "Graphic Designer",
+        "company": "Creative Edge Communications",
+        "period": "2008–2011",
+        "desc": "Designed branding assets, brochures, advertisements, and marketing materials. Supported multiple national and regional campaigns across industries."
+      }
+    ],
+    "education": [
+      {
+        "degree": "Bachelor of Fine Arts (BFA), Visual Communication",
+        "school": "University of Rajasthan, Jaipur"
+      }
+    ],
+    "bannerUrl": "/uploads/profile/banner_individual17_295464e96c81.jpg",
+    "avatarUrl": "/uploads/profile/avatar_individual17_cb354d8aeff9.png",
+    "openToWork": true,
+    "interests": [],
+    "onboardingDone": true,
+    "profileSetupDone": true
+  },
+  "individual-1780404674760": {
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-06-02T12:54:32.453Z",
+    "updatedAt": "2026-06-02T12:57:41.493Z",
+    "headline": "Senior Designer",
+    "bio": "Creative and results-driven Senior Designer with 17+ years of experience in branding, visual communication, UI/UX design, marketing collateral, digital products, and design leadership.",
+    "location": "Jaipur, India",
+    "website": "www.ashishdesigns.com",
+    "skills": [
+      "Brand Identity Design",
+      "UI/UX Design",
+      "Graphic Design",
+      "Design Systems",
+      "Typography",
+      "Creative Direction",
+      "User Research",
+      "Wireframing",
+      "Prototyping",
+      "Visual Storytelling",
+      "Adobe Creative Suite",
+      "Figma",
+      "Sketch",
+      "InVision",
+      "Canva"
+    ],
+    "experience": [
+      {
+        "title": "Design Director",
+        "company": "Creative Vision Studio",
+        "period": "2018–Present",
+        "desc": "Lead a team of designers across branding, digital, and product design projects. Delivered 100+ successful brand identity and digital transformation projects. Improved client engagement metrics by up to 40% through UX-focused redesigns."
+      },
+      {
+        "title": "Senior Graphic & UI/UX Designer",
+        "company": "PixelCraft Solutions",
+        "period": "2011–2018",
+        "desc": "Managed end-to-end design lifecycle for web, mobile, and print campaigns. Collaborated with product teams to launch customer-centric digital products. Mentored junior designers and established design system standards."
+      },
+      {
+        "title": "Graphic Designer",
+        "company": "Creative Edge Communications",
+        "period": "2008–2011",
+        "desc": "Designed branding assets, brochures, advertisements, and marketing materials. Supported multiple national and regional campaigns across industries."
+      }
+    ],
+    "education": [
+      {
+        "degree": "Bachelor of Fine Arts (BFA), Visual Communication",
+        "school": "University of Rajasthan, Jaipur"
+      }
+    ],
+    "openToWork": true,
+    "avatarUrl": "",
+    "bannerUrl": "",
+    "interests": [],
+    "onboardingDone": true,
+    "profileSetupDone": true,
+    "docrudGo": true,
+    "docrudGoPurchasedAt": "2026-06-02T12:57:41.452Z",
+    "docrudGoReferralGrantedAt": "2026-06-02T12:57:41.452Z",
+    "docrudGoGrantedFree": true
+  },
+  "individual-1780405061392": {
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-06-02T12:58:22.346Z",
+    "updatedAt": "2026-06-02T12:59:05.647Z",
+    "headline": "Senior Developer",
+    "bio": "Creative and results-driven Senior Designer with 17+ years of experience in branding, visual communication, UI/UX design, marketing collateral, digital products, and design leadership.",
+    "location": "Jaipur, India",
+    "website": "www.ashishdesigns.com",
+    "skills": [
+      "Brand Identity Design",
+      "UI/UX Design",
+      "Graphic Design",
+      "Design Systems",
+      "Typography",
+      "Creative Direction",
+      "User Research",
+      "Wireframing",
+      "Prototyping",
+      "Visual Storytelling",
+      "Adobe Creative Suite",
+      "Figma",
+      "Sketch",
+      "InVision",
+      "Canva"
+    ],
+    "experience": [
+      {
+        "title": "Design Director",
+        "company": "Creative Vision Studio",
+        "period": "2018–Present",
+        "desc": "Lead a team of designers across branding, digital, and product design projects. Delivered 100+ successful brand identity and digital transformation projects. Improved client engagement metrics by up to 40% through UX-focused redesigns."
+      },
+      {
+        "title": "Senior Graphic & UI/UX Designer",
+        "company": "PixelCraft Solutions",
+        "period": "2011–2018",
+        "desc": "Managed end-to-end design lifecycle for web, mobile, and print campaigns. Collaborated with product teams to launch customer-centric digital products. Mentored junior designers and established design system standards."
+      },
+      {
+        "title": "Graphic Designer",
+        "company": "Creative Edge Communications",
+        "period": "2008–2011",
+        "desc": "Designed branding assets, brochures, advertisements, and marketing materials. Supported multiple national and regional campaigns across industries."
+      }
+    ],
+    "education": [
+      {
+        "degree": "Bachelor of Fine Arts (BFA), Visual Communication",
+        "school": "University of Rajasthan, Jaipur"
+      }
+    ],
+    "openToWork": true,
+    "avatarUrl": "",
+    "bannerUrl": "",
+    "interests": [],
+    "onboardingDone": true,
+    "profileSetupDone": true
+  },
+  "individual-1780405646682": {
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-06-02T13:07:50.698Z",
+    "updatedAt": "2026-06-02T13:09:12.206Z",
+    "headline": "Senior Designer",
+    "bio": "Creative and results-driven Senior Designer with 17+ years of experience in branding, visual communication, UI/UX design, marketing collateral, digital products, and design leadership.",
+    "location": "Jaipur, India",
+    "website": "www.ashishdesigns.com",
+    "skills": [
+      "Brand Identity Design",
+      "UI/UX Design",
+      "Graphic Design",
+      "Design Systems",
+      "Typography",
+      "Creative Direction",
+      "User Research",
+      "Wireframing",
+      "Prototyping",
+      "Visual Storytelling",
+      "Adobe Creative Suite",
+      "Figma",
+      "Sketch",
+      "InVision",
+      "Canva"
+    ],
+    "experience": [
+      {
+        "title": "Design Director",
+        "company": "Creative Vision Studio",
+        "period": "2018–Present",
+        "desc": "Lead a team of designers across branding, digital, and product design projects. Delivered 100+ successful brand identity and digital transformation projects. Improved client engagement metrics by up to 40% through UX-focused redesigns."
+      },
+      {
+        "title": "Senior Graphic & UI/UX Designer",
+        "company": "PixelCraft Solutions",
+        "period": "2011–2018",
+        "desc": "Managed end-to-end design lifecycle for web, mobile, and print campaigns. Collaborated with product teams to launch customer-centric digital products. Mentored junior designers and established design system standards."
+      },
+      {
+        "title": "Graphic Designer",
+        "company": "Creative Edge Communications",
+        "period": "2008–2011",
+        "desc": "Designed branding assets, brochures, advertisements, and marketing materials. Supported multiple national and regional campaigns across industries."
+      }
+    ],
+    "education": [
+      {
+        "degree": "Bachelor of Fine Arts (BFA), Visual Communication",
+        "school": "University of Rajasthan, Jaipur"
+      }
+    ],
+    "bannerUrl": "/uploads/profile/banner_individual17_3885be758b64.jpg",
+    "avatarUrl": "/uploads/profile/avatar_individual17_a2665aa06a85.png",
+    "openToWork": true,
+    "interests": [
+      "Technology",
+      "Business",
+      "Design",
+      "Legal",
+      "Engineering"
+    ],
+    "onboardingDone": true,
+    "profileSetupDone": true
+  },
+  "individual-1780663284582": {
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-06-05T12:41:50.642Z",
+    "updatedAt": "2026-06-05T12:42:34.818Z",
+    "headline": "Senior Designer",
+    "bio": "Creative and results-driven Senior Designer with 17+ years of experience in branding, visual communication, UI/UX design, marketing collateral, digital products, and design leadership.",
+    "location": "Jaipur, India",
+    "website": "www.ashishdesigns.com",
+    "skills": [
+      "Brand Identity Design",
+      "UI/UX Design",
+      "Graphic Design",
+      "Design Systems",
+      "Typography",
+      "Creative Direction",
+      "User Research",
+      "Wireframing",
+      "Prototyping",
+      "Visual Storytelling",
+      "Adobe Creative Suite",
+      "Figma",
+      "Sketch",
+      "InVision",
+      "Canva"
+    ],
+    "experience": [
+      {
+        "title": "Design Director",
+        "company": "Creative Vision Studio",
+        "period": "2018–Present",
+        "desc": "Lead a team of designers across branding, digital, and product design projects. Delivered 100+ successful brand identity and digital transformation projects. Improved client engagement metrics by up to 40% through UX-focused redesigns."
+      },
+      {
+        "title": "Senior Graphic & UI/UX Designer",
+        "company": "PixelCraft Solutions",
+        "period": "2011–2018",
+        "desc": "Managed end-to-end design lifecycle for web, mobile, and print campaigns. Collaborated with product teams to launch customer-centric digital products. Mentored junior designers and established design system standards."
+      },
+      {
+        "title": "Graphic Designer",
+        "company": "Creative Edge Communications",
+        "period": "2008–2011",
+        "desc": "Designed branding assets, brochures, advertisements, and marketing materials. Supported multiple national and regional campaigns across industries."
+      }
+    ],
+    "education": [
+      {
+        "degree": "Bachelor of Fine Arts (BFA), Visual Communication",
+        "school": "University of Rajasthan, Jaipur"
+      }
+    ],
+    "openToWork": true,
+    "avatarUrl": "",
+    "bannerUrl": "",
+    "interests": [],
+    "onboardingDone": true,
+    "profileSetupDone": true
+  },
+  "individual-1780742115806": {
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-06-06T10:35:42.004Z",
+    "updatedAt": "2026-06-06T10:36:32.946Z",
+    "headline": "Senior Designer",
+    "bio": "Creative and results-driven Senior Designer with 17+ years of experience in branding, visual communication, UI/UX design, marketing collateral, digital products, and design leadership.",
+    "location": "Jaipur, India",
+    "website": "www.ashishdesigns.com",
+    "skills": [
+      "Brand Identity Design",
+      "UI/UX Design",
+      "Graphic Design",
+      "Design Systems",
+      "Typography",
+      "Creative Direction",
+      "User Research",
+      "Wireframing",
+      "Prototyping",
+      "Visual Storytelling",
+      "Adobe Creative Suite",
+      "Figma",
+      "Sketch",
+      "InVision",
+      "Canva"
+    ],
+    "experience": [
+      {
+        "title": "Design Director",
+        "company": "Creative Vision Studio",
+        "period": "2018–Present",
+        "desc": "Lead a team of designers across branding, digital, and product design projects. Delivered 100+ successful brand identity and digital transformation projects. Improved client engagement metrics by up to 40% through UX-focused redesigns."
+      },
+      {
+        "title": "Senior Graphic & UI/UX Designer",
+        "company": "PixelCraft Solutions",
+        "period": "2011–2018",
+        "desc": "Managed end-to-end design lifecycle for web, mobile, and print campaigns. Collaborated with product teams to launch customer-centric digital products. Mentored junior designers and established design system standards."
+      },
+      {
+        "title": "Graphic Designer",
+        "company": "Creative Edge Communications",
+        "period": "2008–2011",
+        "desc": "Designed branding assets, brochures, advertisements, and marketing materials. Supported multiple national and regional campaigns across industries."
+      }
+    ],
+    "education": [
+      {
+        "degree": "Bachelor of Fine Arts (BFA), Visual Communication",
+        "school": "University of Rajasthan, Jaipur"
+      }
+    ],
+    "openToWork": true,
+    "avatarUrl": "",
+    "bannerUrl": "",
+    "interests": [],
+    "onboardingDone": true,
+    "profileSetupDone": true
   }
 }

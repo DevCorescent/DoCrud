@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchTracker, SEARCH_CONTEXTS } from '@/lib/search-tracking';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -125,6 +126,7 @@ export default function PublicGigsPage({
   const [availableCategories, setAvailableCategories] = useState<string[]>(categories);
   const [availableInterests, setAvailableInterests] = useState<string[]>(interests);
   const [query, setQuery] = useState('');
+  const trackSearch = useSearchTracker(SEARCH_CONTEXTS.PUBLIC_GIGS);
   const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
   const [activeInterest, setActiveInterest] = useState('All');
   const [visibility, setVisibility] = useState<'all' | 'public' | 'private'>('all');
@@ -347,6 +349,8 @@ export default function PublicGigsPage({
 
   useEffect(() => {
     setPage(1);
+    if (query.trim()) trackSearch(query, filteredGigs.length);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeInterest, categoryFiltersKey, engagementFiltersKey, locationFiltersKey, navMode, query, sortBy, visibility]);
 
   const sortedGigs = useMemo(() => {

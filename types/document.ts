@@ -812,6 +812,18 @@ export interface BillingOverview {
   publishableKeyAvailable: boolean;
   currentPlan?: SaasPlan | null;
   availablePlans: SaasPlan[];
+  /** Docrud Infinity subscription status for the current user */
+  infinity?: {
+    active: boolean;
+    isExpired: boolean;
+    purchasedAt?: string;
+    expiresAt?: string;
+    period?: 'monthly' | 'annual';
+    renewalCount?: number;
+    grantedFree?: boolean;
+    orderId?: string;
+    paymentId?: string;
+  };
   aiAllowance?: {
     remainingTrialRuns: number;
     monthlyCredits: number;
@@ -2051,7 +2063,12 @@ export interface SecureFileTransfer {
   maxDownloads?: number;
   expiresAt?: string;
   uploadedBy: string;
+  uploadedByName?: string;
   uploadedByUserId?: string;
+  /** Avatar/logo URL to display next to the author name in feeds */
+  avatarUrl?: string;
+  /** If published from a business page, its slug for routing to /businesses/[slug] */
+  businessPageSlug?: string;
   organizationId?: string;
   organizationName?: string;
   createdAt: string;
@@ -2065,6 +2082,11 @@ export interface SecureFileTransfer {
   /* engagement */
   likesCount?: number;
   likedBy?: string[];
+  trendCount?: number;
+  trendedBy?: string[];
+  interestedCount?: number;
+  interestedBy?: string[];
+  interestedUsers?: Array<{ id: string; name: string; markedAt: string }>;
   commentsCount?: number;
   videoUrl?: string;
   comments?: Array<{ id: string; userId: string; userName: string; text: string; createdAt: string; parentId?: string; likedBy?: string[] }>;
@@ -2080,6 +2102,20 @@ export interface SecureFileTransfer {
   applicationUrl?: string;
   registrations?: Array<{ id: string; name: string; email: string; note?: string; registeredAt: string; type: 'event' | 'hackathon' | 'other' }>;
   jobApplications?: Array<{ id: string; name: string; email: string; note?: string; appliedAt: string }>;
+  /* content moderation */
+  moderationStatus?: 'active' | 'suspended' | 'removed' | 'under_review';
+  moderationNote?: string;
+  moderationUpdatedAt?: string;
+  moderationUpdatedBy?: string;
+  reports?: Array<{
+    id: string;
+    reporterUserId?: string;
+    reporterEmail?: string;
+    reason: string;
+    detail?: string;
+    createdAt: string;
+    status: 'pending' | 'reviewed' | 'dismissed';
+  }>;
 }
 
 export interface BlogPost {

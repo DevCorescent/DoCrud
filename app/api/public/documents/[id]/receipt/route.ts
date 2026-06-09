@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { PDFDocument, StandardFonts, degrees, rgb, type PDFFont } from 'pdf-lib';
-import { createAccessEvent, getHistoryEntries, updateHistoryEntry } from '@/lib/server/history';
+import { createAccessEvent, getHistoryEntries, getHistoryEntryById, updateHistoryEntry } from '@/lib/server/history';
 import { getDeviceLabel, getRequestIp, getRequestUserAgent } from '@/lib/server/public-documents';
 
 export const runtime = 'nodejs';
@@ -239,8 +239,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const requestedSignerKey = request.nextUrl.searchParams.get('signerKey')?.trim().slice(0, 64) || '';
     const password = request.nextUrl.searchParams.get('password')?.trim().toUpperCase();
     const signingToken = request.nextUrl.searchParams.get('token')?.trim() || '';
-    const history = await getHistoryEntries();
-    const entry = history.find((item) => item.shareId === params.id || item.id === params.id);
+    const entry = await getHistoryEntryById(params.id);
     if (!entry) return NextResponse.json({ error: 'Document not found' }, { status: 404 });
 
     const normalizePassword = (value?: string | null) => String(value || '').trim().toUpperCase();

@@ -35,6 +35,47 @@
         "sentAt": "2026-05-25T02:15:55.900Z",
         "type": "text"
       }
+    },
+    "conv_d313cb577c1b2d26": {
+      "id": "conv_d313cb577c1b2d26",
+      "participants": [
+        "individual-1780405646682",
+        "individual-1780403102793"
+      ],
+      "status": "request",
+      "requestFrom": "individual-1780405646682",
+      "createdAt": "2026-06-02T13:14:42.884Z",
+      "updatedAt": "2026-06-02T13:14:47.419Z",
+      "unreadCount": {
+        "individual-1780405646682": 0,
+        "individual-1780403102793": 1
+      },
+      "lastMessage": {
+        "content": "hey",
+        "senderId": "individual-1780405646682",
+        "sentAt": "2026-06-02T13:14:47.419Z",
+        "type": "text"
+      }
+    },
+    "conv_f2becd4c29ee921c": {
+      "id": "conv_f2becd4c29ee921c",
+      "participants": [
+        "individual-1780405646682",
+        "individual-1780404674760"
+      ],
+      "status": "active",
+      "createdAt": "2026-06-02T13:15:58.765Z",
+      "updatedAt": "2026-06-02T13:17:16.292Z",
+      "unreadCount": {
+        "individual-1780405646682": 0,
+        "individual-1780404674760": 0
+      },
+      "lastMessage": {
+        "content": "i am good",
+        "senderId": "individual-1780405646682",
+        "sentAt": "2026-06-02T13:17:16.292Z",
+        "type": "text"
+      }
     }
   },
   "messages": {
@@ -51,10 +92,63 @@
           "1"
         ]
       }
+    ],
+    "conv_d313cb577c1b2d26": [
+      {
+        "id": "msg_af42be52de9c5e5c",
+        "conversationId": "conv_d313cb577c1b2d26",
+        "senderId": "individual-1780405646682",
+        "content": "hey",
+        "type": "text",
+        "sentAt": "2026-06-02T13:14:47.419Z",
+        "seenBy": [
+          "individual-1780405646682"
+        ]
+      }
+    ],
+    "conv_f2becd4c29ee921c": [
+      {
+        "id": "msg_6064dbeff2e49863",
+        "conversationId": "conv_f2becd4c29ee921c",
+        "senderId": "individual-1780405646682",
+        "content": "hey",
+        "type": "text",
+        "sentAt": "2026-06-02T13:16:01.333Z",
+        "seenBy": [
+          "individual-1780405646682",
+          "individual-1780404674760"
+        ]
+      },
+      {
+        "id": "msg_36ada12f0ed28813",
+        "conversationId": "conv_f2becd4c29ee921c",
+        "senderId": "individual-1780404674760",
+        "content": "wssup",
+        "type": "text",
+        "sentAt": "2026-06-02T13:17:00.588Z",
+        "seenBy": [
+          "individual-1780404674760",
+          "individual-1780405646682"
+        ]
+      },
+      {
+        "id": "msg_afa3f5e7ad83d43c",
+        "conversationId": "conv_f2becd4c29ee921c",
+        "senderId": "individual-1780405646682",
+        "content": "i am good",
+        "type": "text",
+        "sentAt": "2026-06-02T13:17:16.292Z",
+        "seenBy": [
+          "individual-1780405646682",
+          "individual-1780404674760"
+        ]
+      }
     ]
   },
   "typingStatus": {
-    "conv_cfc2958e1c89d962": {}
+    "conv_cfc2958e1c89d962": {},
+    "conv_d313cb577c1b2d26": {},
+    "conv_f2becd4c29ee921c": {}
   },
   "messageIndex": {},
   "chatMeta": {

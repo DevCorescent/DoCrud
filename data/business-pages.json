@@ -1,0 +1,179 @@
+{
+  "pages": [
+    {
+      "id": "1a5638b9-6bd3-44e6-a4b9-42a3e6bd3ea0",
+      "slug": "corescent-technologies-private-limited",
+      "ownerUserId": "individual-1780404674760",
+      "name": "Corescent Technologies Private Limited",
+      "tagline": "Innovation Meets Integration",
+      "description": "Corescent most commonly refers to Corescent Technologies, an IT software and digital services firm headquartered in Bengaluru, Karnataka.The company specializes in:Custom software development and technical consultingWeb and mobile app development (iOS, Android, PWAs)AI/Automation solutions and SaaS product creationTo explore their services or connect with the team, you can visit their official website on Corescent Technologies.",
+      "industry": "technology",
+      "companySize": "11–50",
+      "foundedYear": 2023,
+      "website": "https://corescent.in",
+      "city": "Bengaluru",
+      "country": "India",
+      "phone": "+91 9351359088",
+      "email": "shruti@corescent.in",
+      "verified": true,
+      "status": "active",
+      "followerCount": 2,
+      "viewCount": 228,
+      "postCount": 3,
+      "jobCount": 1,
+      "socialLinks": {
+        "linkedin": "https://www.linkedin.com/feed/",
+        "twitter": "https://www.linkedin.com/feed/"
+      },
+      "metadata": {},
+      "createdAt": "2026-06-04T13:28:11.907Z",
+      "updatedAt": "2026-06-05T17:51:08.083Z",
+      "coverUrl": "/uploads/businesses/cover_individual_8249741db88b.jpg",
+      "logoUrl": "/uploads/businesses/logo_individual_b6372b76011e.png",
+      "missionStatement": "To create innovation in technology.",
+      "visionStatement": "To make the biggest platform for professional globally",
+      "companyType": "Private Limited",
+      "revenueRange": "₹10 L – 1 Cr",
+      "fundingStage": "Bootstrapped",
+      "businessModels": [
+        "B2B",
+        "B2C",
+        "B2B2C",
+        "SaaS",
+        "Marketplace",
+        "D2C",
+        "Enterprise",
+        "Franchise",
+        "Platform"
+      ],
+      "workPolicy": "Flexible",
+      "specializations": [
+        "Cloud",
+        "Software",
+        "technology",
+        "consultation"
+      ],
+      "techStack": [
+        "php",
+        "laravel"
+      ],
+      "companyValues": [
+        "innovation"
+      ],
+      "perks": [
+        "flexible hours"
+      ],
+      "certifications": [
+        "ISO 1239823742779"
+      ]
+    }
+  ],
+  "posts": [
+    {
+      "id": "636a4abc-403b-4f57-8715-722cfde92a78",
+      "pageId": "1a5638b9-6bd3-44e6-a4b9-42a3e6bd3ea0",
+      "authorUserId": "individual-1780404674760",
+      "content": "we are building new future tech with AI",
+      "mediaUrls": [],
+      "postType": "update",
+      "likeCount": 1,
+      "commentCount": 0,
+      "likedBy": [
+        "individual-1780404674760"
+      ],
+      "pinned": false,
+      "createdAt": "2026-06-04T13:35:57.580Z",
+      "updatedAt": "2026-06-04T13:35:57.580Z"
+    },
+    {
+      "id": "4b06eaff-a899-4cdf-b06d-ad7c1b6ce75f",
+      "pageId": "1a5638b9-6bd3-44e6-a4b9-42a3e6bd3ea0",
+      "authorUserId": "individual-1780404674760",
+      "content": "[POST] sadmbajdasjdjk",
+      "mediaUrls": [],
+      "postType": "update",
+      "likeCount": 0,
+      "commentCount": 0,
+      "likedBy": [],
+      "pinned": false,
+      "createdAt": "2026-06-04T14:52:10.725Z",
+      "updatedAt": "2026-06-04T14:52:10.725Z"
+    },
+    {
+      "id": "56ec2ea2-2ac9-435d-af2d-c5062a0a9adf",
+      "pageId": "1a5638b9-6bd3-44e6-a4b9-42a3e6bd3ea0",
+      "authorUserId": "individual-1780404674760",
+      "content": "Headline: The Indian IT sector\nPublisher: NDTV\nDate: 2026-06-05\nThe Indian IT sector is currently navigating a major strategic pivot, balancing the disruptive threat of AI automation with the search for new enterprise AI implementation contracts. In a bid to ease industry stress, the government has proposed a safe harbor margin of \\(15.5\\%\\) and expanded the threshold limit to Rs 2,000 crore.",
+      "mediaUrls": [],
+      "postType": "update",
+      "likeCount": 0,
+      "commentCount": 0,
+      "likedBy": [],
+      "pinned": false,
+      "createdAt": "2026-06-05T06:04:21.677Z",
+      "updatedAt": "2026-06-05T06:04:21.677Z"
+    }
+  ],
+  "jobs": [
+    {
+      "id": "098234f3-cc10-4433-8333-b6f256381f3a",
+      "pageId": "1a5638b9-6bd3-44e6-a4b9-42a3e6bd3ea0",
+      "title": "SDE III",
+      "description": "Position Overview\n\nWe are seeking a highly skilled Software Development Engineer III (SDE III) with strong expertise in Node.js, React, and modern web application architecture. The ideal candidate will play a key role in designing, developing, and scaling high-performance applications while providing technical leadership to engineering teams. This role requires hands-on coding, system design expertise, mentoring capabilities, and a strong focus on delivering scalable, secure, and maintainable software solutions.\n\nKey Responsibilities\nTechnical Leadership\nLead the design and development of scalable, high-availability web applications.\nDrive architectural decisions and establish engineering best practices.\nConduct design reviews, code reviews, and technical discussions across teams.\nMentor junior and mid-level engineers and support their technical growth.\nCollaborate with Product Managers, Designers, QA, and DevOps teams to deliver high-quality solutions.\nBackend Development (Node.js)\nDesign and develop RESTful APIs and microservices using Node.js.\nBuild secure, scalable, and performant backend systems.\nOptimize database queries and application performance.\nImplement authentication, authorization, and security best practices.\nWork with event-driven architectures, queues, and distributed systems.\nFrontend Development (React)\nDevelop responsive and intuitive user interfaces using React.js.\nBuild reusable component libraries and frontend frameworks.\nImplement state management using Redux, Context API, or similar solutions.\nOptimize frontend performance and improve user experience.\nEnsure cross-browser compatibility and accessibility standards.\nSystem Design & Scalability\nDesign distributed systems capable of handling high traffic and large datasets.\nParticipate in architecture planning and technical roadmap discussions.\nImplement monitoring, logging, and observability solutions.\nEnsure reliability, fault tolerance, and performance optimization.\nQuality & DevOps\nWrite clean, maintainable, and testable code.\nImplement automated testing (Unit, Integration, E2E).\nSupport CI/CD pipelines and deployment automation.\nParticipate in production support and incident resolution.\nRequired Qualifications\nExperience\n6–10 years of professional software development experience.\n3+ years of hands-on experience with Node.js in production environments.\n3+ years of experience building modern frontend applications using React.js.\nExperience leading projects or mentoring engineering teams.\nTechnical Skills\nBackend\nStrong proficiency in Node.js and TypeScript/JavaScript.\nExperience with Express.js, NestJS, or similar frameworks.\nDeep understanding of REST APIs and microservices architecture.\nExperience with message brokers such as Kafka, RabbitMQ, or SQS.\nKnowledge of authentication protocols (OAuth, JWT, SSO).\nFrontend\nStrong expertise in React.js and modern React patterns.\nExperience with Redux, Zustand, Context API, or equivalent state management.\nExpertise in HTML5, CSS3, JavaScript ES6+, and responsive design.\nFamiliarity with component-driven development.\nDatabases\nExperience with relational databases (PostgreSQL, MySQL).\nExperience with NoSQL databases (MongoDB, DynamoDB, Redis).\nDatabase design and performance tuning.\nCloud & DevOps\nExperience with AWS, Azure, or GCP.\nFamiliarity with Docker and Kubernetes.\nUnderstanding of CI/CD pipelines and infrastructure automation.\nEngineering Practices\nStrong understanding of software design patterns and principles.\nExperience with system design, scalability, and performance optimization.\nProficiency in Git and collaborative development workflows.\nPreferred Qualifications\nExperience with GraphQL.\nExperience building SaaS or enterprise-scale products.\nFamiliarity with serverless architectures.\nExposure to event-driven systems and distributed architectures.\nKnowledge of observability tools such as Datadog, New Relic, Prometheus, or Grafana.\nSoft Skills\nStrong problem-solving and analytical abilities.\nExcellent communication and stakeholder management skills.\nAbility to drive technical discussions and influence architecture decisions.\nOwnership mindset with a focus on quality and execution.\nSuccess Metrics\nDelivery of scalable and reliable software solutions.\nReduction in system performance bottlenecks and production issues.\nImproved engineering quality through code reviews and mentoring.\nSuccessful execution of complex projects with minimal supervision.\n\nLocation: [Remote/Hybrid/Onsite]\nExperience: 6–10 Years\nEmployment Type: Full-Time\nDepartment: Engineering / Product Development",
+      "location": "Bengaluru",
+      "jobType": "full_time",
+      "experienceLevel": "entry",
+      "salaryCurrency": "INR",
+      "skills": [
+        "React",
+        "Node.js"
+      ],
+      "status": "open",
+      "applyUrl": "https://corescent.in",
+      "applicationCount": 0,
+      "createdAt": "2026-06-05T06:46:07.325Z",
+      "updatedAt": "2026-06-05T06:46:07.325Z"
+    }
+  ],
+  "products": [
+    {
+      "id": "5855320a-6fc7-4d1d-a1e1-d2bc8a3f6c9b",
+      "pageId": "1a5638b9-6bd3-44e6-a4b9-42a3e6bd3ea0",
+      "name": "AI Workflow Automation Suite",
+      "description": "End-to-end business process automation platform that streamlines repetitive tasks, integrates with existing tools, and improves operational efficiency using AI-powered workflows.",
+      "price": "₹2,999/mo",
+      "category": "SaaS",
+      "productUrl": "https://yourcompany.com/ai-workflow-automation",
+      "sortOrder": 0,
+      "createdAt": "2026-06-05T06:48:42.294Z"
+    }
+  ],
+  "events": [
+    {
+      "id": "74d1f982-99aa-43fc-b2fe-2523dd8cd5a9",
+      "pageId": "1a5638b9-6bd3-44e6-a4b9-42a3e6bd3ea0",
+      "title": "AI Automation Webinar",
+      "description": "it is a testing event ",
+      "eventType": "webinar",
+      "startAt": "2026-06-05T12:24",
+      "endAt": "2026-06-13T12:24",
+      "location": "Bengaluru",
+      "isOnline": true,
+      "registrationUrl": "https://corescent.in",
+      "attendeeCount": 0,
+      "createdAt": "2026-06-05T06:54:49.933Z"
+    }
+  ],
+  "followers": [
+    {
+      "pageId": "1a5638b9-6bd3-44e6-a4b9-42a3e6bd3ea0",
+      "userId": "individual-1780663284582",
+      "createdAt": "2026-06-05T16:17:07.795Z"
+    },
+    {
+      "pageId": "1a5638b9-6bd3-44e6-a4b9-42a3e6bd3ea0",
+      "userId": "individual-1780742115806",
+      "createdAt": "2026-06-06T12:32:10.980Z"
+    }
+  ]
+}

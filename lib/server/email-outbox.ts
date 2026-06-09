@@ -1,4 +1,11 @@
 import { emailOutboxPath, readJsonFile, writeJsonFile } from '@/lib/server/storage';
+import { getDbPool } from '@/lib/server/database';
+import {
+  selectEmailOutboxRowById,
+  selectEmailOutboxRows,
+  trimEmailOutboxRows,
+  upsertEmailOutboxRow,
+} from '@/lib/server/db/email-outbox-rows';
 
 export type OutboundEmailStatus = 'queued' | 'sent' | 'failed' | 'tested';
 
@@ -6,7 +13,7 @@ export type OutboundEmailEvent = {
   id: string;
   createdAt: string;
   status: OutboundEmailStatus;
-  type: 'document_delivery' | 'collection_request' | 'system' | 'test' | 'docrud_go_welcome';
+  type: 'document_delivery' | 'collection_request' | 'system' | 'test' | 'docrud_go_welcome' | 'admin_user_message' | 'feed_moderation';
   to: string;
   cc?: string[];
   bcc?: string[];
@@ -39,6 +46,9 @@ export function createOutboundEmailId(prefix = 'eml') {
 }
 
 export async function getEmailOutbox(limit = 200): Promise<OutboundEmailEvent[]> {
+  if (getDbPool()) {
+    return selectEmailOutboxRows(limit);
+  }
   const state = await readJsonFile<OutboxState>(emailOutboxPath, fallback);
   const events = Array.isArray(state?.events) ? state.events : [];
   return events
@@ -48,6 +58,11 @@ export async function getEmailOutbox(limit = 200): Promise<OutboundEmailEvent[]>
 }
 
 export async function appendEmailOutboxEvent(event: OutboundEmailEvent) {
+  if (getDbPool()) {
+    await upsertEmailOutboxRow(event);
+    await trimEmailOutboxRows(2000);
+    return;
+  }
   const state = await readJsonFile<OutboxState>(emailOutboxPath, fallback);
   const events = Array.isArray(state?.events) ? state.events : [];
   const next = [event, ...events].slice(0, 2000);
@@ -55,6 +70,12 @@ export async function appendEmailOutboxEvent(event: OutboundEmailEvent) {
 }
 
 export async function updateEmailOutboxEvent(id: string, updater: (event: OutboundEmailEvent) => OutboundEmailEvent) {
+  if (getDbPool()) {
+    const existing = await selectEmailOutboxRowById(id);
+    if (!existing) return;
+    await upsertEmailOutboxRow(updater(existing));
+    return;
+  }
   const state = await readJsonFile<OutboxState>(emailOutboxPath, fallback);
   const events = Array.isArray(state?.events) ? state.events : [];
   const next = events.map((ev) => (ev.id === id ? updater(ev) : ev));

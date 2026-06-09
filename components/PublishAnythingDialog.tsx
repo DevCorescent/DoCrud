@@ -32,7 +32,9 @@ import {
   Package,
   Phone,
   Plus,
+  Search,
   ShoppingBag,
+  Sparkles,
   Tag,
   Terminal,
   Trophy,
@@ -91,18 +93,18 @@ const CATEGORIES = [
 
 type CategoryId = typeof CATEGORIES[number]['id'];
 
-const CAT_COLORS: Record<string, { bg: string; icon: string; ring: string; glow: string }> = {
-  rose:    { bg: 'bg-rose-500/[0.12]',    icon: 'text-rose-400',    ring: 'ring-rose-500/[0.20]',    glow: 'group-hover:shadow-[0_0_20px_rgba(244,63,94,0.15)]'    },
-  violet:  { bg: 'bg-violet-500/[0.12]',  icon: 'text-violet-400',  ring: 'ring-violet-500/[0.20]',  glow: 'group-hover:shadow-[0_0_20px_rgba(139,92,246,0.15)]'  },
-  amber:   { bg: 'bg-amber-500/[0.12]',   icon: 'text-amber-400',   ring: 'ring-amber-500/[0.20]',   glow: 'group-hover:shadow-[0_0_20px_rgba(245,158,11,0.15)]'   },
-  emerald: { bg: 'bg-emerald-500/[0.12]', icon: 'text-emerald-400', ring: 'ring-emerald-500/[0.20]', glow: 'group-hover:shadow-[0_0_20px_rgba(16,185,129,0.15)]' },
-  sky:     { bg: 'bg-sky-500/[0.12]',     icon: 'text-sky-400',     ring: 'ring-sky-500/[0.20]',     glow: 'group-hover:shadow-[0_0_20px_rgba(14,165,233,0.15)]'   },
-  indigo:  { bg: 'bg-indigo-500/[0.12]',  icon: 'text-indigo-400',  ring: 'ring-indigo-500/[0.20]',  glow: 'group-hover:shadow-[0_0_20px_rgba(99,102,241,0.15)]'  },
-  neutral: { bg: 'bg-white/[0.07]',       icon: 'text-white/60',    ring: 'ring-white/[0.12]',       glow: 'group-hover:shadow-[0_0_20px_rgba(255,255,255,0.06)]' },
-  orange:  { bg: 'bg-orange-500/[0.12]',  icon: 'text-orange-400',  ring: 'ring-orange-500/[0.20]',  glow: 'group-hover:shadow-[0_0_20px_rgba(249,115,22,0.15)]'  },
-  green:   { bg: 'bg-green-500/[0.12]',   icon: 'text-green-400',   ring: 'ring-green-500/[0.20]',   glow: 'group-hover:shadow-[0_0_20px_rgba(34,197,94,0.15)]'   },
-  yellow:  { bg: 'bg-yellow-500/[0.12]',  icon: 'text-yellow-400',  ring: 'ring-yellow-500/[0.20]',  glow: 'group-hover:shadow-[0_0_20px_rgba(234,179,8,0.15)]'   },
-  red:    { bg: 'bg-red-500/[0.12]',    icon: 'text-red-400',    ring: 'ring-red-500/[0.20]',    glow: 'group-hover:shadow-[0_0_20px_rgba(239,68,68,0.15)]'    },
+const CAT_COLORS: Record<string, { bg: string; icon: string; ring: string; glow: string; grad: string; iconBg: string }> = {
+  rose:    { bg: 'bg-rose-500/[0.10]',    icon: 'text-rose-300',    ring: 'ring-rose-500/[0.15]',    glow: 'hover:shadow-[0_8px_32px_rgba(244,63,94,0.20)]',    grad: 'from-rose-500/[0.14] via-rose-500/[0.04]',    iconBg: 'bg-rose-500/20 ring-1 ring-rose-500/25'    },
+  violet:  { bg: 'bg-violet-500/[0.10]',  icon: 'text-violet-300',  ring: 'ring-violet-500/[0.15]',  glow: 'hover:shadow-[0_8px_32px_rgba(139,92,246,0.20)]',  grad: 'from-violet-500/[0.14] via-violet-500/[0.04]',  iconBg: 'bg-violet-500/20 ring-1 ring-violet-500/25'  },
+  amber:   { bg: 'bg-amber-500/[0.10]',   icon: 'text-amber-300',   ring: 'ring-amber-500/[0.15]',   glow: 'hover:shadow-[0_8px_32px_rgba(245,158,11,0.20)]',   grad: 'from-amber-500/[0.14] via-amber-500/[0.04]',   iconBg: 'bg-amber-500/20 ring-1 ring-amber-500/25'   },
+  emerald: { bg: 'bg-emerald-500/[0.10]', icon: 'text-emerald-300', ring: 'ring-emerald-500/[0.15]', glow: 'hover:shadow-[0_8px_32px_rgba(16,185,129,0.20)]', grad: 'from-emerald-500/[0.14] via-emerald-500/[0.04]', iconBg: 'bg-emerald-500/20 ring-1 ring-emerald-500/25' },
+  sky:     { bg: 'bg-sky-500/[0.10]',     icon: 'text-sky-300',     ring: 'ring-sky-500/[0.15]',     glow: 'hover:shadow-[0_8px_32px_rgba(14,165,233,0.20)]',     grad: 'from-sky-500/[0.14] via-sky-500/[0.04]',     iconBg: 'bg-sky-500/20 ring-1 ring-sky-500/25'     },
+  indigo:  { bg: 'bg-indigo-500/[0.10]',  icon: 'text-indigo-300',  ring: 'ring-indigo-500/[0.15]',  glow: 'hover:shadow-[0_8px_32px_rgba(99,102,241,0.20)]',  grad: 'from-indigo-500/[0.14] via-indigo-500/[0.04]',  iconBg: 'bg-indigo-500/20 ring-1 ring-indigo-500/25'  },
+  neutral: { bg: 'bg-white/[0.06]',       icon: 'text-white/70',    ring: 'ring-white/[0.10]',       glow: 'hover:shadow-[0_8px_32px_rgba(255,255,255,0.08)]', grad: 'from-white/[0.06] via-white/[0.02]',            iconBg: 'bg-white/10 ring-1 ring-white/15'           },
+  orange:  { bg: 'bg-orange-500/[0.10]',  icon: 'text-orange-300',  ring: 'ring-orange-500/[0.15]',  glow: 'hover:shadow-[0_8px_32px_rgba(249,115,22,0.20)]',  grad: 'from-orange-500/[0.14] via-orange-500/[0.04]',  iconBg: 'bg-orange-500/20 ring-1 ring-orange-500/25'  },
+  green:   { bg: 'bg-green-500/[0.10]',   icon: 'text-green-300',   ring: 'ring-green-500/[0.15]',   glow: 'hover:shadow-[0_8px_32px_rgba(34,197,94,0.20)]',   grad: 'from-green-500/[0.14] via-green-500/[0.04]',   iconBg: 'bg-green-500/20 ring-1 ring-green-500/25'   },
+  yellow:  { bg: 'bg-yellow-500/[0.10]',  icon: 'text-yellow-300',  ring: 'ring-yellow-500/[0.15]',  glow: 'hover:shadow-[0_8px_32px_rgba(234,179,8,0.20)]',  grad: 'from-yellow-500/[0.14] via-yellow-500/[0.04]',  iconBg: 'bg-yellow-500/20 ring-1 ring-yellow-500/25'  },
+  red:     { bg: 'bg-red-500/[0.10]',     icon: 'text-red-300',     ring: 'ring-red-500/[0.15]',     glow: 'hover:shadow-[0_8px_32px_rgba(239,68,68,0.20)]',     grad: 'from-red-500/[0.14] via-red-500/[0.04]',     iconBg: 'bg-red-500/20 ring-1 ring-red-500/25'     },
 };
 
 /* ─── field states ──────────────────────────────────────────── */
@@ -173,29 +175,34 @@ const RESUME_CATEGORIES = [
 type Step = 'pick' | 'form';
 
 /* ─── shared input styles ────────────────────────────────────── */
-function Field({ label, children, span }: { label: string; children: React.ReactNode; span?: boolean }) {
+function Field({ label, children, span, hint, required }: { label: string; children: React.ReactNode; span?: boolean; hint?: string; required?: boolean }) {
   return (
     <div className={span ? 'sm:col-span-2' : ''}>
-      <label className="mb-1 sm:mb-1.5 block text-[11px] sm:text-[12px] font-medium text-white/50">{label}</label>
+      <label className="mb-1.5 flex items-center gap-1 text-[11.5px] font-semibold text-white/50">
+        {label}
+        {required && <span className="text-rose-400/80">*</span>}
+      </label>
       {children}
+      {hint && <p className="mt-1 text-[10.5px] text-white/25 leading-relaxed">{hint}</p>}
     </div>
   );
 }
 
-function OptionalSection({ children, label = 'Add details (optional)' }: { children: React.ReactNode; label?: string }) {
+function OptionalSection({ children, label = 'Add more details' }: { children: React.ReactNode; label?: string }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="sm:col-span-2 mt-1">
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
-        className="flex w-full items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2 text-[12px] font-medium text-white/35 transition hover:bg-white/[0.04] hover:text-white/55"
+        className="flex w-full items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.015] px-3.5 py-2.5 text-[12px] font-semibold text-white/30 transition hover:bg-white/[0.04] hover:text-white/50 hover:border-white/[0.10]"
       >
         <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
         {label}
+        <span className="ml-auto rounded-full border border-white/[0.07] bg-white/[0.04] px-2 py-0.5 text-[10px] text-white/25">optional</span>
       </button>
       {open && (
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 animate-in fade-in slide-in-from-top-2 duration-150">
           {children}
         </div>
       )}
@@ -203,9 +210,9 @@ function OptionalSection({ children, label = 'Add details (optional)' }: { child
   );
 }
 
-const inputCls = 'h-9 sm:h-10 w-full rounded-xl border border-white/[0.10] bg-white/[0.04] px-3 sm:px-3.5 text-[13px] sm:text-sm text-white placeholder:text-white/25 outline-none transition focus:border-white/25 focus:ring-1 focus:ring-white/10';
-const textareaCls = 'w-full resize-none rounded-xl border border-white/[0.10] bg-white/[0.04] px-3 sm:px-3.5 py-2.5 sm:py-3 text-[13px] sm:text-sm text-white placeholder:text-white/25 outline-none transition focus:border-white/25 focus:ring-1 focus:ring-white/10';
-const selectCls = 'h-9 sm:h-10 w-full cursor-pointer appearance-none rounded-xl border border-white/[0.10] bg-white/[0.04] px-3 sm:px-3.5 text-[13px] sm:text-sm text-white outline-none transition focus:border-white/25 focus:ring-1 focus:ring-white/10';
+const inputCls = 'h-9 sm:h-10 w-full rounded-xl border border-white/[0.09] bg-white/[0.04] px-3 sm:px-3.5 text-[13px] sm:text-[13.5px] text-white placeholder:text-white/20 outline-none transition focus:border-white/[0.22] focus:bg-white/[0.06] focus:ring-2 focus:ring-white/[0.06]';
+const textareaCls = 'w-full resize-none rounded-xl border border-white/[0.09] bg-white/[0.04] px-3 sm:px-3.5 py-2.5 sm:py-3 text-[13px] sm:text-[13.5px] text-white placeholder:text-white/20 outline-none transition focus:border-white/[0.22] focus:bg-white/[0.06] focus:ring-2 focus:ring-white/[0.06] leading-relaxed';
+const selectCls = 'h-9 sm:h-10 w-full cursor-pointer appearance-none rounded-xl border border-white/[0.09] bg-white/[0.04] px-3 sm:px-3.5 text-[13px] sm:text-[13.5px] text-white outline-none transition focus:border-white/[0.22] focus:bg-white/[0.06] focus:ring-2 focus:ring-white/[0.06]';
 
 /* ─── build post HTML gallery ────────────────────────────────── */
 const buildPostHtml = async (images: File[], caption: string): Promise<{ dataUrl: string; fileName: string; mimeType: string; sizeInBytes: number }> => {
@@ -216,7 +223,10 @@ const buildPostHtml = async (images: File[], caption: string): Promise<{ dataUrl
   return { dataUrl: await fileToDataUrl(file), fileName: file.name, mimeType: 'text/html', sizeInBytes: file.size };
 };
 
-const MAX_THUMBNAIL_BYTES = 2 * 1024 * 1024;
+const MAX_THUMBNAIL_BYTES = 2 * 1024 * 1024; // 2 MB
+// Recommended cover image dimensions shown to the user
+const THUMB_RECOMMENDED_W = 1200;
+const THUMB_RECOMMENDED_H = 630;
 
 /* ─── main component ─────────────────────────────────────────── */
 export default function PublishAnythingDialog({
@@ -224,12 +234,24 @@ export default function PublishAnythingDialog({
   onOpenChange,
   isAuthenticated,
   initialCategory,
+  businessPageId,
+  businessPageSlug,
+  businessPageName,
+  businessLogoUrl,
+  onPublished,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   isAuthenticated: boolean;
   /** If set, skip the picker step and jump straight to this category's form when the dialog opens. */
   initialCategory?: CategoryId;
+  /** If set, publish is attributed to this business page and a cross-post is created */
+  businessPageId?: string;
+  businessPageSlug?: string;
+  businessPageName?: string;
+  businessLogoUrl?: string;
+  /** Called after a successful publish with the published item's content */
+  onPublished?: (data: { id: string; title: string; content: string; category: string }) => void;
 }) {
   const router = useRouter();
   const [step, setStep] = useState<Step>('pick');
@@ -240,6 +262,7 @@ export default function PublishAnythingDialog({
   const [error, setError] = useState('');
   const [successHref, setSuccessHref] = useState<string | null>(null);
   const [animKey, setAnimKey] = useState(0);
+  const [catSearch, setCatSearch] = useState('');
 
   // thumbnail state
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
@@ -279,6 +302,7 @@ export default function PublishAnythingDialog({
       setThumbnailFile(null);
       setThumbnailUrlInput('');
       setThumbnailMode('upload');
+      setCatSearch('');
       if (initialCategory) {
         setCategory(initialCategory);
         setStep('form');
@@ -461,6 +485,8 @@ export default function PublishAnythingDialog({
 
       case 'tutorial': return ''; // handled via tutorialStepsState below
 
+      case 'post': return f.postCaption || '';
+
       default: return f.notes || f.content || '';
     }
   };
@@ -530,6 +556,9 @@ export default function PublishAnythingDialog({
 
         setResume({ ...blankResume });
         setBusy(false);
+        if (publishedId && onPublished) {
+          onPublished({ id: publishedId, title: resume.displayName || '', content: resumeBodyLines, category: 'resume' });
+        }
         onOpenChange(false);
         if (publishedId) {
           router.push(`/published/${publishedId}`);
@@ -628,8 +657,10 @@ export default function PublishAnythingDialog({
         }
       }
 
-      // resolve thumbnail
+      // ── Resolve thumbnail ────────────────────────────────────────────────
+      // Priority: 1) explicitly uploaded/pasted cover  2) auto-derive from images
       let resolvedThumbnailUrl: string | undefined;
+
       if (thumbnailMode === 'upload' && thumbnailFile) {
         if (thumbnailFile.size > MAX_THUMBNAIL_BYTES) throw new Error(`Thumbnail too large (max ${formatBytes(MAX_THUMBNAIL_BYTES)}).`);
         resolvedThumbnailUrl = await fileToDataUrl(thumbnailFile);
@@ -637,20 +668,37 @@ export default function PublishAnythingDialog({
         resolvedThumbnailUrl = thumbnailUrlInput.trim();
       }
 
+      // Auto-derive from first post/product image when no explicit cover was provided
+      if (!resolvedThumbnailUrl) {
+        if (category === 'post' && postImages.length > 0) {
+          // Use first image as thumbnail regardless of single vs gallery
+          resolvedThumbnailUrl = await fileToDataUrl(postImages[0]);
+        } else if (category === 'product' && productImages.length > 0) {
+          resolvedThumbnailUrl = await fileToDataUrl(productImages[0]);
+        }
+        // For document/image uploads, the main dataUrl is image — backend handles it automatically
+      }
+
       const endpoint = fields.visibility === 'public' ? '/api/public/file-directory/publish' : '/api/file-transfers';
+      const contentBody = (category === 'post' ? fields.postCaption : buildTextBody()).trim() || undefined;
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: fields.title.trim() || category,
           fileName, mimeType, dataUrl, sizeInBytes,
-          notes: (category === 'post' ? fields.postCaption : buildTextBody()).trim() || undefined,
+          notes: contentBody,
           directoryVisibility: fields.visibility,
           directoryCategory: category,
           directoryTags: fields.tags.split(',').map(t => t.trim()).filter(Boolean),
           authMode: fields.visibility === 'public' ? 'public' : 'password',
           videoUrl: category === 'video' && fields.videoUrl.trim() ? fields.videoUrl.trim() : undefined,
           thumbnailUrl: resolvedThumbnailUrl,
+          // Business page attribution — if publishing from a company page
+          uploadedByName: businessPageName || undefined,
+          avatarUrl: businessLogoUrl || undefined,
+          businessPageSlug: businessPageSlug || undefined,
+          businessPageId: businessPageId || undefined,
         }),
       });
       const p = await res.json().catch(() => null) as any;
@@ -669,10 +717,19 @@ export default function PublishAnythingDialog({
       setThumbnailMode('upload');
       if (fileRef.current) fileRef.current.value = '';
       if (thumbnailRef.current) thumbnailRef.current.value = '';
+      // Fire onPublished callback so callers (e.g. business page) can cross-post
+      if (publishedId && onPublished) {
+        onPublished({
+          id: publishedId,
+          title: fields.title.trim() || category,
+          content: contentBody || '',
+          category,
+        });
+      }
       // Navigate directly to the published item
       if (publishedId && fields.visibility === 'public') {
         onOpenChange(false);
-        router.push(`/published/${publishedId}`);
+        if (!businessPageId) router.push(`/published/${publishedId}`);
       } else {
         setSuccessHref(publishedId ? `/transfer/${publishedId}` : '/file-directory');
       }
@@ -689,82 +746,89 @@ export default function PublishAnythingDialog({
     else set({ visibility: v });
   };
 
+  const filteredCats = catSearch.trim()
+    ? CATEGORIES.filter(c =>
+        c.label.toLowerCase().includes(catSearch.toLowerCase()) ||
+        c.desc.toLowerCase().includes(catSearch.toLowerCase())
+      )
+    : CATEGORIES;
+
   return (
     <>
-    {/* MNC-grade publishing loader overlay */}
+    {/* Publishing loader overlay */}
     {busy && (
-      <div className="fixed inset-0 z-[500] flex flex-col items-center justify-center bg-black/80 backdrop-blur-md">
-        <div className="flex flex-col items-center gap-6">
-          {/* Animated ring */}
-          <div className="relative h-20 w-20">
-            <div className="absolute inset-0 rounded-full border-4 border-white/10" />
-            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-white animate-spin" />
-            <div className="absolute inset-2 rounded-full border-4 border-transparent border-t-white/40 animate-spin" style={{ animationDuration: '1.5s', animationDirection: 'reverse' }} />
-            <div className="absolute inset-4 flex items-center justify-center">
-              <Globe className="h-5 w-5 text-white/60 animate-pulse" />
+      <div className="fixed inset-0 z-[500] flex flex-col items-center justify-center bg-black/85 backdrop-blur-xl">
+        <div className="flex flex-col items-center gap-7">
+          <div className="relative h-[72px] w-[72px]">
+            <div className="absolute inset-0 rounded-full border-[3px] border-white/[0.08]" />
+            <div className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-white animate-spin" style={{ animationDuration: '0.9s' }} />
+            <div className="absolute inset-[9px] rounded-full border-[2px] border-transparent border-t-white/35 animate-spin" style={{ animationDuration: '1.5s', animationDirection: 'reverse' }} />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Sparkles className="h-5 w-5 text-white/50" />
             </div>
           </div>
-          {/* Text */}
-          <div className="text-center space-y-1">
-            <p className="text-[15px] font-bold text-white tracking-[-0.01em]">Publishing…</p>
-            <p className="text-[12px] text-white/40">Preparing your content for the world</p>
+          <div className="text-center space-y-1.5">
+            <p className="text-[15px] font-bold text-white tracking-[-0.02em]">Publishing…</p>
+            <p className="text-[12.5px] text-white/35">Preparing your content for the world</p>
           </div>
-          {/* Progress bar */}
-          <div className="w-48 h-1 rounded-full bg-white/10 overflow-hidden">
-            <div className="h-full bg-white/60 rounded-full animate-pulse" style={{ width: '65%' }} />
+          <div className="w-44 h-[3px] rounded-full bg-white/[0.08] overflow-hidden">
+            <div className="h-full rounded-full bg-gradient-to-r from-white/50 to-white/80 animate-[shimmer_1.4s_ease-in-out_infinite]" style={{ width: '70%' }} />
           </div>
         </div>
       </div>
     )}
+
     <div
       className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center sm:p-4 md:p-6 pb-[84px] sm:pb-0"
       onClick={(e) => { if (e.target === e.currentTarget) onOpenChange(false); }}
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/75 backdrop-blur-md animate-in fade-in duration-200" aria-hidden="true" />
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-lg animate-in fade-in duration-200" aria-hidden="true" />
 
       {/* Dialog */}
-      <div className="relative flex w-full max-w-4xl flex-col overflow-hidden
+      <div className="relative flex w-full max-w-[880px] flex-col overflow-hidden
         h-[calc(96dvh-84px)] rounded-t-[28px]
-        sm:h-[92dvh] sm:rounded-[28px]
-        border border-white/[0.08] bg-[rgba(8,8,10,0.96)]
-        shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_48px_120px_rgba(0,0,0,0.9)]
-        backdrop-blur-3xl
-        animate-in fade-in slide-in-from-bottom-10 duration-[340ms] ease-[cubic-bezier(0.32,0.72,0,1)]
-        sm:slide-in-from-bottom-3 sm:zoom-in-[98%] sm:duration-[220ms]">
+        sm:h-[88dvh] sm:rounded-[28px]
+        border border-white/[0.08] bg-[#0a0a0e]
+        shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_-1px_0_0_rgba(255,255,255,0.06),0_32px_80px_rgba(0,0,0,0.98)]
+        animate-in fade-in slide-in-from-bottom-8 duration-[300ms] ease-[cubic-bezier(0.25,0.75,0,1)]
+        sm:slide-in-from-bottom-4 sm:zoom-in-[99%] sm:duration-[180ms]">
+
+        {/* Mobile drag handle */}
+        <div className="flex sm:hidden shrink-0 justify-center pt-3 pb-1">
+          <div className="h-1 w-10 rounded-full bg-white/[0.12]" />
+        </div>
 
         {/* ── Header ── */}
-        <div className="flex shrink-0 items-center justify-between border-b border-white/[0.06] bg-[radial-gradient(circle_at_20%_50%,rgba(255,255,255,0.03),transparent_50%)] px-4 sm:px-6 py-3 sm:py-4">
+        <div className="flex shrink-0 items-center justify-between px-5 sm:px-6 py-3.5 sm:py-4 border-b border-white/[0.06]">
           {step === 'pick' ? (
-            /* Pick step header */
             <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-white/[0.06] ring-1 ring-white/[0.10]">
-                <Globe className="h-4 w-4 sm:h-5 sm:w-5 text-white/70" />
+              <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl bg-white/[0.07] ring-1 ring-white/[0.09]">
+                <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white/60" />
               </div>
               <div>
-                <h2 className="text-[13.5px] sm:text-base font-bold text-white leading-tight">Publish anything</h2>
-                <p className="mt-0.5 text-[10px] sm:text-[11px] text-white/40 leading-tight">Choose a format to get started</p>
+                <h2 className="text-[14px] sm:text-[15px] font-bold text-white leading-tight tracking-[-0.01em]">Publish anything</h2>
+                <p className="mt-0.5 text-[10.5px] sm:text-[11px] text-white/35 leading-tight">{CATEGORIES.length} formats · choose one to get started</p>
               </div>
             </div>
           ) : (
-            /* Form step header */
             <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={goBack}
-                className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.04] text-white/50 transition hover:bg-white/10 hover:text-white"
+                className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.04] text-white/50 transition hover:bg-white/[0.09] hover:text-white active:scale-95"
                 aria-label="Back to categories"
               >
-                <ArrowLeft className="h-4 w-4" />
+                <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </button>
               {activeCat && (
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2.5 min-w-0">
                   <div className={`flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl ring-1 ${CAT_COLORS[activeCat.color]?.bg ?? 'bg-white/[0.06]'} ${CAT_COLORS[activeCat.color]?.ring ?? 'ring-white/[0.10]'}`}>
-                    <activeCat.icon className={`h-4 w-4 sm:h-4.5 sm:w-4.5 ${CAT_COLORS[activeCat.color]?.icon ?? 'text-white/70'}`} />
+                    <activeCat.icon className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${CAT_COLORS[activeCat.color]?.icon ?? 'text-white/70'}`} />
                   </div>
-                  <div>
-                    <h2 className="text-[13.5px] sm:text-base font-bold text-white leading-tight">{activeCat.label}</h2>
-                    <p className="mt-0.5 text-[10px] sm:text-[11px] text-white/40 leading-tight">{activeCat.desc}</p>
+                  <div className="min-w-0">
+                    <h2 className="text-[14px] sm:text-[15px] font-bold text-white leading-tight tracking-[-0.01em] truncate">{activeCat.label}</h2>
+                    <p className="mt-0.5 text-[10.5px] text-white/35 leading-tight truncate">{activeCat.desc}</p>
                   </div>
                 </div>
               )}
@@ -773,7 +837,7 @@ export default function PublishAnythingDialog({
           <button
             type="button"
             onClick={() => onOpenChange(false)}
-            className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.04] text-white/50 transition hover:bg-white/10 hover:text-white"
+            className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl border border-white/[0.07] bg-white/[0.03] text-white/40 transition hover:bg-white/[0.09] hover:text-white active:scale-95"
           >
             <X className="h-4 w-4" />
           </button>
@@ -781,31 +845,77 @@ export default function PublishAnythingDialog({
 
         {/* ── Body ── */}
         {step === 'pick' ? (
-          /* Pick grid */
-          <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6 scrollbar-minimal">
-            <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 lg:grid-cols-5">
-              {CATEGORIES.map(({ id, label, icon: Icon, desc, color }) => {
-                const c = CAT_COLORS[color] ?? CAT_COLORS['neutral'];
-                return (
+          <div className="flex flex-col flex-1 overflow-hidden">
+            {/* Search bar */}
+            <div className="shrink-0 px-5 sm:px-6 pt-4 pb-3.5">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/20" />
+                <input
+                  type="text"
+                  value={catSearch}
+                  onChange={e => setCatSearch(e.target.value)}
+                  placeholder="Search — article, job post, product, gig…"
+                  className="h-11 w-full rounded-2xl border border-white/[0.08] bg-white/[0.035] pl-11 pr-10 text-[13.5px] text-white placeholder:text-white/18 outline-none transition-all focus:border-white/[0.18] focus:bg-white/[0.055] focus:shadow-[0_0_0_3px_rgba(255,255,255,0.04)]"
+                  autoComplete="off"
+                />
+                {catSearch && (
                   <button
-                    key={id}
                     type="button"
-                    onClick={() => pickCategory(id)}
-                    className={`group flex flex-col items-center gap-2 rounded-2xl border border-white/[0.07] bg-white/[0.02] p-3 sm:p-4 text-center transition-all duration-200 hover:border-white/[0.12] hover:bg-white/[0.05] hover:scale-[1.03] ${c.glow}`}
+                    onClick={() => setCatSearch('')}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 flex h-5 w-5 items-center justify-center rounded-full bg-white/10 text-white/40 hover:bg-white/20 hover:text-white/70 transition"
                   >
-                    <div className={`flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl ring-1 transition-all ${c.bg} ${c.ring}`}>
-                      <Icon className={`h-5 w-5 sm:h-6 sm:w-6 ${c.icon}`} />
-                    </div>
-                    <span className="text-[11px] sm:text-[12px] font-semibold text-white/80 leading-tight">{label}</span>
-                    <span className="hidden sm:block text-[10px] text-white/35 leading-snug">{desc}</span>
+                    <X className="h-3 w-3" />
                   </button>
-                );
-              })}
+                )}
+              </div>
+            </div>
+
+            {/* Category grid */}
+            <div className="flex-1 overflow-y-auto px-5 pb-5 sm:px-6 sm:pb-6 scrollbar-minimal">
+              {filteredCats.length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/[0.04] ring-1 ring-white/[0.08]">
+                    <Search className="h-5 w-5 text-white/20" />
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-semibold text-white/40">No formats found</p>
+                    <p className="mt-1 text-[11.5px] text-white/22">Try a different keyword</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                  {filteredCats.map(({ id, label, icon: Icon, desc, color }) => {
+                    const c = CAT_COLORS[color] ?? CAT_COLORS['neutral'];
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => pickCategory(id)}
+                        className={`group relative flex flex-col gap-3 overflow-hidden rounded-2xl border border-white/[0.07] bg-[#0e0e12] p-4 text-left transition-all duration-200 hover:border-white/[0.14] hover:scale-[1.02] active:scale-[0.98] ${c.glow}`}
+                      >
+                        {/* gradient wash */}
+                        <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${c.grad} to-transparent opacity-100 transition-opacity duration-300 group-hover:opacity-100`} />
+                        {/* icon */}
+                        <div className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-105 ${c.iconBg}`}>
+                          <Icon className={`h-4.5 w-4.5 ${c.icon}`} />
+                        </div>
+                        {/* text */}
+                        <div className="relative min-w-0">
+                          <p className="text-[12.5px] font-bold text-white/85 leading-tight group-hover:text-white transition-colors">{label}</p>
+                          <p className="mt-0.5 text-[10.5px] text-white/35 leading-snug group-hover:text-white/50 transition-colors">{desc}</p>
+                        </div>
+                        {/* arrow */}
+                        <ArrowRight className={`absolute right-3 top-3 h-3 w-3 ${c.icon} opacity-0 group-hover:opacity-50 transition-opacity`} />
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         ) : (
           /* Form area */
-          <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5 scrollbar-minimal">
+          <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6 sm:py-6 scrollbar-minimal overscroll-contain">
             <div key={animKey} className="animate-in fade-in slide-in-from-bottom-2 duration-200 space-y-5">
 
               {/* ── Cover Image — always FIRST, visible immediately in every form ── */}
@@ -849,96 +959,101 @@ export default function PublishAnythingDialog({
 
             {/* Common: tags + notes */}
             {category && !['resume', 'gig', 'post', 'poll', 'survey', 'chart', 'thread', 'video', 'milestone', 'tutorial'].includes(category) && (
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <Field label="Tags (comma-separated)">
+              <div className="mt-2 grid gap-3 sm:grid-cols-2 rounded-2xl border border-white/[0.06] bg-white/[0.015] p-4">
+                <Field label="Tags" hint="Comma-separated keywords for discovery" span>
                   <div className="relative">
-                    <Tag className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/25" />
+                    <Tag className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/22" />
                     <input className={`${inputCls} pl-9`} value={fields.tags} onChange={e => set({ tags: e.target.value })} placeholder="e.g. nda, contract, template" />
                   </div>
                 </Field>
-                <Field label="Notes / description">
-                  <input className={inputCls} value={fields.notes} onChange={e => set({ notes: e.target.value })} placeholder="Short description for discovery…" />
+                <Field label="Short description" hint="Shown in search and discovery listings" span>
+                  <input className={inputCls} value={fields.notes} onChange={e => set({ notes: e.target.value })} placeholder="One-line summary of this content…" />
                 </Field>
               </div>
             )}
 
-            {/* Tags for new categories (post/poll/survey/chart/thread/video/milestone/tutorial) */}
+            {/* Tags for new categories */}
             {category && ['post', 'poll', 'survey', 'chart', 'thread', 'video', 'milestone', 'tutorial'].includes(category) && (
-              <div className="mt-4">
-                <Field label="Tags (comma-separated)">
+              <div className="mt-2 rounded-2xl border border-white/[0.06] bg-white/[0.015] p-4">
+                <Field label="Tags" hint="Comma-separated keywords — helps people find your content">
                   <div className="relative">
-                    <Tag className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/25" />
-                    <input className={`${inputCls} pl-9`} value={fields.tags} onChange={e => set({ tags: e.target.value })} placeholder="e.g. community, feedback" />
+                    <Tag className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/22" />
+                    <input className={`${inputCls} pl-9`} value={fields.tags} onChange={e => set({ tags: e.target.value })} placeholder="e.g. community, feedback, product" />
                   </div>
                 </Field>
               </div>
             )}
 
             {error && (
-              <div className="mt-4 flex items-start gap-2 rounded-xl border border-red-500/20 bg-red-500/[0.07] px-3 py-2.5 text-[13px] sm:text-sm text-red-400">
-                {error}
+              <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-red-500/[0.18] bg-red-500/[0.07] px-3.5 py-3 text-[13px] text-red-400">
+                <X className="h-3.5 w-3.5 mt-px shrink-0 opacity-70" />
+                <span>{error}</span>
               </div>
             )}
 
             {successHref && (
-              <div className="mt-4 flex items-center gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.07] px-3 py-2.5 text-[13px] sm:text-sm text-emerald-400">
+              <div className="mt-4 flex items-center gap-3 rounded-xl border border-emerald-500/[0.18] bg-emerald-500/[0.07] px-3.5 py-3 text-[13px] text-emerald-400">
                 <CheckCircle2 className="h-4 w-4 shrink-0" />
-                <span>Published!{' '}
-                  <Link href={successHref} className="font-semibold underline underline-offset-2 hover:text-emerald-300">
+                <span className="font-medium">Published!{' '}
+                  <Link href={successHref} className="font-bold underline underline-offset-2 hover:text-emerald-300 transition">
                     View it <ArrowRight className="inline h-3.5 w-3.5" />
                   </Link>
                 </span>
               </div>
             )}
 
-            <div className="h-4" />
+            <div className="h-6" />
           </div>
         )}
 
         {/* ── Footer ── */}
-        <div className="flex shrink-0 flex-col gap-2.5 border-t border-white/[0.06] bg-white/[0.02] px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:py-4">
+        <div className="flex shrink-0 flex-col gap-2.5 border-t border-white/[0.06] bg-[#0a0a0e] px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:py-4">
           {step === 'pick' ? (
-            /* Pick footer: just cancel */
-            <div className="flex justify-end w-full">
+            <div className="flex w-full items-center justify-between">
+              <p className="text-[11.5px] text-white/22">Select a format above to begin publishing</p>
               <button
                 type="button"
                 onClick={() => onOpenChange(false)}
-                className="h-9 rounded-xl border border-white/[0.08] bg-transparent px-5 text-[13px] sm:text-sm font-medium text-white/55 transition hover:bg-white/5 hover:text-white"
+                className="h-8 rounded-xl border border-white/[0.07] bg-transparent px-4 text-[12.5px] font-medium text-white/45 transition hover:bg-white/[0.05] hover:text-white"
               >
                 Cancel
               </button>
             </div>
           ) : (
-            /* Form footer: visibility + cancel + publish */
             <>
-              <div className="flex items-center gap-1.5 self-start rounded-xl border border-white/[0.08] bg-white/[0.03] p-1">
+              {/* Visibility toggle */}
+              <div className="flex items-center gap-1.5 self-start rounded-xl border border-white/[0.07] bg-white/[0.025] p-[3px]">
                 <button
                   type="button"
                   onClick={() => setVis('public')}
                   className={[
-                    'inline-flex h-7 sm:h-8 items-center gap-1.5 rounded-lg px-2.5 sm:px-3 text-[11px] sm:text-xs font-semibold transition',
-                    vis === 'public' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/70',
+                    'inline-flex h-7 sm:h-7.5 items-center gap-1.5 rounded-[10px] px-3 text-[11.5px] font-semibold transition-all',
+                    vis === 'public'
+                      ? 'bg-white/[0.12] text-white shadow-[0_1px_3px_rgba(0,0,0,0.4)]'
+                      : 'text-white/35 hover:text-white/60',
                   ].join(' ')}
                 >
-                  <Globe className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Public
+                  <Globe className="h-3 w-3" /> Public
                 </button>
                 <button
                   type="button"
                   onClick={() => setVis('private')}
                   className={[
-                    'inline-flex h-7 sm:h-8 items-center gap-1.5 rounded-lg px-2.5 sm:px-3 text-[11px] sm:text-xs font-semibold transition',
-                    vis === 'private' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/70',
+                    'inline-flex h-7 sm:h-7.5 items-center gap-1.5 rounded-[10px] px-3 text-[11.5px] font-semibold transition-all',
+                    vis === 'private'
+                      ? 'bg-white/[0.12] text-white shadow-[0_1px_3px_rgba(0,0,0,0.4)]'
+                      : 'text-white/35 hover:text-white/60',
                   ].join(' ')}
                 >
-                  <Lock className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Private
+                  <Lock className="h-3 w-3" /> Private
                 </button>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5">
                 <button
                   type="button"
                   onClick={() => onOpenChange(false)}
-                  className="h-9 flex-1 sm:flex-none rounded-xl border border-white/[0.08] bg-transparent px-4 text-[13px] sm:text-sm font-medium text-white/55 transition hover:bg-white/5 hover:text-white"
+                  className="h-9 sm:h-9.5 rounded-xl border border-white/[0.07] bg-transparent px-4 sm:px-5 text-[13px] font-medium text-white/45 transition hover:bg-white/[0.05] hover:text-white"
                 >
                   Cancel
                 </button>
@@ -946,12 +1061,25 @@ export default function PublishAnythingDialog({
                   type="button"
                   onClick={() => void publish()}
                   disabled={busy}
-                  className="inline-flex h-9 flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl border border-white/[0.15] bg-white px-4 sm:px-5 text-[13px] sm:text-sm font-bold text-[#0D0D0F] shadow-[0_4px_16px_rgba(255,255,255,0.08)] transition hover:bg-white/90 disabled:opacity-40 active:scale-95"
+                  className={[
+                    'inline-flex h-9 sm:h-9.5 min-w-[130px] items-center justify-center gap-2 rounded-xl px-5 sm:px-6 text-[13px] font-bold transition-all active:scale-[0.97] disabled:opacity-40',
+                    vis === 'private'
+                      ? 'border border-white/[0.14] bg-white/[0.08] text-white hover:bg-white/[0.14] shadow-[0_2px_12px_rgba(0,0,0,0.3)]'
+                      : 'bg-white text-[#09090c] hover:bg-white/90 shadow-[0_4px_20px_rgba(255,255,255,0.12),0_2px_8px_rgba(0,0,0,0.3)]',
+                  ].join(' ')}
                 >
                   {busy ? (
-                    <><div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#0D0D0F]/30 border-t-[#0D0D0F]" /> Publishing…</>
+                    <>
+                      <div className={`h-3.5 w-3.5 animate-spin rounded-full border-2 ${vis === 'private' ? 'border-white/30 border-t-white' : 'border-[#09090c]/30 border-t-[#09090c]'}`} />
+                      Publishing…
+                    </>
                   ) : (
-                    <><Globe className="h-3.5 w-3.5" /> Publish {vis === 'private' ? 'privately' : 'publicly'}</>
+                    <>
+                      {vis === 'private'
+                        ? <><Lock className="h-3.5 w-3.5" /> Save privately</>
+                        : <><Globe className="h-3.5 w-3.5" /> Publish publicly</>
+                      }
+                    </>
                   )}
                 </button>
               </div>
@@ -1338,29 +1466,34 @@ function ChartForm({ fields: f, set }: { fields: FieldState; set: (p: Partial<Fi
 function NewsForm({ fields: f, set }: { fields: FieldState; set: (p: Partial<FieldState>) => void }) {
   return (
     <div className="space-y-4">
-      <SectionHeader icon={Newspaper} label="News article" />
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="Body / summary" span>
-          <textarea className={textareaCls} rows={6} value={f.notes} onChange={e => set({ notes: e.target.value })} placeholder="Write the news body here…" />
+      <SectionHeader icon={Newspaper} label="News Article" hint="Press releases, breaking news, or media updates" />
+      <div className="space-y-3">
+        <Field label="Headline" hint="Leave blank to auto-generate from body">
+          <input className={inputCls} value={f.title} onChange={e => set({ title: e.target.value })} placeholder="Breaking: Company announces product launch…" />
         </Field>
-        <Field label="Headline (auto-generated if empty)" span>
-          <input className={inputCls} value={f.title} onChange={e => set({ title: e.target.value })} placeholder="Breaking: Company announces…" />
+        <Field label="Body / Summary" required>
+          <textarea className={textareaCls} rows={7} value={f.notes} onChange={e => set({ notes: e.target.value })} placeholder="Write the full news story here. Cover the who, what, when, where, why…" />
         </Field>
-        <OptionalSection>
-          <Field label="Publisher / source">
-            <input className={inputCls} value={f.publisher} onChange={e => set({ publisher: e.target.value })} placeholder="TechCrunch, Reuters…" />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Publisher / Source">
+            <input className={inputCls} value={f.publisher} onChange={e => set({ publisher: e.target.value })} placeholder="TechCrunch, Reuters, Your Company…" />
           </Field>
           <Field label="Date">
             <input className={`${inputCls} [color-scheme:dark]`} type="date" value={f.newsDate} onChange={e => set({ newsDate: e.target.value })} />
           </Field>
+        </div>
+        <OptionalSection>
           <Field label="Location">
             <div className="relative">
-              <MapPin className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/25" />
+              <MapPin className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/20" />
               <input className={`${inputCls} pl-9`} value={f.location} onChange={e => set({ location: e.target.value })} placeholder="New Delhi, India" />
             </div>
           </Field>
-          <Field label="Source URL" span>
-            <input className={inputCls} type="url" value={f.sourceUrl} onChange={e => set({ sourceUrl: e.target.value })} placeholder="https://example.com/article" />
+          <Field label="Source URL">
+            <div className="relative">
+              <Link2 className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/20" />
+              <input className={`${inputCls} pl-9`} type="url" value={f.sourceUrl} onChange={e => set({ sourceUrl: e.target.value })} placeholder="https://original-source.com/article" />
+            </div>
           </Field>
         </OptionalSection>
       </div>
@@ -1371,22 +1504,26 @@ function NewsForm({ fields: f, set }: { fields: FieldState; set: (p: Partial<Fie
 function ArticleForm({ fields: f, set }: { fields: FieldState; set: (p: Partial<FieldState>) => void }) {
   return (
     <div className="space-y-4">
-      <SectionHeader icon={BookOpen} label="Article / blog post" />
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="Full content" span>
-          <textarea className={textareaCls} rows={8} value={f.content} onChange={e => set({ content: e.target.value })} placeholder="Write your full article here…" />
+      <SectionHeader icon={BookOpen} label="Article / Blog Post" hint="Publish editorial content, thought leadership, or stories" />
+      <div className="space-y-3">
+        <Field label="Title" hint="Leave blank to auto-generate from content">
+          <input className={inputCls} value={f.title} onChange={e => set({ title: e.target.value })} placeholder="e.g. Why good design is invisible…" />
         </Field>
-        <Field label="Title (auto-generated if empty)" span>
-          <input className={inputCls} value={f.title} onChange={e => set({ title: e.target.value })} placeholder="Article title…" />
+        <Field label="Write your article" required>
+          <textarea className={textareaCls} rows={9} value={f.content} onChange={e => set({ content: e.target.value })} placeholder="Start writing here. Markdown supported — use # headings, **bold**, _italic_, lists…" />
+          {f.content.length > 0 && <p className="mt-1 text-[10.5px] text-white/20 text-right">{f.content.length} chars</p>}
         </Field>
-        <OptionalSection>
+        <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Author name">
-            <input className={inputCls} value={f.author} onChange={e => set({ author: e.target.value })} placeholder="Kushagra Sharma" />
+            <div className="relative">
+              <User className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/20" />
+              <input className={`${inputCls} pl-9`} value={f.author} onChange={e => set({ author: e.target.value })} placeholder="Your name or pen name" />
+            </div>
           </Field>
-          <Field label="Short excerpt">
-            <input className={inputCls} value={f.excerpt} onChange={e => set({ excerpt: e.target.value })} placeholder="One-line teaser…" />
+          <Field label="One-line teaser">
+            <input className={inputCls} value={f.excerpt} onChange={e => set({ excerpt: e.target.value })} placeholder="Shown in search results & previews" />
           </Field>
-        </OptionalSection>
+        </div>
       </div>
     </div>
   );
@@ -1448,53 +1585,63 @@ function DocumentForm({ fields: f, set, fileRef }: { fields: FieldState; set: (p
 function PortfolioForm({ fields: f, set }: { fields: FieldState; set: (p: Partial<FieldState>) => void }) {
   return (
     <div className="space-y-4">
-      <SectionHeader icon={Layers} label="Portfolio / case study" />
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="Project description" span>
-          <textarea className={textareaCls} rows={6} value={f.notes} onChange={e => set({ notes: e.target.value })} placeholder="Describe the project, problem solved, impact…" />
+      <SectionHeader icon={Layers} label="Portfolio / Case Study" hint="Showcase your work — projects, designs, products you've built" />
+      <div className="space-y-3">
+        <Field label="Project Name" hint="Leave blank to auto-generate">
+          <input className={inputCls} value={f.title} onChange={e => set({ title: e.target.value })} placeholder="Project Nebula, Mobile App Redesign…" />
         </Field>
-        <Field label="Project name (auto-generated if empty)" span>
-          <input className={inputCls} value={f.title} onChange={e => set({ title: e.target.value })} placeholder="Project Nebula, App Redesign…" />
+        <Field label="Project Description" required>
+          <textarea className={textareaCls} rows={6} value={f.notes} onChange={e => set({ notes: e.target.value })} placeholder="Describe the project — what was the problem, what did you build, what was the outcome and impact?&#10;&#10;Use bullet points or paragraphs." />
         </Field>
-        <OptionalSection>
-          <Field label="Client / company">
-            <input className={inputCls} value={f.client} onChange={e => set({ client: e.target.value })} placeholder="Acme Corp" />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Client / Company">
+            <div className="relative">
+              <Building2 className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/20" />
+              <input className={`${inputCls} pl-9`} value={f.client} onChange={e => set({ client: e.target.value })} placeholder="Acme Corp, Personal project…" />
+            </div>
           </Field>
           <Field label="Live URL">
-            <input className={inputCls} type="url" value={f.projectUrl} onChange={e => set({ projectUrl: e.target.value })} placeholder="https://…" />
+            <div className="relative">
+              <ExternalLink className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/20" />
+              <input className={`${inputCls} pl-9`} type="url" value={f.projectUrl} onChange={e => set({ projectUrl: e.target.value })} placeholder="https://myproject.com" />
+            </div>
           </Field>
-          <Field label="Technologies used" span>
-            <input className={inputCls} value={f.technologies} onChange={e => set({ technologies: e.target.value })} placeholder="React, Figma, Node.js…" />
+          <Field label="Technologies Used" span>
+            <div className="relative">
+              <Terminal className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/20" />
+              <input className={`${inputCls} pl-9`} value={f.technologies} onChange={e => set({ technologies: e.target.value })} placeholder="React, Next.js, Figma, PostgreSQL…" />
+            </div>
           </Field>
-        </OptionalSection>
+        </div>
       </div>
     </div>
   );
 }
 
 function AnnouncementForm({ fields: f, set }: { fields: FieldState; set: (p: Partial<FieldState>) => void }) {
+  const priorityConfig = { high: 'text-red-400', medium: 'text-amber-400', low: 'text-emerald-400' };
   return (
     <div className="space-y-4">
-      <SectionHeader icon={Megaphone} label="Announcement" />
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="Message" span>
-          <textarea className={textareaCls} rows={6} value={f.notes} onChange={e => set({ notes: e.target.value })} placeholder="Write the announcement content…" />
+      <SectionHeader icon={Megaphone} label="Announcement" hint="Platform alerts, feature launches, company updates" />
+      <div className="space-y-3">
+        <Field label="Title" hint="Leave blank to auto-generate">
+          <input className={inputCls} value={f.title} onChange={e => set({ title: e.target.value })} placeholder="New feature launch, Platform update…" />
         </Field>
-        <Field label="Title (auto-generated if empty)" span>
-          <input className={inputCls} value={f.title} onChange={e => set({ title: e.target.value })} placeholder="Platform maintenance, New feature…" />
+        <Field label="Message" required>
+          <textarea className={textareaCls} rows={6} value={f.notes} onChange={e => set({ notes: e.target.value })} placeholder="Write your announcement here. Be clear and concise…" />
         </Field>
-        <OptionalSection>
+        <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Priority">
-            <select className={selectCls} value={f.priority} onChange={e => set({ priority: e.target.value as any })}>
-              <option value="high" className="bg-[#0D0D0F]">🔴 High</option>
-              <option value="medium" className="bg-[#0D0D0F]">🟡 Medium</option>
-              <option value="low" className="bg-[#0D0D0F]">🟢 Low</option>
+            <select className={`${selectCls} ${priorityConfig[f.priority]}`} value={f.priority} onChange={e => set({ priority: e.target.value as any })}>
+              <option value="high" className="bg-[#0a0a0e] text-white">🔴 High — urgent action needed</option>
+              <option value="medium" className="bg-[#0a0a0e] text-white">🟡 Medium — informational</option>
+              <option value="low" className="bg-[#0a0a0e] text-white">🟢 Low — FYI only</option>
             </select>
           </Field>
-          <Field label="Expires on">
+          <Field label="Expires on" hint="Auto-archive after this date">
             <input className={`${inputCls} [color-scheme:dark]`} type="date" value={f.expiresAt} onChange={e => set({ expiresAt: e.target.value })} />
           </Field>
-        </OptionalSection>
+        </div>
       </div>
     </div>
   );
@@ -1503,46 +1650,49 @@ function AnnouncementForm({ fields: f, set }: { fields: FieldState; set: (p: Par
 function JobForm({ fields: f, set }: { fields: FieldState; set: (p: Partial<FieldState>) => void }) {
   return (
     <div className="space-y-4">
-      <SectionHeader icon={Briefcase} label="Job posting" />
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="Job title *" span>
-          <input className={inputCls} value={f.title} onChange={e => set({ title: e.target.value })} placeholder="Senior Frontend Engineer…" />
+      <SectionHeader icon={Briefcase} label="Job Posting" hint="Reach thousands of professionals actively looking for opportunities" />
+      <div className="space-y-3">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Job Title" required>
+            <input className={inputCls} value={f.title} onChange={e => set({ title: e.target.value })} placeholder="Senior Frontend Engineer" />
+          </Field>
+          <Field label="Company">
+            <div className="relative">
+              <Building2 className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/20" />
+              <input className={`${inputCls} pl-9`} value={f.company} onChange={e => set({ company: e.target.value })} placeholder="Acme Inc." />
+            </div>
+          </Field>
+        </div>
+        <Field label="Job Description" required>
+          <textarea className={textareaCls} rows={5} value={f.description} onChange={e => set({ description: e.target.value })} placeholder="What will this person do? Describe the role, team, and impact…" />
         </Field>
-        <Field label="Job description" span>
-          <textarea className={textareaCls} rows={5} value={f.description} onChange={e => set({ description: e.target.value })} placeholder="Responsibilities, role overview…" />
-        </Field>
-        <Field label="Company">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Field label="Work Type">
+            <select className={selectCls} value={f.jobType} onChange={e => set({ jobType: e.target.value as any })}>
+              <option value="remote" className="bg-[#0a0a0e]">Remote</option>
+              <option value="hybrid" className="bg-[#0a0a0e]">Hybrid</option>
+              <option value="onsite" className="bg-[#0a0a0e]">On-site</option>
+            </select>
+          </Field>
+          <Field label="Location">
+            <div className="relative">
+              <MapPin className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/20" />
+              <input className={`${inputCls} pl-9`} value={f.jobLocation} onChange={e => set({ jobLocation: e.target.value })} placeholder="Mumbai / Remote" />
+            </div>
+          </Field>
+          <Field label="Salary / CTC">
+            <input className={inputCls} value={f.salary} onChange={e => set({ salary: e.target.value })} placeholder="₹18–24 LPA" />
+          </Field>
+        </div>
+        <Field label="Apply URL" hint="Applicants are redirected here — leave blank for in-app apply">
           <div className="relative">
-            <Building2 className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/25" />
-            <input className={`${inputCls} pl-9`} value={f.company} onChange={e => set({ company: e.target.value })} placeholder="Acme Inc." />
-          </div>
-        </Field>
-        <Field label="Location">
-          <div className="relative">
-            <MapPin className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/25" />
-            <input className={`${inputCls} pl-9`} value={f.jobLocation} onChange={e => set({ jobLocation: e.target.value })} placeholder="Mumbai / Remote" />
-          </div>
-        </Field>
-        <Field label="Work type">
-          <select className={selectCls} value={f.jobType} onChange={e => set({ jobType: e.target.value as any })}>
-            <option value="onsite" className="bg-[#0D0D0F]">On-site</option>
-            <option value="remote" className="bg-[#0D0D0F]">Remote</option>
-            <option value="hybrid" className="bg-[#0D0D0F]">Hybrid</option>
-          </select>
-        </Field>
-        <Field label="Salary / CTC">
-          <input className={inputCls} value={f.salary} onChange={e => set({ salary: e.target.value })} placeholder="₹18–24 LPA · negotiable" />
-        </Field>
-        <Field label="External Apply URL" span>
-          <div className="relative">
-            <Link2 className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/25" />
+            <ExternalLink className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/20" />
             <input className={`${inputCls} pl-9`} type="url" value={f.jobApplyUrl} onChange={e => set({ jobApplyUrl: e.target.value })} placeholder="https://company.com/careers/apply" />
           </div>
-          <p className="mt-1 text-[11px] text-white/30">Applicants will be redirected to this URL when they click Apply</p>
         </Field>
-        <OptionalSection label="Requirements & details">
+        <OptionalSection label="Requirements & additional details">
           <Field label="Requirements" span>
-            <textarea className={textareaCls} rows={3} value={f.requirements} onChange={e => set({ requirements: e.target.value })} placeholder="3+ yrs React, strong TypeScript, etc…" />
+            <textarea className={textareaCls} rows={3} value={f.requirements} onChange={e => set({ requirements: e.target.value })} placeholder="3+ yrs React, strong TypeScript, CS degree preferred…" />
           </Field>
         </OptionalSection>
       </div>
@@ -1719,52 +1869,55 @@ function ProductForm({
 function EventForm({ fields: f, set }: { fields: FieldState; set: (p: Partial<FieldState>) => void }) {
   return (
     <div className="space-y-4">
-      <SectionHeader icon={CalendarDays} label="Event / conference / meetup" />
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="Event name *" span>
+      <SectionHeader icon={CalendarDays} label="Event / Conference / Meetup" hint="Get RSVPs from the community — conferences, workshops, webinars" />
+      <div className="space-y-3">
+        <Field label="Event Name" required>
           <input className={inputCls} value={f.title} onChange={e => set({ title: e.target.value })} placeholder="React India 2026, Mumbai DevMeetup…" />
         </Field>
-        <Field label="Description" span>
-          <textarea className={textareaCls} rows={4} value={f.notes} onChange={e => set({ notes: e.target.value })} placeholder="What's this event about? Who should attend? What will they learn?" />
+        <Field label="Description" required>
+          <textarea className={textareaCls} rows={4} value={f.notes} onChange={e => set({ notes: e.target.value })} placeholder="What's this event about? Who should attend? What will they gain?" />
         </Field>
-        <Field label="Start date">
-          <input className={`${inputCls} [color-scheme:dark]`} type="date" value={f.eventDate} onChange={e => set({ eventDate: e.target.value })} />
-        </Field>
-        <Field label="End date">
-          <input className={`${inputCls} [color-scheme:dark]`} type="date" value={f.eventEndDate} onChange={e => set({ eventEndDate: e.target.value })} />
-        </Field>
-        <Field label="Event mode">
-          <select className={selectCls} value={f.eventMode} onChange={e => set({ eventMode: e.target.value as any })}>
-            <option value="in-person" className="bg-[#0D0D0F]">In-person</option>
-            <option value="online" className="bg-[#0D0D0F]">Online</option>
-            <option value="hybrid" className="bg-[#0D0D0F]">Hybrid</option>
-          </select>
-        </Field>
-        <Field label="Venue / city">
-          <div className="relative">
-            <MapPin className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/25" />
-            <input className={`${inputCls} pl-9`} value={f.eventVenue} onChange={e => set({ eventVenue: e.target.value })} placeholder="NSCI Dome, Mumbai" />
-          </div>
-        </Field>
-        <Field label="Registration URL" span>
-          <div className="relative">
-            <ExternalLink className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/25" />
-            <input className={`${inputCls} pl-9`} type="url" value={f.eventUrl} onChange={e => set({ eventUrl: e.target.value })} placeholder="https://lu.ma/event or https://eventbrite.com/…" />
-          </div>
-          <p className="mt-1 text-[11px] text-white/30">Users will be taken directly to this URL when they click Register</p>
-        </Field>
-        <OptionalSection label="More details (optional)">
-          <Field label="Organiser / host">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Field label="Mode">
+            <select className={selectCls} value={f.eventMode} onChange={e => set({ eventMode: e.target.value as any })}>
+              <option value="in-person" className="bg-[#0a0a0e]">In-person</option>
+              <option value="online" className="bg-[#0a0a0e]">Online</option>
+              <option value="hybrid" className="bg-[#0a0a0e]">Hybrid</option>
+            </select>
+          </Field>
+          <Field label="Start Date">
+            <input className={`${inputCls} [color-scheme:dark]`} type="date" value={f.eventDate} onChange={e => set({ eventDate: e.target.value })} />
+          </Field>
+          <Field label="End Date">
+            <input className={`${inputCls} [color-scheme:dark]`} type="date" value={f.eventEndDate} onChange={e => set({ eventEndDate: e.target.value })} />
+          </Field>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Venue / City">
+            <div className="relative">
+              <MapPin className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/20" />
+              <input className={`${inputCls} pl-9`} value={f.eventVenue} onChange={e => set({ eventVenue: e.target.value })} placeholder="NSCI Dome, Mumbai" />
+            </div>
+          </Field>
+          <Field label="Register / Info URL" hint="Attendees are redirected here on click">
+            <div className="relative">
+              <ExternalLink className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/20" />
+              <input className={`${inputCls} pl-9`} type="url" value={f.eventUrl} onChange={e => set({ eventUrl: e.target.value })} placeholder="https://lu.ma/event" />
+            </div>
+          </Field>
+        </div>
+        <OptionalSection label="Organiser, time & capacity">
+          <Field label="Organiser / Host">
             <input className={inputCls} value={f.eventOrganiser} onChange={e => set({ eventOrganiser: e.target.value })} placeholder="GDG Mumbai, Nasscom…" />
           </Field>
           <Field label="Time">
             <div className="relative">
-              <Clock className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/25" />
+              <Clock className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/20" />
               <input className={`${inputCls} pl-9`} value={f.eventTime} onChange={e => set({ eventTime: e.target.value })} placeholder="10:00 AM – 5:00 PM IST" />
             </div>
           </Field>
           <Field label="Capacity">
-            <input className={inputCls} value={f.eventCapacity} onChange={e => set({ eventCapacity: e.target.value })} placeholder="500 seats, unlimited…" />
+            <input className={inputCls} value={f.eventCapacity} onChange={e => set({ eventCapacity: e.target.value })} placeholder="500 seats · Unlimited" />
           </Field>
         </OptionalSection>
       </div>
@@ -2000,22 +2153,25 @@ function VideoForm({ fields: f, set }: { fields: FieldState; set: (p: Partial<Fi
 function MilestoneForm({ fields: f, set }: { fields: FieldState; set: (p: Partial<FieldState>) => void }) {
   return (
     <div className="space-y-4">
-      <SectionHeader icon={Award} label="Milestone / achievement" />
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="Story / announcement" span>
-          <textarea className={textareaCls} rows={6} value={f.notes} onChange={e => set({ notes: e.target.value })} placeholder="Share the journey, the team, the lessons…" />
+      <SectionHeader icon={Award} label="Milestone / Achievement" hint="Celebrate wins — revenue goals, user counts, launches, completions" />
+      <div className="space-y-3">
+        <Field label="Headline" hint="Leave blank to auto-generate">
+          <input className={inputCls} value={f.title} onChange={e => set({ title: e.target.value })} placeholder="We just crossed ₹1 Crore ARR 🎉" />
         </Field>
-        <Field label="Headline (auto-generated if empty)" span>
-          <input className={inputCls} value={f.title} onChange={e => set({ title: e.target.value })} placeholder="We crossed ₹1 Crore ARR 🎉" />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Key Metric">
+            <div className="relative">
+              <Trophy className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/20" />
+              <input className={`${inputCls} pl-9`} value={f.milestoneMetric} onChange={e => set({ milestoneMetric: e.target.value })} placeholder="₹1 Crore ARR, 10k users, 100 days…" />
+            </div>
+          </Field>
+          <Field label="Context / Timeframe">
+            <input className={inputCls} value={f.milestoneContext} onChange={e => set({ milestoneContext: e.target.value })} placeholder="18 months bootstrapped, 4-person team…" />
+          </Field>
+        </div>
+        <Field label="Story" required>
+          <textarea className={textareaCls} rows={6} value={f.notes} onChange={e => set({ notes: e.target.value })} placeholder="Share the journey behind this milestone — what you learned, who helped, what's next. Authentic stories resonate most…" />
         </Field>
-        <OptionalSection>
-          <Field label="Key metric">
-            <input className={inputCls} value={f.milestoneMetric} onChange={e => set({ milestoneMetric: e.target.value })} placeholder="₹1 Crore ARR, 10k users…" />
-          </Field>
-          <Field label="Context / timeframe">
-            <input className={inputCls} value={f.milestoneContext} onChange={e => set({ milestoneContext: e.target.value })} placeholder="18 months bootstrapped, 4 team members…" />
-          </Field>
-        </OptionalSection>
       </div>
     </div>
   );
@@ -2168,17 +2324,22 @@ function ThumbnailSection({
   };
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0d0d10]">
+    <div className="overflow-hidden rounded-2xl border border-white/[0.07] bg-[#0d0d11]">
       {/* ── header ── */}
       <div className="flex items-center justify-between border-b border-white/[0.06] px-4 sm:px-5 py-3">
-        <div className="flex items-center gap-2">
-          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-white/[0.06]">
-            <ImageIcon className="h-3.5 w-3.5 text-white/50" />
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-white/[0.07]">
+            <ImageIcon className="h-3.5 w-3.5 text-white/45" />
           </div>
-          <span className="text-[12.5px] font-semibold text-white/70">
+          <span className="text-[12.5px] font-semibold text-white/60 tracking-[-0.01em]">
             {isPost ? 'Photos' : 'Cover Image'}
           </span>
-          <span className="hidden sm:inline rounded-full border border-white/[0.07] bg-white/[0.03] px-2 py-px text-[10px] font-medium text-white/30">
+          {!isPost && (
+            <span className="hidden sm:inline rounded-md bg-white/[0.04] px-2 py-px text-[10px] font-medium text-white/25 border border-white/[0.06] tabular-nums">
+              {THUMB_RECOMMENDED_W}×{THUMB_RECOMMENDED_H}px · max 2 MB
+            </span>
+          )}
+          <span className="rounded-full bg-white/[0.04] px-2 py-px text-[10px] font-medium text-white/20 border border-white/[0.05]">
             optional
           </span>
         </div>
@@ -2215,7 +2376,7 @@ function ThumbnailSection({
       </div>
 
       {/* ── body ── */}
-      <div className="p-4 sm:p-5">
+      <div className="p-3 sm:p-4">
 
         {/* POST: grid image picker */}
         {isPost && postImages !== undefined && postImagesRef !== undefined && setPostImages !== undefined && (
@@ -2313,18 +2474,23 @@ function ThumbnailSection({
                 <button
                   type="button"
                   onClick={() => thumbnailRef.current?.click()}
-                  className="flex w-full flex-col items-center justify-center gap-3 py-8 text-center"
+                  className="flex w-full items-center gap-3 px-4 py-4 text-left"
                 >
-                  <div className={`flex h-12 w-12 items-center justify-center rounded-2xl border transition-all ${
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all ${
                     isDragging ? 'border-white/25 bg-white/10' : 'border-white/[0.10] bg-white/[0.05]'
                   }`}>
-                    <Upload className={`h-5 w-5 transition ${isDragging ? 'text-white/70' : 'text-white/30'}`} />
+                    <Upload className={`h-4 w-4 transition ${isDragging ? 'text-white/70' : 'text-white/30'}`} />
                   </div>
-                  <div>
-                    <p className="text-[13px] font-semibold text-white/55">
-                      {isDragging ? 'Drop to set as cover' : 'Upload cover image'}
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-semibold text-white/50">
+                      {isDragging ? 'Drop to set cover image' : 'Upload cover image'}
                     </p>
-                    <p className="mt-1 text-[11px] text-white/25">Drag & drop or click · PNG, JPG, WebP, GIF · max 2 MB</p>
+                    <p className="text-[11px] text-white/25 mt-0.5">
+                      Recommended {THUMB_RECOMMENDED_W}×{THUMB_RECOMMENDED_H}px · PNG, JPG, WebP · max 2 MB
+                    </p>
+                    <p className="text-[10.5px] text-white/18 mt-1 leading-relaxed">
+                      Only shown in the homepage feed if a cover image is uploaded
+                    </p>
                   </div>
                 </button>
                 {isDragging && (
@@ -2381,9 +2547,14 @@ function ThumbnailSection({
             )}
 
             {!thumbnailUrlInput && (
-              <p className="text-center text-[11px] text-white/20">
-                Paste a direct link to a JPG, PNG, WebP, or GIF image
-              </p>
+              <div className="space-y-1 text-center">
+                <p className="text-[11px] text-white/25">
+                  Paste a direct image URL — JPG, PNG, WebP, GIF
+                </p>
+                <p className="text-[10.5px] text-white/15">
+                  Recommended {THUMB_RECOMMENDED_W}×{THUMB_RECOMMENDED_H}px · only shown in feed if provided
+                </p>
+              </div>
             )}
           </div>
         )}
@@ -2392,13 +2563,16 @@ function ThumbnailSection({
   );
 }
 
-function SectionHeader({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
+function SectionHeader({ icon: Icon, label, hint }: { icon: React.ElementType; label: string; hint?: string }) {
   return (
-    <div className="mb-1 flex items-center gap-2.5">
-      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/[0.05] ring-1 ring-white/[0.10]">
-        <Icon className="h-3.5 w-3.5 text-white/60" />
+    <div className="mb-2 flex items-center gap-2.5 pb-3 border-b border-white/[0.05]">
+      <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-white/[0.06] ring-1 ring-white/[0.09]">
+        <Icon className="h-3.5 w-3.5 text-white/55" />
       </div>
-      <span className="text-sm font-semibold text-white/80">{label}</span>
+      <div>
+        <span className="text-[13px] sm:text-[13.5px] font-bold text-white/85 tracking-[-0.01em]">{label}</span>
+        {hint && <p className="mt-px text-[10.5px] text-white/30">{hint}</p>}
+      </div>
     </div>
   );
 }

@@ -1,21 +1,26 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import * as Dialog from '@radix-ui/react-dialog';
 import {
   Activity,
+  ArrowLeft,
   ArrowRight,
+  Image as ImageIcon,
+  SlidersHorizontal,
   Award,
   BarChart2,
   Bookmark,
   BookMarked,
   BookOpen,
   Briefcase,
+  Building2,
   CalendarDays,
   Check,
   ChevronDown,
@@ -28,9 +33,11 @@ import {
   FileText,
   FolderLock,
   FormInput,
+
   Heart,
   Globe,
   HelpCircle,
+  Home,
   LayoutGrid,
   ListChecks,
   Loader2,
@@ -69,21 +76,52 @@ import {
   Wand2,
   X,
   Zap,
+  MapPin,
+  Target,
+  Clock,
+  Tag,
+  Info,
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import HomepageNav from '@/components/HomepageNav';
 import { AssistantResultCardView } from '@/components/home-chat/AssistantResultCard';
-import QuickFileEditorDialog from '@/components/QuickFileEditorDialog';
-import PublishAnythingDialog from '@/components/PublishAnythingDialog';
-import FileTransferCenter from '@/components/FileTransferCenter';
-import PdfStudio from '@/components/PdfStudio';
-import FormsCenter from '@/components/FormsCenter';
-import ScratchpadCenter from '@/components/ScratchpadCenter';
-import DocSheetCenter from '@/components/DocSheetCenter';
 import type { DocumentHistory } from '@/types/document';
-import DocumentVisualizerModal from '@/components/DocumentVisualizerModal';
-import ESignStudioModal from '@/components/ESignStudioModal';
-import FileDriveCenter from '@/components/FileDriveCenter';
 import type { AssistantResultCard, DocumentQuickAction, UploadedDocument } from '@/types/doc-assistant';
+import { fireSearchEvent, SEARCH_CONTEXTS } from '@/lib/search-tracking';
+
+// Heavy modal components — loaded only when first opened, not part of the initial bundle
+const QuickFileEditorDialog = dynamic(() => import('@/components/QuickFileEditorDialog'), { ssr: false });
+const PublishAnythingDialog  = dynamic(() => import('@/components/PublishAnythingDialog'),  { ssr: false });
+const RecentsBar             = dynamic(() => import('@/components/Recents'),                { ssr: false });
+const FileTransferCenter     = dynamic(() => import('@/components/FileTransferCenter'),     { ssr: false });
+const PdfStudio              = dynamic(() => import('@/components/PdfStudio'),              { ssr: false });
+const FormsCenter            = dynamic(() => import('@/components/FormsCenter'),            { ssr: false });
+const ScratchpadCenter       = dynamic(() => import('@/components/ScratchpadCenter'),       { ssr: false });
+const DocSheetCenter         = dynamic(() => import('@/components/DocSheetCenter'),         { ssr: false });
+const DocumentVisualizerModal = dynamic(() => import('@/components/DocumentVisualizerModal'), { ssr: false });
+const ESignStudioModal       = dynamic(() => import('@/components/ESignStudioModal'),       { ssr: false });
+const FileDriveCenter        = dynamic(() => import('@/components/FileDriveCenter'),        { ssr: false });
+
+type HPSectionVisibility = {
+  recentsBar: boolean; heroBanner: boolean; featureCards: boolean;
+  publishHeading: boolean; contentDiscovery: boolean; adBanners: boolean;
+  gigsGrid: boolean; leaderboards: boolean; builtInIndia: boolean; footer: boolean;
+};
+type HPConfig = {
+  sections: HPSectionVisibility;
+  hero: { slotWords: {word:string;subtitle:string;color:string}[]; backgroundImage:string; guestCtaPrimary:string; guestCtaSecondary:string; authCtaPrimary:string; authCtaSecondary:string };
+  nav: { logoText:string; logoUrl:string; links:{id:string;label:string;href:string;visible:boolean;order:number}[]; showSignIn:boolean; showSignUp:boolean };
+  featureCards: { guestFeatureIds:string[]; defaultFeatureIds:string[] };
+  contentDiscovery: { tabs:{id:string;label:string;visible:boolean;order:number}[] };
+  footer: { columns:{id:string;title:string;links:{label:string;href:string;visible:boolean}[]}[]; securityBadges:{label:string;visible:boolean}[]; tagline:string; madeIn:string; copyrightEntity:string };
+  announcementBanner: {id:string;text:string;ctaLabel:string;ctaHref:string;style:'info'|'warning'|'success'|'promo';active:boolean} | null;
+  seoTitle:string; seoDescription:string; updatedAt:string;
+};
+const DEFAULT_HP_SECTIONS: HPSectionVisibility = {
+  recentsBar:true, heroBanner:true, featureCards:true, publishHeading:true,
+  contentDiscovery:true, adBanners:true, gigsGrid:false, leaderboards:false,
+  builtInIndia:true, footer:true,
+};
 
 interface PublicHomepageProps {
   softwareName: string;
@@ -1250,7 +1288,7 @@ function PublishShowcase({
                 return (
                   <article
                     key={cat.id}
-                    className="snap-start flex w-[min(300px,80vw)] sm:w-[330px] shrink-0 flex-col rounded-[24px] border border-white/[0.09] bg-white/[0.05] p-5 shadow-[0_16px_40px_rgba(0,0,0,0.35)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-[3px] hover:border-white/[0.16] hover:bg-white/[0.08]"
+                    className="snap-start flex w-[min(300px,80vw)] sm:w-[330px] shrink-0 flex-col rounded-[24px] border border-white/[0.09] bg-white/[0.05] p-5 shadow-[0_16px_40px_rgba(0,0,0,0.35)] backdrop-blur-2xl transition-[transform,border-color,background-color] duration-300 hover:-translate-y-[3px] hover:border-white/[0.16] hover:bg-white/[0.08]"
                   >
                     {/* category label + icon */}
                     <div className="flex items-start justify-between gap-3">
@@ -1372,7 +1410,7 @@ function PublishShowcase({
                 {GIGS_DATA.map((g) => (
                   <article
                     key={g.id}
-                    className="snap-start flex w-[min(300px,80vw)] sm:w-[330px] shrink-0 flex-col rounded-[24px] border border-white/[0.09] bg-white/[0.05] p-5 shadow-[0_16px_40px_rgba(0,0,0,0.35)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-[3px] hover:border-white/[0.16] hover:bg-white/[0.08]"
+                    className="snap-start flex w-[min(300px,80vw)] sm:w-[330px] shrink-0 flex-col rounded-[24px] border border-white/[0.09] bg-white/[0.05] p-5 shadow-[0_16px_40px_rgba(0,0,0,0.35)] backdrop-blur-2xl transition-[transform,border-color,background-color] duration-300 hover:-translate-y-[3px] hover:border-white/[0.16] hover:bg-white/[0.08]"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${g.logoBg} text-sm font-bold text-white shadow-lg ring-1 ring-white/10`}>
@@ -1489,7 +1527,7 @@ function TalentsSection({ onViewDetails }: { onViewDetails: (d: SliderDetails) =
               {TALENTS_DATA.map((t) => (
                 <article
                   key={t.id}
-                  className="snap-start flex w-[min(300px,80vw)] sm:w-[330px] shrink-0 flex-col rounded-[24px] border border-white/[0.09] bg-white/[0.05] p-5 shadow-[0_16px_40px_rgba(0,0,0,0.35)] backdrop-blur-2xl transition-all duration-300 hover:-translate-y-[3px] hover:border-white/[0.16] hover:bg-white/[0.08] hover:shadow-[0_20px_50px_rgba(0,0,0,0.45)]"
+                  className="snap-start flex w-[min(300px,80vw)] sm:w-[330px] shrink-0 flex-col rounded-[24px] border border-white/[0.09] bg-white/[0.05] p-5 shadow-[0_16px_40px_rgba(0,0,0,0.35)] backdrop-blur-2xl transition-[transform,border-color,background-color,box-shadow] duration-300 hover:-translate-y-[3px] hover:border-white/[0.16] hover:bg-white/[0.08] hover:shadow-[0_20px_50px_rgba(0,0,0,0.45)]"
                 >
                   {/* Avatar + availability */}
                   <div className="flex items-start justify-between gap-3">
@@ -1682,6 +1720,967 @@ function AnimatedSphere() {
 }
 
 /* ─────────────────────────────────────────────────────────────
+   HomepageLiveFeed — infinite-scroll published feed after
+   the Professionals grid. Mirrors the PublishedPage card style
+   with left + right sidebars on desktop.
+───────────────────────────────────────────────────────────── */
+const HP_TABS = [
+  { id: 'all',          label: 'All',        icon: SlidersHorizontal },
+  { id: 'featured',     label: 'Featured',   icon: Sparkles },
+  { id: 'news',         label: 'News',       icon: Newspaper },
+  { id: 'article',      label: 'Articles',   icon: BookOpen },
+  { id: 'document',     label: 'Docs',       icon: FileText },
+  { id: 'portfolio',    label: 'Portfolio',  icon: Layers },
+  { id: 'announcement', label: 'Announce',   icon: Megaphone },
+  { id: 'job',          label: 'Jobs',       icon: Briefcase },
+  { id: 'resume',       label: 'Resumes',    icon: User },
+  { id: 'product',      label: 'Products',   icon: Package },
+  { id: 'event',        label: 'Events',     icon: CalendarDays },
+  { id: 'hackathon',    label: 'Hackathons', icon: Terminal },
+  { id: 'post',         label: 'Posts',      icon: ImageIcon },
+  { id: 'poll',         label: 'Polls',      icon: ListChecks },
+  { id: 'survey',       label: 'Surveys',    icon: ClipboardList },
+  { id: 'chart',        label: 'Charts',     icon: BarChart2 },
+  { id: 'thread',       label: 'Threads',    icon: MessageSquare },
+  { id: 'video',        label: 'Videos',     icon: Video },
+  { id: 'milestone',    label: 'Milestones', icon: Award },
+  { id: 'tutorial',     label: 'Tutorials',  icon: BookMarked },
+  { id: 'gig',          label: 'Gigs',       icon: Zap },
+] as const;
+
+const HP_TAG_CLS: Record<string, string> = {
+  all:          'bg-white/10 text-white/70 border-white/10',
+  featured:     'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  news:         'bg-red-500/10 text-red-400 border-red-500/20',
+  article:      'bg-violet-500/10 text-violet-400 border-violet-500/20',
+  document:     'bg-slate-500/10 text-slate-300 border-slate-500/20',
+  portfolio:    'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  announcement: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  job:          'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  resume:       'bg-sky-500/10 text-sky-400 border-sky-500/20',
+  product:      'bg-purple-500/10 text-purple-400 border-purple-500/20',
+  event:        'bg-pink-500/10 text-pink-400 border-pink-500/20',
+  hackathon:    'bg-orange-500/10 text-orange-400 border-orange-500/20',
+  gig:          'bg-white/[0.08] text-white/70 border-white/[0.10]',
+  post:         'bg-rose-500/10 text-rose-400 border-rose-500/20',
+  poll:         'bg-violet-500/10 text-violet-400 border-violet-500/20',
+  survey:       'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  chart:        'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  thread:       'bg-sky-500/10 text-sky-400 border-sky-500/20',
+  video:        'bg-red-500/10 text-red-400 border-red-500/20',
+  milestone:    'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+  tutorial:     'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
+};
+type HpFeedItem = {
+  id: string;
+  category: string;
+  badge: string;
+  title: string;
+  byline: string;
+  body: string;
+  chips?: string[];
+  stats?: { v: string; l: string }[];
+  postedAt: string;
+  featured?: boolean;
+  isReal?: boolean;
+  likesCount?: number;
+  likedByViewer?: boolean;
+  commentsCount?: number;
+  thumbnailUrl?: string;
+  uploadedByUserId?: string;
+  uploadedByName?: string;
+};
+
+function hpTimeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 30) return `${d}d ago`;
+  return `${Math.floor(d / 30)}mo ago`;
+}
+
+const HP_AVATAR_CLS = 'bg-white/[0.07] text-white/55';
+const HP_PAGE_SIZE  = 8;
+const HP_META_LINE_RE = /^(Registration URL|Shop URL|WhatsApp|Application URL|Website|Contact|Email|Phone)\s*:/i;
+function hpGetBodySnippet(raw: string, maxLen = 200): string {
+  const cleaned = raw.replace(/https?:\/\/\S+/gi, '').replace(/\s{2,}/g, ' ').trim();
+  const prose = cleaned.split(/\n+/)
+    .filter(l => l.trim() && !HP_META_LINE_RE.test(l.trim()))
+    .join(' ')
+    .trim();
+  return prose.length > maxLen ? `${prose.slice(0, maxLen).trimEnd()}…` : prose;
+}
+
+/* ── universal metadata chip renderer ──────────────────────────── */
+type HpMetaChip = { icon: React.ReactNode; label: string; value: string };
+
+const ic = (I: React.ComponentType<{ className?: string }>) => <I className="h-3 w-3" />;
+
+/* strip URLs + Apply/Problem/Eligibility noise before parsing */
+function hpCleanBody(raw: string) {
+  return raw
+    .replace(/https?:\/\/\S+/gi, '')
+    .replace(/\b(Apply\s*(URL|Link|Here)?|Problem\s*Statements?|Eligibility|About\s*Us|Description)\s*:[^:]*?(?=\s+\w[\w\s/]*:|$)/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+const HP_KV_FIELDS: { re: RegExp; label: string; icon: React.ReactNode }[] = [
+  { re: /(?:Job|Job\s*Title|Position|Role)\s*:\s*([^:\n]+?)(?=\s+\w[\w\s/]*:|$)/i, label: 'ROLE',       icon: ic(Briefcase) },
+  { re: /Company\s*:\s*([^:\n]+?)(?=\s+\w[\w\s/]*:|$)/i,                           label: 'COMPANY',     icon: ic(Briefcase) },
+  { re: /Hackathon\s*:\s*([^:\n]+?)(?=\s+\w[\w\s/]*:|$)/i,                         label: 'HACKATHON',   icon: ic(Zap) },
+  { re: /Organisers?\s*:\s*([^:\n]+?)(?=\s+\w[\w\s/]*:|$)/i,                       label: 'ORGANISER',   icon: ic(User) },
+  { re: /(?:Themes?(?:\s*[/]\s*Tracks?)?)\s*:\s*([^:\n]+?)(?=\s+\w[\w\s/]*:|$)/i, label: 'TRACKS',      icon: ic(Target) },
+  { re: /Prize\s*Pool\s*:\s*([^:\n]+?)(?=\s+\w[\w\s/]*:|$)/i,                      label: 'PRIZE POOL',  icon: ic(Trophy) },
+  { re: /(?:Salary|CTC|Stipend|Compensation|Package)\s*:\s*([^:\n]+?)(?=\s+\w[\w\s/]*:|$)/i, label: 'SALARY', icon: ic(Tag) },
+  { re: /Team\s*Size\s*:\s*([^:\n]+?)(?=\s+\w[\w\s/]*:|$)/i,                       label: 'TEAM SIZE',   icon: ic(Users) },
+  { re: /(?:Location|City|Venue|Place)\s*:\s*([^:\n]+?)(?=\s+\w[\w\s/]*:|$)/i,     label: 'LOCATION',    icon: ic(MapPin) },
+  { re: /(?:Work\s*)?(?:Mode|Type)\s*:\s*([^:\n]+?)(?=\s+\w[\w\s/]*:|$)/i,         label: 'MODE',        icon: ic(MapPin) },
+  { re: /Event\s*Dates?\s*:\s*([^:\n]+?)(?=\s+\w[\w\s/]*:|$)/i,                    label: 'DATE',        icon: ic(CalendarDays) },
+  { re: /(?:Registration\s*)?Deadline\s*:\s*([^:\n]+?)(?=\s+\w[\w\s/]*:|$)/i,      label: 'DEADLINE',    icon: ic(CalendarDays) },
+  { re: /Experience\s*:\s*([^:\n]+?)(?=\s+\w[\w\s/]*:|$)/i,                        label: 'EXPERIENCE',  icon: ic(Star) },
+  { re: /Skills?\s*:\s*([^:\n]+?)(?=\s+\w[\w\s/]*:|$)/i,                           label: 'SKILLS',      icon: ic(Sparkles) },
+  { re: /Industry\s*:\s*([^:\n]+?)(?=\s+\w[\w\s/]*:|$)/i,                          label: 'INDUSTRY',    icon: ic(Globe) },
+];
+
+/* 2. byline-based chips per category */
+function hpBylineChips(byline: string, category: string): HpMetaChip[] {
+  const parts = byline.split(/\s*·\s*/).map(s => s.trim()).filter(Boolean);
+  const chips: HpMetaChip[] = [];
+  const cat = category.toLowerCase();
+
+  if (cat === 'news' || cat === 'article') {
+    if (parts[0]) chips.push({ icon: ic(Newspaper), label: 'SOURCE', value: parts[0] });
+    const read = parts.find(p => /min read/i.test(p));
+    if (read) chips.push({ icon: ic(Clock), label: 'READ TIME', value: read });
+    return chips;
+  }
+  if (cat === 'document') {
+    parts.forEach(p => {
+      if (/\d+\s*pages?/i.test(p))          chips.push({ icon: ic(FileText), label: 'PAGES',  value: p });
+      else if (/\d+.*\b(mb|kb|gb)\b/i.test(p)) chips.push({ icon: ic(Info),    label: 'SIZE',   value: p });
+      else if (/^(pdf|docx|xlsx|pptx|zip)$/i.test(p)) chips.push({ icon: ic(FileText), label: 'FORMAT', value: p.toUpperCase() });
+    });
+    return chips;
+  }
+  if (cat === 'job') {
+    if (parts[0]) chips.push({ icon: ic(Briefcase), label: 'COMPANY',  value: parts[0] });
+    if (parts[1]) chips.push({ icon: ic(Target),    label: 'TEAM',     value: parts[1] });
+    if (parts[2]) chips.push({ icon: ic(MapPin),    label: 'LOCATION', value: parts[2] });
+    return chips;
+  }
+  if (cat === 'resume') {
+    if (parts[0]) chips.push({ icon: ic(Briefcase), label: 'ROLE',     value: parts[0] });
+    const exp = parts.find(p => /yr|year|exp/i.test(p));
+    if (exp) chips.push({ icon: ic(Star), label: 'EXPERIENCE', value: exp });
+    const loc = parts.find(p => /,\s*[A-Z]{2}$/.test(p) || /\b(remote|bengaluru|mumbai|delhi|hyderabad|pune|chennai)\b/i.test(p));
+    if (loc) chips.push({ icon: ic(MapPin), label: 'LOCATION', value: loc });
+    return chips;
+  }
+  if (cat === 'event') {
+    if (parts[0]) chips.push({ icon: ic(User),        label: 'ORGANISER', value: parts[0] });
+    if (parts[1]) chips.push({ icon: ic(MapPin),      label: 'VENUE',     value: parts[1] });
+    if (parts[2]) chips.push({ icon: ic(CalendarDays),label: 'DATE',      value: parts[2] });
+    return chips;
+  }
+  if (cat === 'announcement') {
+    if (parts[0]) chips.push({ icon: ic(Megaphone), label: 'FROM',    value: parts[0] });
+    const reach = parts.find(p => /sent to/i.test(p));
+    if (reach) chips.push({ icon: ic(Users), label: 'REACHED', value: reach.replace(/sent to\s*/i, '') });
+    return chips;
+  }
+  if (cat === 'product') {
+    const price = parts.find(p => /[₹$€£]/.test(p) || /month|annual|lpa/i.test(p));
+    if (price) chips.push({ icon: ic(Tag), label: 'PRICING', value: price });
+    const billing = parts.find(p => /billing|annual|monthly/i.test(p));
+    if (billing && billing !== price) chips.push({ icon: ic(Info), label: 'BILLING', value: billing });
+    return chips;
+  }
+  if (cat === 'portfolio') {
+    const clientPart = parts.find(p => /^client\s*:/i.test(p));
+    if (clientPart) chips.push({ icon: ic(Briefcase), label: 'CLIENT', value: clientPart.replace(/^client\s*:\s*/i, '') });
+    const work = parts.find(p => /(design|dev|engineering|ux|ui|research)/i.test(p));
+    if (work) chips.push({ icon: ic(Sparkles), label: 'WORK TYPE', value: work });
+    const year = parts.find(p => /^\d{4}$/.test(p.trim()));
+    if (year) chips.push({ icon: ic(CalendarDays), label: 'YEAR', value: year });
+    return chips;
+  }
+  /* generic fallback: first 3 byline parts */
+  const GENERIC_LABELS = ['SOURCE', 'CATEGORY', 'INFO'];
+  const GENERIC_ICONS  = [ic(Info), ic(Target), ic(CalendarDays)];
+  parts.slice(0, 3).forEach((p, i) => {
+    chips.push({ icon: GENERIC_ICONS[i], label: GENERIC_LABELS[i], value: p });
+  });
+  return chips;
+}
+
+/* combined parser — structured body first, then byline */
+function hpBuildChips(body: string, byline: string, category: string): HpMetaChip[] {
+  const cleaned = hpCleanBody(body);
+  const kvChips: HpMetaChip[] = [];
+  for (const { re, label, icon } of HP_KV_FIELDS) {
+    const m = cleaned.match(re);
+    if (m) {
+      const val = m[1].trim();
+      if (val && val.length < 60) kvChips.push({ icon, label, value: val });
+    }
+  }
+  if (kvChips.length >= 2) return kvChips;
+  return hpBylineChips(byline, category);
+}
+
+function HpMetaChips({ body, byline, category }: { body: string; byline: string; category: string }) {
+  const chips = hpBuildChips(body, byline, category).slice(0, 5);
+  if (!chips.length) return (
+    <p className="mt-1.5 text-[13px] leading-relaxed text-white/50 line-clamp-2">
+      {hpGetBodySnippet(body)}
+    </p>
+  );
+  return (
+    <div className="mt-3 flex flex-wrap gap-1.5">
+      {chips.map(c => (
+        <span key={c.label}
+          className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.05] px-3 py-1.5 backdrop-blur-sm">
+          <span className="text-white/40 shrink-0">{c.icon}</span>
+          <span className="text-[9px] font-bold tracking-[0.12em] uppercase text-white/30">{c.label}</span>
+          <span className="text-[12px] font-semibold text-white/80 max-w-[120px] truncate">{c.value}</span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+
+function HomepageFeedCard({ item }: { item: HpFeedItem }) {
+  const [liked,     setLiked]     = React.useState(item.likedByViewer ?? false);
+  const [likeCount, setLikeCount] = React.useState(item.likesCount ?? 0);
+  const [saved,     setSaved]     = React.useState(false);
+  const likeInFlight = React.useRef(false);
+
+  React.useEffect(() => { setLiked(item.likedByViewer ?? false); }, [item.likedByViewer]);
+  React.useEffect(() => { setLikeCount(item.likesCount ?? 0); }, [item.likesCount]);
+
+  const displayName = item.uploadedByName || item.byline.split(' · ')[0] || 'Docrud User';
+  const bylineParts = item.byline.split(' · ').map((s: string) => s.trim());
+  const authorMeta  = bylineParts.slice(1).join(' · ');
+  const initials    = displayName.split(/\s+/).slice(0, 2).map((w: string) => w[0]?.toUpperCase() ?? '').join('');
+  const profileHref = item.uploadedByUserId ? `/u/${item.uploadedByUserId}` : null;
+
+  return (
+    <article className="group py-5">
+      {/* header */}
+      <div className="flex items-center gap-3 mb-3.5">
+        {profileHref ? (
+          <Link href={profileHref} onClick={e => e.stopPropagation()}
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${HP_AVATAR_CLS} hover:opacity-80 transition`}>
+            {initials.slice(0, 2) || <Newspaper className="h-3.5 w-3.5 opacity-60" />}
+          </Link>
+        ) : (
+          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${HP_AVATAR_CLS}`}>
+            {initials.slice(0, 2) || <Newspaper className="h-3.5 w-3.5 opacity-60" />}
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            {profileHref ? (
+              <Link href={profileHref} onClick={e => e.stopPropagation()}
+                className="text-[13.5px] font-semibold text-white leading-tight truncate hover:text-white/80 transition">
+                {displayName}
+              </Link>
+            ) : (
+              <span className="text-[13.5px] font-semibold text-white leading-tight truncate">{displayName}</span>
+            )}
+            {item.isReal && <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />}
+          </div>
+          <p className="text-[11px] text-white/35 mt-0.5 truncate">
+            {item.badge}{authorMeta ? ` · ${authorMeta}` : ''} · {hpTimeAgo(item.postedAt)}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={e => { e.stopPropagation(); setSaved(v => !v); }}
+          className={`transition shrink-0 ${saved ? 'text-white/70' : 'text-white/25 hover:text-white/60'}`}
+        >
+          <Bookmark className={`h-4 w-4 ${saved ? 'fill-current' : ''}`} />
+        </button>
+      </div>
+
+      {/* thumbnail */}
+      {item.thumbnailUrl && (
+        <Link href={`/published/${item.id}`} className="block mb-3.5 rounded-xl overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={item.thumbnailUrl} alt={item.title}
+            className="w-full max-h-[380px] object-cover transition-transform duration-500 group-hover:scale-[1.01]" />
+        </Link>
+      )}
+
+      {/* content */}
+      <Link href={`/published/${item.id}`} className="block">
+        <h3 className="text-[15px] font-bold leading-snug tracking-tight text-white line-clamp-2 group-hover:text-white/85 transition-colors">
+          {item.title}
+        </h3>
+        <HpMetaChips body={item.body || ''} byline={item.byline} category={item.category} />
+      </Link>
+
+      {/* chips */}
+      {item.chips && item.chips.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-3">
+          {item.chips.slice(0, 5).map((c: string) => (
+            <span key={c} className="rounded-full bg-white/[0.06] px-2.5 py-0.5 text-[11px] text-white/40">{c}</span>
+          ))}
+          {item.chips.length > 5 && (
+            <span className="rounded-full bg-white/[0.04] px-2.5 py-0.5 text-[11px] text-white/20">+{item.chips.length - 5}</span>
+          )}
+        </div>
+      )}
+
+      {/* stats */}
+      {item.stats && (
+        <div className="flex items-center gap-5 mt-3">
+          {item.stats.slice(0, 3).map(s => (
+            <div key={s.l} className="flex items-baseline gap-1.5">
+              <span className="text-[13.5px] font-bold text-white/75 tabular-nums">{s.v}</span>
+              <span className="text-[9.5px] font-semibold uppercase tracking-widest text-white/25">{s.l}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* engagement row */}
+      <div className="flex items-center gap-3 mt-3.5 pt-3.5 border-t border-white/[0.05]" onClick={e => e.preventDefault()}>
+        <button
+          type="button"
+          onClick={async e => {
+            e.stopPropagation();
+            if (likeInFlight.current) return;
+            const newLiked = !liked;
+            setLiked(newLiked);
+            setLikeCount(c => newLiked ? c + 1 : Math.max(0, c - 1));
+            if (item.isReal) {
+              likeInFlight.current = true;
+              try {
+                const res = await fetch(`/api/published/${item.id}/like`, { method: 'POST' });
+                if (res.ok) {
+                  const d = await res.json() as { liked: boolean; likesCount: number };
+                  setLiked(d.liked); setLikeCount(d.likesCount);
+                } else { setLiked(liked); setLikeCount(c => newLiked ? Math.max(0, c - 1) : c + 1); }
+              } catch { setLiked(liked); } finally { likeInFlight.current = false; }
+            }
+          }}
+          className={`flex items-center gap-1.5 text-[12px] font-semibold transition ${liked ? 'text-rose-400' : 'text-white/35 hover:text-white/70'}`}
+        >
+          <Heart className={`h-4 w-4 transition-transform ${liked ? 'fill-current scale-110' : ''}`} />
+          <span>{likeCount > 0 ? (likeCount >= 1000 ? `${(likeCount/1000).toFixed(1)}k` : String(likeCount)) : (liked ? 'Liked' : 'Like')}</span>
+        </button>
+        <Link
+          href={`/published/${item.id}`}
+          className="flex items-center gap-1.5 text-[12px] font-semibold text-white/35 hover:text-white/70 transition"
+          onClick={e => e.stopPropagation()}
+        >
+          <MessageSquare className="h-4 w-4" />
+          <span>{item.commentsCount ? (item.commentsCount >= 1000 ? `${(item.commentsCount/1000).toFixed(1)}k` : String(item.commentsCount)) : 'Comment'}</span>
+        </Link>
+        <button
+          type="button"
+          className="ml-auto flex items-center gap-1.5 text-[12px] font-semibold text-white/25 hover:text-white/55 transition"
+          onClick={async e => {
+            e.stopPropagation();
+            const url = `${window.location.origin}/published/${item.id}`;
+            if (navigator.share) { try { await navigator.share({ title: item.title, url }); return; } catch {} }
+            await navigator.clipboard.writeText(url).catch(() => {});
+          }}
+        >
+          <Share2 className="h-4 w-4" />
+        </button>
+      </div>
+    </article>
+  );
+}
+
+/* localStorage helpers — mirror PublishedPage */
+type HpTrendEntry = { count: number; trendedByViewer: boolean; category: string; title: string; chips: string[] };
+type HpTrendHistoryEntry = { postId: string; title: string; category: string; trendedAt: number; tags: string[] };
+const hpReadTrends       = (): Record<string, HpTrendEntry>       => { try { return JSON.parse(localStorage.getItem('pub_trends')        || '{}'); } catch { return {}; } };
+const hpReadTagTrends    = (): Record<string, number>             => { try { return JSON.parse(localStorage.getItem('pub_tag_trends')    || '{}'); } catch { return {}; } };
+const hpReadCatTrends    = (): Record<string, number>             => { try { return JSON.parse(localStorage.getItem('pub_cat_trends')    || '{}'); } catch { return {}; } };
+const hpReadTrendHistory = (): HpTrendHistoryEntry[]              => { try { return JSON.parse(localStorage.getItem('pub_trend_history') || '[]'); } catch { return []; } };
+
+function HomepageLiveFeed() {
+  const [allItems,   setAllItems]   = React.useState<HpFeedItem[]>([]);
+  const [page,       setPage]       = React.useState(1);
+  const [loading,    setLoading]    = React.useState(true);
+  const [activecat,  setActivecat]  = React.useState<string>('all');
+  const [tagSearch,  setTagSearch]  = React.useState<string>('');
+  const [sort,       setSort]       = React.useState<'Recent' | 'Popular' | 'Oldest'>('Recent');
+
+  /* trend state — synced from localStorage every 2s like PublishedPage */
+  const [trends,    setTrends]    = React.useState<Record<string, HpTrendEntry>>({});
+  const [tagTrends, setTagTrends] = React.useState<Record<string, number>>({});
+  const [catTrends, setCatTrends] = React.useState<Record<string, number>>({});
+  const [history,   setHistory]   = React.useState<HpTrendHistoryEntry[]>([]);
+
+  const [newItems,   setNewItems]   = React.useState<HpFeedItem[]>([]);
+  const [refreshing, setRefreshing] = React.useState(false);
+  const knownIds = React.useRef<Set<string>>(new Set());
+  const sentinelRef = React.useRef<HTMLDivElement>(null);
+
+  /* initial load */
+  React.useEffect(() => {
+    fetch('/api/public/published')
+      .then(r => r.json())
+      .then((d: { items?: HpFeedItem[] }) => {
+        if (!Array.isArray(d.items)) return;
+        setAllItems(d.items);
+        d.items.forEach(i => knownIds.current.add(i.id));
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  /* poll every 30s for new posts */
+  React.useEffect(() => {
+    const poll = async () => {
+      try {
+        const r = await fetch('/api/public/published');
+        if (!r.ok) return;
+        const d = await r.json() as { items?: HpFeedItem[] };
+        if (!Array.isArray(d.items)) return;
+        const fresh = d.items.filter(i => !knownIds.current.has(i.id));
+        if (fresh.length > 0) setNewItems(fresh);
+      } catch { /* ignore */ }
+    };
+    const iv = setInterval(poll, 30_000);
+    return () => clearInterval(iv);
+  }, []);
+
+  const applyRefresh = React.useCallback(() => {
+    if (newItems.length === 0) {
+      /* manual hard refresh */
+      setRefreshing(true);
+      fetch('/api/public/published')
+        .then(r => r.json())
+        .then((d: { items?: HpFeedItem[] }) => {
+          if (!Array.isArray(d.items)) return;
+          setAllItems(d.items);
+          d.items.forEach(i => knownIds.current.add(i.id));
+          setPage(1);
+        })
+        .catch(() => {})
+        .finally(() => setRefreshing(false));
+    } else {
+      setAllItems(prev => {
+        const merged = [...newItems, ...prev];
+        const seen = new Set<string>();
+        const deduped = merged.filter(i => { if (seen.has(i.id)) return false; seen.add(i.id); return true; });
+        deduped.forEach(i => knownIds.current.add(i.id));
+        return deduped;
+      });
+      setNewItems([]);
+      setPage(1);
+    }
+  }, [newItems]);
+
+  React.useEffect(() => {
+    const sync = () => {
+      setTrends(hpReadTrends());
+      setTagTrends(hpReadTagTrends());
+      setCatTrends(hpReadCatTrends());
+      setHistory(hpReadTrendHistory());
+    };
+    sync();
+    const iv = setInterval(sync, 2000);
+    return () => clearInterval(iv);
+  }, []);
+
+  const filtered = React.useMemo(() => {
+    let list = activecat === 'all'
+      ? allItems
+      : activecat === 'featured'
+        ? allItems.filter(i => i.featured)
+        : allItems.filter(i => i.category.toLowerCase() === activecat.toLowerCase());
+    if (tagSearch) list = list.filter(i => (i.chips ?? []).some(c => c.toLowerCase().includes(tagSearch.toLowerCase())) || i.title.toLowerCase().includes(tagSearch.toLowerCase()));
+    if (sort === 'Popular') list = [...list].sort((a, b) => (b.likesCount ?? 0) - (a.likesCount ?? 0));
+    else if (sort === 'Oldest') list = [...list].sort((a, b) => new Date(a.postedAt).getTime() - new Date(b.postedAt).getTime());
+    else list = [...list].sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime());
+    return list;
+  }, [allItems, activecat, tagSearch, sort]);
+
+  const visible = filtered.slice(0, page * HP_PAGE_SIZE);
+  const hasMore = visible.length < filtered.length;
+
+  React.useEffect(() => { setPage(1); }, [activecat, tagSearch, sort]);
+
+  React.useEffect(() => {
+    if (!hasMore || !sentinelRef.current) return;
+    const obs = new IntersectionObserver(entries => {
+      if (entries[0]?.isIntersecting) setPage(p => p + 1);
+    }, { rootMargin: '200px' });
+    obs.observe(sentinelRef.current);
+    return () => obs.disconnect();
+  }, [hasMore, visible.length]);
+
+  if (!loading && allItems.length === 0) return null;
+
+  /* category counts keyed by tab id (lowercase) */
+  const catCounts: Record<string, number> = {};
+  allItems.forEach(i => {
+    const k = i.category.toLowerCase();
+    catCounts[k] = (catCounts[k] ?? 0) + 1;
+  });
+
+  /* right sidebar: trending data from localStorage (same as PublishedPage) */
+  const topTrendingPosts = allItems
+    .filter(i => (trends[i.id]?.count ?? 0) > 0)
+    .sort((a, b) => (trends[b.id]?.count ?? 0) - (trends[a.id]?.count ?? 0))
+    .slice(0, 5);
+
+  const topTagsFromTrends = Object.entries(tagTrends)
+    .filter(([, c]) => c > 0)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 12);
+
+  const categoryStats = Object.entries(
+    allItems.reduce((acc: Record<string, number>, i) => { acc[i.category] = (acc[i.category] ?? 0) + 1; return acc; }, {})
+  ).sort((a, b) => b[1] - a[1]).slice(0, 8);
+
+  const totalTrends = Object.values(catTrends).reduce((a, b) => a + b, 0);
+
+  const recentItems = [...allItems].sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime()).slice(0, 6);
+
+  return (
+    <>
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes hp-feed-fadein {
+          from { opacity: 0; transform: translateY(24px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .hp-feed-card-enter { animation: hp-feed-fadein 0.50s cubic-bezier(0.22,1,0.36,1) both; }
+        @keyframes hp-glow-drift {
+          0%, 100% { transform: translate(-10%, -10%) scale(1);   opacity: 0.30; }
+          50%       { transform: translate(  6%,  8%) scale(1.15); opacity: 0.18; }
+        }
+        .hp-feed-glow { animation: hp-glow-drift 14s ease-in-out infinite; }
+        .hp-feed-glow2 { animation: hp-glow-drift 18s ease-in-out infinite reverse; }
+      ` }} />
+
+      {/* ── outer premium frame ── */}
+      <div className="relative -mx-4 sm:-mx-6 lg:-mx-10 xl:-mx-12 mt-2 mb-6"
+        style={{
+          overflow: 'clip',
+          borderRadius: 'clamp(12px, 1.5vw, 24px)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '0 0 0 1px rgba(255,255,255,0.035) inset, 0 32px 80px rgba(0,0,0,0.55), 0 8px 24px rgba(0,0,0,0.35)',
+        }}
+      >
+        {/* ambient glow blobs */}
+        <div className="hp-feed-glow pointer-events-none absolute -top-24 -left-24 h-80 w-80 rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.22) 0%, transparent 70%)', filter: 'blur(48px)' }} />
+        <div className="hp-feed-glow2 pointer-events-none absolute -bottom-24 -right-24 h-96 w-96 rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.18) 0%, transparent 70%)', filter: 'blur(56px)' }} />
+        {/* noise grain */}
+        <div className="pointer-events-none absolute inset-0 opacity-[0.025]"
+          style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.75\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E")', backgroundSize: '160px 160px' }} />
+
+        {/* 3-column layout */}
+        <div
+          className="relative flex"
+          style={{
+            background: 'linear-gradient(160deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.015) 40%, rgba(255,255,255,0.025) 100%)',
+            backdropFilter: 'blur(40px) saturate(1.8)',
+            WebkitBackdropFilter: 'blur(40px) saturate(1.8)',
+            minHeight: '100vh',
+          }}
+        >
+        {/* ══ LEFT SIDEBAR (lg+) — exact match of PublishedPage ══ */}
+        <aside className="hidden lg:flex w-56 xl:w-60 shrink-0 flex-col" style={{ position: 'sticky', top: 0, height: '100vh', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
+
+          {/* logo / title area */}
+          <div className="px-4 py-5 border-b border-white/[0.05]">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 text-xs font-medium text-white/40 transition hover:text-white/70"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Back to app
+            </Link>
+            <div className="mt-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/25">Docrud</p>
+              <h2 className="mt-0.5 text-lg font-bold tracking-tight text-white">Published</h2>
+            </div>
+            {/* live pill */}
+            <div className="mt-3 flex items-center gap-2">
+              <span className="text-[11px] text-white/35 tabular-nums">{allItems.length} items</span>
+              {allItems.filter(i => i.isReal).length > 0 && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[9px] font-bold text-emerald-400">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  {allItems.filter(i => i.isReal).length} live
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* nav list */}
+          <nav className="flex-1 overflow-y-auto p-2 space-y-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {HP_TABS.map(tab => {
+              const isActive     = activecat === tab.id;
+              const count        = tab.id === 'all' ? allItems.length : (catCounts[tab.id] ?? 0);
+              const colorCls     = HP_TAG_CLS[tab.id] ?? HP_TAG_CLS.all;
+              const isFeatured   = tab.id === 'featured';
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => { setActivecat(tab.id); setTagSearch(''); }}
+                  className={`group w-full flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[12.5px] font-medium transition-all ${
+                    isActive ? 'bg-white/[0.08] text-white shadow-sm' : 'text-white/40 hover:bg-white/[0.04] hover:text-white/80'
+                  }`}
+                >
+                  <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border transition-colors ${
+                    isActive
+                      ? isFeatured ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : colorCls
+                      : 'border-white/[0.06] bg-transparent text-white/30 group-hover:border-white/[0.10] group-hover:text-white/50'
+                  }`}>
+                    <tab.icon className="h-3.5 w-3.5" />
+                  </span>
+                  <span className="flex-1 text-left">{tab.label}</span>
+                  {count > 0 && (
+                    <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold tabular-nums min-w-[18px] text-center ${
+                      isActive ? 'bg-white/[0.12] text-white' : 'bg-white/[0.05] text-white/20'
+                    }`}>{count}</span>
+                  )}
+                  {isFeatured && (
+                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: isActive ? 'rgba(251,191,36,0.80)' : 'rgba(251,191,36,0.25)', flexShrink: 0, boxShadow: isActive ? '0 0 5px rgba(251,191,36,0.50)' : 'none' }} />
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* bottom CTA — matches PublishedPage */}
+          <div className="p-3 border-t border-white/[0.05] space-y-2">
+            <Link
+              href="/published"
+              className="group flex w-full items-center justify-center gap-2 rounded-xl border border-white/[0.10] bg-white/[0.05] px-4 py-2.5 text-[11.5px] font-semibold text-white/55 transition hover:border-white/[0.18] hover:bg-white/[0.09] hover:text-white/85 active:scale-[0.98]"
+            >
+              <Plus className="h-3.5 w-3.5 transition-transform group-hover:rotate-90 duration-200" />
+              Publish something
+            </Link>
+          </div>
+        </aside>
+
+        {/* ══ MAIN FEED ══ */}
+        <div className="flex flex-1 flex-col min-w-0">
+          {/* sticky top bar */}
+          <div
+            className="sticky top-0 z-20 border-b border-white/[0.08] shrink-0"
+            style={{ background: 'rgba(12,12,16,0.82)', backdropFilter: 'blur(32px) saturate(1.6)', WebkitBackdropFilter: 'blur(32px) saturate(1.6)' }}
+          >
+            {/* row 1: title + tag pill + sort */}
+            <div className="flex items-center gap-2 px-4 sm:px-6 pt-3.5 pb-2">
+              <span className="text-[13px] font-semibold text-white/85 tracking-tight shrink-0">
+                {HP_TABS.find(t => t.id === activecat)?.label ?? 'All Posts'}
+              </span>
+              {tagSearch && (
+                <button
+                  type="button"
+                  onClick={() => setTagSearch('')}
+                  className="inline-flex items-center gap-1 rounded-full border border-orange-400/30 bg-orange-500/10 px-2 py-0.5 text-[10px] font-semibold text-orange-300 transition hover:bg-orange-500/20"
+                >
+                  #{tagSearch} <X className="h-2.5 w-2.5" />
+                </button>
+              )}
+              {filtered.length > 0 && (
+                <span className="rounded-full bg-white/[0.09] px-2 py-px text-[9.5px] font-semibold text-white/50 tabular-nums">{filtered.length}</span>
+              )}
+              <div className="ml-auto flex items-center gap-1.5">
+                {(['Recent', 'Popular', 'Oldest'] as const).map(s => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setSort(s)}
+                    className={`rounded-lg px-2.5 py-1 text-[10.5px] font-semibold transition ${
+                      sort === s
+                        ? 'bg-white/[0.14] text-white'
+                        : 'text-white/45 hover:bg-white/[0.07] hover:text-white/75'
+                    }`}
+                  >{s}</button>
+                ))}
+                {/* manual refresh */}
+                <button
+                  type="button"
+                  onClick={applyRefresh}
+                  disabled={refreshing}
+                  title="Refresh feed"
+                  className="ml-1 flex h-7 w-7 items-center justify-center rounded-lg text-white/30 transition hover:bg-white/[0.07] hover:text-white/65 disabled:opacity-40"
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+            </div>
+
+            {/* new-posts banner */}
+            {newItems.length > 0 && (
+              <div className="px-4 sm:px-6 pb-2.5">
+                <button
+                  type="button"
+                  onClick={applyRefresh}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl py-2 text-[11.5px] font-semibold transition active:scale-[0.98]"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(99,102,241,0.18), rgba(139,92,246,0.14))',
+                    border: '1px solid rgba(99,102,241,0.28)',
+                    color: '#c7d2fe',
+                  }}
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 animate-pulse" />
+                  {newItems.length} new post{newItems.length !== 1 ? 's' : ''} — tap to load
+                  <ArrowRight className="h-3.5 w-3.5 opacity-70" />
+                </button>
+              </div>
+            )}
+
+            {/* row 2: tab pill filters (mobile only) */}
+            <div className="lg:hidden flex gap-2 overflow-x-auto px-4 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {HP_TABS.map(tab => {
+                const isActive = activecat === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => { setActivecat(tab.id); setTagSearch(''); }}
+                    className={`shrink-0 rounded-full px-3.5 py-1.5 text-[11.5px] font-semibold transition ${
+                      isActive
+                        ? 'bg-white/[0.18] text-white border border-white/[0.22]'
+                        : 'border border-white/[0.12] text-white/55 hover:border-white/[0.20] hover:text-white/80'
+                    }`}
+                  >{tab.label}</button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* feed cards */}
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="mx-auto w-full max-w-[600px] divide-y divide-white/[0.045]">
+              {loading
+                ? Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="py-5 space-y-3 animate-pulse">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-white/[0.05]" />
+                        <div className="flex-1 space-y-1.5">
+                          <div className="h-3 w-28 rounded bg-white/[0.05]" />
+                          <div className="h-2.5 w-20 rounded bg-white/[0.04]" />
+                        </div>
+                      </div>
+                      <div className="h-4 w-3/4 rounded bg-white/[0.05]" />
+                      <div className="h-3 w-full rounded bg-white/[0.04]" />
+                      <div className="h-3 w-5/6 rounded bg-white/[0.03]" />
+                    </div>
+                  ))
+                : visible.length > 0
+                  ? visible.map((item, idx) => (
+                      <div key={item.id} className="hp-feed-card-enter" style={{ animationDelay: `${Math.min(idx % HP_PAGE_SIZE, 6) * 50}ms` }}>
+                        <HomepageFeedCard item={item} />
+                      </div>
+                    ))
+                  : (
+                      <div className="flex flex-col items-center gap-3 py-20 text-center">
+                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.07] bg-white/[0.03]">
+                          <Newspaper className="h-6 w-6 text-white/15" />
+                        </div>
+                        <p className="text-[13px] text-white/30">No posts in this category yet</p>
+                      </div>
+                    )
+              }
+
+              {/* sentinel */}
+              {hasMore && (
+                <div ref={sentinelRef} className="flex items-center justify-center py-8">
+                  <Loader2 className="h-4 w-4 animate-spin text-white/15" />
+                </div>
+              )}
+
+              {/* end of feed */}
+              {!loading && !hasMore && visible.length > 0 && (
+                <div className="flex flex-col items-center gap-2.5 py-10">
+                  <span className="text-[11px] text-white/18">You&apos;re all caught up</span>
+                  <Link href="/published"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] px-4 py-1.5 text-[11px] font-semibold text-white/30 transition hover:border-white/[0.14] hover:text-white/60">
+                    Explore more on Published <ArrowRight className="h-3 w-3" />
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ══ RIGHT SIDEBAR (xl+) — mirrors PublishedPage TrendingPanel ══ */}
+        <aside className="hidden xl:flex w-64 2xl:w-72 shrink-0 flex-col" style={{ position: 'sticky', top: 0, height: '100vh', borderLeft: '1px solid rgba(255,255,255,0.07)' }}>
+          {/* header */}
+          <div className="flex items-center justify-between px-4 py-3.5 border-b border-white/[0.05] shrink-0">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-3.5 w-3.5 text-orange-400/60" />
+              <span className="text-[10.5px] font-bold uppercase tracking-[0.16em] text-white/40">Live Feed</span>
+            </div>
+            {totalTrends > 0 && (
+              <span className="rounded-full bg-orange-500/15 px-2 py-0.5 text-[9.5px] font-bold text-orange-400">🔥 {totalTrends}</span>
+            )}
+          </div>
+
+          <div className="flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="p-4 space-y-7 pb-20">
+
+              {/* ── Recent Posts ── */}
+              <section>
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/30 mb-3">Recent</p>
+                <div className="space-y-3.5">
+                  {recentItems.length === 0 && <p className="text-[11px] text-white/20">No posts yet</p>}
+                  {recentItems.map((item, i) => (
+                    <Link key={item.id} href={`/published/${item.id}`} className="group flex items-start gap-2.5">
+                      <span className="text-[11px] font-bold text-white/20 tabular-nums mt-0.5 w-4 shrink-0">{i + 1}</span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[12px] font-semibold text-white/65 leading-snug line-clamp-2 group-hover:text-white transition-colors">{item.title}</p>
+                        <p className="text-[10.5px] text-white/25 mt-0.5">{item.uploadedByName || 'Docrud'} · {hpTimeAgo(item.postedAt)}</p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+
+              {/* ── Trending Now ── */}
+              <section>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/30">Trending</p>
+                    {totalTrends > 0 && (
+                      <span className="rounded-full bg-orange-500/15 px-2 py-0.5 text-[9.5px] font-bold text-orange-400/80">{totalTrends} 🔥</span>
+                    )}
+                  </div>
+                  {totalTrends > 0 && (
+                    <button type="button" onClick={() => setSort('Popular')}
+                      className="text-[10.5px] font-semibold text-orange-400/60 hover:text-orange-400 transition">
+                      Sort feed →
+                    </button>
+                  )}
+                </div>
+
+                {topTrendingPosts.length > 0 ? (
+                  <div className="space-y-3.5 mb-4">
+                    {topTrendingPosts.map((item, i) => (
+                      <Link key={item.id} href={`/published/${item.id}`} className="group flex items-start gap-2.5">
+                        <span className="text-[11px] font-bold text-orange-400/40 tabular-nums mt-0.5 w-4 shrink-0">{i + 1}</span>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[12px] font-semibold text-white/65 leading-snug line-clamp-2 group-hover:text-white transition-colors">{item.title}</p>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <TrendingUp className="h-3 w-3 text-orange-400/50" />
+                            <span className="text-[10.5px] font-bold text-orange-400/60">{trends[item.id]?.count} trending</span>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-white/20 mb-4 leading-relaxed">
+                    Hit 🔥 on any post to add it to trending. Top trends appear here.
+                  </p>
+                )}
+
+                {/* Trending tags (from localStorage) */}
+                {topTagsFromTrends.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {topTagsFromTrends.map(([tag, count]) => (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => { setTagSearch(tag); setActivecat('All'); }}
+                        className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10.5px] font-medium transition ${
+                          tagSearch === tag
+                            ? 'border-orange-400/40 bg-orange-500/10 text-orange-300'
+                            : 'border-white/[0.07] bg-white/[0.05] text-white/45 hover:bg-white/[0.09] hover:text-white/80'
+                        }`}
+                      >
+                        #{tag}
+                        <span className="font-bold tabular-nums text-orange-400/70">{count}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-white/15">Trending tags show here once posts are trended.</p>
+                )}
+              </section>
+
+              {/* ── Categories ── */}
+              <section>
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/30 mb-3">Categories</p>
+                <div className="space-y-1">
+                  {categoryStats.map(([cat, count]) => {
+                    const trendCount = catTrends[cat] ?? 0;
+                    const maxCount   = Math.max(...categoryStats.map(([, c]) => c), 1);
+                    const isActive   = activecat === cat.toLowerCase();
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => { setActivecat(cat.toLowerCase()); setTagSearch(''); }}
+                        className={`group w-full flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-left transition ${
+                          isActive ? 'bg-white/[0.07]' : 'hover:bg-white/[0.04]'
+                        }`}
+                      >
+                        <Newspaper className="h-3.5 w-3.5 text-white/25 shrink-0" />
+                        <span className={`text-[12px] font-medium transition flex-1 capitalize truncate ${isActive ? 'text-white/85' : 'text-white/50 group-hover:text-white/80'}`}>
+                          {cat}
+                        </span>
+                        <div className="w-14 h-1 rounded-full bg-white/[0.05] overflow-hidden shrink-0">
+                          <div className="h-full rounded-full bg-white/20" style={{ width: `${(count / maxCount) * 100}%` }} />
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0 min-w-[32px] justify-end">
+                          {trendCount > 0 && (
+                            <span className="flex items-center gap-0.5 text-[9.5px] font-bold text-orange-400/60">
+                              <TrendingUp className="h-2.5 w-2.5" />{trendCount}
+                            </span>
+                          )}
+                          <span className="text-[10.5px] font-semibold text-white/25 tabular-nums">{count}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+
+              {/* ── Your Trend History ── */}
+              {history.length > 0 && (
+                <section>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/30 mb-3">Your Trends</p>
+                  <div className="space-y-3">
+                    {history.slice(0, 6).map((h, i) => (
+                      <div key={i} className="flex items-start gap-2.5">
+                        <TrendingUp className="h-3.5 w-3.5 text-orange-400/35 shrink-0 mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[11.5px] font-semibold text-white/50 leading-snug line-clamp-1">{h.title}</p>
+                          <p className="text-[10px] text-white/22 mt-0.5 capitalize">{h.category} · {hpTimeAgo(new Date(h.trendedAt).toISOString())}</p>
+                        </div>
+                      </div>
+                    ))}
+                    {history.length > 6 && (
+                      <p className="text-[10.5px] text-white/20">+{history.length - 6} more in history</p>
+                    )}
+                  </div>
+                </section>
+              )}
+
+            </div>
+          </div>
+        </aside>
+        </div>{/* end 3-column layout */}
+      </div>{/* end outer premium frame */}
+    </>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
    FeedIllustration — SVG art per feed category
 ───────────────────────────────────────────────────────────── */
 function FeedIllustration({ kind }: { kind: string }) {
@@ -1799,7 +2798,7 @@ function BuiltInIndia() {
             filter: 'blur(80px)' }} />
       </div>
 
-      <div className="relative z-10 px-4 py-14 sm:py-18 md:py-24 text-center">
+      <div className="relative z-10 px-4 sm:px-6 lg:px-10 xl:px-12 py-14 sm:py-18 md:py-24 text-center">
 
         {/* eyebrow */}
         <p className="mb-6 inline-flex items-center gap-3 text-[8.5px] font-bold uppercase tracking-[0.38em] text-white/18"
@@ -2477,7 +3476,7 @@ function PremiumFooter() {
         <div className="h-px bg-gradient-to-r from-transparent via-white/[0.07] to-transparent" />
 
         {/* ── Brand strip ── */}
-        <div className="border-b border-white/[0.04] px-6 py-8 sm:px-8 lg:px-10">
+        <div className="border-b border-white/[0.04] px-4 py-8 sm:px-6 lg:px-10 xl:px-12">
           <div className="mx-auto flex max-w-7xl flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-[18px] font-black tracking-[-0.03em] text-white/85">docrud</p>
@@ -2496,7 +3495,7 @@ function PremiumFooter() {
         </div>
 
         {/* ── Link columns ── */}
-        <div className="px-6 py-10 sm:px-8 lg:px-10">
+        <div className="px-4 py-10 sm:px-6 lg:px-10 xl:px-12">
           <div className="mx-auto max-w-7xl grid grid-cols-2 gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {FOOTER_COLS.map(col => (
               <div key={col.heading}>
@@ -2531,7 +3530,7 @@ function PremiumFooter() {
         </div>
 
         {/* ── Security badges ── */}
-        <div className="border-t border-white/[0.04] px-6 py-5 sm:px-8 lg:px-10">
+        <div className="border-t border-white/[0.04] px-4 py-5 sm:px-6 lg:px-10 xl:px-12">
           <div className="mx-auto max-w-7xl">
             <p className="mb-3 text-[8.5px] font-bold uppercase tracking-[0.2em] text-white/15">
               Data Security &amp; Trust
@@ -2551,7 +3550,7 @@ function PremiumFooter() {
         </div>
 
         {/* ── Copyright bar ── */}
-        <div className="border-t border-white/[0.04] px-6 py-5 sm:px-8 lg:px-10">
+        <div className="border-t border-white/[0.04] px-4 py-5 sm:px-6 lg:px-10 xl:px-12">
           <div className="mx-auto flex max-w-7xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
 
             <div className="flex flex-col gap-0.5">
@@ -2994,6 +3993,13 @@ interface PremiumSliderActions {
   onDocSheetClick: () => void;
 }
 
+const SLIDE_ICONS = {
+  pdf:        FileText,
+  scratchpad: PenLine,
+  docword:    FileSignature,
+  docsheets:  Sheet,
+} as const;
+
 function PremiumProductSlider({ onPdfClick, onScratchpadClick, onDocSheetClick }: PremiumSliderActions) {
   const [active, setActive] = React.useState(0);
   const [prev, setPrev] = React.useState<number | null>(null);
@@ -3088,7 +4094,7 @@ function PremiumProductSlider({ onPdfClick, onScratchpadClick, onDocSheetClick }
 
       {/* ── Card ── */}
       <div
-        className="pps-card relative overflow-hidden rounded-none sm:rounded-[22px]"
+        className="pps-card relative overflow-hidden rounded-2xl sm:rounded-[22px]"
         style={{
           background: `linear-gradient(150deg, ${slide.bgFrom} 0%, ${slide.bgTo} 100%)`,
           border: `1px solid ${slide.accentBorder}`,
@@ -3105,8 +4111,10 @@ function PremiumProductSlider({ onPdfClick, onScratchpadClick, onDocSheetClick }
 
         {/* orbs */}
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden" style={{ zIndex:0 }}>
-          <div style={{ position:'absolute', top:'-20%', right:'6%', width:'clamp(120px,26vw,300px)', height:'clamp(120px,26vw,300px)', borderRadius:'50%', background:`radial-gradient(circle,${slide.accent}2e 0%,transparent 68%)`, animation:'pps-orb 7.5s ease-in-out infinite', filter:'blur(24px)' }} />
-          <div style={{ position:'absolute', bottom:'-14%', left:'4%', width:'clamp(70px,14vw,160px)', height:'clamp(70px,14vw,160px)', borderRadius:'50%', background:`radial-gradient(circle,${slide.accent}18 0%,transparent 68%)`, animation:'pps-orb 12s ease-in-out infinite reverse', filter:'blur(18px)' }} />
+          {/* will-change: opacity, transform lets the browser pre-bake the blur texture on the GPU
+              so scale/translate/opacity changes don't require re-blurring each frame */}
+          <div style={{ position:'absolute', top:'-20%', right:'6%', width:'clamp(120px,26vw,300px)', height:'clamp(120px,26vw,300px)', borderRadius:'50%', background:`radial-gradient(circle,${slide.accent}2e 0%,transparent 68%)`, animation:'pps-orb 7.5s ease-in-out infinite', filter:'blur(24px)', willChange:'opacity, transform' }} />
+          <div style={{ position:'absolute', bottom:'-14%', left:'4%', width:'clamp(70px,14vw,160px)', height:'clamp(70px,14vw,160px)', borderRadius:'50%', background:`radial-gradient(circle,${slide.accent}18 0%,transparent 68%)`, animation:'pps-orb 12s ease-in-out infinite reverse', filter:'blur(18px)', willChange:'opacity, transform' }} />
         </div>
 
         {/* slide exit */}
@@ -3182,26 +4190,28 @@ function PremiumProductSlider({ onPdfClick, onScratchpadClick, onDocSheetClick }
 }
 
 function SlideContent({ slide, animKey, onCta }: { slide: typeof PRODUCT_SLIDES[number]; animKey: number; onCta: () => void }) {
+  const SlideIcon = SLIDE_ICONS[slide.id];
   return (
     <div className="flex w-full items-stretch"
       style={{
         flexDirection: 'row',
         minHeight: 'clamp(148px, 22vw, 268px)',
-        /* Mobile: tight 16px padding; sm+: generous 32-40px, with extra left/right for the side arrows */
-        padding: 'clamp(14px,2.4vw,32px) clamp(14px,2.2vw,36px)',
+        padding: 'clamp(20px,2.8vw,40px) clamp(16px,2.4vw,40px)',
       }}>
 
       {/* ── Left: text ── */}
       <div className="flex flex-1 flex-col justify-center"
-        style={{ gap: 'clamp(5px,0.9vw,10px)', minWidth: 0,
-          /* on desktop push content away from the side-arrow buttons */
+        style={{ gap: 'clamp(6px,0.9vw,11px)', minWidth: 0,
           paddingLeft: 'clamp(0px,2vw,28px)',
           paddingRight: 'clamp(0px,2vw,20px)',
         }}>
 
         {/* Badge */}
-        <div className="flex items-center gap-1.5" style={{ animation:'pps-badge-in 0.35s 0.03s cubic-bezier(0.22,1,0.36,1) both' }}>
-          <span style={{ fontSize: 'clamp(12px,1.5vw,15px)', lineHeight:1 }}>{slide.icon}</span>
+        <div className="flex items-center gap-2" style={{ animation:'pps-badge-in 0.35s 0.03s cubic-bezier(0.22,1,0.36,1) both' }}>
+          <span className="flex items-center justify-center rounded-full shrink-0"
+            style={{ width:20, height:20, background: slide.badgeColor, border:`1px solid ${slide.accentBorder}` }}>
+            <SlideIcon style={{ width:11, height:11, color: slide.accent, strokeWidth:2.2 }} />
+          </span>
           <span className="rounded-full font-semibold uppercase"
             style={{ fontSize:'clamp(8px,0.75vw,9.5px)', letterSpacing:'0.10em',
               padding:'2px 8px', background: slide.badgeColor, color: slide.accent, border:`1px solid ${slide.accentBorder}` }}>
@@ -3220,9 +4230,9 @@ function SlideContent({ slide, animKey, onCta }: { slide: typeof PRODUCT_SLIDES[
           <span style={{ color: slide.accent }}>{slide.headlineAccent}</span>
         </h2>
 
-        {/* Subtitle — hidden on tiny screens, 1 line on sm, 2 on lg */}
+        {/* Subtitle */}
         <p className="hidden xs:block" style={{
-          fontSize: 'clamp(9.5px,0.95vw,12.5px)', color:'rgba(255,255,255,0.46)', lineHeight:1.55, margin:0,
+          fontSize: 'clamp(9.5px,0.95vw,12.5px)', color:'rgba(255,255,255,0.42)', lineHeight:1.55, margin:0,
           display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden',
           maxWidth: 'clamp(180px,36vw,420px)',
           animation: 'pps-sub-in 0.44s 0.16s cubic-bezier(0.22,1,0.36,1) both',
@@ -3231,7 +4241,7 @@ function SlideContent({ slide, animKey, onCta }: { slide: typeof PRODUCT_SLIDES[
         </p>
 
         {/* Feature chips — 4 on mobile, all on sm+ */}
-        <div className="flex flex-wrap" style={{ gap:'clamp(3px,0.5vw,6px)', animation:'pps-sub-in 0.44s 0.20s cubic-bezier(0.22,1,0.36,1) both' }}>
+        <div className="flex flex-wrap" style={{ gap:'clamp(3px,0.5vw,5px)', animation:'pps-sub-in 0.44s 0.20s cubic-bezier(0.22,1,0.36,1) both' }}>
           {slide.features.map((f, fi) => (
             <span key={f}
               className={fi >= 4 ? 'hidden sm:inline-flex' : 'inline-flex'}
@@ -3239,9 +4249,9 @@ function SlideContent({ slide, animKey, onCta }: { slide: typeof PRODUCT_SLIDES[
                 fontSize: 'clamp(7.5px,0.7vw,9px)', fontWeight:500,
                 padding: 'clamp(2px,0.3vw,3px) clamp(6px,0.9vw,9px)',
                 borderRadius: 100,
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.09)',
-                color: 'rgba(255,255,255,0.44)',
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                color: 'rgba(255,255,255,0.38)',
                 animation: `pps-chip-in 0.34s ${0.24 + fi * 0.035}s cubic-bezier(0.22,1,0.36,1) both`,
               }}>
               {f}
@@ -3250,14 +4260,14 @@ function SlideContent({ slide, animKey, onCta }: { slide: typeof PRODUCT_SLIDES[
         </div>
 
         {/* CTA */}
-        <div style={{ animation:'pps-sub-in 0.44s 0.30s cubic-bezier(0.22,1,0.36,1) both', marginTop: 'clamp(1px,0.4vw,4px)' }}>
+        <div style={{ animation:'pps-sub-in 0.44s 0.30s cubic-bezier(0.22,1,0.36,1) both', marginTop: 'clamp(2px,0.5vw,6px)' }}>
           <button type="button" onClick={onCta}
             className="inline-flex items-center gap-1.5 rounded-full font-semibold transition-all duration-200 hover:scale-[1.04] active:scale-[0.96] hover:brightness-110"
             style={{
               background: slide.accent, color:'#fff',
               fontSize: 'clamp(9px,0.85vw,11.5px)',
               padding: 'clamp(5px,0.65vw,8px) clamp(12px,1.5vw,20px)',
-              boxShadow: `0 3px 16px ${slide.accent}50`,
+              boxShadow: `0 3px 16px ${slide.accent}44`,
               letterSpacing: '0.01em',
               cursor: 'pointer',
             }}>
@@ -3267,30 +4277,31 @@ function SlideContent({ slide, animKey, onCta }: { slide: typeof PRODUCT_SLIDES[
         </div>
       </div>
 
-      {/* ── Right: mockup — hidden on mobile, visible sm+ ── */}
-      <div className="hidden sm:flex shrink-0 items-center justify-end"
-        style={{ width:'clamp(110px,20vw,240px)', paddingLeft:'clamp(10px,1.6vw,20px)', paddingRight:'clamp(0px,1.8vw,22px)' }}>
-        <div className="relative w-full"
-          style={{ background:'rgba(255,255,255,0.028)', border:`1px solid ${slide.accentBorder}`,
-            borderRadius:12, padding:'clamp(10px,1.3vw,16px)', backdropFilter:'blur(10px)',
-            boxShadow:`inset 0 1px 0 rgba(255,255,255,0.055), 0 4px 20px rgba(0,0,0,0.42)` }}>
-          {/* traffic-light dots */}
-          <div className="flex items-center gap-1 mb-2.5">
-            {['#ef4444','#f97316','#34d399'].map((c,ci) => (
-              <div key={ci} style={{ width:6,height:6,borderRadius:'50%',background:c,opacity:0.52 }} />
-            ))}
-            <div className="flex-1 ml-1.5 rounded-sm" style={{ height:5,background:'rgba(255,255,255,0.05)' }} />
-          </div>
-          {/* animated lines */}
-          {slide.mockupLines.map((l, li) => (
-            <div key={li} className="mb-1.5 rounded-sm overflow-hidden"
-              style={{ width:l.w, height:li%3===0?7:5, background:slide.accent,
-                opacity:l.opacity, animation:`pps-scan ${3.0+li*0.45}s ease-in-out infinite` }} />
-          ))}
-          {/* mini CTA row */}
-          <div className="mt-2.5 flex items-center gap-1">
-            <div className="flex-1 h-5 rounded" style={{ background:`${slide.accent}1e`,border:`1px solid ${slide.accentBorder}` }} />
-            <div className="h-5 px-2 rounded flex items-center text-[7px] font-semibold" style={{ background:slide.accent,color:'#fff' }}>→</div>
+      {/* ── Right: large icon, no fake UI chrome ── */}
+      <div className="hidden sm:flex shrink-0 items-center justify-center"
+        style={{ width:'clamp(120px,16vw,210px)', paddingLeft:'clamp(12px,1.8vw,24px)', paddingRight:'clamp(4px,1.2vw,16px)' }}>
+        <div className="relative flex items-center justify-center"
+          style={{ width:'clamp(84px,9vw,124px)', height:'clamp(84px,9vw,124px)' }}>
+          {/* ambient glow ring */}
+          <div aria-hidden="true" style={{ position:'absolute', inset:'-20px', borderRadius:'50%',
+            background:`radial-gradient(circle, ${slide.accent}12 0%, transparent 62%)`,
+            animation:'pps-orb 7.5s ease-in-out infinite' }} />
+          {/* squircle icon container */}
+          <div style={{
+            position:'relative', display:'flex', alignItems:'center', justifyContent:'center',
+            width:'100%', height:'100%', borderRadius:'26%',
+            background:`linear-gradient(145deg, ${slide.accent}12 0%, rgba(255,255,255,0.025) 100%)`,
+            border:`1px solid ${slide.accentBorder}`,
+            backdropFilter:'blur(16px)',
+            boxShadow:`0 0 0 1px rgba(255,255,255,0.035), 0 8px 32px rgba(0,0,0,0.5), 0 0 40px ${slide.accent}18`,
+            animation:'pps-badge-in 0.44s 0.08s cubic-bezier(0.22,1,0.36,1) both',
+          }}>
+            <SlideIcon style={{
+              color: slide.accent,
+              width:'clamp(34px,4vw,54px)', height:'clamp(34px,4vw,54px)',
+              strokeWidth: 1.35,
+              filter:`drop-shadow(0 0 12px ${slide.accent}55)`,
+            }} />
           </div>
         </div>
       </div>
@@ -3317,15 +4328,12 @@ const CYCLE_TYPES = [
 ] as const;
 
 function PublishHeading({ onPublish }: { onPublish: () => void }) {
-  const [idx, setIdx]         = React.useState(0);
-  const [phase, setPhase]     = React.useState<'in' | 'out'>('in');
+  const [idx, setIdx]     = React.useState(0);
+  const [phase, setPhase] = React.useState<'in' | 'out'>('in');
 
   React.useEffect(() => {
-    const out = setTimeout(() => setPhase('out'), 2000);
-    const swap = setTimeout(() => {
-      setIdx(i => (i + 1) % CYCLE_TYPES.length);
-      setPhase('in');
-    }, 2320);
+    const out  = setTimeout(() => setPhase('out'), 2200);
+    const swap = setTimeout(() => { setIdx(i => (i + 1) % CYCLE_TYPES.length); setPhase('in'); }, 2500);
     return () => { clearTimeout(out); clearTimeout(swap); };
   }, [idx]);
 
@@ -3334,89 +4342,91 @@ function PublishHeading({ onPublish }: { onPublish: () => void }) {
   return (
     <div className="w-full select-none">
       <style>{`
-        @keyframes ph-word-in  { from { opacity:0; transform:translateY(10px) scale(0.92); } to { opacity:1; transform:none; } }
-        @keyframes ph-word-out { from { opacity:1; transform:none; } to { opacity:0; transform:translateY(-8px) scale(0.94); } }
-        @keyframes ph-line-in  { from { opacity:0; transform:translateX(-6px); } to { opacity:1; transform:none; } }
+        @keyframes ph-in  { from { opacity:0; transform:translateY(8px) scale(0.93); } to { opacity:1; transform:none; } }
+        @keyframes ph-out { from { opacity:1; transform:none; } to { opacity:0; transform:translateY(-7px) scale(0.95); } }
+        @keyframes ph-row { from { opacity:0; transform:translateX(-4px); } to { opacity:1; transform:none; } }
       `}</style>
 
-      {/* Main headline + publish button */}
-      <div className="flex items-start justify-between gap-3"
-        style={{ animation: 'ph-line-in 0.5s 0.05s cubic-bezier(0.22,1,0.36,1) both' }}>
+      {/* Single flex row — never wraps */}
+      <div
+        className="flex items-center justify-between gap-2"
+        style={{ animation: 'ph-row 0.45s 0.04s cubic-bezier(0.22,1,0.36,1) both' }}
+      >
+        {/* ── Headline (no-wrap) ── */}
+        <div className="flex items-center gap-0 min-w-0 overflow-hidden" style={{ flex: '1 1 0' }}>
 
-        {/* Left: headline */}
-        <div style={{ minWidth: 0 }}>
-        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-          {/* Static part */}
-          <span
-            style={{ fontSize: 'clamp(18px,4vw,26px)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.1, color: 'rgba(255,255,255,0.88)' }}>
+          {/* "Publish" */}
+          <span style={{
+            fontSize: 'clamp(14px,3.4vw,21px)', fontWeight: 800,
+            letterSpacing: '-0.03em', lineHeight: 1,
+            color: 'rgba(255,255,255,0.82)', whiteSpace: 'nowrap', flexShrink: 0,
+          }}>
             Publish
           </span>
 
-          {/* Animated word */}
+          {/* Separator › */}
+          <span style={{
+            fontSize: 'clamp(13px,3vw,19px)', fontWeight: 400,
+            color: 'rgba(255,255,255,0.18)', margin: '0 clamp(5px,1.2vw,9px)',
+            flexShrink: 0, lineHeight: 1,
+          }}>›</span>
+
+          {/* Animated rotating word */}
           <span
             key={idx}
             style={{
-              fontSize: 'clamp(18px,4vw,26px)', fontWeight: 800,
-              letterSpacing: '-0.03em', lineHeight: 1.1,
+              fontSize: 'clamp(14px,3.4vw,21px)', fontWeight: 800,
+              letterSpacing: '-0.03em', lineHeight: 1,
               color: current.color,
-              textShadow: `0 0 28px ${current.color}55`,
-              display: 'inline-flex', alignItems: 'baseline', gap: 5,
+              textShadow: `0 0 22px ${current.color}44`,
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              flexShrink: 0, whiteSpace: 'nowrap',
               animation: phase === 'in'
-                ? 'ph-word-in 0.32s cubic-bezier(0.22,1,0.36,1) both'
-                : 'ph-word-out 0.28s cubic-bezier(0.55,0,1,0.45) both',
-              transition: 'color 0.28s ease, text-shadow 0.28s ease',
-            }}>
-            {/* tiny icon next to word */}
+                ? 'ph-in 0.28s cubic-bezier(0.22,1,0.36,1) both'
+                : 'ph-out 0.24s cubic-bezier(0.55,0,1,0.45) both',
+            }}
+          >
             <current.Icon style={{
-              width: 'clamp(13px,2.2vw,17px)', height: 'clamp(13px,2.2vw,17px)',
-              color: current.color, opacity: 0.75,
-              verticalAlign: 'middle', marginBottom: 1, flexShrink: 0,
+              width: 'clamp(11px,2vw,15px)', height: 'clamp(11px,2vw,15px)',
+              color: current.color, opacity: 0.72, flexShrink: 0,
             }} />
             {current.label}
           </span>
 
-          <span
-            style={{ fontSize: 'clamp(18px,4vw,26px)', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.1, color: 'rgba(255,255,255,0.88)' }}>
-            & more.
+          {/* "& more." */}
+          <span style={{
+            fontSize: 'clamp(14px,3.4vw,21px)', fontWeight: 800,
+            letterSpacing: '-0.03em', lineHeight: 1,
+            color: 'rgba(255,255,255,0.38)', marginLeft: 'clamp(5px,1.2vw,9px)',
+            whiteSpace: 'nowrap', flexShrink: 0,
+          }}>
+            &amp; more.
           </span>
         </div>
 
-        {/* Sub-line */}
-        <p style={{
-          marginTop: 5, fontSize: 'clamp(10px,1.2vw,11.5px)',
-          color: 'rgba(255,255,255,0.30)', lineHeight: 1.5,
-          fontWeight: 400, letterSpacing: '0.01em',
-          animation: 'ph-line-in 0.5s 0.18s cubic-bezier(0.22,1,0.36,1) both',
-        }}>
-          Share your work — news, gigs, docs, portfolios, videos and 14 more types.
-        </p>
-        </div>{/* end left */}
-
-        {/* Right: Publish button */}
+        {/* ── Publish CTA ── */}
         <button
           type="button"
           onClick={onPublish}
-          className="shrink-0 flex items-center gap-1.5 rounded-xl font-semibold transition-all duration-200 hover:scale-[1.04] hover:brightness-110 active:scale-[0.95]"
+          className="shrink-0 flex items-center gap-1.5 font-semibold transition-all duration-200 hover:scale-[1.04] active:scale-[0.96]"
           style={{
-            marginTop: 2,
-            padding: '8px 13px',
-            background: 'rgba(255,255,255,0.07)',
-            border: '1px solid rgba(255,255,255,0.12)',
+            height: 'clamp(28px,5vw,34px)',
+            padding: '0 clamp(10px,2vw,14px)',
+            borderRadius: 10,
+            background: 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.13)',
             backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.10), 0 2px 12px rgba(0,0,0,0.30)',
-            color: 'rgba(255,255,255,0.82)',
-            fontSize: 12,
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.09), 0 2px 10px rgba(0,0,0,0.25)',
+            color: 'rgba(255,255,255,0.75)',
+            fontSize: 'clamp(10.5px,1.8vw,12.5px)',
             letterSpacing: '0.01em',
-            animation: 'ph-line-in 0.5s 0.22s cubic-bezier(0.22,1,0.36,1) both',
             whiteSpace: 'nowrap',
           }}
         >
-          <Plus style={{ width: 13, height: 13, flexShrink: 0, opacity: 0.80 }} />
+          <Plus style={{ width: 'clamp(10px,1.6vw,12px)', height: 'clamp(10px,1.6vw,12px)', flexShrink: 0, opacity: 0.75 }} />
           Publish
         </button>
-
-      </div>{/* end flex row */}
+      </div>
     </div>
   );
 }
@@ -3447,137 +4457,178 @@ const CONTENT_TYPES = [
   { id: 'gig',          label: 'Gigs',         count:  35, Icon: Zap,         color: '#facc15', rgb: '250,204,21'   },
 ] as const;
 
-function CdsPill({ id, label, count, Icon, color, rgb, delay = 0 }: {
-  id: string; label: string; count: number;
-  Icon: React.ElementType; color: string; rgb: string; delay?: number;
-}) {
-  return (
-    <Link
-      href={`/published${id === 'all' ? '' : `?tab=${id}`}`}
-      className="cds-pill shrink-0 flex items-center gap-2 select-none"
-      style={{
-        height: 36,
-        padding: '0 12px 0 8px',
-        borderRadius: 12,
-        background: 'rgba(0,0,0,0.38)',
-        backdropFilter: 'blur(18px) saturate(1.6)',
-        WebkitBackdropFilter: 'blur(18px) saturate(1.6)',
-        border: '1px solid rgba(255,255,255,0.09)',
-        boxShadow: '0 2px 10px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.07)',
-        animation: `cds-in 0.32s ${delay}s cubic-bezier(0.22,1,0.36,1) both`,
-        textDecoration: 'none',
-      }}
-    >
-      <div className="flex items-center justify-center rounded-[8px] shrink-0"
-        style={{ width: 22, height: 22, background: `rgba(${rgb},0.90)`, boxShadow: `0 1px 4px rgba(${rgb},0.40)` }}>
-        <Icon style={{ width: 11, height: 11, color: '#fff', flexShrink: 0 }} />
-      </div>
-      <span style={{ fontSize: 12.5, fontWeight: 600, lineHeight: 1, color: 'rgba(255,255,255,0.80)', letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}>
-        {label}
-      </span>
-      <span style={{ fontSize: 10, fontWeight: 500, lineHeight: 1, color: 'rgba(255,255,255,0.28)', letterSpacing: '0.01em', fontVariantNumeric: 'tabular-nums' }}>
-        {count}
-      </span>
-    </Link>
-  );
-}
+const CDS_VISIBLE_MOBILE = 3; // tabs shown on mobile
+const CDS_VISIBLE_DESKTOP = 7; // tabs shown on desktop
 
 function ContentDiscoveryStrip() {
-  const [expanded, setExpanded] = React.useState(false);
+  const [open, setOpen]       = React.useState(false);
+  const [activeId, setActiveId] = React.useState('all');
+  const [isMobile, setIsMobile] = React.useState(false);
+  const dropRef               = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const mq = window.matchMedia('(max-width: 639px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  React.useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (dropRef.current && !dropRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const visibleCount   = isMobile ? CDS_VISIBLE_MOBILE : CDS_VISIBLE_DESKTOP;
+  const visibleTabs    = CONTENT_TYPES.slice(0, visibleCount);
+  const hiddenTabs     = CONTENT_TYPES.slice(visibleCount);
+  const activeInHidden = hiddenTabs.some(t => t.id === activeId);
 
   return (
-    <section className="-mx-3 sm:mx-0">
+    /* ── outer wrapper: pills (scrollable) + More button side-by-side ── */
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', minWidth: 0 }}>
       <style>{`
-        @keyframes cds-in {
-          from { opacity:0; transform:scale(0.88) translateY(6px); }
-          to   { opacity:1; transform:none; }
-        }
-        @keyframes cds-expand-in {
-          from { opacity:0; transform:translateY(-8px); max-height:0; }
-          to   { opacity:1; transform:none; max-height:400px; }
-        }
-        @keyframes cds-expand-out {
-          from { opacity:1; transform:none; }
-          to   { opacity:0; transform:translateY(-6px); }
-        }
-        .cds-pill {
-          transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1),
-                      background 0.16s ease, border-color 0.16s ease,
-                      box-shadow 0.16s ease;
-        }
-        .cds-pill:hover  { transform: scale(1.05); }
-        .cds-pill:active { transform: scale(0.94); transition-duration:0.08s; }
-        .cds-arrow-btn {
-          transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1),
-                      background 0.16s ease, border-color 0.16s ease;
-        }
-        .cds-arrow-btn:hover  { transform: scale(1.10); }
-        .cds-arrow-btn:active { transform: scale(0.90); }
-        .cds-arrow-icon {
-          transition: transform 0.28s cubic-bezier(0.34,1.56,0.64,1);
-        }
-        .cds-arrow-icon.open { transform: rotate(180deg); }
-        .cds-grid {
-          animation: cds-expand-in 0.34s cubic-bezier(0.22,1,0.36,1) both;
-          overflow: hidden;
-        }
+        @keyframes cds-tab-in { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:none} }
+        @keyframes cds-panel  { from{opacity:0;transform:translateY(-5px) scale(0.98)} to{opacity:1;transform:none} }
+        .cds-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; flex:1 1 0; min-width:0; }
+        .cds-scroll::-webkit-scrollbar { display:none; }
       `}</style>
 
-      {/* ── Scrollable strip + arrow ── */}
-      <div className="flex items-center gap-2 pr-3 sm:pr-0">
-
-        {/* Pill scroll container */}
-        <div className="relative flex-1 min-w-0">
-          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 sm:w-20"
-            style={{ background:'linear-gradient(to right, rgb(13,13,15) 0%, rgba(13,13,15,0.98) 5%, rgba(13,13,15,0.95) 10%, rgba(13,13,15,0.90) 16%, rgba(13,13,15,0.83) 23%, rgba(13,13,15,0.74) 31%, rgba(13,13,15,0.63) 40%, rgba(13,13,15,0.51) 49%, rgba(13,13,15,0.40) 58%, rgba(13,13,15,0.28) 67%, rgba(13,13,15,0.18) 75%, rgba(13,13,15,0.09) 83%, rgba(13,13,15,0.03) 91%, transparent 100%)' }} />
-          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 sm:w-20"
-            style={{ background:'linear-gradient(to left, rgb(13,13,15) 0%, rgba(13,13,15,0.98) 5%, rgba(13,13,15,0.95) 10%, rgba(13,13,15,0.90) 16%, rgba(13,13,15,0.83) 23%, rgba(13,13,15,0.74) 31%, rgba(13,13,15,0.63) 40%, rgba(13,13,15,0.51) 49%, rgba(13,13,15,0.40) 58%, rgba(13,13,15,0.28) 67%, rgba(13,13,15,0.18) 75%, rgba(13,13,15,0.09) 83%, rgba(13,13,15,0.03) 91%, transparent 100%)' }} />
-          <div className="no-scrollbar flex items-center gap-2 overflow-x-auto"
-            style={{ scrollbarWidth:'none', padding:'2px 0' }}>
-            {CONTENT_TYPES.map(({ id, label, count, Icon, color, rgb }, idx) => (
-              <CdsPill key={id} id={id} label={label} count={count} Icon={Icon}
-                color={color} rgb={rgb} delay={0.01 + idx * 0.012} />
-            ))}
-          </div>
-        </div>
-
-        {/* Expand / collapse arrow */}
-        <button
-          type="button"
-          aria-label={expanded ? 'Collapse' : 'Show all types'}
-          onClick={() => setExpanded(v => !v)}
-          className="cds-arrow-btn shrink-0 flex items-center justify-center rounded-xl"
-          style={{
-            width: 36, height: 36,
-            background: expanded ? 'rgba(167,139,250,0.12)' : 'rgba(0,0,0,0.38)',
-            backdropFilter: 'blur(18px)',
-            WebkitBackdropFilter: 'blur(18px)',
-            border: `1px solid ${expanded ? 'rgba(167,139,250,0.28)' : 'rgba(255,255,255,0.09)'}`,
-            boxShadow: expanded
-              ? '0 0 14px rgba(167,139,250,0.20), inset 0 1px 0 rgba(255,255,255,0.10)'
-              : '0 2px 10px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.07)',
-          }}
-        >
-          <ChevronDown
-            className={`cds-arrow-icon${expanded ? ' open' : ''}`}
-            style={{
-              width: 14, height: 14,
-              color: expanded ? '#a78bfa' : 'rgba(255,255,255,0.50)',
-            }}
-          />
-        </button>
+      {/* Scrollable pill row */}
+      <div className="cds-scroll" style={{ display:'flex', alignItems:'center', gap: 6, paddingBottom: 2 }}>
+        {CONTENT_TYPES.slice(0, isMobile ? undefined : CDS_VISIBLE_DESKTOP).map(({ id, label, count, Icon, color, rgb }, i) => {
+          const isActive = activeId === id;
+          return (
+            <Link
+              key={id}
+              href={`/published${id === 'all' ? '' : `?tab=${id}`}`}
+              onClick={() => { setActiveId(id); setOpen(false); }}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+                height: 31, padding: '0 10px 0 7px',
+                borderRadius: 999, textDecoration: 'none', flexShrink: 0,
+                background: isActive ? `rgba(${rgb},0.13)` : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${isActive ? `rgba(${rgb},0.28)` : 'rgba(255,255,255,0.07)'}`,
+                boxShadow: isActive ? `0 0 14px rgba(${rgb},0.12), inset 0 1px 0 rgba(255,255,255,0.07)` : 'none',
+                transition: 'background 160ms ease, border-color 160ms ease, box-shadow 160ms ease',
+                animation: `cds-tab-in 0.26s ${Math.min(i, 6) * 0.025}s cubic-bezier(0.22,1,0.36,1) both`,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <div style={{
+                width: 17, height: 17, borderRadius: 6, flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: isActive ? `rgba(${rgb},0.26)` : `rgba(${rgb},0.10)`,
+                transition: 'background 160ms ease',
+              }}>
+                <Icon style={{ width: 9.5, height: 9.5, color: isActive ? color : `rgba(${rgb},0.65)` }} />
+              </div>
+              <span style={{
+                fontSize: 11.5, fontWeight: isActive ? 700 : 500, letterSpacing: '-0.01em',
+                color: isActive ? 'rgba(255,255,255,0.90)' : 'rgba(255,255,255,0.44)',
+                transition: 'color 160ms ease',
+              }}>{label}</span>
+              {isActive && count > 0 && (
+                <span style={{ fontSize: 9, fontVariantNumeric: 'tabular-nums', fontWeight: 700, color, opacity: 0.68, marginLeft: 1 }}>{count}</span>
+              )}
+            </Link>
+          );
+        })}
       </div>
 
-      {/* ── Expanded grid ── */}
-      {expanded && (
-        <div className="cds-grid mt-3 flex flex-wrap gap-2 px-3 sm:px-0">
-          {CONTENT_TYPES.map(({ id, label, count, Icon, color, rgb }, idx) => (
-            <CdsPill key={id} id={id} label={label} count={count} Icon={Icon}
-              color={color} rgb={rgb} delay={idx * 0.018} />
-          ))}
+      {/* More button — OUTSIDE the scroll div so dropdown isn't clipped by overflow */}
+      {!isMobile && (
+        <div ref={dropRef} style={{ position: 'relative', flexShrink: 0 }}>
+          <button
+            type="button"
+            onClick={() => setOpen(v => !v)}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              height: 31, padding: '0 10px',
+              borderRadius: 999, cursor: 'pointer',
+              background: open || activeInHidden ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${open || activeInHidden ? 'rgba(255,255,255,0.13)' : 'rgba(255,255,255,0.07)'}`,
+              transition: 'background 160ms ease, border-color 160ms ease',
+              animation: `cds-tab-in 0.26s ${CDS_VISIBLE_DESKTOP * 0.025}s cubic-bezier(0.22,1,0.36,1) both`,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {activeInHidden && (() => {
+              const at = CONTENT_TYPES.find(t => t.id === activeId)!;
+              return (
+                <div style={{ width: 15, height: 15, borderRadius: 5, background: `rgba(${at.rgb},0.20)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <at.Icon style={{ width: 8, height: 8, color: at.color }} />
+                </div>
+              );
+            })()}
+            <span style={{ fontSize: 11, fontWeight: 600, color: activeInHidden ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.32)', letterSpacing: '-0.01em' }}>
+              {activeInHidden ? CONTENT_TYPES.find(t => t.id === activeId)!.label : 'More'}
+            </span>
+            <ChevronDown style={{
+              width: 10, height: 10, color: 'rgba(255,255,255,0.28)',
+              transform: open ? 'rotate(180deg)' : 'none',
+              transition: 'transform 200ms cubic-bezier(0.34,1.56,0.64,1)',
+            }} />
+          </button>
+
+          {open && (
+            <div style={{
+              position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+              zIndex: 400, width: 256,
+              borderRadius: 14, overflow: 'hidden',
+              background: 'rgba(8,8,12,0.97)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              backdropFilter: 'blur(48px) saturate(2)',
+              WebkitBackdropFilter: 'blur(48px) saturate(2)',
+              boxShadow: '0 24px 64px rgba(0,0,0,0.82), inset 0 1px 0 rgba(255,255,255,0.04)',
+              animation: 'cds-panel 0.18s cubic-bezier(0.22,1,0.36,1) both',
+            }}>
+              <div style={{ padding: '9px 13px 7px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                <span style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.11em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.20)' }}>All categories</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, padding: 5 }}>
+                {CONTENT_TYPES.slice(CDS_VISIBLE_DESKTOP).map(({ id, label, count, Icon, color, rgb }) => {
+                  const isActive = activeId === id;
+                  return (
+                    <Link
+                      key={id}
+                      href={`/published?tab=${id}`}
+                      onClick={() => { setActiveId(id); setOpen(false); }}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 8,
+                        padding: '7px 9px', borderRadius: 9, textDecoration: 'none',
+                        background: isActive ? `rgba(${rgb},0.10)` : 'transparent',
+                        border: `1px solid ${isActive ? `rgba(${rgb},0.18)` : 'transparent'}`,
+                        transition: 'background 140ms ease',
+                      }}
+                      onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)'; }}
+                      onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                    >
+                      <div style={{
+                        width: 22, height: 22, borderRadius: 7, flexShrink: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: `rgba(${rgb},0.14)`,
+                      }}>
+                        <Icon style={{ width: 11, height: 11, color }} />
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 11.5, fontWeight: isActive ? 700 : 500, color: isActive ? 'rgba(255,255,255,0.88)' : 'rgba(255,255,255,0.52)', letterSpacing: '-0.01em', lineHeight: 1.2 }}>{label}</div>
+                        <div style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.20)', fontVariantNumeric: 'tabular-nums', marginTop: 1 }}>{count}</div>
+                      </div>
+                      {isActive && <div style={{ width: 4, height: 4, borderRadius: '50%', background: color, flexShrink: 0, marginLeft: 'auto' }} />}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
-    </section>
+    </div>
   );
 }
 
@@ -3662,10 +4713,11 @@ function LiveLeaderboards() {
   React.useEffect(() => {
     fetchBoards();
     const fetchId = setInterval(fetchBoards, REFRESH_INTERVAL * 1000);
+    // 2s resolution is plenty for a countdown display — halves state-update re-renders vs 1s
     const tickId  = setInterval(() => {
       const secs = Math.max(0, Math.round((nextFetchRef.current - Date.now()) / 1000));
       setCountdown(secs);
-    }, 1000);
+    }, 2000);
     return () => { clearInterval(fetchId); clearInterval(tickId); };
   }, [fetchBoards]);
 
@@ -3771,13 +4823,13 @@ function LiveLeaderboards() {
                     <span className="truncate text-[11px] font-medium text-white/55 group-hover:text-white/85 transition-colors leading-tight">
                       {e.name}
                     </span>
-                    <span className={`shrink-0 min-w-[22px] text-right text-[10.5px] font-bold tabular-nums transition-all duration-300 ${isFlash ? 'text-white/95 scale-110' : 'text-white/45'}`}>
+                    <span className={`shrink-0 min-w-[22px] text-right text-[10.5px] font-bold tabular-nums transition-[color,transform] duration-300 ${isFlash ? 'text-white/95 scale-110' : 'text-white/45'}`}>
                       {e.valueLabel}
                     </span>
                   </div>
                   <div className="mt-[3px] h-[2px] rounded-full bg-white/[0.04] overflow-hidden">
                     <div
-                      className={`h-full rounded-full ${cfg.barCls} transition-all duration-1000`}
+                      className={`h-full rounded-full ${cfg.barCls} transition-[width] duration-1000`}
                       style={{ width: `${barW}%` }}
                     />
                   </div>
@@ -3806,7 +4858,7 @@ function LiveLeaderboards() {
 
         {/* Podium — collapsible */}
         <div
-          className="overflow-hidden transition-all duration-500"
+          className="overflow-hidden transition-[max-height] duration-500"
           style={{ maxHeight: isPodOpen ? '260px' : '0px', opacity: isPodOpen ? 1 : 0 }}
         >
           {top3.length > 0 && (
@@ -3995,6 +5047,405 @@ type NHCLiveFeed = {
   thumbnailUrl?: string | null; mimeType?: string | null; createdAt?: string; featured?: boolean;
 };
 
+/* ─── Feed description chip renderer (homepage compact cards) ────────
+   Detects "Key: Value Key2: Value2" metadata and renders as mini chips.
+   Falls back to plain prose for normal posts.
+─────────────────────────────────────────────────────────────────── */
+function FeedDescChips({ desc, accent }: { desc: string; accent: string }) {
+  if (!desc || !desc.trim()) return null;
+
+  const text = desc
+    .replace(/https?:\/\/\S+/gi, '')
+    .replace(/\d{4}-\d{2}-\d{2}(\s*[–\-]\s*\d{4}-\d{2}-\d{2})?/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Count "Key: " patterns — if ≥2 it's structured metadata
+  const keyCount = (text.match(/\b[A-Z][A-Za-z][\w\s\/()]{1,22}:\s+/g) || []).length;
+
+  if (keyCount >= 2) {
+    const pairs: { key: string; value: string }[] = [];
+    const re = /([A-Z][A-Za-z][\w\s\/()]{1,22}):\s+([^:]+?)(?=\s+[A-Z][A-Za-z][\w\s\/()]{1,22}:|\s*$)/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(text)) !== null) {
+      const k = m[1].trim(); const v = m[2].trim();
+      if (/url|deadline|dates?$/i.test(k)) continue; // skip noisy fields
+      if (v && v.length < 50) pairs.push({ key: k, value: v });
+    }
+
+    if (pairs.length >= 2) {
+      const KEY_ICON: Record<string, string> = {
+        organiser: '👤', organizer: '👤', host: '👤',
+        'themes / tracks': '🎯', themes: '🎯', tracks: '🎯', track: '🎯',
+        'prize pool': '🏆', prize: '🏆',
+        mode: '📍', venue: '📍',
+        'team size': '👥',
+        time: '🕐',
+      };
+      const icon = (k: string) => KEY_ICON[k.toLowerCase()] ?? '';
+      return (
+        <div className="feed-desc" style={{ display: 'flex', flexWrap: 'wrap', gap: 4, justifyContent: 'center', padding: '0 4px' }}>
+          {pairs.slice(0, 5).map(({ key, value }) => (
+            <span key={key} style={{
+              display: 'inline-flex', alignItems: 'center', gap: 3,
+              background: 'rgba(0,0,0,0.52)', backdropFilter: 'blur(8px)',
+              border: `1px solid ${accent}28`,
+              borderRadius: 99, padding: '2px 7px',
+            }}>
+              {icon(key) && <span style={{ fontSize: 8, lineHeight: 1 }}>{icon(key)}</span>}
+              <span style={{ fontSize: 8.5, fontWeight: 600, color: 'rgba(255,255,255,0.30)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                {key.length > 12 ? key.slice(0, 11) + '…' : key}
+              </span>
+              <span style={{ fontSize: 9.5, fontWeight: 500, color: 'rgba(255,255,255,0.72)', maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {value}
+              </span>
+            </span>
+          ))}
+        </div>
+      );
+    }
+  }
+
+  // Plain prose fallback
+  const clean = text.slice(0, 80) + (text.length > 80 ? '…' : '');
+  return (
+    <p className="feed-desc text-center"
+      style={{ fontSize: 10, color: 'rgba(255,255,255,0.58)', lineHeight: 1.45, letterSpacing: '-0.005em', textShadow: '0 1px 6px rgba(0,0,0,0.80)', padding: '0 4px' }}>
+      {clean}
+    </p>
+  );
+}
+
+/* ─── Feed description formatter ─────────────────────────────────────
+   Real published items store structured metadata as plain text:
+   "Hackathon: X Organiser: Y Prize Pool: 10L Mode: in-person …"
+   This strips key labels and builds a clean 2–4 part summary.
+─────────────────────────────────────────────────────────────────── */
+function formatFeedDesc(raw: string): string {
+  if (!raw || !raw.trim()) return '';
+
+  // Remove URLs and ISO date strings
+  const text = raw
+    .replace(/https?:\/\/\S+/gi, '')
+    .replace(/\d{4}-\d{2}-\d{2}(\s*[–\-]\s*\d{4}-\d{2}-\d{2})?/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Quick helper — extract value for a specific key label (case-insensitive)
+  const pick = (pattern: string) => {
+    const re = new RegExp(`${pattern}:\\s+([\\w][^:]{0,60}?)(?=\\s+[A-Z][A-Za-z][\\w\\s/]*?:|\\s*$)`, 'i');
+    const m = text.match(re);
+    return m ? m[1].trim() : '';
+  };
+
+  // Check if this looks like structured key: value metadata
+  const keyCount = (text.match(/[A-Z][A-Za-z][\w\s/]*?:\s/g) || []).length;
+
+  if (keyCount >= 2) {
+    const parts: string[] = [];
+
+    // Organiser / host
+    const org = pick('Organiser') || pick('Organizer') || pick('Host') || pick('By');
+    if (org && org.length < 45 && !/^\d/.test(org)) parts.push(`by ${org}`);
+
+    // Themes / tracks
+    const theme = pick('Themes\\s*/\\s*Tracks?') || pick('Tracks?') || pick('Themes?') || pick('Topics?') || pick('Category');
+    if (theme && theme.length < 40) parts.push(theme);
+
+    // Prize pool — custom: allow "10 Lakhs", "₹5L", "$10k" etc.
+    const prizeM = text.match(/Prize\s*Pool:\s*([\d₹$,\s]+(?:Lakhs?|L\b|K\b|Crore|CR\b|USD|INR)?)/i);
+    if (prizeM) parts.push(`🏆 ${prizeM[1].replace(/\s+/g, ' ').trim()}`);
+
+    // Mode
+    const mode = pick('Mode');
+    if (mode && mode.length < 20) parts.push(mode.charAt(0).toUpperCase() + mode.slice(1));
+
+    // Team size
+    const team = pick('Team\\s*Size');
+    if (team && team.length < 15) parts.push(`${team} / team`);
+
+    if (parts.length >= 2) return parts.slice(0, 4).join(' · ');
+
+    // Fallback: strip all "Key: " labels and show cleaned values
+    return text
+      .replace(/[A-Z][A-Za-z][\w\s/]*?:\s*/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 82);
+  }
+
+  // Plain prose
+  const clean = text.slice(0, 88);
+  return text.length > 88 ? `${clean}…` : clean;
+}
+
+type AdBanner = {
+  id: string;
+  imageUrl: string;
+  title: string;
+  subtitle?: string;
+  ctaLabel?: string;
+  ctaHref?: string;
+  active: boolean;
+  order: number;
+  createdAt: string;
+};
+
+function AdBannerSlider() {
+  const [banners, setBanners]     = useState<AdBanner[]>([]);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const trackRef  = useRef<HTMLDivElement>(null);
+  const timerRef  = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pausedRef = useRef(false);
+  const scrolling = useRef(false); // prevent observer loop during programmatic scroll
+
+  /* ── fetch ─────────────────────────────────────────────────────── */
+  useEffect(() => {
+    fetch('/api/public/ad-banners', { cache: 'no-store' })
+      .then(r => r.ok ? r.json() : { banners: [] })
+      .then((d: { banners?: AdBanner[] }) => {
+        if (Array.isArray(d.banners) && d.banners.length) setBanners(d.banners);
+      })
+      .catch(() => {});
+  }, []);
+
+  /* ── scroll to a slide index (centres the card) ─────────────────── */
+  const goTo = useCallback((idx: number) => {
+    const track = trackRef.current; if (!track) return;
+    const card = track.children[idx] as HTMLElement | undefined; if (!card) return;
+    scrolling.current = true;
+    // offsetLeft relative to the track's own left edge
+    const trackPad = parseFloat(getComputedStyle(track).paddingLeft) || 0;
+    const centerOffset = (track.clientWidth - card.offsetWidth) / 2;
+    const target = card.offsetLeft - trackPad - centerOffset + trackPad;
+    track.scrollTo({ left: Math.max(0, card.offsetLeft - centerOffset), behavior: 'smooth' });
+    setActiveIdx(idx);
+    // clear the lock after animation (scroll-snap settles in ~500 ms)
+    setTimeout(() => { scrolling.current = false; }, 600);
+  }, []);
+
+  /* ── auto-play timer ────────────────────────────────────────────── */
+  const resetTimer = useCallback((len: number) => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (len < 2) return;
+    timerRef.current = setInterval(() => {
+      if (pausedRef.current) return;
+      setActiveIdx(prev => {
+        const next = (prev + 1) % len;
+        // schedule goTo after state flush
+        requestAnimationFrame(() => {
+          const track = trackRef.current; if (!track) return;
+          const card = track.children[next] as HTMLElement | undefined; if (!card) return;
+          scrolling.current = true;
+          const center = (track.clientWidth - card.offsetWidth) / 2;
+          track.scrollTo({ left: Math.max(0, card.offsetLeft - center), behavior: 'smooth' });
+          setTimeout(() => { scrolling.current = false; }, 600);
+        });
+        return next;
+      });
+    }, 4500);
+  }, []);
+
+  useEffect(() => {
+    if (!banners.length) return;
+    resetTimer(banners.length);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [banners.length, resetTimer]);
+
+  /* ── IntersectionObserver — track which card is most visible ────── */
+  useEffect(() => {
+    const track = trackRef.current; if (!track || !banners.length) return;
+    const obs = new IntersectionObserver(
+      entries => {
+        if (scrolling.current) return; // ignore events during programmatic scroll
+        let best: { idx: number; ratio: number } = { idx: activeIdx, ratio: 0 };
+        entries.forEach(e => {
+          const idx = parseInt((e.target as HTMLElement).dataset.idx ?? '-1', 10);
+          if (!isNaN(idx) && e.intersectionRatio > best.ratio) {
+            best = { idx, ratio: e.intersectionRatio };
+          }
+        });
+        if (best.ratio > 0) setActiveIdx(best.idx);
+      },
+      { root: track, threshold: [0.5, 0.75, 1.0] }
+    );
+    Array.from(track.children).forEach(c => obs.observe(c));
+    return () => obs.disconnect();
+  }, [banners.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!banners.length) return null;
+
+  return (
+    <div style={{
+      position: 'relative',
+      marginLeft:  'calc(-1 * (100vw - 100%) / 2)',
+      marginRight: 'calc(-1 * (100vw - 100%) / 2)',
+      width: '100vw',
+    }}>
+      <style dangerouslySetInnerHTML={{ __html: `
+        .abs-track {
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+          /* native snap — no JS needed for touch/mouse fling */
+          scroll-snap-type: x mandatory;
+          -webkit-overflow-scrolling: touch;
+        }
+        .abs-track::-webkit-scrollbar { display: none; }
+        .abs-card {
+          scroll-snap-align: center;
+          scroll-snap-stop: always;
+          will-change: transform, opacity;
+          transition:
+            transform 0.42s cubic-bezier(0.22,1,0.36,1),
+            opacity   0.38s ease,
+            box-shadow 0.38s ease;
+        }
+        .abs-card.is-active  { transform: scale(1);    opacity: 1; }
+        .abs-card.is-adj     { transform: scale(0.95); opacity: 0.68; }
+        .abs-card.is-far     { transform: scale(0.88); opacity: 0.35; }
+        .abs-card:hover      { transform: scale(1.02) !important; opacity: 1 !important; }
+        @keyframes abs-prog  { from { transform:scaleX(0); } to { transform:scaleX(1); } }
+        .abs-prog { transform-origin:left; animation: abs-prog 4.5s linear forwards; }
+      `}} />
+
+      {/* edge vignettes */}
+      <div style={{
+        pointerEvents: 'none', position: 'absolute', inset: '0 0 20px 0', zIndex: 10,
+        background: 'linear-gradient(to right, #0d0d0f 0%, rgba(13,13,15,.8) 5%, transparent 16%, transparent 84%, rgba(13,13,15,.8) 95%, #0d0d0f 100%)',
+      }} />
+
+      {/* scrollable track */}
+      <div
+        ref={trackRef}
+        className="abs-track"
+        style={{
+          display: 'flex',
+          gap: 10,
+          overflowX: 'scroll',
+          overflowY: 'hidden',
+          paddingLeft:  'max(16px, 8vw)',
+          paddingRight: 'max(16px, 8vw)',
+          paddingTop: 6,
+          paddingBottom: 20,
+          cursor: 'grab',
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          touchAction: 'pan-x',
+        }}
+        onMouseEnter={() => { pausedRef.current = true; }}
+        onMouseLeave={() => { pausedRef.current = false; }}
+      >
+        {banners.map((banner, i) => {
+          const isActive = i === activeIdx;
+          const dist = Math.abs(i - activeIdx);
+          const cls  = isActive ? 'is-active' : dist === 1 ? 'is-adj' : 'is-far';
+
+          return (
+            <div
+              key={banner.id}
+              data-idx={i}
+              className={`abs-card ${cls}`}
+              style={{
+                flexShrink: 0,
+                width: 'clamp(260px, 76vw, 660px)',
+                aspectRatio: '21 / 9',
+                borderRadius: 16,
+                overflow: 'hidden',
+                position: 'relative',
+                background: '#0a0a0e',
+                border: isActive ? '1.5px solid rgba(255,255,255,0.16)' : '1px solid rgba(255,255,255,0.06)',
+                boxShadow: isActive
+                  ? '0 20px 60px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.08)'
+                  : '0 4px 20px rgba(0,0,0,0.50)',
+                cursor: 'pointer',
+              }}
+              onClick={() => {
+                if (!isActive) { goTo(i); resetTimer(banners.length); return; }
+                if (banner.ctaHref) window.open(banner.ctaHref, '_blank', 'noopener');
+              }}
+            >
+              {/* image */}
+              <img
+                src={banner.imageUrl}
+                alt={banner.title}
+                draggable={false}
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }}
+              />
+
+              {/* scrim */}
+              <div style={{
+                position: 'absolute', inset: 0, zIndex: 1,
+                background: 'linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.32) 45%, transparent 100%)',
+              }} />
+
+              {/* progress bar */}
+              {isActive && (
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, zIndex: 3, background: 'rgba(255,255,255,0.10)' }}>
+                  <div key={activeIdx} className="abs-prog"
+                    style={{ height: '100%', background: 'rgba(255,255,255,0.70)', borderRadius: 2 }} />
+                </div>
+              )}
+
+              {/* text */}
+              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0 16px 14px', zIndex: 2 }}>
+                {banner.title && (
+                  <p style={{
+                    margin: 0, fontSize: 'clamp(12px, 2.4vw, 17px)', fontWeight: 700,
+                    color: '#fff', lineHeight: 1.28, letterSpacing: '-0.02em',
+                    textShadow: '0 2px 16px rgba(0,0,0,0.9)',
+                    display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                  }}>{banner.title}</p>
+                )}
+                {banner.subtitle && (
+                  <p style={{
+                    margin: '3px 0 0', fontSize: 'clamp(10px, 1.6vw, 13px)',
+                    color: 'rgba(255,255,255,0.62)', lineHeight: 1.4,
+                    textShadow: '0 1px 8px rgba(0,0,0,0.85)',
+                    display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                  }}>{banner.subtitle}</p>
+                )}
+                {banner.ctaLabel && banner.ctaHref && (
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 8,
+                    padding: '5px 12px', borderRadius: 999,
+                    background: 'rgba(255,255,255,0.14)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+                    border: '1px solid rgba(255,255,255,0.22)',
+                    fontSize: 'clamp(9px, 1.4vw, 11px)', fontWeight: 600, color: '#fff', letterSpacing: '0.02em',
+                  }}>
+                    {banner.ctaLabel}
+                    <ArrowRight style={{ width: '0.9em', height: '0.9em' }} />
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* dot indicators */}
+      {banners.length > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 5, paddingBottom: 4 }}>
+          {banners.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => { goTo(i); resetTimer(banners.length); }}
+              style={{
+                height: 5,
+                width: i === activeIdx ? 20 : 5,
+                borderRadius: 999,
+                background: i === activeIdx ? 'rgba(255,255,255,0.80)' : 'rgba(255,255,255,0.16)',
+                border: 'none', padding: 0, cursor: 'pointer',
+                transition: 'width 0.38s cubic-bezier(0.34,1.56,0.64,1), background 0.3s ease',
+                flexShrink: 0,
+              }}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function NewHomepageContent({
   softwareName,
   setDraft,
@@ -4009,6 +5460,8 @@ function NewHomepageContent({
   liveGigs = [],
   liveMetrics,
   liveFeeds = [],
+  hpSections = DEFAULT_HP_SECTIONS,
+  hpConfig = null,
 }: {
   softwareName: string;
   headlines: string[];
@@ -4025,6 +5478,8 @@ function NewHomepageContent({
   liveGigs?: NHCLiveGig[];
   liveMetrics?: NHCLiveMetrics | null;
   liveFeeds?: NHCLiveFeed[];
+  hpSections?: HPSectionVisibility;
+  hpConfig?: HPConfig | null;
 }) {
   const { data: nhcSession } = useSession();
   const [activeFeedTab, setActiveFeedTab] = React.useState<string>('All');
@@ -4161,165 +5616,9 @@ function NewHomepageContent({
     <div
       ref={welcomeScrollRef as React.RefObject<HTMLDivElement>}
       className="flex flex-1 flex-col overflow-y-auto overscroll-contain touch-pan-y scrollbar-minimal pb-[env(safe-area-inset-bottom,0px)] [padding-bottom:max(180px,calc(180px+env(safe-area-inset-bottom,0px)))] md:[padding-bottom:max(176px,calc(176px+env(safe-area-inset-bottom,0px)))]"
+      style={{ WebkitOverflowScrolling: 'touch', transform: 'translateZ(0)', willChange: 'scroll-position', contain: 'layout style' }}
     >
-      <div className="mx-auto w-full max-w-[1600px] space-y-3 sm:space-y-4 px-3 sm:px-4 lg:px-6 xl:px-8 pt-3 sm:pt-4">
-
-        {/* ── Mobile greeting banner (sm:hidden) ── */}
-        {greetingMeta && clockNow && typeof dateDisplay === 'object' && (
-          <div
-            className="sm:hidden"
-            style={{
-              opacity: clockVisible ? 1 : 0,
-              transform: clockVisible ? 'translateY(0)' : 'translateY(-10px)',
-              transition: 'opacity 0.55s cubic-bezier(0.22,1,0.36,1), transform 0.55s cubic-bezier(0.22,1,0.36,1)',
-            }}
-          >
-            <style>{`
-              @keyframes mobileGreetIn {
-                0%   { opacity:0; transform:translateY(-5px); filter:blur(4px); }
-                100% { opacity:1; transform:translateY(0);    filter:blur(0);   }
-              }
-            `}</style>
-
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                borderRadius: 13,
-                border: '1px solid rgba(255,255,255,0.06)',
-                background: 'rgba(0,0,0,0.42)',
-                backdropFilter: 'blur(18px)',
-                overflow: 'hidden',
-                animation: 'mobileGreetIn 0.45s cubic-bezier(0.22,1,0.36,1) both',
-              }}
-            >
-              {/* Left accent bar */}
-              <div
-                aria-hidden="true"
-                style={{ flexShrink: 0, width: 2, alignSelf: 'stretch', background: greetingMeta.accent }}
-              />
-
-              {/* Single row: greeting · date — time */}
-              <div
-                style={{
-                  flex: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '10px 14px',
-                  gap: 8,
-                }}
-              >
-                <span
-                  key={`greet-${clockPhase}`}
-                  style={{
-                    fontSize: 15,
-                    fontWeight: 500,
-                    color: '#ffffff',
-                    letterSpacing: '-0.025em',
-                    lineHeight: 1,
-                    animation: 'mobileGreetIn 0.40s cubic-bezier(0.22,1,0.36,1) both 0.04s',
-                  }}
-                >
-                  {greetingMeta.text}
-                </span>
-                <span
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 400,
-                    color: 'rgba(255,255,255,0.22)',
-                    letterSpacing: '0.06em',
-                    textTransform: 'uppercase',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {dateDisplay.day}
-                </span>
-                <span
-                  key={`time-${timeDisplay}`}
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 500,
-                    color: 'rgba(255,255,255,0.38)',
-                    letterSpacing: '-0.01em',
-                    fontVariantNumeric: 'tabular-nums',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {timeDisplay}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Mobile quick-actions strip (top, before hero) ── */}
-        <div className="sm:hidden flex gap-2 overflow-x-auto" style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
-
-          {/* ── "All features" button — first in strip ── */}
-          <button
-            type="button"
-            onClick={() => setShowAllFeatures(true)}
-            className="flex-shrink-0 flex items-center gap-2 active:scale-[0.96] transition-transform duration-150"
-            style={{
-              height: 36,
-              padding: '0 12px 0 9px',
-              borderRadius: 12,
-              background: showAllFeatures ? 'rgba(139,92,246,0.14)' : 'rgba(8,8,11,0.82)',
-              backdropFilter: 'blur(20px) saturate(1.4)',
-              WebkitBackdropFilter: 'blur(20px) saturate(1.4)',
-              border: showAllFeatures ? '1px solid rgba(139,92,246,0.28)' : '1px solid rgba(255,255,255,0.07)',
-              boxShadow: '0 2px 12px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.05)',
-            }}
-          >
-            <div style={{
-              width: 22, height: 22, borderRadius: 7, flexShrink: 0,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'rgba(139,92,246,0.16)', border: '1px solid rgba(139,92,246,0.22)',
-            }}>
-              <LayoutGrid style={{ width: 11, height: 11, color: '#a78bfa' }} />
-            </div>
-            <span style={{
-              fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap',
-              color: 'rgba(255,255,255,0.58)', letterSpacing: '-0.015em',
-            }}>All</span>
-          </button>
-
-          {topFeatures.map((f) => {
-            const isMostUsed = f.id === topFeatureId;
-            return (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => trackAndGo(f.id, f.href, f.modal)}
-                className="flex-shrink-0 flex items-center gap-2 active:scale-[0.97] transition-transform duration-150"
-                style={{
-                  height: 36,
-                  padding: '0 13px 0 9px',
-                  borderRadius: 12,
-                  background: 'rgba(8,8,11,0.82)',
-                  backdropFilter: 'blur(20px) saturate(1.4)',
-                  WebkitBackdropFilter: 'blur(20px) saturate(1.4)',
-                  border: isMostUsed ? '1px solid rgba(255,255,255,0.13)' : '1px solid rgba(255,255,255,0.07)',
-                  boxShadow: '0 2px 12px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.05)',
-                }}
-              >
-                <div style={{
-                  width: 22, height: 22, borderRadius: 7, flexShrink: 0,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: f.ib, border: `1px solid ${f.bd}`,
-                }}>
-                  <f.Icon style={{ width: 11, height: 11, color: f.ic }} />
-                </div>
-                <span style={{
-                  fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap',
-                  color: isMostUsed ? 'rgba(255,255,255,0.90)' : 'rgba(255,255,255,0.60)',
-                  letterSpacing: '-0.015em',
-                }}>{f.label}</span>
-              </button>
-            );
-          })}
-        </div>
+      <div className="mx-auto w-full max-w-[1440px] space-y-6 sm:space-y-8 lg:space-y-10 px-4 sm:px-6 lg:px-10 xl:px-12 pt-5 sm:pt-7 lg:pt-8">
 
         {/* ── All-features bottom sheet (mobile only) ── */}
         {showAllFeatures && typeof document !== 'undefined' && createPortal(
@@ -4440,11 +5739,31 @@ function NewHomepageContent({
           document.body
         )}
 
-        {/* ── Row 1: Hero Banner + Feature Cards ──────────────────── */}
-        <div className="flex gap-2 sm:gap-3 min-h-[180px] sm:min-h-[230px] lg:min-h-[260px]">
+        {/* ── Recents (stories bar) ── */}
+        <div style={{ marginBottom: 16 }}>
+          <RecentsBar />
+        </div>
+
+        {hpConfig?.announcementBanner?.active && (
+          <div style={{ display:'flex', alignItems:'center', gap:10, padding:'9px 14px', borderRadius:12, marginBottom:2,
+            background: hpConfig.announcementBanner.style==='warning' ? 'rgba(245,158,11,0.12)' : hpConfig.announcementBanner.style==='success' ? 'rgba(34,197,94,0.12)' : hpConfig.announcementBanner.style==='promo' ? 'rgba(168,85,247,0.12)' : 'rgba(59,130,246,0.12)',
+            border: hpConfig.announcementBanner.style==='warning' ? '1px solid rgba(245,158,11,0.28)' : hpConfig.announcementBanner.style==='success' ? '1px solid rgba(34,197,94,0.28)' : hpConfig.announcementBanner.style==='promo' ? '1px solid rgba(168,85,247,0.28)' : '1px solid rgba(59,130,246,0.28)',
+          }}>
+            <span style={{ flex:1, fontSize:12.5, fontWeight:500, lineHeight:1.4,
+              color: hpConfig.announcementBanner.style==='warning' ? '#fcd34d' : hpConfig.announcementBanner.style==='success' ? '#86efac' : hpConfig.announcementBanner.style==='promo' ? '#d8b4fe' : '#93c5fd',
+            }}>{hpConfig.announcementBanner.text}</span>
+            {hpConfig.announcementBanner.ctaLabel && hpConfig.announcementBanner.ctaHref && (
+              <a href={hpConfig.announcementBanner.ctaHref} target="_blank" rel="noopener noreferrer" style={{ fontSize:11, fontWeight:700, whiteSpace:'nowrap', textDecoration:'none', padding:'3px 10px', borderRadius:6, border:'1px solid rgba(255,255,255,0.20)', color:'rgba(255,255,255,0.85)' }}>
+                {hpConfig.announcementBanner.ctaLabel}
+              </a>
+            )}
+          </div>
+        )}
+        {/* ── Row 1: Hero Banner + Feature Cards — REMOVED ── */}
+        {false && <div className="flex gap-2 sm:gap-3 min-h-[180px] sm:min-h-[230px] lg:min-h-[260px]">
 
           {/* ── Hero card ── */}
-          <div className="relative flex-[1.45] min-w-0 overflow-hidden rounded-[18px] sm:rounded-[22px] border border-white/[0.07] bg-[#0d0e11] shadow-[0_8px_40px_rgba(0,0,0,0.55)]">
+          <div className="relative flex-[1.45] min-w-0 overflow-hidden rounded-[18px] sm:rounded-[22px] border border-white/[0.07] bg-[#080a0c] shadow-[0_8px_40px_rgba(0,0,0,0.65)]">
 
             {/* Slot-machine CSS */}
             <style>{`
@@ -4468,22 +5787,30 @@ function NewHomepageContent({
               .dot-active { animation: dotPulse 1.8s ease infinite; }
             `}</style>
 
-            {/* Grid overlay */}
-            <div className="pointer-events-none absolute inset-0 opacity-[0.03]"
-              style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.6) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.6) 1px,transparent 1px)', backgroundSize: '28px 28px' }} />
+            {/* ── Photo background — right-anchored, people on right side ── */}
+            <div
+              className="pointer-events-none absolute inset-0 select-none"
+              style={{
+                backgroundImage: 'url(/homepage/hero-freelancers.png)',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center right',
+                backgroundRepeat: 'no-repeat',
+                filter: 'brightness(0.55) saturate(0.80)',
+              }}
+            />
 
-            {/* Ambient glow orbs */}
-            <div className="pointer-events-none absolute -top-20 -left-20 w-72 h-72 rounded-full opacity-[0.12]"
-              style={{ background: 'radial-gradient(circle,#6366f1 0%,transparent 70%)', filter: 'blur(48px)' }} />
-            <div className="pointer-events-none absolute -bottom-16 right-8 w-56 h-56 rounded-full opacity-[0.09]"
-              style={{ background: 'radial-gradient(circle,#34d399 0%,transparent 70%)', filter: 'blur(40px)' }} />
-
-            {/* 3D sphere */}
-            <div className="absolute right-[-8%] top-1/2 -translate-y-1/2 h-[170%] w-auto aspect-square pointer-events-none select-none opacity-90">
-              <AnimatedSphere />
-            </div>
-            {/* Gradient overlay */}
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#0d0e11] via-[#0d0e11]/80 to-transparent" />
+            {/* Strong left gradient — keeps text crisp over photo */}
+            <div
+              className="pointer-events-none absolute inset-0"
+              style={{
+                background: 'linear-gradient(100deg, #080a0c 0%, #080a0c 28%, rgba(8,10,12,0.88) 46%, rgba(8,10,12,0.55) 62%, rgba(8,10,12,0.20) 78%, transparent 100%)',
+              }}
+            />
+            {/* Bottom fade — grounds the card */}
+            <div
+              className="pointer-events-none absolute inset-0"
+              style={{ background: 'linear-gradient(to top, rgba(8,10,12,0.60) 0%, transparent 45%)' }}
+            />
 
             {/* Content */}
             <div className="relative z-10 flex h-full flex-col justify-between p-5 sm:p-6 lg:p-8">
@@ -4610,7 +5937,7 @@ function NewHomepageContent({
                   key={f.id}
                   type="button"
                   onClick={() => trackAndGo(f.id, f.href, f.modal)}
-                  className="group relative flex flex-col items-start text-left overflow-hidden transition-all duration-300 hover:-translate-y-[1px]"
+                  className="group relative flex flex-col items-start text-left overflow-hidden transition-transform duration-300 hover:-translate-y-[1px]"
                   style={{
                     borderRadius: 18,
                     border: '1px solid rgba(255,255,255,0.07)',
@@ -4673,571 +6000,154 @@ function NewHomepageContent({
             })}
           </div>
           {/* Feature cards — mobile: hidden (strip at top handles mobile) */}
+        </div>}
+
+        {/* ── Publish heading + content discovery + feed cards + gig slider (grouped) ── */}
+        <div className="flex flex-col" style={{ gap: 14 }}>
+          <PublishHeading onPublish={() => onPublishClick()} />
+          <ContentDiscoveryStrip />
         </div>
 
-        {/* ── Hero Banners: Explore Professionals + Public Faces ── */}
-        <div className="mb-2.5 flex items-center justify-between">
-          <h2 className="text-[12.5px] font-medium tracking-wide" style={{ color: 'rgba(255,255,255,0.42)', letterSpacing: '0.04em' }}>Explore Professionals</h2>
-          <Link href="/people" className="flex items-center gap-1 text-[11px] font-medium text-white/25 transition hover:text-white/50" style={{ letterSpacing: '0.01em' }}>
-            View all <ArrowRight className="h-2.5 w-2.5" />
-          </Link>
-        </div>
-        {(() => {
-          // Curated avatar sets — Indian-leaning for Explore, Western-leaning for Public Faces.
-          // Picture services: i.pravatar.cc (diverse real portraits) and randomuser.me.
-          const FOREIGNER_AVATARS = [
-            { name: 'Liam', url: 'https://randomuser.me/api/portraits/men/32.jpg', initials: 'L' },
-            { name: 'Sophie', url: 'https://randomuser.me/api/portraits/women/44.jpg', initials: 'S' },
-            { name: 'Ethan', url: 'https://randomuser.me/api/portraits/men/77.jpg', initials: 'E' },
-            { name: 'Emma', url: 'https://randomuser.me/api/portraits/women/68.jpg', initials: 'E' },
-            { name: 'Marcus', url: 'https://randomuser.me/api/portraits/men/52.jpg', initials: 'M' },
-            { name: 'Olivia', url: 'https://randomuser.me/api/portraits/women/12.jpg', initials: 'O' },
-          ];
-          const INDIAN_AVATARS = [
-            { name: 'Arjun', url: 'https://randomuser.me/api/portraits/men/41.jpg', initials: 'A' },
-            { name: 'Priya', url: 'https://randomuser.me/api/portraits/women/65.jpg', initials: 'P' },
-            { name: 'Rohit', url: 'https://randomuser.me/api/portraits/men/15.jpg', initials: 'R' },
-            { name: 'Ananya', url: 'https://randomuser.me/api/portraits/women/22.jpg', initials: 'A' },
-            { name: 'Vikram', url: 'https://randomuser.me/api/portraits/men/64.jpg', initials: 'V' },
-            { name: 'Neha', url: 'https://randomuser.me/api/portraits/women/8.jpg', initials: 'N' },
-          ];
+        {/* ── Ad banner slider ── */}
+        {hpSections.adBanners && <AdBannerSlider />}
 
-          // Explore Professionals — prefer live Indian profiles, fall back to curated Indian set
-          const liveAvatars = liveProfiles
-            .filter((p) => !!p.profile.avatarUrl)
-            .slice(0, 6)
-            .map((p) => ({
-              name: p.name,
-              url: p.profile.avatarUrl || '',
-              initials: p.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase(),
-            }));
-          const exploreAvatars = (liveAvatars.length >= 5 ? liveAvatars : INDIAN_AVATARS).slice(0, 6);
-
-          // Public Faces — Western/foreigner set (visually distinct from Explore)
-          const facesAvatars = FOREIGNER_AVATARS.slice(0, 6);
-
-          // Back-compat alias (used by category-card legacy refs if any remain in the file)
-          const bannerAvatars = exploreAvatars;
-          const facesCategories = [
-            { label: 'Entrepreneurship', Icon: TrendingUp, fg: '#fca5a5', bg: 'rgba(220,38,38,0.18)', bd: 'rgba(220,38,38,0.30)' },
-            { label: 'Technology',       Icon: Sparkles,   fg: '#93c5fd', bg: 'rgba(37,99,235,0.20)',  bd: 'rgba(37,99,235,0.32)' },
-            { label: 'Lifestyle',        Icon: Heart,      fg: '#86efac', bg: 'rgba(16,185,129,0.18)', bd: 'rgba(16,185,129,0.30)' },
-            { label: 'Marketing',        Icon: Megaphone,  fg: '#d8b4fe', bg: 'rgba(147,51,234,0.18)', bd: 'rgba(147,51,234,0.30)' },
-            { label: 'Education',        Icon: BookOpen,   fg: '#fde68a', bg: 'rgba(202,138,4,0.18)',  bd: 'rgba(202,138,4,0.32)' },
-            { label: 'Music',            Icon: Music,      fg: '#fdba74', bg: 'rgba(217,119,6,0.18)',  bd: 'rgba(217,119,6,0.30)' },
-          ];
-
-          return (
-            <section className="hero-banners-section -mx-3 sm:mx-0 px-3 sm:px-0 lg:px-0 flex lg:grid lg:grid-cols-2 gap-3 sm:gap-4 overflow-x-auto lg:overflow-visible snap-x snap-mandatory no-scrollbar scroll-px-3 sm:scroll-px-0 [scroll-behavior:smooth] [&_.hero-banner]:snap-start [&_.hero-banner]:shrink-0 [&_.hero-banner]:min-w-[88%] sm:[&_.hero-banner]:min-w-[72%] lg:[&_.hero-banner]:min-w-0 lg:[&_.hero-banner]:snap-none">
-              <style dangerouslySetInnerHTML={{ __html: `
-                @keyframes heroBannerIn {
-                  from { opacity: 0; transform: translateY(14px) scale(0.985); filter: blur(6px); }
-                  to   { opacity: 1; transform: translateY(0)    scale(1);     filter: blur(0); }
-                }
-                @keyframes heroAvatarIn {
-                  from { opacity: 0; transform: translateY(10px) scale(0.85); }
-                  to   { opacity: 1; transform: translateY(0)    scale(1);    }
-                }
-                @keyframes heroFloat {
-                  0%, 100% { transform: translateY(0); }
-                  50%      { transform: translateY(-4px); }
-                }
-                @keyframes heroFloatAlt {
-                  0%, 100% { transform: translateY(0); }
-                  50%      { transform: translateY(4px); }
-                }
-                @keyframes heroTitleSheen {
-                  0%   { background-position: -120% 0; }
-                  100% { background-position: 220% 0; }
-                }
-                @keyframes heroGlowPulse {
-                  0%, 100% { opacity: 0.55; }
-                  50%      { opacity: 0.95; }
-                }
-                @keyframes heroPathDraw {
-                  from { stroke-dashoffset: 600; }
-                  to   { stroke-dashoffset: 0; }
-                }
-                @keyframes heroStarShine {
-                  0%, 100% { opacity: 0.55; transform: rotate(0deg) scale(1); filter: drop-shadow(0 0 4px rgba(251,191,36,0.40)); }
-                  45%      { opacity: 1;    transform: rotate(15deg) scale(1.15); filter: drop-shadow(0 0 10px rgba(251,191,36,0.85)); }
-                  55%      { opacity: 1;    transform: rotate(15deg) scale(1.15); filter: drop-shadow(0 0 10px rgba(251,191,36,0.85)); }
-                }
-                @keyframes heroStarTwinkle {
-                  0%, 100% { opacity: 0; transform: scale(0.4); }
-                  50%      { opacity: 1; transform: scale(1); }
-                }
-                .hero-star-shine {
-                  animation: heroStarShine 2.6s ease-in-out infinite;
-                  transform-origin: center;
-                  color: #fbbf24;
-                  fill: #fbbf24;
-                }
-                .hero-star-twinkle {
-                  animation: heroStarTwinkle 1.8s ease-in-out infinite;
-                }
-                .hero-banner {
-                  animation: heroBannerIn 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
-                }
-                .hero-banner:nth-child(2) { animation-delay: 0.12s; }
-                .hero-avatar-shell {
-                  animation: heroAvatarIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
-                  will-change: transform;
-                }
-                .hero-avatar-float {
-                  animation: heroFloat 5.5s ease-in-out infinite;
-                }
-                .hero-avatar-float-alt {
-                  animation: heroFloatAlt 6.2s ease-in-out infinite;
-                }
-                .hero-banner:hover .hero-avatar-shell {
-                  transform: translateY(-3px);
-                  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-                }
-                .hero-title-sheen {
-                  background: linear-gradient(110deg, rgba(255,255,255,0) 30%, rgba(255,255,255,0.55) 50%, rgba(255,255,255,0) 70%);
-                  background-size: 200% 100%;
-                  -webkit-background-clip: text;
-                  background-clip: text;
-                  -webkit-text-fill-color: transparent;
-                  animation: heroTitleSheen 4.5s ease-in-out infinite;
-                  position: absolute; inset: 0;
-                  pointer-events: none;
-                }
-                .hero-glow-pulse {
-                  animation: heroGlowPulse 4s ease-in-out infinite;
-                }
-                .hero-line-draw {
-                  stroke-dasharray: 600;
-                  animation: heroPathDraw 2.4s cubic-bezier(0.22, 1, 0.36, 1) 0.4s both;
-                }
-                .hero-cta {
-                  opacity: 0;
-                  transform: translateY(6px);
-                  transition: opacity 0.4s ease, transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-                }
-                .hero-banner:hover .hero-cta {
-                  opacity: 1;
-                  transform: translateY(0);
-                }
-                @media (prefers-reduced-motion: reduce) {
-                  .hero-banner, .hero-avatar-shell, .hero-avatar-float, .hero-avatar-float-alt,
-                  .hero-title-sheen, .hero-glow-pulse, .hero-line-draw {
-                    animation: none !important;
-                  }
-                }
-              ` }} />
-
-              {/* ── Banner 1: Explore Professionals ── */}
-              <Link
-                href="/people"
-                className="hero-banner group relative flex items-center overflow-hidden rounded-[16px] transition-all duration-500 hover:-translate-y-[1px]"
-                style={{
-                  height: 'clamp(78px, 11vw, 116px)',
-                  background: 'rgba(8,8,11,0.82)',
-                  backdropFilter: 'blur(28px) saturate(1.6)',
-                  WebkitBackdropFilter: 'blur(28px) saturate(1.6)',
-                  border: '1px solid rgba(255,255,255,0.06)',
-                  boxShadow: '0 6px 22px rgba(0,0,0,0.50), inset 0 1px 0 rgba(255,255,255,0.05)',
-                }}
-                aria-label="Explore Professionals"
-              >
-                {/* Soft glow */}
-                <div className="absolute inset-0 pointer-events-none hero-glow-pulse" style={{ background: 'radial-gradient(ellipse 55% 80% at 50% 50%, rgba(251,146,60,0.10), transparent 70%)' }} />
-
-                {/* Left avatar cluster */}
-                <div className="absolute left-3 sm:left-4 inset-y-0 flex items-center pointer-events-none">
-                  {[0, 1, 2].map((idx) => {
-                    const a = bannerAvatars[idx];
-                    const floatCls = idx % 2 === 0 ? 'hero-avatar-float' : 'hero-avatar-float-alt';
-                    return (
-                      <div key={`l-${idx}`} className={`hero-avatar-shell ${floatCls}`}
-                        style={{ marginLeft: idx === 0 ? 0 : 'clamp(-10px,-1.5vw,-14px)', zIndex: 3 - idx, animationDelay: `${idx * 0.1}s, ${idx * 0.5}s` }}>
-                        <div
-                          className="rounded-full overflow-hidden flex items-center justify-center font-light text-white/85"
-                          style={{
-                            width: 'clamp(28px, 4vw, 40px)', height: 'clamp(28px, 4vw, 40px)',
-                            background: 'linear-gradient(135deg,#1f2937,#0f172a)',
-                            border: '1.5px solid rgba(8,8,11,1)',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.55)',
-                            fontSize: 'clamp(9px,1.1vw,12px)',
-                          }}
-                        >
-                          {a.url
-                            ? <img src={a.url} alt={a.name} className="w-full h-full object-cover" />
-                            : <span className="opacity-60">{a.initials}</span>}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Right avatar cluster */}
-                <div className="absolute right-3 sm:right-4 inset-y-0 flex items-center pointer-events-none">
-                  {[3, 4].map((idx, i) => {
-                    const a = bannerAvatars[idx];
-                    const floatCls = i % 2 === 0 ? 'hero-avatar-float-alt' : 'hero-avatar-float';
-                    return (
-                      <div key={`r-${idx}`} className={`hero-avatar-shell ${floatCls}`}
-                        style={{ marginLeft: i === 0 ? 0 : 'clamp(-10px,-1.5vw,-14px)', zIndex: i, animationDelay: `${0.3 + i * 0.1}s, ${i * 0.5}s` }}>
-                        <div
-                          className="rounded-full overflow-hidden flex items-center justify-center font-light text-white/85"
-                          style={{
-                            width: 'clamp(28px, 4vw, 40px)', height: 'clamp(28px, 4vw, 40px)',
-                            background: 'linear-gradient(135deg,#1f2937,#0f172a)',
-                            border: '1.5px solid rgba(8,8,11,1)',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.55)',
-                            fontSize: 'clamp(9px,1.1vw,12px)',
-                          }}
-                        >
-                          {a.url
-                            ? <img src={a.url} alt={a.name} className="w-full h-full object-cover" />
-                            : <span className="opacity-60">{a.initials}</span>}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Title — centered */}
-                <div className="relative z-[2] mx-auto flex flex-col items-center justify-center pointer-events-none px-4">
-                  <h3
-                    className="relative whitespace-nowrap text-center leading-[1.05] text-white/95"
-                    style={{
-                      fontSize: 'clamp(15px,2vw,24px)',
-                      fontWeight: 200,
-                      letterSpacing: '-0.022em',
-                      textShadow: '0 2px 14px rgba(0,0,0,0.55)',
-                    }}
-                  >
-                    <span style={{ position: 'relative', display: 'inline-block' }}>
-                      Explore
-                      <span aria-hidden="true" className="hero-title-sheen">Explore</span>
-                    </span>
-                    {' '}
-                    <span style={{
-                      background: 'linear-gradient(135deg,#fb923c 0%,#f97316 60%,#fdba74 100%)',
-                      WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
-                      fontWeight: 300, letterSpacing: '-0.022em',
-                    }}>
-                      Professionals
-                    </span>
-                  </h3>
-                  <span className="hero-cta mt-[3px] inline-flex items-center gap-1 text-white/45"
-                    style={{ fontSize: 'clamp(9px,0.85vw,11px)', fontWeight: 300, letterSpacing: '0.05em' }}>
-                    Discover <ArrowRight className="h-2.5 w-2.5" />
-                  </span>
-                </div>
-              </Link>
-
-              {/* ── Banner 2: Public Faces ── */}
-              <Link
-                href="/people?filter=public-face"
-                className="hero-banner group relative flex items-center overflow-hidden rounded-[16px] transition-all duration-500 hover:-translate-y-[1px]"
-                style={{
-                  height: 'clamp(78px, 11vw, 116px)',
-                  background: 'rgba(8,8,11,0.82)',
-                  backdropFilter: 'blur(28px) saturate(1.6)',
-                  WebkitBackdropFilter: 'blur(28px) saturate(1.6)',
-                  border: '1px solid rgba(255,255,255,0.06)',
-                  boxShadow: '0 6px 22px rgba(0,0,0,0.50), inset 0 1px 0 rgba(255,255,255,0.05)',
-                }}
-                aria-label="Public Faces"
-              >
-                {/* Soft glow */}
-                <div className="absolute inset-0 pointer-events-none hero-glow-pulse" style={{ background: 'radial-gradient(ellipse 55% 80% at 50% 50%, rgba(251,146,60,0.08), transparent 70%)' }} />
-
-                {/* Left avatar cluster — rounded squares (foreigners set) */}
-                <div className="absolute left-3 sm:left-4 inset-y-0 flex items-center pointer-events-none">
-                  {[0, 1, 2].map((idx) => {
-                    const a = facesAvatars[idx];
-                    const floatCls = idx % 2 === 0 ? 'hero-avatar-float' : 'hero-avatar-float-alt';
-                    return (
-                      <div key={`pf-l-${idx}`} className={`hero-avatar-shell ${floatCls}`}
-                        style={{ marginLeft: idx === 0 ? 0 : 'clamp(-10px,-1.5vw,-14px)', zIndex: 3 - idx, animationDelay: `${idx * 0.1}s, ${idx * 0.5}s` }}>
-                        <div
-                          className="rounded-[9px] overflow-hidden flex items-center justify-center font-light text-white/85"
-                          style={{
-                            width: 'clamp(28px, 4vw, 40px)', height: 'clamp(28px, 4vw, 40px)',
-                            background: 'linear-gradient(135deg,#1f2937,#0f172a)',
-                            border: '1.5px solid rgba(8,8,11,1)',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.55)',
-                            fontSize: 'clamp(9px,1.1vw,12px)',
-                          }}
-                        >
-                          {a.url
-                            ? <img src={a.url} alt={a.name} className="w-full h-full object-cover" />
-                            : <span className="opacity-60">{a.initials}</span>}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Right avatar cluster — rounded squares (foreigners set) */}
-                <div className="absolute right-3 sm:right-4 inset-y-0 flex items-center pointer-events-none">
-                  {[3, 4, 5].map((idx, i) => {
-                    const a = facesAvatars[idx];
-                    const floatCls = i % 2 === 0 ? 'hero-avatar-float-alt' : 'hero-avatar-float';
-                    return (
-                      <div key={`pf-r-${idx}`} className={`hero-avatar-shell ${floatCls}`}
-                        style={{ marginLeft: i === 0 ? 0 : 'clamp(-10px,-1.5vw,-14px)', zIndex: i, animationDelay: `${0.3 + i * 0.1}s, ${i * 0.5}s` }}>
-                        <div
-                          className="rounded-[9px] overflow-hidden flex items-center justify-center font-light text-white/85"
-                          style={{
-                            width: 'clamp(28px, 4vw, 40px)', height: 'clamp(28px, 4vw, 40px)',
-                            background: 'linear-gradient(135deg,#1f2937,#0f172a)',
-                            border: '1.5px solid rgba(8,8,11,1)',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.55)',
-                            fontSize: 'clamp(9px,1.1vw,12px)',
-                          }}
-                        >
-                          {a.url
-                            ? <img src={a.url} alt={a.name} className="w-full h-full object-cover" />
-                            : <span className="opacity-60">{a.initials}</span>}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Title — centered, with shining star accent */}
-                <div className="relative z-[2] mx-auto flex flex-col items-center justify-center pointer-events-none px-4">
-                  <h3
-                    className="relative flex items-center whitespace-nowrap gap-2 sm:gap-2.5 text-center leading-[1.05] text-white/95"
-                    style={{
-                      fontSize: 'clamp(15px,2vw,24px)',
-                      fontWeight: 200,
-                      letterSpacing: '-0.022em',
-                      textShadow: '0 2px 14px rgba(0,0,0,0.55)',
-                    }}
-                  >
-                    <span style={{ position: 'relative', display: 'inline-block' }}>
-                      Public
-                      <span aria-hidden="true" className="hero-title-sheen">Public</span>
-                    </span>
-                    <span style={{
-                      background: 'linear-gradient(135deg,#fb923c 0%,#f59e0b 60%,#fdba74 100%)',
-                      WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
-                      fontWeight: 300, letterSpacing: '-0.022em',
-                    }}>
-                      Faces
-                    </span>
-                    {/* Shining star accent */}
-                    <span className="relative inline-flex items-center justify-center" aria-hidden="true">
-                      <Star className="hero-star-shine" style={{ width: 'clamp(14px,1.6vw,20px)', height: 'clamp(14px,1.6vw,20px)' }} strokeWidth={1.5} />
-                      <span className="hero-star-twinkle absolute -top-1 -right-1.5 rounded-full"
-                        style={{ width: 4, height: 4, background: '#fde68a', boxShadow: '0 0 6px rgba(253,230,138,0.85)' }} />
-                      <span className="hero-star-twinkle absolute -bottom-1 -left-1 rounded-full"
-                        style={{ width: 3, height: 3, background: '#fde68a', boxShadow: '0 0 5px rgba(253,230,138,0.75)', animationDelay: '0.6s' }} />
-                    </span>
-                  </h3>
-                  <span className="hero-cta mt-[3px] inline-flex items-center gap-1 text-white/45"
-                    style={{ fontSize: 'clamp(9px,0.85vw,11px)', fontWeight: 300, letterSpacing: '0.05em' }}>
-                    Meet creators <ArrowRight className="h-2.5 w-2.5" />
-                  </span>
-                </div>
-              </Link>
-            </section>
-          );
-        })()}
-
-
-
-        {/* ── Row 2: New Professionals — infinite auto-smooth slider ── */}
-        <section className="-mx-3 sm:mx-0">
-          {/* Infinite duplicated slider — pauses on hover/touch */}
-          <div className="relative">
-            <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-14 sm:w-28"
-              style={{ background: 'linear-gradient(to right, rgb(13,13,15) 0%, rgba(13,13,15,0.98) 5%, rgba(13,13,15,0.95) 10%, rgba(13,13,15,0.90) 16%, rgba(13,13,15,0.83) 23%, rgba(13,13,15,0.74) 31%, rgba(13,13,15,0.63) 40%, rgba(13,13,15,0.51) 49%, rgba(13,13,15,0.40) 58%, rgba(13,13,15,0.28) 67%, rgba(13,13,15,0.18) 75%, rgba(13,13,15,0.09) 83%, rgba(13,13,15,0.03) 91%, transparent 100%)' }} />
-            <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-14 sm:w-28"
-              style={{ background: 'linear-gradient(to left, rgb(13,13,15) 0%, rgba(13,13,15,0.98) 5%, rgba(13,13,15,0.95) 10%, rgba(13,13,15,0.90) 16%, rgba(13,13,15,0.83) 23%, rgba(13,13,15,0.74) 31%, rgba(13,13,15,0.63) 40%, rgba(13,13,15,0.51) 49%, rgba(13,13,15,0.40) 58%, rgba(13,13,15,0.28) 67%, rgba(13,13,15,0.18) 75%, rgba(13,13,15,0.09) 83%, rgba(13,13,15,0.03) 91%, transparent 100%)' }} />
-          <div
-            id="pros-slider"
-            data-auto-slider="true"
-            data-auto-speed="0.6"
-            data-auto-loop="sets"
-            data-auto-sets="2"
-            className="no-scrollbar flex items-stretch gap-2 sm:gap-2.5 overflow-x-auto overflow-y-hidden py-2 px-3 sm:px-0"
-            style={{ scrollbarWidth: 'none' }}
-          >
-            {/* Render two copies for infinite loop illusion */}
-            {[...Array(2)].flatMap((_, copyIdx) => {
-              const SLIDER_BANNER_GRADIENTS = [
-                'linear-gradient(135deg,#0f172a 0%,#1e3a8a 100%)',
-                'linear-gradient(135deg,#0d1b0d 0%,#14532d 100%)',
-                'linear-gradient(135deg,#1a0d2e 0%,#4c1d95 100%)',
-                'linear-gradient(135deg,#1c0a0a 0%,#7f1d1d 100%)',
-                'linear-gradient(135deg,#0d1a1a 0%,#134e4a 100%)',
-                'linear-gradient(135deg,#1a150d 0%,#78350f 100%)',
-                'linear-gradient(135deg,#0a0d1a 0%,#1e1b4b 100%)',
-                'linear-gradient(135deg,#0f0a1a 0%,#581c87 100%)',
-              ];
-              const profiles = liveProfiles.length > 0
-                ? liveProfiles.slice(0, 12).map((p, i) => ({
-                    id: `${copyIdx}-live-${p.id}-${i}`,
-                    name: p.name,
-                    role: p.profile.headline || (p.accountType === 'individual' ? 'Professional' : 'Business'),
-                    initials: p.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase(),
-                    avatarUrl: p.profile.avatarUrl || '',
-                    bannerUrl: p.profile.bannerUrl || '',
-                    coverGradient: p.profile.coverGradient || '',
-                    coverPosition: p.profile.coverPosition || 'center',
-                    docrudGo: p.docrudGo,
-                    location: p.profile.location || '',
-                    skills: (p.profile.skills || []).slice(0, 3),
-                    upraises: p.upraiseCount,
-                    followers: p.stats.followers,
-                    openToWork: p.profile.openToWork,
-                    profileId: p.id,
-                    bannerFallback: SLIDER_BANNER_GRADIENTS[Array.from(p.name).reduce((a: number, c: string) => a + c.charCodeAt(0), 0) % SLIDER_BANNER_GRADIENTS.length],
-                  }))
-                : NEW_PROFESSIONALS.slice(0, 6).map((p, i) => ({
-                    id: `${copyIdx}-static-${p.id}-${i}`,
-                    name: p.name, role: p.role, initials: p.avatar, avatarUrl: '', bannerUrl: '',
-                    coverGradient: '', coverPosition: 'center', docrudGo: false,
-                    location: '', skills: [...p.skills], upraises: 0, followers: 0,
-                    openToWork: false, profileId: '',
-                    bannerFallback: SLIDER_BANNER_GRADIENTS[i % SLIDER_BANNER_GRADIENTS.length],
-                  }));
-
-              return profiles.map((pro) => {
-                const profileHref = pro.profileId ? `/u/${pro.profileId}` : '/people';
-                const isFollowed = followingSet.has(pro.profileId);
-                const isPending = pendingFollow.has(pro.profileId);
-                const v = pro.docrudGo;
-
-                /* banner style: real image → stored gradient → name-derived gradient */
-                const sliderBannerStyle: React.CSSProperties = pro.bannerUrl
-                  ? { backgroundImage: `url(${pro.bannerUrl})`, backgroundSize: 'cover', backgroundPosition: pro.coverPosition }
-                  : pro.coverGradient
-                    ? { background: pro.coverGradient }
-                    : v
-                      ? { background: 'linear-gradient(135deg,#1c1608 0%,#3a2a06 55%,#1c1608 100%)' }
-                      : { background: pro.bannerFallback };
-
-                const cardBorderSlider = v
-                  ? 'linear-gradient(135deg,rgba(201,168,76,0.55),rgba(240,216,120,0.28) 50%,rgba(201,168,76,0.50))'
-                  : 'rgba(255,255,255,0.07)';
-
+        {/* ── Gigs grid ── */}
+        {hpSections.gigsGrid && <div>
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-semibold tracking-[0.08em] uppercase" style={{ color: 'rgba(255,255,255,0.28)', letterSpacing: '0.10em' }}>Gigs</span>
+              {liveGigs.length > 0 && <span className="rounded-[5px] px-1.5 py-[2px] text-[8.5px] font-semibold tabular-nums" style={{ background: 'rgba(52,211,153,0.08)', color: 'rgba(52,211,153,0.65)', border: '1px solid rgba(52,211,153,0.14)' }}>{liveGigs.length} live</span>}
+            </div>
+            <Link href="/gigs" className="inline-flex items-center gap-1 rounded-[7px] border border-white/[0.07] px-2.5 py-1 text-[10.5px] font-medium text-white/30 transition hover:border-white/[0.14] hover:text-white/55">
+              See all <ArrowRight className="h-2.5 w-2.5" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {(() => {
+              const gigsSource = liveGigs.length > 0 ? liveGigs.slice(0, 8) : GIGS_DATA.slice(0, 8);
+              return gigsSource.map((gig, i) => {
+                const isLive = liveGigs.length > 0;
+                const title = isLive ? (gig as NHCLiveGig).title : (gig as typeof GIGS_DATA[0]).title;
+                const org = isLive ? (gig as NHCLiveGig).organizationName : (gig as typeof GIGS_DATA[0]).company;
+                const category = isLive ? (gig as NHCLiveGig).category : (gig as typeof GIGS_DATA[0]).skills[0] || 'General';
+                const budget = isLive ? (gig as NHCLiveGig).budgetLabel : (gig as typeof GIGS_DATA[0]).budget;
+                const loc = isLive ? ((gig as NHCLiveGig).locationPreference === 'remote' ? 'Remote' : 'On-site') : 'Remote';
+                const skills = isLive ? (gig as NHCLiveGig).skills.slice(0, 2) : [...(gig as typeof GIGS_DATA[0]).skills].slice(0, 2);
+                const engType = isLive ? (gig as NHCLiveGig).engagementType : 'contract';
+                const isUrgent = isLive && !!(gig as NHCLiveGig).urgentUntil && new Date((gig as NHCLiveGig).urgentUntil!).getTime() > Date.now();
+                const createdAt = isLive ? (gig as NHCLiveGig).createdAt : '';
+                const gigHref = isLive ? `/gigs/${(gig as NHCLiveGig).slug}` : '/gigs';
+                const daysAgo = createdAt ? Math.floor((Date.now() - new Date(createdAt).getTime()) / 86400000) : null;
+                const ageLabel = daysAgo === null ? '' : daysAgo === 0 ? 'Today' : `${daysAgo}d`;
+                const TAG_PALETTE = [
+                  { bg: 'rgba(99,102,241,0.09)',  border: 'rgba(99,102,241,0.16)',  text: 'rgba(165,180,252,0.70)' },
+                  { bg: 'rgba(52,211,153,0.08)',  border: 'rgba(52,211,153,0.14)',  text: 'rgba(110,231,183,0.68)' },
+                  { bg: 'rgba(251,146,60,0.08)',  border: 'rgba(251,146,60,0.16)',  text: 'rgba(253,186,116,0.68)' },
+                  { bg: 'rgba(217,70,239,0.07)',  border: 'rgba(217,70,239,0.14)',  text: 'rgba(240,171,252,0.65)' },
+                  { bg: 'rgba(14,165,233,0.08)',  border: 'rgba(14,165,233,0.14)',  text: 'rgba(125,211,252,0.68)' },
+                  { bg: 'rgba(251,191,36,0.07)',  border: 'rgba(251,191,36,0.14)',  text: 'rgba(253,224,71,0.65)' },
+                  { bg: 'rgba(239,68,68,0.07)',   border: 'rgba(239,68,68,0.14)',   text: 'rgba(252,165,165,0.65)' },
+                  { bg: 'rgba(16,185,129,0.08)',  border: 'rgba(16,185,129,0.14)',  text: 'rgba(52,211,153,0.68)' },
+                ];
+                const tc = TAG_PALETTE[i % TAG_PALETTE.length];
+                const engLabel = engType === 'retainer' ? 'Retainer' : engType === 'ongoing' ? 'Ongoing' : 'One-time';
                 return (
-                  <Link
-                    key={pro.id}
-                    href={profileHref}
-                    className="relative shrink-0 rounded-[18px] overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(0,0,0,0.65)] group flex flex-col"
-                    style={{
-                      width: 'clamp(148px,40vw,220px)',
-                      background: v
-                        ? 'linear-gradient(160deg,rgba(28,22,8,0.92),rgba(18,14,4,0.92))'
-                        : 'rgba(14,14,20,0.82)',
-                      backdropFilter: 'blur(28px) saturate(1.6)',
-                      WebkitBackdropFilter: 'blur(28px) saturate(1.6)',
-                      border: `1px solid ${v ? 'rgba(201,168,76,0.22)' : 'rgba(255,255,255,0.09)'}`,
-                      boxShadow: `0 4px 28px rgba(0,0,0,0.55), inset 0 1px 0 ${v ? 'rgba(201,168,76,0.12)' : 'rgba(255,255,255,0.06)'}`,
-                    }}
+                  <Link key={`gig-${i}`} href={gigHref}
+                    className="group relative flex flex-col overflow-hidden rounded-[13px] transition-all duration-200"
+                    style={{ background: '#09090d', border: '1px solid rgba(255,255,255,0.07)', boxShadow: '0 2px 14px rgba(0,0,0,0.40)' }}
+                    onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = tc.border; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = `0 10px 30px rgba(0,0,0,0.55), 0 0 0 1px ${tc.border}`; }}
+                    onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(255,255,255,0.07)'; el.style.transform = ''; el.style.boxShadow = '0 2px 14px rgba(0,0,0,0.40)'; }}
                   >
-                    {/* ── Banner ── */}
-                    <div className="relative shrink-0" style={{ height: 52, ...sliderBannerStyle }}>
-                      <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom,rgba(0,0,0,0.0) 0%,rgba(0,0,0,0.62) 100%)' }} />
-                      {v && <div className="pointer-events-none absolute inset-0" style={{ background: 'linear-gradient(108deg,transparent 25%,rgba(201,168,76,0.12) 55%,transparent 78%)' }} />}
-                      {/* Go badge */}
-                      {v && (
-                        <span className="absolute top-2 right-2 rounded-full px-2 py-[2px] text-[7.5px] font-black uppercase tracking-[0.06em]"
-                          style={{ background: 'rgba(201,168,76,0.28)', border: '1px solid rgba(201,168,76,0.44)', color: '#F0D878', backdropFilter: 'blur(8px)' }}>
-                          ✦ Go
-                        </span>
-                      )}
-                      {/* Open to work */}
-                      {pro.openToWork && !v && (
-                        <span className="absolute top-2 right-2 rounded-full px-2 py-[2px] text-[7px] font-semibold"
-                          style={{ background: 'rgba(16,185,129,0.20)', border: '1px solid rgba(16,185,129,0.30)', color: '#6ee7b7', backdropFilter: 'blur(8px)' }}>
-                          Hiring
-                        </span>
-                      )}
-                      {/* Avatar — straddling boundary */}
-                      <div className="absolute z-10" style={{ bottom: -18, left: 12 }}>
-                        <div className="rounded-full shadow-[0_2px_12px_rgba(0,0,0,0.55)]"
-                          style={{ padding: 2, background: v ? 'linear-gradient(135deg,#C9A84C,#F0D878)' : 'rgba(255,255,255,0.22)' }}>
-                          <div className="rounded-full overflow-hidden flex items-center justify-center font-bold text-[11px]"
-                            style={{ width: 36, height: 36, background: v ? '#1a1208' : 'rgba(22,22,30,1)', color: v ? '#C9A84C' : 'rgba(255,255,255,0.75)' }}>
-                            {pro.avatarUrl
-                              ? <img src={pro.avatarUrl} alt={pro.name} className="w-full h-full object-cover" />
-                              : pro.initials}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    {/* Color accent top bar */}
+                    <div style={{ height: 2, background: `linear-gradient(90deg,${tc.text}70,${tc.text}20 60%,transparent)`, flexShrink: 0 }} />
 
-                    {/* ── Body ── */}
-                    <div className="flex flex-col flex-1 px-3 pb-3" style={{ paddingTop: 26 }}>
-                      <div className="flex flex-col flex-1 min-h-0 gap-1">
-                        {/* Name + upraises */}
-                        <div className="flex items-start justify-between gap-1">
-                          <div className="min-w-0 flex-1">
-                            <div className="truncate text-[12px] font-bold text-white leading-tight">{pro.name}</div>
-                            <div className="truncate text-[10px] leading-snug mt-[2px]"
-                              style={{ color: 'rgba(255,255,255,0.40)' }}>
-                              {pro.role}
-                            </div>
+                    <div className="flex flex-1 flex-col p-3 gap-2.5">
+                      {/* Org avatar + age/urgent */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[8px] text-[11px] font-bold"
+                            style={{ background: tc.bg, border: `1px solid ${tc.border}`, color: tc.text, letterSpacing: '-0.01em' }}>
+                            {(org || 'G').charAt(0).toUpperCase()}
                           </div>
-                          {pro.upraises > 0 && (
-                            <span className="shrink-0 flex items-center gap-0.5 text-[9px] mt-0.5"
-                              style={{ color: 'rgba(201,168,76,0.70)' }}>
-                              <TrendingUp className="h-2.5 w-2.5" />{pro.upraises}
-                            </span>
-                          )}
+                          <div className="min-w-0">
+                            <p className="truncate text-[10px] font-semibold" style={{ color: 'rgba(255,255,255,0.55)' }}>{org}</p>
+                            <p className="text-[9px]" style={{ color: 'rgba(255,255,255,0.25)' }}>{loc}</p>
+                          </div>
                         </div>
-                        {/* Skills */}
-                        {pro.skills.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-0.5">
-                            {pro.skills.slice(0, 2).map((sk) => (
-                              <span key={sk} className="rounded-full px-2 py-[2px] text-[8.5px] font-medium truncate max-w-full"
-                                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.09)', color: 'rgba(255,255,255,0.45)' }}>
-                                {sk}
-                              </span>
-                            ))}
-                          </div>
-                        )}
+                        <div className="flex items-center gap-1 shrink-0">
+                          {isUrgent && <span className="rounded-[4px] px-1.5 py-[2px] text-[7.5px] font-bold uppercase tracking-wide" style={{ background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.18)', color: 'rgba(252,165,165,0.85)' }}>Urgent</span>}
+                          {ageLabel && <span className="text-[8.5px] tabular-nums" style={{ color: 'rgba(255,255,255,0.22)' }}>{ageLabel}</span>}
+                        </div>
                       </div>
-                      {/* Follow button */}
-                      <button
-                        type="button"
-                        disabled={isPending || !pro.profileId}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          if (pro.profileId) handleFollow(pro.profileId, e);
-                        }}
-                        className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-[10px] py-[6px] text-[10.5px] font-semibold transition-all duration-200 active:scale-[0.97]"
-                        style={isFollowed
-                          ? { background: 'rgba(16,185,129,0.10)', border: '1px solid rgba(16,185,129,0.24)', color: '#6ee7b7' }
-                          : v
-                            ? { background: 'linear-gradient(135deg,#C9A84C,#E8CC7A)', color: '#1a1208', fontWeight: 700, boxShadow: '0 2px 12px rgba(201,168,76,0.30)' }
-                            : { background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.82)' }
-                        }
-                      >
-                        {isFollowed
-                          ? <><Check className="h-3 w-3" /> Following</>
-                          : <><UserPlus className="h-3 w-3" /> Follow</>}
-                      </button>
+
+                      {/* Title */}
+                      <p className="text-[12px] font-semibold leading-snug line-clamp-2 flex-1" style={{ color: 'rgba(255,255,255,0.85)', letterSpacing: '-0.015em' }}>{title}</p>
+
+                      {/* Skill + engagement chips */}
+                      <div className="flex flex-wrap gap-1">
+                        {skills.slice(0, 1).map((s, si) => (
+                          <span key={si} className="rounded-[5px] px-2 py-[3px] text-[9px] font-semibold"
+                            style={{ background: tc.bg, border: `1px solid ${tc.border}`, color: tc.text }}>
+                            {s}
+                          </span>
+                        ))}
+                        <span className="rounded-[5px] px-2 py-[3px] text-[9px] font-medium" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.30)' }}>{engLabel}</span>
+                      </div>
+
+                      {/* Budget + Apply CTA */}
+                      <div className="flex items-center justify-between mt-auto pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                        <span className="text-[13px] font-bold" style={{ color: 'rgba(255,255,255,0.78)', letterSpacing: '-0.02em' }}>{budget}</span>
+                        <span className="flex items-center gap-1 text-[9.5px] font-semibold" style={{ color: tc.text }}>
+                          Apply <ArrowRight className="h-2.5 w-2.5" />
+                        </span>
+                      </div>
                     </div>
                   </Link>
                 );
               });
-            })}
+            })()}
           </div>
-          </div>
-        </section>
+        </div>}
 
-        {/* ── Hero Banners: Post a Gig + Trending Gigs ── */}
-        <div className="mb-2.5 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+
+        <HomepageLiveFeed />
+
+        {/* ── Live Gigs section + Gig CTA banner ── DISABLED */}
+        {false && <><div className="mb-3 flex items-center justify-between gap-3">
+          {/* Left: label + live count */}
+          <div className="flex items-center gap-2 min-w-0">
             <h2 className="text-[12.5px] font-medium tracking-wide" style={{ color: 'rgba(255,255,255,0.42)', letterSpacing: '0.04em' }}>Live Gigs</h2>
-            {liveGigs.length > 0 && <span className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold tabular-nums" style={{ background: 'rgba(52,211,153,0.08)', color: 'rgba(52,211,153,0.65)', border: '1px solid rgba(52,211,153,0.14)' }}>{liveGigs.length} live</span>}
+            {liveGigs.length > 0 && (
+              <span className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold tabular-nums"
+                style={{ background: 'rgba(52,211,153,0.08)', color: 'rgba(52,211,153,0.65)', border: '1px solid rgba(52,211,153,0.14)' }}>
+                {liveGigs.length} live
+              </span>
+            )}
           </div>
-          <Link href="/gigs" className="flex items-center gap-1 text-[11px] font-medium text-white/25 transition hover:text-white/50" style={{ letterSpacing: '0.01em' }}>
-            Browse all <ArrowRight className="h-2.5 w-2.5" />
-          </Link>
+
+          {/* Right: Post a Gig + Browse all */}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => onPublishClick('gig')}
+              className="inline-flex items-center gap-1.5 rounded-[9px] px-3 py-1.5 text-[11px] font-semibold transition-all active:scale-95"
+              style={{
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.10)',
+                color: 'rgba(255,255,255,0.65)',
+                letterSpacing: '-0.005em',
+                cursor: 'pointer',
+              }}
+              onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(255,255,255,0.10)'; el.style.borderColor = 'rgba(255,255,255,0.18)'; el.style.color = 'rgba(255,255,255,0.88)'; }}
+              onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'rgba(255,255,255,0.06)'; el.style.borderColor = 'rgba(255,255,255,0.10)'; el.style.color = 'rgba(255,255,255,0.65)'; }}
+            >
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 1v8M1 5h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+              Post a Gig
+            </button>
+            <Link href="/gigs" className="flex items-center gap-1 text-[11px] font-medium text-white/25 transition hover:text-white/50" style={{ letterSpacing: '0.01em' }}>
+              Browse all <ArrowRight className="h-2.5 w-2.5" />
+            </Link>
+          </div>
         </div>
         {(() => {
           const GIG_CATEGORIES = [
@@ -5250,7 +6160,7 @@ function NewHomepageContent({
           ];
 
           return (
-            <section className="hero-banners-section -mx-3 sm:mx-0 px-3 sm:px-0 lg:px-0 flex lg:grid lg:grid-cols-2 gap-3 sm:gap-4 overflow-x-auto lg:overflow-visible snap-x snap-mandatory no-scrollbar scroll-px-3 sm:scroll-px-0 [scroll-behavior:smooth] [&_.hero-banner]:snap-start [&_.hero-banner]:shrink-0 [&_.hero-banner]:min-w-[88%] sm:[&_.hero-banner]:min-w-[72%] lg:[&_.hero-banner]:min-w-0 lg:[&_.hero-banner]:snap-none">
+            <section className="hero-banners-section -mx-4 sm:mx-0 px-4 sm:px-0 lg:px-0 flex lg:grid lg:grid-cols-2 gap-3 sm:gap-4 overflow-x-auto lg:overflow-visible snap-x snap-mandatory no-scrollbar scroll-px-4 sm:scroll-px-0 [scroll-behavior:smooth] [&_.hero-banner]:snap-start [&_.hero-banner]:shrink-0 [&_.hero-banner]:min-w-[88%] sm:[&_.hero-banner]:min-w-[72%] lg:[&_.hero-banner]:min-w-0 lg:[&_.hero-banner]:snap-none">
               <style dangerouslySetInnerHTML={{ __html: `
                 @keyframes __unused_hiringPulse {
                   0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.55); }
@@ -5274,7 +6184,7 @@ function NewHomepageContent({
               {/* ── Banner 1: Apply Now ── */}
               <Link
                 href="/gigs"
-                className="hero-banner group relative flex items-center overflow-hidden rounded-[16px] transition-all duration-500 hover:-translate-y-[1px]"
+                className="hero-banner group relative flex items-center overflow-hidden rounded-[16px] transition-transform duration-300 hover:-translate-y-[1px]"
                 style={{
                   height: 'clamp(78px, 11vw, 116px)',
                   background: 'rgba(8,8,11,0.82)',
@@ -5426,371 +6336,46 @@ function NewHomepageContent({
               </button>
             </section>
           );
-        })()}
+        })()}</>}
 
-        {/* ── Row 3: Live Gigs — auto-smooth slider ──────────────── */}
-        <section className="-mx-3 sm:mx-0">
-          <div className="relative">
-            <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-14 sm:w-28"
-              style={{ background: 'linear-gradient(to right, rgb(13,13,15) 0%, rgba(13,13,15,0.98) 5%, rgba(13,13,15,0.95) 10%, rgba(13,13,15,0.90) 16%, rgba(13,13,15,0.83) 23%, rgba(13,13,15,0.74) 31%, rgba(13,13,15,0.63) 40%, rgba(13,13,15,0.51) 49%, rgba(13,13,15,0.40) 58%, rgba(13,13,15,0.28) 67%, rgba(13,13,15,0.18) 75%, rgba(13,13,15,0.09) 83%, rgba(13,13,15,0.03) 91%, transparent 100%)' }} />
-            <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-14 sm:w-28"
-              style={{ background: 'linear-gradient(to left, rgb(13,13,15) 0%, rgba(13,13,15,0.98) 5%, rgba(13,13,15,0.95) 10%, rgba(13,13,15,0.90) 16%, rgba(13,13,15,0.83) 23%, rgba(13,13,15,0.74) 31%, rgba(13,13,15,0.63) 40%, rgba(13,13,15,0.51) 49%, rgba(13,13,15,0.40) 58%, rgba(13,13,15,0.28) 67%, rgba(13,13,15,0.18) 75%, rgba(13,13,15,0.09) 83%, rgba(13,13,15,0.03) 91%, transparent 100%)' }} />
-          <div
-            id="gigs-slider"
-            data-auto-slider="true"
-            data-auto-speed="0.5"
-            data-auto-loop="sets"
-            data-auto-sets="2"
-            className="no-scrollbar flex gap-2 sm:gap-2.5 overflow-x-auto pb-0.5 px-3 sm:px-0"
-            style={{ scrollbarWidth: 'none' }}
-          >
-            {[...Array(2)].flatMap((_, copyIdx) => {
-              const gigsSource = liveGigs.length > 0 ? liveGigs.slice(0, 12) : GIGS_DATA.slice(0, 6);
-              return gigsSource.map((gig, i) => {
-                const isLive = liveGigs.length > 0;
-                const title = isLive ? (gig as NHCLiveGig).title : (gig as typeof GIGS_DATA[0]).title;
-                const org = isLive ? (gig as NHCLiveGig).organizationName : (gig as typeof GIGS_DATA[0]).company;
-                const budget = isLive ? (gig as NHCLiveGig).budgetLabel : (gig as typeof GIGS_DATA[0]).budget;
-                const loc = isLive ? ((gig as NHCLiveGig).locationPreference === 'remote' ? '🌐 Remote' : '📍 On-site') : (gig as typeof GIGS_DATA[0]).location;
-                const skills = isLive ? (gig as NHCLiveGig).skills.slice(0, 3) : [...(gig as typeof GIGS_DATA[0]).skills].slice(0, 3);
-                const engType = isLive ? (gig as NHCLiveGig).engagementType : 'contract';
-                const connects = isLive ? (gig as NHCLiveGig).connectCount : 0;
-                const isUrgent = isLive && !!(gig as NHCLiveGig).urgentUntil && new Date((gig as NHCLiveGig).urgentUntil!).getTime() > Date.now();
-                const createdAt = isLive ? (gig as NHCLiveGig).createdAt : '';
-                const gigHref = isLive ? `/gigs/${(gig as NHCLiveGig).slug}` : '/gigs';
-                const daysAgo = createdAt ? Math.floor((Date.now() - new Date(createdAt).getTime()) / 86400000) : null;
-                const ageLabel = daysAgo === null ? '' : daysAgo === 0 ? 'Today' : daysAgo === 1 ? '1d ago' : `${daysAgo}d ago`;
-
-                const TAG_PALETTE = [
-                  { bg: 'rgba(99,102,241,0.09)',  border: 'rgba(99,102,241,0.18)',  text: 'rgba(165,180,252,0.65)' },
-                  { bg: 'rgba(52,211,153,0.08)',  border: 'rgba(52,211,153,0.16)',  text: 'rgba(110,231,183,0.62)' },
-                  { bg: 'rgba(251,146,60,0.08)',  border: 'rgba(251,146,60,0.18)',  text: 'rgba(253,215,170,0.62)' },
-                  { bg: 'rgba(217,70,239,0.07)',  border: 'rgba(217,70,239,0.16)',  text: 'rgba(240,171,252,0.60)' },
-                  { bg: 'rgba(14,165,233,0.08)',  border: 'rgba(14,165,233,0.17)',  text: 'rgba(125,211,252,0.62)' },
-                ];
-
-                const tc0 = TAG_PALETTE[i % TAG_PALETTE.length];
-                return (
-                  <Link
-                    key={`${copyIdx}-gig-${i}`}
-                    href={gigHref}
-                    className="group relative shrink-0 flex flex-col overflow-hidden rounded-[16px] transition-all duration-300 hover:-translate-y-0.5"
-                    style={{
-                      width: 'clamp(148px,40vw,220px)',
-                      background: 'rgba(12,12,18,0.86)',
-                      backdropFilter: 'blur(28px) saturate(1.4)',
-                      WebkitBackdropFilter: 'blur(28px) saturate(1.4)',
-                      border: '1px solid rgba(255,255,255,0.08)',
-                      boxShadow: '0 2px 16px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.05)',
-                    }}
-                  >
-                    {/* 2px colour accent top */}
-                    <div className="h-[2px] w-full shrink-0"
-                      style={{ background: `linear-gradient(90deg,${tc0.text}55,transparent 70%)` }} />
-
-                    <div className="flex flex-1 flex-col px-3 pt-2.5 pb-3 gap-2">
-
-                      {/* Header: org initial + age */}
-                      <div className="flex items-center justify-between gap-1">
-                        <div className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[6px] text-[8.5px] font-bold"
-                          style={{ background: tc0.bg, border: `1px solid ${tc0.border}55`, color: tc0.text }}>
-                          {(org || 'G').slice(0, 1).toUpperCase()}
-                        </div>
-                        {isUrgent ? (
-                          <span className="rounded-full px-1.5 py-[1.5px] text-[7px] font-bold uppercase tracking-[0.04em]"
-                            style={{ background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.18)', color: 'rgba(252,165,165,0.80)' }}>
-                            Urgent
-                          </span>
-                        ) : ageLabel ? (
-                          <span className="text-[8.5px]" style={{ color: 'rgba(255,255,255,0.24)' }}>{ageLabel}</span>
-                        ) : null}
-                      </div>
-
-                      {/* Title */}
-                      <div className="text-[11px] font-medium leading-snug line-clamp-2 flex-1"
-                        style={{ color: 'rgba(255,255,255,0.72)' }}>{title}</div>
-
-                      {/* Org name */}
-                      <div className="text-[8.5px] truncate" style={{ color: 'rgba(255,255,255,0.28)' }}>{org}</div>
-
-                      {/* One skill tag */}
-                      {skills[0] && (
-                        <span className="self-start rounded-full px-2 py-[2px] text-[8px] font-medium"
-                          style={{ background: tc0.bg, border: `1px solid ${tc0.border}55`, color: tc0.text }}>
-                          {skills[0]}
-                        </span>
-                      )}
-
-                      {/* Footer */}
-                      <div className="flex items-center justify-between pt-2 mt-auto border-t"
-                        style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-                        <span className="text-[11px] font-semibold"
-                          style={{ color: 'rgba(255,255,255,0.60)' }}>{budget}</span>
-                        <span className="flex items-center gap-1 text-[8.5px] font-medium"
-                          style={{ color: 'rgba(255,255,255,0.38)' }}>
-                          Apply <ArrowRight className="h-2 w-2" />
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              });
-            })}
-          </div>
-          </div>
-        </section>
-
-        {/* ── Row 3.5: Publish heading + content discovery ─────── */}
-        <div className="flex flex-col" style={{ gap: 14 }}>
-          <PublishHeading onPublish={() => onPublishClick()} />
-          <ContentDiscoveryStrip />
-        </div>
-
-        {/* ── Row 4: Feeds — auto-smooth slider ────── */}
-        <section className="-mx-3 sm:mx-0">
-          {/* Auto-smooth scrolling feed cards */}
-          <div className="relative">
-            <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-14 sm:w-28"
-              style={{ background: 'linear-gradient(to right, rgb(13,13,15) 0%, rgba(13,13,15,0.98) 5%, rgba(13,13,15,0.95) 10%, rgba(13,13,15,0.90) 16%, rgba(13,13,15,0.83) 23%, rgba(13,13,15,0.74) 31%, rgba(13,13,15,0.63) 40%, rgba(13,13,15,0.51) 49%, rgba(13,13,15,0.40) 58%, rgba(13,13,15,0.28) 67%, rgba(13,13,15,0.18) 75%, rgba(13,13,15,0.09) 83%, rgba(13,13,15,0.03) 91%, transparent 100%)' }} />
-            <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-14 sm:w-28"
-              style={{ background: 'linear-gradient(to left, rgb(13,13,15) 0%, rgba(13,13,15,0.98) 5%, rgba(13,13,15,0.95) 10%, rgba(13,13,15,0.90) 16%, rgba(13,13,15,0.83) 23%, rgba(13,13,15,0.74) 31%, rgba(13,13,15,0.63) 40%, rgba(13,13,15,0.51) 49%, rgba(13,13,15,0.40) 58%, rgba(13,13,15,0.28) 67%, rgba(13,13,15,0.18) 75%, rgba(13,13,15,0.09) 83%, rgba(13,13,15,0.03) 91%, transparent 100%)' }} />
-          <div
-            key={feedSliderKey}
-            id="feeds-slider"
-            data-auto-slider="true"
-            data-auto-speed="0.45"
-            data-auto-loop="sets"
-            data-auto-sets="2"
-            className="no-scrollbar flex gap-2 sm:gap-2.5 overflow-x-auto pb-0.5 px-3 sm:px-0"
-            style={{ scrollbarWidth: 'none' }}
-          >
-            {[...Array(2)].flatMap((_, copyIdx) =>
-              displayFeeds.map((feed, i) => {
-                const href = (feed as NHCLiveFeed).href ?? '/published';
-                const thumbUrl = (feed as NHCLiveFeed).thumbnailUrl;
-                const mime = (feed as NHCLiveFeed).mimeType || '';
-                const isImage = mime.startsWith('image/');
-                const isFeatured = (feed as NHCLiveFeed).featured;
-                const createdAt = (feed as NHCLiveFeed).createdAt;
-                const daysAgo = createdAt ? Math.floor((Date.now() - new Date(createdAt).getTime()) / 86400000) : null;
-                const ageLabel = daysAgo === null ? '' : daysAgo === 0 ? 'Today' : daysAgo === 1 ? '1d ago' : `${daysAgo}d ago`;
-
-                /* Cover: real thumbnail if image, else category gradient */
-                const FEED_COVER_GRADIENTS: Record<string, string> = {
-                  Design: 'linear-gradient(135deg,#1a0a1f 0%,#2d0550 100%)',
-                  Development: 'linear-gradient(135deg,#0a1a0d 0%,#0a3a1a 100%)',
-                  Writing: 'linear-gradient(135deg,#0a0d1f 0%,#0d1f4a 100%)',
-                  Marketing: 'linear-gradient(135deg,#1a0a1a 0%,#3a0a3a 100%)',
-                  Productivity: 'linear-gradient(135deg,#0a1a1a 0%,#0a2a3a 100%)',
-                  'AI Tools': 'linear-gradient(135deg,#1a150a 0%,#3a2508 100%)',
-                  Career: 'linear-gradient(135deg,#1a0a0d 0%,#3a0a15 100%)',
-                };
-                const coverGrad = FEED_COVER_GRADIENTS[feed.category] || 'linear-gradient(135deg,#0d0e11,#1a1a1a)';
-
-                const CAT_ACCENT: Record<string, string> = {
-                  Design: '#f472b6', Development: '#34d399', Writing: '#60a5fa',
-                  'AI Tools': '#fbbf24', Marketing: '#c084fc', Productivity: '#67e8f9', Career: '#fb923c',
-                };
-                const accent = CAT_ACCENT[feed.category] || 'rgba(255,255,255,0.20)';
-
-                return (
-                  <Link
-                    key={`${copyIdx}-feed-${feed.id}-${i}`}
-                    href={href}
-                    className="group relative shrink-0 flex flex-col overflow-hidden rounded-[18px] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_10px_36px_rgba(0,0,0,0.60)]"
-                    style={{
-                      width: 'clamp(148px,40vw,220px)',
-                      background: 'rgba(10,10,16,0.86)',
-                      backdropFilter: 'blur(28px) saturate(1.6)',
-                      WebkitBackdropFilter: 'blur(28px) saturate(1.6)',
-                      border: '1px solid rgba(255,255,255,0.07)',
-                      boxShadow: '0 4px 24px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05)',
-                    }}
-                  >
-                    {/* Top accent stripe */}
-                    <div aria-hidden="true" style={{ position:'absolute', top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${accent}60,transparent 72%)`, borderRadius:'18px 18px 0 0', zIndex:3 }} />
-
-                    {/* ── Cover ── */}
-                    <div className="relative overflow-hidden shrink-0" style={{ height: 88 }}>
-                      {thumbUrl && isImage ? (
-                        <img src={thumbUrl} alt={feed.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]" />
-                      ) : thumbUrl ? (
-                        <img src={thumbUrl} alt={feed.title} className="absolute inset-0 w-full h-full object-cover opacity-55 transition-transform duration-500 group-hover:scale-[1.04]" />
-                      ) : (
-                        <div className="absolute inset-0" style={{ background: coverGrad }}>
-                          <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 22% 50%,rgba(255,255,255,0.10) 0%,transparent 55%),radial-gradient(circle at 78% 20%,rgba(255,255,255,0.06) 0%,transparent 45%)' }} />
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <FeedIllustration kind={feed.ilk} />
-                          </div>
-                        </div>
-                      )}
-                      {/* Gradient overlay */}
-                      <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom,rgba(0,0,0,0.02) 0%,rgba(0,0,0,0.68) 100%)' }} />
-                      {/* Category badge */}
-                      <div className="absolute top-2 left-2 z-10 flex items-center gap-1">
-                        <span className="rounded-full px-1.5 py-[2.5px] text-[7.5px] font-medium leading-none backdrop-blur-sm"
-                          style={{ color: accent, background: `${accent}18`, border: `1px solid ${accent}2e` }}>
-                          {feed.category}
-                        </span>
-                        {isFeatured && <span style={{ color: '#fcd34d', fontSize: 8, lineHeight: 1 }}>✦</span>}
-                      </div>
-                      {/* Age badge */}
-                      {ageLabel && (
-                        <span className="absolute bottom-2 right-2 rounded-full px-1.5 py-[2px] text-[7.5px] leading-none"
-                          style={{ background: 'rgba(0,0,0,0.52)', color: 'rgba(255,255,255,0.36)', backdropFilter: 'blur(8px)' }}>
-                          {ageLabel}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* ── Body ── */}
-                    <div className="flex flex-1 flex-col px-3 pt-2.5 pb-3" style={{ gap: 8 }}>
-                      <div className="text-[11px] font-medium leading-snug line-clamp-2 flex-1 transition-colors"
-                        style={{ color: 'rgba(255,255,255,0.78)' }}>
-                        {feed.title}
-                      </div>
-                      {/* Footer */}
-                      <div className="flex items-center justify-between pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <div className={`flex h-[14px] w-[14px] shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${feed.authorBg} text-[6px] font-bold text-white`}>
-                            {feed.authorAv}
-                          </div>
-                          <span className="truncate text-[8.5px]" style={{ color: 'rgba(255,255,255,0.28)', fontWeight: 400 }}>{feed.author}</span>
-                        </div>
-                        <span className="shrink-0 flex items-center gap-0.5" style={{ color: 'rgba(255,255,255,0.22)', fontSize: 8 }}>
-                          <Heart className="h-2 w-2" /><span className="tabular-nums">{feed.likes}</span>
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })
-            )}
-          </div>
-          </div>
-        </section>
-
-        {/* ── Row 5.5: Premium Product Banner Slider ───────────── */}
-        <div className="-mx-3 sm:mx-0">
-          <PremiumProductSlider
-            onPdfClick={onPdfClick}
-            onScratchpadClick={onScratchpadClick}
-            onDocSheetClick={onDocSheetClick}
-          />
-        </div>
-
-        {/* ── Row 5.6: Product Showcase — grid on desktop, slider on mobile ── */}
-        <section className="-mx-3 sm:mx-0">
-          <style dangerouslySetInnerHTML={{ __html: `
-            @keyframes ps-badge-in { from { opacity:0; transform:translateX(-6px); } to { opacity:1; transform:none; } }
-            @keyframes ps-title-in  { from { opacity:0; transform:translateY(5px); }  to { opacity:1; transform:none; } }
-            .ps-card { transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.22s ease; }
-            .ps-card:hover { transform: scale(1.018) translateY(-2px); }
-            .ps-card:active { transform: scale(0.978); transition-duration:0.10s; }
-            .ps-card .ps-cta { transition: opacity 0.18s ease, transform 0.18s cubic-bezier(0.34,1.56,0.64,1); opacity:0; transform:translateY(4px); }
-            .ps-card:hover .ps-cta { opacity:1; transform:translateY(0); }
-          ` }} />
-          <div className="relative">
-            {/* Left fade — mobile only */}
-            <div className="sm:hidden pointer-events-none absolute inset-y-0 left-0 z-10 w-14"
-              style={{ background: 'linear-gradient(to right, #08080c 0%, transparent 100%)' }} />
-            {/* Right fade — mobile only */}
-            <div className="sm:hidden pointer-events-none absolute inset-y-0 right-0 z-10 w-14"
-              style={{ background: 'linear-gradient(to left, #08080c 0%, transparent 100%)' }} />
-            {/* Cards: flex scroll on mobile / 4-col grid on desktop */}
-            <div
-              className="no-scrollbar flex gap-3 overflow-x-auto px-3 sm:grid sm:grid-cols-4 sm:gap-4 sm:overflow-visible sm:px-0"
-              style={{ scrollbarWidth: 'none' }}
-            >
-              {PRODUCT_SCREENSHOTS.map(p => {
-                const handleClick = () => {
-                  if (p.modal === 'pdf')        { onPdfClick();        return; }
-                  if (p.modal === 'scratchpad') { onScratchpadClick(); return; }
-                  if (p.modal === 'docsheets')  { onDocSheetClick();   return; }
-                  if (p.href) window.location.href = p.href;
-                };
-                return (
-                  <div
-                    key={p.id}
-                    className="ps-card shrink-0 relative overflow-hidden cursor-pointer rounded-[12px] sm:rounded-[16px] w-[clamp(260px,72vw,320px)] sm:w-auto"
-                    style={{ aspectRatio: '16/9', background: '#0a0a0f', border: `1px solid ${p.accentDim}` }}
-                    onClick={handleClick}
-                  >
-                    {/* Mockup fills entire card */}
-                    <div className="absolute inset-0 overflow-hidden" style={{ pointerEvents: 'none' }}>
-                      <p.Mockup />
-                    </div>
-                    {/* Gradient — thin top vignette + heavier bottom only */}
-                    <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(6,6,10,0.78) 0%, rgba(6,6,10,0.08) 38%, transparent 58%)', pointerEvents: 'none' }} />
-                    {/* Accent bar — top edge */}
-                    <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: `linear-gradient(to right, ${p.accent}, transparent 70%)` }} />
-                    {/* Icon badge — top-left, no text */}
-                    <div className="absolute top-3 left-3" style={{
-                      width: 28, height: 28, borderRadius: 9,
-                      background: 'rgba(0,0,0,0.52)',
-                      border: `1px solid ${p.accent}44`,
-                      backdropFilter: 'blur(10px)',
-                      WebkitBackdropFilter: 'blur(10px)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      animation: 'ps-badge-in 0.32s 0.05s cubic-bezier(0.22,1,0.36,1) both',
-                    }}>
-                      <p.Icon style={{ width: 13, height: 13, color: p.accent }} />
-                    </div>
-                    {/* Bottom frosted bar — name + CTA button */}
-                    <div className="absolute bottom-0 left-0 right-0" style={{ padding: '0 10px 10px', animation: 'ps-title-in 0.28s 0.10s cubic-bezier(0.22,1,0.36,1) both' }}>
-                      <div style={{
-                        background: 'rgba(12,12,18,0.60)',
-                        backdropFilter: 'blur(20px) saturate(1.8)',
-                        WebkitBackdropFilter: 'blur(20px) saturate(1.8)',
-                        border: '1px solid rgba(255,255,255,0.10)',
-                        borderRadius: 12,
-                        padding: '8px 9px 8px 12px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: 10,
-                      }}>
-                        <div style={{ fontSize: 12.5, fontWeight: 700, color: '#fff', letterSpacing: '-0.01em', lineHeight: 1 }}>{p.name}</div>
-                        <div style={{
-                          background: p.accent,
-                          borderRadius: 8,
-                          padding: '5px 13px',
-                          fontSize: 10.5,
-                          fontWeight: 700,
-                          color: p.id === 'docsheets' ? '#021a0e' : '#fff',
-                          whiteSpace: 'nowrap',
-                          flexShrink: 0,
-                          letterSpacing: '0.01em',
-                          boxShadow: `0 0 14px ${p.accent}55`,
-                        }}>
-                          Open →
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        {/* ── Row 6: Live Multi-Leaderboards ──────────────────────── */}
-        <LiveLeaderboards />
+        {/* ── Row 6: Live Multi-Leaderboards ── DISABLED */}
+        {false && <div className="cv-auto"><LiveLeaderboards /></div>}
 
         {/* ── Row 7: Built in India ──────────────────────────────── */}
-        <BuiltInIndia />
+        {hpSections.builtInIndia && <div className="-mx-4 sm:-mx-6 lg:-mx-10 xl:-mx-12 cv-auto"><BuiltInIndia /></div>}
 
         {/* ── Footer ───────────────────────────────────────────────── */}
-        <PremiumFooter />
+        {hpSections.footer && <div className="-mx-4 sm:-mx-6 lg:-mx-10 xl:-mx-12 cv-auto"><PremiumFooter /></div>}
 
       </div>
     </div>
   );
 }
 
+/* ── Ddrive icon for quick-action tiles (accepts style prop like Lucide icons) ── */
+function DdriveIconTile({ style }: { style?: React.CSSProperties }) {
+  const size = typeof style?.width === 'number' ? style.width : 19;
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={style} aria-label="Ddrive">
+      <defs>
+        <linearGradient id="hp-ddrive-g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%"   stopColor="#a78bfa" />
+          <stop offset="100%" stopColor="#6366f1" />
+        </linearGradient>
+      </defs>
+      <rect x="1" y="1" width="22" height="22" rx="6" ry="6" fill="url(#hp-ddrive-g)" opacity="0.22" />
+      <rect x="1" y="1" width="22" height="22" rx="6" ry="6" fill="none" stroke="url(#hp-ddrive-g)" strokeWidth="1.5" />
+      <text x="12" y="17" textAnchor="middle" dominantBaseline="auto"
+        fontFamily="system-ui,-apple-system,sans-serif" fontSize="14" fontWeight="800" letterSpacing="-0.5"
+        fill="url(#hp-ddrive-g)">D</text>
+    </svg>
+  );
+}
+
 export default function PublicHomepage({ softwareName, accentLabel, guestMode = false }: PublicHomepageProps) {
   const { data: session, status } = useSession();
   const isAuthenticated = status === 'authenticated';
+  const pathname = usePathname();
 
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
@@ -5828,9 +6413,12 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
   const [mobileNavSearchOpen, setMobileNavSearchOpen] = useState(false);
   const [mobileNavSearchQuery, setMobileNavSearchQuery] = useState('');
   const mobileNavSearchRef = useRef<HTMLInputElement>(null);
+  const [mobileToolsDrawerOpen, setMobileToolsDrawerOpen] = useState(false);
   const [chatHistoryOpen, setChatHistoryOpen] = useState(false);
   const [chatHistoryQuery, setChatHistoryQuery] = useState('');
   const [headlineIndex, setHeadlineIndex] = useState(0);
+  const [hpSections, setHpSections] = useState<HPSectionVisibility>(DEFAULT_HP_SECTIONS);
+  const [hpConfig, setHpConfig] = useState<HPConfig | null>(null);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [publishInitialCategory, setPublishInitialCategory] = useState<string | undefined>(undefined);
   const openPublishModal = (category?: string) => {
@@ -5899,7 +6487,7 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
   const [liveFeeds, setLiveFeeds] = useState<LiveFeed[]>([]);
 
   useEffect(() => {
-    void (async () => {
+    const load = async () => {
       try {
         const [pRes, gRes, mRes, fRes] = await Promise.all([
           fetch('/api/public/people'),
@@ -5918,7 +6506,6 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
           const d = await gRes.json() as { gigs?: LiveGig[] };
           if (Array.isArray(d.gigs)) {
             const published = d.gigs.filter((g) => g.status === 'published');
-            // Most recent first
             published.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
             setLiveGigs(published);
           }
@@ -5931,8 +6518,24 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
           const d = await fRes.json() as { feeds?: LiveFeed[] };
           if (Array.isArray(d.feeds)) setLiveFeeds(d.feeds);
         }
+        fetch('/api/public/homepage-config', { cache: 'no-store' })
+          .then(r => r.ok ? r.json() : null)
+          .then((d: { config?: { sections?: Partial<HPSectionVisibility> } } | null) => {
+            if (d?.config) {
+              setHpConfig(d.config as HPConfig);
+              setHpSections(prev => ({ ...prev, ...d.config!.sections }));
+            }
+          })
+          .catch(() => {});
       } catch { /* ignore */ }
-    })();
+    };
+    // Defer below-fold data until browser is idle — doesn't block first paint
+    if (typeof requestIdleCallback !== 'undefined') {
+      const id = requestIdleCallback(() => void load(), { timeout: 3000 });
+      return () => cancelIdleCallback(id);
+    }
+    const id = setTimeout(() => void load(), 300);
+    return () => clearTimeout(id);
   }, []);
 
   const headlines = [
@@ -6003,6 +6606,7 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
         .then((payload: { results?: Array<{ id: string; title: string; description: string; href: string; badge?: string; category: string; scope?: string }> }) => {
           const results = payload.results ?? [];
           setSearchSuggestions(results);
+          fireSearchEvent({ query, context: SEARCH_CONTEXTS.PUBLIC_HOMEPAGE, resultsCount: results.length });
           searchClientCache.current.set(cacheKey, { results, ts: Date.now() });
           // Evict oldest entries if cache > 50
           if (searchClientCache.current.size > 50) {
@@ -6175,6 +6779,13 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
   }, [isAuthenticated]);
 
   useEffect(() => { setIsMounted(true); }, []);
+
+  // Listen for the global bottom nav Tools button click
+  useEffect(() => {
+    const handler = () => setMobileToolsDrawerOpen(true);
+    window.addEventListener('open-mobile-tools-drawer', handler);
+    return () => window.removeEventListener('open-mobile-tools-drawer', handler);
+  }, []);
 
   useEffect(() => {
     if (mobileNavSearchOpen && mobileNavSearchRef.current) {
@@ -6884,18 +7495,22 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
   return (
     <>
     <main className="h-[100dvh] overflow-hidden bg-background text-foreground flex flex-col">
-      <QuickFileEditorDialog
-        open={quickEditorOpen}
-        onOpenChange={setQuickEditorOpen}
-        document={attachedDocument}
-        isAuthenticated={isAuthenticated}
-      />
-      <PublishAnythingDialog
-        open={showPublishModal}
-        onOpenChange={(o) => { setShowPublishModal(o); if (!o) setPublishInitialCategory(undefined); }}
-        isAuthenticated={isAuthenticated}
-        initialCategory={publishInitialCategory as never}
-      />
+      {quickEditorOpen && (
+        <QuickFileEditorDialog
+          open={quickEditorOpen}
+          onOpenChange={setQuickEditorOpen}
+          document={attachedDocument}
+          isAuthenticated={isAuthenticated}
+        />
+      )}
+      {showPublishModal && (
+        <PublishAnythingDialog
+          open={showPublishModal}
+          onOpenChange={(o) => { setShowPublishModal(o); if (!o) setPublishInitialCategory(undefined); }}
+          isAuthenticated={isAuthenticated}
+          initialCategory={publishInitialCategory as never}
+        />
+      )}
 
       {/* E-Sign Studio fullscreen modal */}
       {eSignStudioOpen && (
@@ -6906,10 +7521,12 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
       )}
 
       {/* File Drive Center */}
-      <FileDriveCenter
-        open={fileDriveOpen}
-        onClose={() => setFileDriveOpen(false)}
-      />
+      {fileDriveOpen && (
+        <FileDriveCenter
+          open={fileDriveOpen}
+          onClose={() => setFileDriveOpen(false)}
+        />
+      )}
 
       {/* DocSheets Studio fullscreen overlay */}
       {showDocSheet && (
@@ -7077,7 +7694,7 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
           } catch { /* silent */ }
         }}
         onFileDriveClick={() => setFileDriveOpen(true)}
-        onMobileMenuClick={() => setMobileSidebarOpen(true)}
+        onAllToolsClick={() => setMobileToolsDrawerOpen(true)}
         guestMode={guestMode}
       />
 
@@ -7099,77 +7716,59 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
       )}
 
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        <aside
-          className={[
-            'hidden lg:flex shrink-0 flex-col',
-            'border-r border-white/[0.07] bg-[#07080a]/86 backdrop-blur-[80px]',
-            'shadow-[1px_0_0_rgba(255,255,255,0.055),inset_0_1px_0_rgba(255,255,255,0.04),0_0_60px_rgba(0,0,0,0.6)]',
-            'transition-[width] duration-300 ease-in-out',
-            sidebarCollapsed ? 'w-[68px]' : 'w-[256px]',
-          ].join(' ')}
-        >
-          {sidebar}
-        </aside>
-
-        <div
-          className={[
-            'fixed top-14 inset-x-0 bottom-0 z-40 lg:hidden',
-            mobileSidebarOpen ? 'pointer-events-auto' : 'pointer-events-none',
-          ].join(' ')}
-          aria-hidden={!mobileSidebarOpen}
-        >
-          <button
-            type="button"
-            aria-label="Close sidebar"
-            className={[
-              'absolute inset-0 bg-slate-950/40 backdrop-blur-sm transition-opacity duration-200',
-              mobileSidebarOpen ? 'opacity-100' : 'opacity-0',
-            ].join(' ')}
-            onClick={() => setMobileSidebarOpen(false)}
-          />
-
-          <aside
-            className={[
-              'absolute inset-y-0 left-0 h-full flex w-[82vw] max-w-[300px] flex-col overflow-hidden',
-              'border-r border-white/[0.08] bg-[#07080a]/90 backdrop-blur-[80px]',
-              'shadow-[4px_0_80px_rgba(0,0,0,0.9),1px_0_0_rgba(255,255,255,0.06),inset_0_1px_0_rgba(255,255,255,0.04)]',
-              'transform-gpu transition-transform duration-300 ease-out will-change-transform',
-              mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full',
-            ].join(' ')}
-            role="dialog"
-            aria-modal="true"
-          >
-            {sidebarExpanded(() => setMobileSidebarOpen(false))}
-          </aside>
-        </div>
-
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden relative min-h-0">
-          <div className="relative flex-1 overflow-hidden bg-gradient-to-b from-white via-white to-slate-50 dark:from-[#0D0D0F] dark:via-[#0D0D0F] dark:to-black min-h-0">
-            <div className="pointer-events-none fixed inset-0 -z-10 opacity-0 dark:opacity-100" aria-hidden="true">
-              <div className="absolute inset-0 bg-[radial-gradient(900px_520px_at_50%_20%,rgba(255,255,255,0.06),transparent_62%)] opacity-70" />
-              <div className="absolute inset-0 bg-[radial-gradient(1200px_700px_at_20%_10%,rgba(148,163,184,0.08),transparent_60%)]" />
-              <div className="absolute inset-0 bg-[radial-gradient(900px_700px_at_78%_22%,rgba(226,232,240,0.06),transparent_55%)]" />
-              <div className="absolute inset-0 bg-[radial-gradient(900px_700px_at_50%_90%,rgba(148,163,184,0.05),transparent_60%)]" />
-              {/* Orange ambient glow — warm pool at bottom-center */}
-              <div className="absolute inset-0 bg-[radial-gradient(1000px_650px_at_52%_90%,rgba(251,146,60,0.055),transparent_65%)]" />
-              {/* Orange warmth — right mid accent */}
-              <div className="absolute inset-0 bg-[radial-gradient(650px_520px_at_84%_62%,rgba(249,115,22,0.032),transparent_60%)]" />
-              <div className="absolute inset-0 opacity-60 [background-image:repeating-linear-gradient(135deg,rgba(148,163,184,0.08)_0,rgba(148,163,184,0.08)_120px,rgba(0,0,0,0)_120px,rgba(0,0,0,0)_260px)]" />
-              <div className="absolute inset-0 bg-[radial-gradient(1200px_900px_at_50%_50%,transparent_50%,rgba(0,0,0,0.70)_100%)]" />
-              <div className="absolute inset-0 bg-futuristic-grid opacity-30 mix-blend-overlay" />
-            </div>
+          {/* BgOrbs — fixed behind all content, same as onboarding */}
+          <div className="pointer-events-none fixed inset-0 overflow-hidden" style={{ zIndex: 0 }} aria-hidden="true">
+            {/* Base */}
+            <div className="absolute inset-0" style={{ background: '#060608' }} />
+            {/* Orbs — reduced to 35% opacity on mobile, full on sm+ */}
+            <div className="absolute inset-0 opacity-[0.35] sm:opacity-100">
+            {/* Diagonal pinned orange glows */}
+            <div className="absolute -top-48 -left-48 h-[700px] w-[700px] rounded-full"
+              style={{ background: 'radial-gradient(circle,rgba(249,115,22,0.04) 0%,rgba(234,88,12,0.02) 40%,transparent 70%)', filter: 'blur(140px)', willChange: 'transform', transform: 'translateZ(0)' }} />
+            <div className="absolute -bottom-48 -right-48 h-[700px] w-[700px] rounded-full"
+              style={{ background: 'radial-gradient(circle,rgba(249,115,22,0.04) 0%,rgba(234,88,12,0.02) 40%,transparent 70%)', filter: 'blur(140px)', willChange: 'transform', transform: 'translateZ(0)' }} />
+            {/* Animated orange-gold orbs */}
+            <div className="absolute -left-40 -top-40 h-[800px] w-[800px] rounded-full"
+              style={{ background: 'radial-gradient(circle,rgba(251,146,60,0.07) 0%,rgba(245,158,11,0.04) 38%,rgba(234,88,12,0.02) 62%,transparent 76%)', filter: 'blur(95px)', animation: 'obGoldDrift1 30s ease-in-out infinite', willChange: 'transform', transform: 'translateZ(0)' }} />
+            <div className="absolute -right-32 top-[12%] h-[660px] w-[660px] rounded-full"
+              style={{ background: 'radial-gradient(circle,rgba(245,158,11,0.06) 0%,rgba(251,146,60,0.03) 42%,rgba(253,186,116,0.01) 66%,transparent 78%)', filter: 'blur(85px)', animation: 'obGoldDrift2 38s ease-in-out infinite 5s', willChange: 'transform', transform: 'translateZ(0)' }} />
+            <div className="absolute bottom-[-8%] left-[28%] h-[580px] w-[580px] rounded-full"
+              style={{ background: 'radial-gradient(circle,rgba(234,88,12,0.05) 0%,rgba(245,158,11,0.03) 40%,rgba(251,146,60,0.01) 64%,transparent 76%)', filter: 'blur(80px)', animation: 'obGoldDrift3 34s ease-in-out infinite 10s', willChange: 'transform', transform: 'translateZ(0)' }} />
+            <div className="absolute right-[18%] bottom-[22%] h-[340px] w-[340px] rounded-full"
+              style={{ background: 'radial-gradient(circle,rgba(253,186,116,0.04) 0%,rgba(245,158,11,0.02) 52%,transparent 72%)', filter: 'blur(60px)', animation: 'obGoldDrift1 22s ease-in-out infinite 8s', willChange: 'transform', transform: 'translateZ(0)' }} />
+            {/* Particles */}
+            {([
+              { x: 8,  y:12, s:2,   d:'0s',   t:'obParticle 4.2s ease-in-out infinite',  warm:false },
+              { x:22,  y:68, s:1.5, d:'0.7s', t:'obParticle2 5.1s ease-in-out infinite', warm:true  },
+              { x:45,  y:22, s:1.5, d:'1.2s', t:'obParticle 3.8s ease-in-out infinite',  warm:false },
+              { x:63,  y:78, s:2,   d:'0.3s', t:'obParticle2 6.2s ease-in-out infinite', warm:false },
+              { x:78,  y:35, s:1.5, d:'1.8s', t:'obParticle 4.6s ease-in-out infinite',  warm:false },
+              { x:88,  y:82, s:2,   d:'0.9s', t:'obParticle2 5.5s ease-in-out infinite', warm:false },
+              { x:35,  y:90, s:1.5, d:'2.1s', t:'obParticle 3.5s ease-in-out infinite',  warm:true  },
+              { x:55,  y:48, s:2,   d:'0.5s', t:'obParticle2 4.9s ease-in-out infinite', warm:false },
+            ] as const).map((p, i) => (
+              <div key={i} className="absolute rounded-full"
+                style={{ left:`${p.x}%`, top:`${p.y}%`, width:p.s, height:p.s, animationDelay:p.d, animation:p.t,
+                  background: p.warm ? 'rgba(251,146,60,0.65)' : 'rgba(255,255,255,0.45)' }} />
+            ))}
+            </div>{/* end opacity wrapper */}
+            {/* Glass grain */}
+            <div className="absolute inset-0 opacity-[0.025]"
+              style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.75\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E")', backgroundRepeat: 'repeat', backgroundSize: '180px 180px' }} />
+            {/* Micro-grid */}
+            <div className="absolute inset-0 opacity-[0.016]"
+              style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.5) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.5) 1px,transparent 1px)', backgroundSize: '64px 64px' }} />
+            {/* Warm top glow */}
+            <div className="absolute inset-0"
+              style={{ background: 'radial-gradient(ellipse 110% 60% at 50% -5%,rgba(245,158,11,0.06) 0%,transparent 55%)' }} />
+            {/* Edge darken */}
+            <div className="absolute inset-0"
+              style={{ background: 'radial-gradient(ellipse at center,transparent 38%,rgba(5,5,8,0.82) 100%)' }} />
+          </div>
 
-            <div className="relative flex h-full w-full flex-col transition-all duration-300 min-h-0">
-              {/* Subtle dark ambient background */}
-              <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden="true">
-                <div className="absolute left-1/2 top-1/3 h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/[0.03] blur-[140px] motion-safe:animate-[docrudBlob_13s_ease-in-out_infinite]" />
-                <div className="absolute left-[18%] top-[55%] h-[380px] w-[380px] rounded-full bg-slate-400/[0.04] blur-[110px] motion-safe:animate-[docrudBlob_19s_ease-in-out_infinite_2.5s]" />
-                <div className="absolute right-[12%] top-[22%] h-[320px] w-[320px] rounded-full bg-white/[0.025] blur-[100px] motion-safe:animate-[docrudBlob_23s_ease-in-out_infinite_1s]" />
-                <div className="absolute bottom-[10%] right-[30%] h-[280px] w-[280px] rounded-full bg-slate-300/[0.03] blur-[90px] motion-safe:animate-[docrudBlob_17s_ease-in-out_infinite_4s]" />
-                {/* Orange glow blobs */}
-                <div className="absolute left-[42%] bottom-[6%] h-[580px] w-[580px] -translate-x-1/2 rounded-full bg-orange-400/[0.055] blur-[160px] motion-safe:animate-[docrudBlob_22s_ease-in-out_infinite_1.8s]" />
-                <div className="absolute right-[6%] top-[52%] h-[380px] w-[380px] rounded-full bg-orange-500/[0.038] blur-[130px] motion-safe:animate-[docrudBlob_29s_ease-in-out_infinite_5s]" />
-              </div>
+          <div className="relative flex-1 overflow-hidden min-h-0" style={{ zIndex: 1 }}>
+            <div className="relative flex h-full w-full flex-col min-h-0">
 
               {!hasAnyChat ? (
                 <NewHomepageContent
@@ -7197,12 +7796,14 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
                   liveGigs={liveGigs}
                   liveMetrics={liveMetrics}
                   liveFeeds={liveFeeds}
+                  hpSections={hpSections}
+                  hpConfig={hpConfig}
                 />
               ) : (
                 <div
                   ref={scrollRef}
                   style={{ WebkitOverflowScrolling: 'touch' }}
-                  className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y scrollbar-minimal pb-32 pt-10 transition-all duration-300 flex flex-col"
+                  className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y scrollbar-minimal pb-32 pt-10 flex flex-col"
                 >
                   <div className="mx-auto w-full max-w-5xl px-4 sm:px-8 space-y-6">
                     {visibleMessages.map((m) => {
@@ -7351,26 +7952,30 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
               )}
             </div>
 
-            {/* ── Premium Glass Dock (desktop) ── replaces the old "Ask me anything" composer */}
-            {(() => {
+            {/* ── Premium Glass Dock — Publish · Feed · Search · People · Messages ── */}
+            {isMounted && (() => {
               // Fixed-order dock — positions never change between renders.
               const dockItems: Array<{ id: string; label: string; Icon: React.ElementType; href?: string; onClick?: () => void }> = [
                 ...(isAuthenticated && !guestMode
                   ? [{ id: 'publish', label: 'Publish', Icon: Plus, onClick: () => setShowPublishModal(true) }]
                   : []),
-                { id: 'people',  label: 'People',  Icon: Users,     href: '/people' },
-                { id: 'gigs',    label: 'Gigs',    Icon: Briefcase, href: '/gigs' },
-                { id: 'feed',    label: 'Feed',    Icon: Newspaper, href: '/published' },
-                { id: 'pricing', label: 'Pricing', Icon: Package,   href: '/pricing' },
-                isAuthenticated
-                  ? { id: 'workspace', label: 'Workspace', Icon: Briefcase, href: '/workspace' }
-                  : { id: 'signup',    label: 'Sign Up',   Icon: UserPlus,  href: '/signup' },
+                { id: 'feed',     label: 'Feed',     Icon: Newspaper,      href: '/published' },
+                { id: 'search',   label: 'Search',   Icon: Search,         onClick: () => {
+                    if (typeof window !== 'undefined') {
+                      window.dispatchEvent(new CustomEvent('homepage:open-search'));
+                    }
+                  } },
+                { id: 'people',   label: 'People',   Icon: Users,          href: '/people' },
+                ...(isAuthenticated && !guestMode
+                  ? [{ id: 'messages', label: 'Messages', Icon: MessageSquare, href: '/messages' }]
+                  : [{ id: 'signup',   label: 'Sign Up',  Icon: UserPlus,     href: '/signup' }]),
+                { id: 'apps', label: 'All Tools', Icon: LayoutGrid, onClick: () => setMobileToolsDrawerOpen(true) },
               ];
               const ordered = dockItems;
 
               return (
                 <div
-                  className="flex"
+                  className="hidden sm:flex"
                   style={{
                     position: 'fixed',
                     left: '50%',
@@ -8263,136 +8868,176 @@ export default function PublicHomepage({ softwareName, accentLabel, guestMode = 
       document.body
     )}
 
-    {/* ── Mobile bottom nav (portal, avoids overflow clipping) ── */}
+    {/* ── GlobalBottomNav Tools button wiring ── */}
+    {/* The global nav lives in layout.tsx; when Tools is tapped it fires a custom event.
+        We listen here so the homepage tools drawer opens correctly. */}
+
+    {/* ── All Tools Drawer (mobile) ── */}
     {isMounted && createPortal(
       <>
-        {/* ── Backdrop ── */}
-        <div
-          onClick={() => { setMobileNavSearchOpen(false); setMobileNavSearchQuery(''); }}
-          style={{
-            position: 'fixed', inset: 0, zIndex: 9997,
-            background: 'rgba(0,0,0,0.72)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
-            opacity: mobileNavSearchOpen ? 1 : 0,
-            pointerEvents: mobileNavSearchOpen ? 'auto' : 'none',
-            transition: 'opacity 0.24s cubic-bezier(0.4,0,0.2,1)',
-          }}
-        />
+        <style>{`
+          @keyframes at-sheet-in {
+            from { transform: translateY(100%); opacity: 0; }
+            to   { transform: translateY(0);    opacity: 1; }
+          }
+          @keyframes at-bd-in { from { opacity: 0; } to { opacity: 1; } }
+          .at-tile {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 8px; padding: 14px 6px 12px;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.06);
+            background: rgba(255,255,255,0.028);
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            will-change: transform;
+            transition: transform 0.18s cubic-bezier(0.22,1,0.36,1), background 0.14s ease;
+          }
+          .at-tile:active { transform: scale(0.91); background: rgba(255,255,255,0.07); }
+          .at-link {
+            display: flex; align-items: center; gap: 9px;
+            padding: 10px 12px; border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.06);
+            background: rgba(255,255,255,0.022);
+            text-decoration: none;
+            -webkit-tap-highlight-color: transparent;
+            transition: background 0.14s ease;
+          }
+          .at-link:active { background: rgba(255,255,255,0.07); }
+        `}</style>
 
-        {/* ── Search / Command panel ── */}
-        <div
-          style={{
-            position: 'fixed', left: 10, right: 10, bottom: 160, zIndex: 9998,
-            borderRadius: 26, padding: '1.5px',
-            background: 'linear-gradient(135deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.02) 50%, rgba(255,255,255,0.07) 100%)',
-            boxShadow: '0 32px 80px rgba(0,0,0,0.85), 0 8px 24px rgba(0,0,0,0.50)',
-            opacity: mobileNavSearchOpen ? 1 : 0,
-            transform: mobileNavSearchOpen ? 'translateY(0) scale(1)' : 'translateY(16px) scale(0.97)',
-            pointerEvents: mobileNavSearchOpen ? 'auto' : 'none',
-            transition: 'opacity 0.26s cubic-bezier(0.4,0,0.2,1), transform 0.26s cubic-bezier(0.4,0,0.2,1)',
-          }}
-        >
-        <div style={{
-          borderRadius: 25, overflow: 'hidden',
-          background: 'rgba(8,8,10,0.88)',
-          backdropFilter: 'blur(48px) saturate(1.8)',
-          WebkitBackdropFilter: 'blur(48px) saturate(1.8)',
-        }}>
-          {/* Search input */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 16px 12px' }}>
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              width: 34, height: 34, borderRadius: 10, flexShrink: 0,
-              border: '1px solid rgba(255,255,255,0.08)',
-              background: 'rgba(255,255,255,0.05)',
-            }}>
-              <Search style={{ width: 15, height: 15, color: 'rgba(255,255,255,0.5)' }} />
+        {/* Backdrop */}
+        {mobileToolsDrawerOpen && (
+          <div
+            onClick={() => setMobileToolsDrawerOpen(false)}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 10000,
+              background: 'rgba(0,0,0,0.80)',
+              backdropFilter: 'blur(14px) saturate(1.4)',
+              WebkitBackdropFilter: 'blur(14px) saturate(1.4)',
+              animation: 'at-bd-in 0.20s ease both',
+            }}
+          />
+        )}
+
+        {/* Sheet */}
+        {mobileToolsDrawerOpen && (
+          <div
+            style={{
+              position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 10001,
+              background: 'rgba(5,5,8,0.98)',
+              backdropFilter: 'blur(80px) saturate(2.2)',
+              WebkitBackdropFilter: 'blur(80px) saturate(2.2)',
+              borderRadius: '28px 28px 0 0',
+              borderTop: '1px solid rgba(255,255,255,0.08)',
+              borderLeft: '1px solid rgba(255,255,255,0.05)',
+              borderRight: '1px solid rgba(255,255,255,0.05)',
+              boxShadow: '0 -40px 100px rgba(0,0,0,0.90), 0 -1px 0 rgba(255,255,255,0.07)',
+              paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 14px)',
+              animation: 'at-sheet-in 0.36s cubic-bezier(0.22,1,0.36,1) both',
+            }}
+          >
+            {/* Drag handle */}
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '14px 0 0' }}>
+              <div style={{ width: 42, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.12)' }} />
             </div>
-            <input
-              ref={mobileNavSearchRef}
-              value={mobileNavSearchQuery}
-              onChange={(e) => setMobileNavSearchQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Escape') { setMobileNavSearchOpen(false); setMobileNavSearchQuery(''); }
-                if (e.key === 'Enter' && mobileNavSearchQuery.trim()) {
-                  void sendMessage({ message: mobileNavSearchQuery });
-                  setMobileNavSearchOpen(false);
-                  setMobileNavSearchQuery('');
-                }
-              }}
-              placeholder="Ask me anything…"
-              style={{
-                flex: 1, background: 'transparent', border: 'none', outline: 'none',
-                fontSize: 15, color: 'rgba(255,255,255,0.88)', fontWeight: 500,
-                caretColor: '#fff', fontFamily: 'inherit',
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => { setMobileNavSearchOpen(false); setMobileNavSearchQuery(''); }}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: 28, height: 28, borderRadius: 8, border: 'none',
-                background: 'rgba(255,255,255,0.07)', cursor: 'pointer', flexShrink: 0,
-                transition: 'background 0.15s',
-              }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.12)'; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.07)'; }}
-            >
-              <X style={{ width: 13, height: 13, color: 'rgba(255,255,255,0.5)' }} />
-            </button>
-          </div>
 
-          {/* Hairline divider */}
-          <div style={{ height: 1, background: 'rgba(255,255,255,0.06)' }} />
-
-          {/* Quick navigation */}
-          <div style={{ padding: '8px 8px 10px' }}>
-            <div style={{ padding: '8px 10px 4px', fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase' }}>
-              Navigate
-            </div>
-            {([
-              { label: 'Features', href: '#features', Icon: Sparkles },
-              { label: 'Pricing', href: '/pricing', Icon: Package },
-              { label: 'Sign Up Free', href: '/signup', Icon: User },
-              { label: 'Published Documents', href: '/published', Icon: Layers },
-            ] as Array<{ label: string; href: string; Icon: React.ElementType }>).map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                onClick={() => { setMobileNavSearchOpen(false); setMobileNavSearchQuery(''); }}
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 18px 16px' }}>
+              <div>
+                <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.22)' }}>Platform</p>
+                <h2 style={{ margin: '2px 0 0', fontSize: 19, fontWeight: 800, color: '#fff', letterSpacing: '-0.03em', lineHeight: 1.15 }}>All Features</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMobileToolsDrawerOpen(false)}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: 12, padding: '10px 10px',
-                  borderRadius: 13, textDecoration: 'none', cursor: 'pointer',
-                  transition: 'background 0.14s',
-                  background: 'transparent',
-                  WebkitTapHighlightColor: 'transparent',
-                }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.07)'; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = 'transparent'; }}
-                onTouchStart={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.07)'; }}
-                onTouchEnd={(e) => { const el = e.currentTarget as HTMLAnchorElement; setTimeout(() => { if (el) el.style.background = 'transparent'; }, 220); }}
-              >
-                <div style={{
-                  width: 32, height: 32, borderRadius: 9, flexShrink: 0,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: 32, height: 32, borderRadius: 10,
                   border: '1px solid rgba(255,255,255,0.08)',
-                  background: 'rgba(255,255,255,0.04)',
-                }}>
-                  <item.Icon style={{ width: 14, height: 14, color: 'rgba(255,255,255,0.45)' }} />
-                </div>
-                <span style={{ fontSize: 13.5, fontWeight: 600, color: 'rgba(255,255,255,0.75)', letterSpacing: '-0.01em' }}>{item.label}</span>
-                <ArrowRight style={{ width: 13, height: 13, color: 'rgba(255,255,255,0.18)', marginLeft: 'auto', flexShrink: 0 }} />
-              </a>
-            ))}
-          </div>
-        </div>{/* /inner glass */}
-        </div>{/* /gradient border */}
+                  background: 'rgba(255,255,255,0.05)',
+                  cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <X style={{ width: 14, height: 14, color: 'rgba(255,255,255,0.40)' }} />
+              </button>
+            </div>
 
+            {/* ── Flat 4-col grid — all features, no scrolling ── */}
+            <div style={{ padding: '0 14px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+                {([
+                  { label: 'AI Chat',      Icon: Sparkles,      ic: '#a78bfa', ib: 'rgba(124,58,237,0.20)',  action: () => window.location.assign('/') },
+                  { label: 'Documents',    Icon: FileText,      ic: '#60a5fa', ib: 'rgba(59,130,246,0.18)',  action: () => window.location.assign('/docword') },
+                  { label: 'Ddrive',       Icon: DdriveIconTile, ic: '#a78bfa', ib: 'rgba(139,92,246,0.18)',  action: () => setFileDriveOpen(true) },
+                  { label: 'DocSheets',    Icon: Sheet,         ic: '#34d399', ib: 'rgba(52,211,153,0.18)',  action: () => setShowDocSheet(true) },
+                  { label: 'PDF Editor',   Icon: Wand2,         ic: '#f87171', ib: 'rgba(239,68,68,0.16)',   action: () => setPdfStudioOpen(true) },
+                  { label: 'Forms',        Icon: FormInput,     ic: '#22d3ee', ib: 'rgba(6,182,212,0.16)',   action: () => setFormsStudioOpen(true) },
+                  { label: 'E‑Sign',       Icon: FileSignature, ic: '#818cf8', ib: 'rgba(99,102,241,0.18)',  action: () => setESignStudioOpen(true) },
+                  { label: 'Secure Share', Icon: FolderLock,    ic: '#4ade80', ib: 'rgba(34,197,94,0.16)',   action: () => setSecureSharingOpen(true) },
+                  { label: 'Visualizer',   Icon: LayoutGrid,    ic: '#c084fc', ib: 'rgba(168,85,247,0.18)',  action: () => setShowVisualizerModal(true) },
+                  { label: 'Scratchpad',   Icon: PenLine,       ic: '#fb923c', ib: 'rgba(249,115,22,0.16)',  action: () => setShowScratchpad(true) },
+                  { label: 'People',       Icon: Users,         ic: '#2dd4bf', ib: 'rgba(20,184,166,0.16)',  action: () => window.location.assign('/people') },
+                  { label: 'Feed',         Icon: Newspaper,     ic: '#f472b6', ib: 'rgba(236,72,153,0.16)',  action: () => window.location.assign('/published') },
+                ] as Array<{ label: string; Icon: React.ElementType; ic: string; ib: string; action: () => void }>).map(item => (
+                  <button
+                    key={item.label}
+                    type="button"
+                    className="at-tile"
+                    onClick={() => { item.action(); setMobileToolsDrawerOpen(false); }}
+                  >
+                    <div style={{
+                      width: 42, height: 42, borderRadius: 13,
+                      background: item.ib,
+                      border: `1px solid ${item.ic}22`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>
+                      <item.Icon style={{ width: 19, height: 19, color: item.ic, strokeWidth: 1.8 }} />
+                    </div>
+                    <span style={{
+                      fontSize: 10.5, fontWeight: 600,
+                      color: 'rgba(255,255,255,0.62)',
+                      textAlign: 'center', lineHeight: 1.2,
+                      letterSpacing: '-0.01em',
+                    }}>
+                      {item.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              {/* ── Quick links strip ── */}
+              <div style={{ display: 'flex', gap: 7, marginTop: 12, marginBottom: 2 }}>
+                {([
+                  { label: 'Pricing',  Icon: Package,    href: '/pricing' },
+                  { label: 'Settings', Icon: Settings,   href: '/workspace' },
+                  { label: 'Support',  Icon: HelpCircle, href: '/support' },
+                  ...(isAuthenticated && !guestMode
+                    ? [{ label: 'Profile', Icon: User,    href: '/profile' }]
+                    : [{ label: 'Join',    Icon: UserPlus, href: '/onboarding' }]),
+                ] as Array<{ label: string; Icon: React.ElementType; href: string }>).map(item => (
+                  <a
+                    key={item.label}
+                    href={item.href}
+                    className="at-link"
+                    onClick={() => setMobileToolsDrawerOpen(false)}
+                    style={{ flex: 1 }}
+                  >
+                    <item.Icon style={{ width: 13, height: 13, color: 'rgba(255,255,255,0.38)', flexShrink: 0 }} />
+                    <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.52)', whiteSpace: 'nowrap', letterSpacing: '-0.01em' }}>
+                      {item.label}
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </>,
       document.body
     )}
     </>
   );
 }
+

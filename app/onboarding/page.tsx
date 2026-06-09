@@ -1,18 +1,18 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn, useSession } from 'next-auth/react';
 import {
   ArrowRight, Award, Bot, Briefcase, CheckCircle2, Eye, EyeOff,
   FileSignature, FileText, FormInput, Globe,
-  Layers, LockKeyhole, MapPin, Network, PenLine, Shield, Share2,
-  Sparkles, Users, X, Zap,
+  Layers, LockKeyhole, MapPin, Network, PenLine, Rss, Shield, Share2,
+  Sparkles, Table2, Users, X, Zap,
 } from 'lucide-react';
 
 /* ─── Splash ─────────────────────────────────────────────────── */
-const SLOT_WORDS = ['network', 'gigs', 'jobs', 'updates', 'documents'];
+const SLOT_WORDS = ['professional network', 'Documents', 'Jobs', 'Talent'];
 const SPLASH_FEATS = [
   'e-sign docs with OTP magic — zero paperwork. ✦',
   'AI writes your documents in under 60 seconds. ✦',
@@ -70,7 +70,7 @@ const DONE_SCR    = 9;
 const TOTAL_SCR   = 10;
 
 /* Kept for non-heading uses (progress bar, step dots, strength meter) */
-const GOLD_GRAD = 'linear-gradient(90deg,#C9A84C,#E8CC7A,#C9A84C)';
+const GOLD_GRAD = 'linear-gradient(90deg,#4f46e5,#818cf8,#4f46e5)';
 
 /* Shared input class — compact on mobile */
 const INP = [
@@ -126,14 +126,14 @@ function Highlight({ children, delay = '0.48s' }: { children: React.ReactNode; d
 }
 
 /* ─── Screen transition ──────────────────────────────────────── */
-function ScreenIn({ children }: { children: React.ReactNode }) {
+function ScreenIn({ children, className }: { children: React.ReactNode; className?: string }) {
   const [on, setOn] = useState(false);
   useEffect(() => {
     const r = requestAnimationFrame(() => requestAnimationFrame(() => setOn(true)));
     return () => cancelAnimationFrame(r);
   }, []);
   return (
-    <div style={{
+    <div className={className} style={{
       transition: 'opacity 420ms ease, transform 420ms cubic-bezier(.22,1,.36,1)',
       opacity: on ? 1 : 0,
       transform: on ? 'none' : 'translateY(20px)',
@@ -286,9 +286,9 @@ function EventCard({ event }: { event: EventItem }) {
   return (
     <div style={{ ...CARD_BASE, width: 208, padding: '12px 14px 11px' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 9 }}>
-        <div style={{ width: 38, flexShrink: 0, borderRadius: 9, background: 'rgba(201,168,76,0.1)', border: '1px solid rgba(201,168,76,0.22)', textAlign: 'center' as const, padding: '5px 0' }}>
-          <div style={{ fontSize: 15, fontWeight: 900, color: '#E8CC7A', lineHeight: 1 }}>{event.day}</div>
-          <div style={{ fontSize: 7, fontWeight: 700, color: 'rgba(232,204,122,0.6)', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginTop: 1 }}>{event.month}</div>
+        <div style={{ width: 38, flexShrink: 0, borderRadius: 9, background: 'rgba(99,102,241,0.10)', border: '1px solid rgba(99,102,241,0.22)', textAlign: 'center' as const, padding: '5px 0' }}>
+          <div style={{ fontSize: 15, fontWeight: 900, color: '#a5b4fc', lineHeight: 1 }}>{event.day}</div>
+          <div style={{ fontSize: 7, fontWeight: 700, color: 'rgba(165,180,252,0.6)', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginTop: 1 }}>{event.month}</div>
         </div>
         <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.85)', lineHeight: 1.35 }}>{event.title}</div>
@@ -493,28 +493,30 @@ function SplashScreen({ visible, onSkip }: { visible: boolean; onSkip: () => voi
         <div style={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
 
           {/* Headline */}
-          <div style={{ animation: 'obSlideUp 0.55s 0.45s both', opacity: 0, textAlign: 'center' }}>
-            <div style={{
-              display: 'flex', alignItems: 'baseline', justifyContent: 'center',
-              flexWrap: 'nowrap', gap: '0.22em',
-              fontSize: 'clamp(1.55rem, 4.8vw, 2.8rem)',
-              fontWeight: 400, letterSpacing: '-0.035em', lineHeight: 1.15,
-              whiteSpace: 'nowrap',
-            }}>
-              <span style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 400 }}>your</span>
-              <span style={{ display: 'inline-block', overflow: 'hidden', verticalAlign: 'bottom', lineHeight: 1.2 }}>
-                <span
-                  ref={slotRef}
-                  style={{
-                    display: 'inline-block',
-                    color: '#ffffff',
-                    fontWeight: 600,
-                  }}
-                >
-                  {slotWord}
+          <div style={{ animation: 'obSlideUp 0.55s 0.45s both', opacity: 0, textAlign: 'center', position: 'relative' }}>
+            {/* Frosted blur behind text — mobile only (hidden ≥ sm) */}
+            <div className="sm:hidden" style={{
+              position: 'absolute', inset: '-18px -28px',
+              backdropFilter: 'blur(22px)',
+              WebkitBackdropFilter: 'blur(22px)',
+              background: 'rgba(5,5,8,0.32)',
+              borderRadius: 28,
+              pointerEvents: 'none',
+            }} />
+            {/* Single-line heading */}
+            <div style={{ position: 'relative', zIndex: 1, fontSize: 'clamp(0.82rem, 4.15vw, 2.8rem)', letterSpacing: '-0.04em', lineHeight: 1.15 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: '0.28em', fontWeight: 300, whiteSpace: 'nowrap' }}>
+                <span style={{ color: 'rgba(255,255,255,0.38)', fontWeight: 300 }}>Manage</span>
+                <span style={{ display: 'inline-block', overflow: 'hidden', verticalAlign: 'bottom', lineHeight: 1.2 }}>
+                  <span
+                    ref={slotRef}
+                    style={{ display: 'inline-block', color: '#ffffff', fontWeight: 700, letterSpacing: '-0.045em' }}
+                  >
+                    {slotWord}
+                  </span>
                 </span>
-              </span>
-              <span style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 400 }}>— one platform.</span>
+                <span style={{ color: 'rgba(255,255,255,0.38)', fontWeight: 300 }}>&amp; More</span>
+              </div>
             </div>
           </div>
 
@@ -547,6 +549,12 @@ function SplashScreen({ visible, onSkip }: { visible: boolean; onSkip: () => voi
 function BgOrbs() {
   return (
     <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden>
+
+      {/* Diagonal pinned orange glows — top-left & bottom-right */}
+      <div className="absolute -top-48 -left-48 h-[700px] w-[700px] rounded-full"
+        style={{ background: 'radial-gradient(circle,rgba(249,115,22,0.09) 0%,rgba(234,88,12,0.05) 40%,transparent 70%)', filter: 'blur(140px)' }} />
+      <div className="absolute -bottom-48 -right-48 h-[700px] w-[700px] rounded-full"
+        style={{ background: 'radial-gradient(circle,rgba(249,115,22,0.09) 0%,rgba(234,88,12,0.05) 40%,transparent 70%)', filter: 'blur(140px)' }} />
 
       {/* Orange-gold moving orbs */}
       <div className="absolute -left-40 -top-40 h-[800px] w-[800px] rounded-full"
@@ -652,10 +660,6 @@ function HeroLeftPanel() {
           </div>
           <div className="text-[9.5px] text-white/28 leading-tight">Platform active<br />right now</div>
         </div>
-      </div>
-      <div className="mt-4 w-full max-w-md flex items-center gap-2 rounded-xl border border-white/[0.05] bg-white/[0.02] px-4 py-2.5" style={{ animation: 'obFadeIn 0.5s 1.1s both' }}>
-        <Shield className="h-3.5 w-3.5 shrink-0 text-white/25" />
-        <span className="text-[10.5px] text-white/28">End-to-end encrypted · SOC 2 Type II · GDPR ready · 99.9% uptime SLA</span>
       </div>
     </div>
   );
@@ -926,7 +930,7 @@ function AuthLeftPanel({ screen, headline, bio }: { screen: number; headline: st
       <div className="rounded-[20px] border border-white/[0.06] bg-white/[0.02] p-5 backdrop-blur-sm" style={{ animation: 'obSlideUp 0.6s 0.25s both' }}>
         <div className="mb-2 flex gap-0.5">
           {Array.from({ length: 5 }).map((_, i) => (
-            <svg key={i} className="h-3 w-3" fill="#C9A84C" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+            <svg key={i} className="h-3 w-3" fill="#6366f1" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
           ))}
         </div>
         <p className="mt-2 text-[12.5px] italic leading-relaxed text-white/45">&ldquo;{t.text}&rdquo;</p>
@@ -943,6 +947,82 @@ function AuthLeftPanel({ screen, headline, bio }: { screen: number; headline: st
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   PROFILE SLIDER — live animated marquee of recent joins
+═══════════════════════════════════════════════════════════════ */
+const JOINED_TIMES = ['1m ago','2m ago','5m ago','9m ago','14m ago','21m ago','33m ago','47m ago','1h ago','1h 20m ago','2h ago','3h ago','4h ago','5h ago','7h ago','9h ago'];
+
+function ProfileSlider({ speed = 38, compact = false, rows = 2 }: { speed?: number; compact?: boolean; rows?: number }) {
+  const ALL = [...SPLASH_PROFILES_TOP, ...SPLASH_PROFILES_BTM] as Array<{ init:string; name:string; title:string; avail:string; availColor:string; rating:number; avatarGrad:string }>;
+  const cardW = compact ? 148 : 162;
+  const gap = compact ? 7 : 8;
+
+  function renderRow(dir: 'left' | 'right', offset: number, rowSpeed: number) {
+    const shifted = [...ALL.slice(offset), ...ALL.slice(0, offset)];
+    const doubled = [...shifted, ...shifted];
+    const anim = dir === 'left' ? `splashMarqueeL ${rowSpeed}s linear infinite` : `splashMarqueeR ${rowSpeed}s linear infinite`;
+    return (
+      <div style={{ display: 'flex', gap, animation: anim, width: 'max-content' }}>
+        {doubled.map((p, i) => (
+          <div key={i} style={{
+            flexShrink: 0, width: cardW,
+            borderRadius: 13,
+            border: '1px solid rgba(255,255,255,0.05)',
+            background: 'rgba(255,255,255,0.016)',
+            padding: compact ? '9px 10px' : '10px 11px',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 7 }}>
+              <div style={{
+                flexShrink: 0, width: compact ? 26 : 30, height: compact ? 26 : 30,
+                borderRadius: 8, background: `linear-gradient(${p.avatarGrad})`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: compact ? 9 : 10, fontWeight: 900, color: 'white',
+              }}>{p.init}</div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <p style={{ fontSize: compact ? 9.5 : 10.5, fontWeight: 800, color: 'rgba(255,255,255,0.70)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>{p.name}</p>
+                <p style={{ fontSize: compact ? 8 : 8.5, color: 'rgba(255,255,255,0.25)', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>{p.title}</p>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
+              <span style={{
+                fontSize: 7, fontWeight: 700, borderRadius: 99, padding: '2px 5px',
+                color: p.availColor,
+                background: `${p.availColor}18`,
+                border: `1px solid ${p.availColor}28`,
+                whiteSpace: 'nowrap', display: 'block',
+              }}>{p.avail}</span>
+              <span style={{ fontSize: 8, color: 'rgba(232,204,122,0.58)', fontWeight: 700, flexShrink: 0 }}>★ {p.rating}</span>
+            </div>
+            <p style={{ fontSize: 7, color: 'rgba(255,255,255,0.15)', marginTop: 5, marginBottom: 0 }}>
+              Joined {JOINED_TIMES[(i + offset) % JOINED_TIMES.length]}
+            </p>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  const rowConfigs: Array<{ dir: 'left' | 'right'; offset: number; speedMult: number }> = [
+    { dir: 'left',  offset: 0,  speedMult: 1     },
+    { dir: 'right', offset: 5,  speedMult: 1.18  },
+    { dir: 'left',  offset: 10, speedMult: 0.88  },
+  ];
+
+  return (
+    <div className="relative overflow-hidden flex flex-col gap-2"
+      style={{
+        maskImage: 'linear-gradient(to right,transparent,black 9%,black 91%,transparent)',
+        WebkitMaskImage: 'linear-gradient(to right,transparent,black 9%,black 91%,transparent)',
+      }}>
+      {rowConfigs.slice(0, rows).map((cfg, ri) => (
+        <div key={ri} className="overflow-hidden">
+          {renderRow(cfg.dir, cfg.offset, speed * cfg.speedMult)}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
    SIGNUP LEFT PANEL — animated live profile-build preview
 ═══════════════════════════════════════════════════════════════ */
 function SignupLeftPanel({ name, email }: { name: string; email: string }) {
@@ -953,234 +1033,193 @@ function SignupLeftPanel({ name, email }: { name: string; email: string }) {
   const completion = hasName && hasEmail ? 72 : hasName ? 44 : hasEmail ? 32 : 18;
 
   const DEMO_SKILLS = ['Product Design', 'Figma', 'UX Research', 'Prototyping'];
-  const PEERS = [
-    { init:'AK', grad:'135deg,#059669,#10b981' },
-    { init:'RM', grad:'135deg,#2563eb,#3b82f6' },
-    { init:'SJ', grad:'135deg,#7c3aed,#8b5cf6' },
-    { init:'PN', grad:'135deg,#e11d48,#f43f5e' },
-    { init:'VS', grad:'135deg,#0e7490,#06b6d4' },
-  ];
 
   return (
-    <div className="flex h-full w-full flex-col justify-between p-10 xl:p-14 select-none">
+    <div className="flex h-full w-full flex-col p-10 xl:p-14 select-none">
 
-      {/* Logo */}
-      <div style={{ animation: 'obFadeIn 0.5s both' }} className="flex items-center gap-2.5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-[11px] border border-white/[0.12] bg-white/[0.06]">
-          <svg viewBox="0 0 32 32" className="h-4.5 w-4.5" fill="none" stroke="white" strokeWidth="1.8">
-            <path d="M6 4h12l8 8v16H6V4z" /><path d="M18 4v8h8" /><path d="M10 16h12M10 20h8" />
-          </svg>
-        </div>
-        <span className="text-[15px] font-black text-white">Docrud</span>
-      </div>
+      {/* Centre — animated profile preview */}
+      <div className="flex-1 flex flex-col justify-center" style={{ animation: 'obSlideUp 0.6s 0.1s both' }}>
 
-      {/* Centre — animated profile card */}
-      <div style={{ animation: 'obSlideUp 0.6s 0.1s both' }}>
-
-        {/* Label */}
-        <div className="mb-4 flex items-center gap-2">
-          <div className="h-1.5 w-1.5 rounded-full bg-white/40" style={{ animation: 'obPulse 2s ease-in-out infinite' }} />
-          <span className="text-[10px] font-bold uppercase tracking-[0.26em] text-white/28">building your profile</span>
+        {/* Section divider */}
+        <div className="mb-3.5 flex items-center gap-3">
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent to-white/[0.05]" />
+          <span className="text-[8px] font-bold uppercase tracking-[0.32em] text-white/18">Profile preview</span>
+          <div className="h-px flex-1 bg-gradient-to-l from-transparent to-white/[0.05]" />
         </div>
 
         {/* Profile card */}
-        <div className="relative overflow-hidden rounded-[22px] border border-white/[0.08] bg-white/[0.025]"
-          style={{ boxShadow: '0 8px 48px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05)' }}>
+        <div className="relative overflow-hidden rounded-[22px] border border-white/[0.07]"
+          style={{ background: 'linear-gradient(160deg,rgba(255,255,255,0.025) 0%,rgba(255,255,255,0.008) 100%)', boxShadow: '0 1px 0 rgba(255,255,255,0.04) inset, 0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.018)' }}>
 
-          {/* Cover band */}
-          <div className="relative h-20 overflow-hidden"
-            style={{ background: 'linear-gradient(135deg,rgba(201,168,76,0.12) 0%,rgba(255,255,255,0.04) 50%,rgba(120,80,180,0.08) 100%)' }}>
-            <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom,transparent 40%,rgba(10,10,14,0.85) 100%)' }} />
-            {/* Floating dots */}
-            {[{l:'12%',t:'20%',d:'0s'},{l:'70%',t:'35%',d:'0.4s'},{l:'45%',t:'55%',d:'0.8s'},{l:'85%',t:'18%',d:'1.2s'}].map((p,i)=>(
-              <div key={i} className="absolute h-1 w-1 rounded-full bg-white/25"
-                style={{ left:p.l, top:p.t, animation:`obParticle ${3+i*0.5}s ease-in-out infinite ${p.d}` }} />
+          {/* Cover */}
+          <div className="relative h-[80px] overflow-hidden"
+            style={{ background: 'linear-gradient(135deg,rgba(201,168,76,0.10) 0%,rgba(100,60,200,0.05) 55%,rgba(20,100,200,0.04) 100%)' }}>
+            <div className="absolute inset-0 opacity-[0.025]"
+              style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,1) 1px,transparent 1px)', backgroundSize: '20px 20px' }} />
+            <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom,transparent 20%,rgba(8,8,13,0.97) 100%)' }} />
+            {[{l:'9%',t:'24%',d:'0s'},{l:'68%',t:'32%',d:'0.5s'},{l:'40%',t:'60%',d:'1s'},{l:'84%',t:'16%',d:'1.6s'}].map((p,i)=>(
+              <div key={i} className="absolute h-0.5 w-0.5 rounded-full bg-white/20"
+                style={{ left:p.l, top:p.t, animation:`obParticle ${3.5+i*0.55}s ease-in-out infinite ${p.d}` }} />
             ))}
           </div>
 
-          <div className="px-5 pb-5 -mt-8">
-            {/* Avatar + name row */}
-            <div className="mb-4 flex items-end gap-3.5">
+          <div className="px-4 pb-4 -mt-9">
+            {/* Avatar + badges */}
+            <div className="mb-3 flex items-end justify-between">
               <div className="relative shrink-0">
-                {/* Pulse ring */}
-                <div className="absolute inset-[-5px] rounded-full border border-white/[0.18]"
-                  style={{ animation: 'splashPulse 3s ease-out infinite' }} />
-                <div className="flex h-14 w-14 items-center justify-center rounded-[16px] border-2 border-[#0a0a0e] font-black text-xl text-white"
-                  style={{ background: 'linear-gradient(135deg,rgba(201,168,76,0.22),rgba(180,140,50,0.10))' }}>
-                  {hasName ? initials(name) : <span style={{ opacity: 0.22 }}>?</span>}
+                <div className="absolute inset-[-4px] rounded-[18px] border border-white/[0.10]"
+                  style={{ animation: 'splashPulse 3.5s ease-out infinite' }} />
+                <div className="flex h-[48px] w-[48px] items-center justify-center rounded-[14px] border-2 border-[#08080d] font-black text-[17px] text-white/85 transition-all duration-500"
+                  style={{ background: hasName ? 'linear-gradient(135deg,rgba(201,168,76,0.32),rgba(150,100,40,0.16))' : 'rgba(255,255,255,0.03)' }}>
+                  {hasName ? initials(name) : <span className="text-white/12">?</span>}
                 </div>
               </div>
-              <div className="min-w-0 flex-1 pb-1">
-                <div className="truncate text-[15px] font-black text-white transition-all duration-400"
-                  style={{ opacity: hasName ? 1 : 0.22 }}>
-                  {displayName}
+              <div className="flex items-center gap-1.5 pb-0.5">
+                <div className="flex items-center gap-1 rounded-full border border-emerald-500/15 bg-emerald-500/[0.05] px-1.5 py-0.5">
+                  <div className="h-1 w-1 rounded-full bg-emerald-400/70" />
+                  <span className="text-[7px] font-bold uppercase tracking-[0.12em] text-emerald-400/55">Active</span>
                 </div>
-                <div className="mt-0.5 truncate text-[10.5px] text-white/35 transition-all duration-400"
-                  style={{ opacity: hasEmail ? 1 : 0.22 }}>
-                  {hasEmail ? displayEmail.replace(/(.{4}).+(@.+)/, '$1…$2') : 'email not set'}
+                <div className="flex items-center gap-1 rounded-full border border-white/[0.06] bg-white/[0.03] px-1.5 py-0.5">
+                  <Shield className="h-2 w-2 text-white/25" />
+                  <span className="text-[7px] font-bold uppercase tracking-[0.12em] text-white/25">Verified</span>
                 </div>
-              </div>
-              {/* Verified badge */}
-              <div className="mb-1 shrink-0 flex items-center gap-1 rounded-full border border-white/[0.10] bg-white/[0.05] px-2 py-0.5">
-                <div className="h-1.5 w-1.5 rounded-full" style={{ background: '#34d399' }} />
-                <span className="text-[8.5px] font-bold text-white/45">Verified</span>
               </div>
             </div>
 
-            {/* Stats row */}
-            <div className="mb-4 grid grid-cols-3 gap-2 text-center">
-              {[['0','Docs'],['0','Connections'],['0','Gigs']].map(([v,l]) => (
-                <div key={l} className="rounded-[10px] border border-white/[0.05] bg-white/[0.03] py-2">
-                  <div className="text-[14px] font-black text-white/22">{v}</div>
-                  <div className="text-[9px] text-white/18 mt-0.5">{l}</div>
-                </div>
-              ))}
+            {/* Name & email */}
+            <div className="mb-3">
+              <p className="text-[14px] font-black tracking-[-0.02em] text-white/75 transition-all duration-400"
+                style={{ opacity: hasName ? 1 : 0.15 }}>
+                {displayName}
+              </p>
+              <p className="mt-0.5 text-[10px] text-white/28 transition-all duration-400"
+                style={{ opacity: hasEmail ? 1 : 0.15 }}>
+                {hasEmail ? displayEmail.replace(/(.{5}).+(@.+)/, '$1…$2') : 'email@example.com'}
+              </p>
             </div>
 
-            {/* Skills */}
-            <div className="mb-4 flex flex-wrap gap-1.5">
+            {/* Skill pills */}
+            <div className="mb-3 flex flex-wrap gap-1">
               {DEMO_SKILLS.map((s, i) => (
-                <span key={s} style={{ animation: `obFadeIn 0.4s ${0.6 + i * 0.15}s both`, opacity: 0 }}
-                  className="rounded-full border border-white/[0.07] bg-white/[0.04] px-2.5 py-1 text-[9px] font-medium text-white/35">
+                <span key={s} style={{ animation: `obFadeIn 0.4s ${0.5 + i * 0.12}s both`, opacity: 0 }}
+                  className="rounded-full border border-white/[0.05] bg-white/[0.025] px-2 py-[3px] text-[8.5px] font-medium text-white/25">
                   {s}
                 </span>
               ))}
             </div>
 
-            {/* Completion bar */}
-            <div>
+            {/* Profile strength */}
+            <div className="rounded-[10px] border border-white/[0.05] bg-white/[0.015] p-2.5">
               <div className="mb-1.5 flex items-center justify-between">
-                <span className="text-[10px] text-white/25 font-medium">Profile completion</span>
-                <span className="text-[10px] font-black" style={{ color: 'rgba(201,168,76,0.75)' }}>{completion}%</span>
+                <span className="text-[8.5px] font-bold uppercase tracking-[0.18em] text-white/18">Profile strength</span>
+                <span className="text-[11px] font-black" style={{ color: 'rgba(165,180,252,0.72)' }}>{completion}%</span>
               </div>
-              <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+              <div className="h-[2px] overflow-hidden rounded-full bg-white/[0.06]">
                 <div className="h-full rounded-full transition-all duration-700 ease-out"
-                  style={{ width: `${completion}%`, background: 'linear-gradient(90deg,#C9A84C,#E8CC7A)' }} />
+                  style={{ width: `${completion}%`, background: 'linear-gradient(90deg,#4f46e5,#818cf8,#4f46e5)' }} />
               </div>
+              <p className="mt-1.5 text-[8px] text-white/15 leading-[1.5]">Complete to unlock AI job matching &amp; gig visibility</p>
             </div>
           </div>
         </div>
 
-        {/* People joining */}
-        <div className="mt-4 flex items-center justify-between rounded-[14px] border border-white/[0.06] bg-white/[0.02] px-4 py-3"
-          style={{ animation: 'obFadeIn 0.6s 0.8s both', opacity: 0 }}>
-          <div className="flex -space-x-2">
-            {PEERS.map(p => (
-              <div key={p.init} className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#0a0a0e] text-[9px] font-bold text-white"
-                style={{ background: `linear-gradient(${p.grad})` }}>
-                {p.init}
-              </div>
-            ))}
+        {/* Live profile slider */}
+        <div className="mt-3.5" style={{ animation: 'obFadeIn 0.5s 0.7s both', opacity: 0 }}>
+          <div className="mb-2 flex items-center gap-2">
+            <div className="h-1.5 w-1.5 rounded-full bg-emerald-400/60" style={{ animation: 'obPulse 2s ease-in-out infinite' }} />
+            <span className="text-[8px] font-bold uppercase tracking-[0.26em] text-white/20">Recently joined</span>
+            <span className="ml-auto rounded-full border border-white/[0.05] bg-white/[0.02] px-2 py-px text-[7.5px] font-bold text-white/18">Live</span>
           </div>
-          <div className="ml-3 min-w-0 flex-1">
-            <p className="text-[11px] font-semibold text-white/60">Join 3,400+ professionals</p>
-            <p className="text-[9.5px] text-white/28">designers · engineers · founders</p>
-          </div>
-          <div className="shrink-0 rounded-full border border-white/[0.10] bg-white/[0.05] px-2.5 py-1 text-[8.5px] font-bold text-white/40">
-            Live ✦
-          </div>
+          <ProfileSlider speed={55} />
         </div>
       </div>
 
-      {/* Bottom trust strip */}
-      <div style={{ animation: 'obFadeIn 0.6s 0.4s both', opacity: 0 }}
-        className="flex items-center gap-4 rounded-[14px] border border-white/[0.05] bg-white/[0.015] px-4 py-3">
-        {[['SOC 2','Certified'],['GDPR','Compliant'],['256-bit','Encrypted']].map(([v,l]) => (
-          <div key={l} className="text-center flex-1">
-            <p className="text-[11px] font-black text-white/45">{v}</p>
-            <p className="text-[8.5px] text-white/20 mt-0.5">{l}</p>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   OTP FEED DATA  (module-level so mobile form can also use it)
+═══════════════════════════════════════════════════════════════ */
+type FeedItem = { Icon: React.ElementType; user: string; action: string; subject: string; time: string; tag: string; color: string; avatar: string };
+const OTP_FEED: FeedItem[] = [
+  { Icon: FileText,      user: 'Ananya K.',  action: 'published',     subject: 'UX Portfolio 2025',        time: '1m ago',  tag: 'Published', color: '#a78bfa', avatar: 'https://randomuser.me/api/portraits/women/10.jpg' },
+  { Icon: Zap,           user: 'Vikram S.',  action: 'posted a gig',  subject: 'Cloud Architect · Remote', time: '3m ago',  tag: 'Gig',       color: '#60a5fa', avatar: 'https://randomuser.me/api/portraits/men/22.jpg'   },
+  { Icon: FileSignature, user: 'Nisha K.',   action: 'e-signed',      subject: 'NDA Agreement',            time: '5m ago',  tag: 'E-Signed',  color: '#34d399', avatar: 'https://randomuser.me/api/portraits/women/44.jpg' },
+  { Icon: Users,         user: 'Priya N.',   action: 'hired',         subject: 'Content Writer',           time: '7m ago',  tag: 'Hired',     color: '#fbbf24', avatar: 'https://randomuser.me/api/portraits/women/63.jpg' },
+  { Icon: FileText,      user: 'Rohan M.',   action: 'published',     subject: 'ML Research Paper',        time: '9m ago',  tag: 'Published', color: '#f472b6', avatar: 'https://randomuser.me/api/portraits/men/55.jpg'   },
+  { Icon: Zap,           user: 'Elena P.',   action: 'completed gig', subject: 'DevOps Infrastructure',   time: '12m ago', tag: 'Gig',       color: '#22d3ee', avatar: 'https://randomuser.me/api/portraits/women/73.jpg' },
+  { Icon: FileSignature, user: 'James R.',   action: 'e-signed',      subject: 'Service Agreement',        time: '14m ago', tag: 'E-Signed',  color: '#34d399', avatar: 'https://randomuser.me/api/portraits/men/12.jpg'   },
+  { Icon: FileText,      user: 'Sofia C.',   action: 'published',     subject: 'UX Research Report',       time: '18m ago', tag: 'Published', color: '#a78bfa', avatar: 'https://randomuser.me/api/portraits/women/82.jpg' },
+  { Icon: Zap,           user: 'Kenji Y.',   action: 'posted a gig',  subject: 'iOS Engineer · Contract',  time: '22m ago', tag: 'Gig',       color: '#60a5fa', avatar: 'https://randomuser.me/api/portraits/men/42.jpg'   },
+  { Icon: Users,         user: 'Amara O.',   action: 'hired',         subject: 'Growth Marketer',          time: '25m ago', tag: 'Hired',     color: '#fb923c', avatar: 'https://randomuser.me/api/portraits/women/34.jpg' },
+  { Icon: FileText,      user: 'Meera I.',   action: 'published',     subject: 'Brand Identity Kit',       time: '28m ago', tag: 'Published', color: '#e879f9', avatar: 'https://randomuser.me/api/portraits/women/91.jpg' },
+  { Icon: FileSignature, user: 'Aryan T.',   action: 'e-signed',      subject: 'Freelance Contract',       time: '31m ago', tag: 'E-Signed',  color: '#34d399', avatar: 'https://randomuser.me/api/portraits/men/77.jpg'   },
+];
 
 /* ═══════════════════════════════════════════════════════════════
    OTP LEFT PANEL
 ═══════════════════════════════════════════════════════════════ */
 function OtpLeftPanel({ email }: { email: string }) {
   const displayEmail = email || 'your email';
-  const STEPS = [
-    { label: 'Account created',  done: true  },
-    { label: 'Verify email',     done: false, active: true },
-    { label: 'Set up profile',   done: false },
-    { label: 'Add skills',       done: false },
-    { label: 'You\'re live!',    done: false },
-  ];
+
+  const FEED = OTP_FEED;
+  const doubled = [...FEED, ...FEED];
+
   return (
-    <div className="flex h-full w-full flex-col justify-between p-10 xl:p-14 select-none">
-      {/* Logo */}
-      <div style={{ animation: 'obFadeIn 0.5s both' }} className="flex items-center gap-2.5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-[11px] border border-white/[0.12] bg-white/[0.06]">
-          <svg viewBox="0 0 32 32" className="h-4 w-4" fill="none" stroke="white" strokeWidth="1.8">
-            <path d="M6 4h12l8 8v16H6V4z" /><path d="M18 4v8h8" /><path d="M10 16h12M10 20h8" />
-          </svg>
-        </div>
-        <span className="text-[15px] font-black text-white">Docrud</span>
-      </div>
+    <div className="flex h-full w-full flex-col p-10 xl:p-14 gap-6 select-none">
+      <style>{`@keyframes feedScrollUp{0%{transform:translateY(0)}100%{transform:translateY(-50%)}}`}</style>
 
       {/* Centre */}
-      <div style={{ animation: 'obSlideUp 0.6s 0.1s both' }}>
-        {/* Animated envelope */}
-        <div className="mb-6 flex justify-center">
-          <div className="relative">
-            {/* Outer glow ring */}
-            <div className="absolute inset-[-12px] rounded-full border border-white/[0.06]"
-              style={{ animation: 'splashPulse 3s ease-out infinite 0.5s' }} />
-            <div className="absolute inset-[-6px] rounded-full border border-white/[0.09]"
-              style={{ animation: 'splashPulse 3s ease-out infinite 0s' }} />
-            <div className="flex h-20 w-20 items-center justify-center rounded-[24px] border border-white/[0.10] bg-white/[0.05]"
-              style={{ boxShadow: '0 8px 40px rgba(0,0,0,0.50), inset 0 1px 0 rgba(255,255,255,0.06)' }}>
-              <svg className="h-9 w-9 text-white/55" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-                <path strokeLinecap="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-              </svg>
-            </div>
-            {/* Floating dot badges */}
-            {[{top:'-6px',right:'-6px',c:'#34d399'},{bottom:'-6px',left:'-6px',c:'#60a5fa'},{top:'50%',left:'-18px',c:'rgba(201,168,76,0.8)'}].map((b,i) => (
-              <div key={i} className="absolute h-2.5 w-2.5 rounded-full border-2 border-[#0a0a0e]"
-                style={{ ...b, background: b.c, animation: `obFadeIn 0.4s ${0.6 + i * 0.2}s both`, opacity: 0 } as React.CSSProperties} />
+      <div className="flex-1 min-h-0 flex flex-col" style={{ animation: 'obSlideUp 0.6s 0.1s both' }}>
+
+        {/* Live feed label */}
+        <div className="mb-2.5 flex items-center gap-2">
+          <div className="h-1.5 w-1.5 rounded-full bg-emerald-400/60" style={{ animation: 'obPulse 2s ease-in-out infinite' }} />
+          <span className="text-[8px] font-bold uppercase tracking-[0.3em] text-white/20">Live activity</span>
+          <div className="h-px flex-1 bg-white/[0.05]" />
+          <span className="rounded-full border border-white/[0.05] bg-white/[0.015] px-2 py-px text-[7px] font-bold text-white/15">Real-time</span>
+        </div>
+
+        {/* Upward scrolling feed */}
+        <div className="relative flex-1 min-h-0 overflow-hidden rounded-[18px] border border-white/[0.06] bg-white/[0.012]"
+          style={{
+            maskImage: 'linear-gradient(to bottom,transparent,black 10%,black 90%,transparent)',
+            WebkitMaskImage: 'linear-gradient(to bottom,transparent,black 10%,black 90%,transparent)',
+          }}>
+          <div style={{ animation: 'feedScrollUp 26s linear infinite', display: 'flex', flexDirection: 'column' }}>
+            {doubled.map((item, i) => (
+              <div key={i} style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                {/* Real photo avatar */}
+                <img
+                  src={item.avatar}
+                  alt={item.user}
+                  style={{ flexShrink: 0, width: 32, height: 32, borderRadius: 10, objectFit: 'cover', border: '1px solid rgba(255,255,255,0.10)' }}
+                />
+                {/* Text */}
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <p style={{ fontSize: 10.5, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <span style={{ fontWeight: 800, color: 'rgba(255,255,255,0.72)' }}>{item.user}</span>
+                    <span style={{ fontWeight: 500, color: 'rgba(255,255,255,0.30)', marginLeft: 4 }}>{item.action}</span>
+                  </p>
+                  <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.26)', margin: 0, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {item.subject}
+                  </p>
+                </div>
+                {/* Tag + time */}
+                <div style={{ flexShrink: 0, textAlign: 'right' }}>
+                  <span style={{
+                    display: 'block', fontSize: 7, fontWeight: 700, borderRadius: 99, padding: '2px 6px', marginBottom: 3,
+                    color: item.color, background: `${item.color}18`, border: `1px solid ${item.color}28`,
+                  }}>{item.tag}</span>
+                  <span style={{ fontSize: 7, color: 'rgba(255,255,255,0.18)' }}>{item.time}</span>
+                </div>
+              </div>
             ))}
           </div>
         </div>
-
-        {/* Email info */}
-        <div className="mb-6 text-center">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/28 mb-1">Code sent to</p>
-          <p className="text-[13px] font-bold text-white/70 truncate">{displayEmail}</p>
-        </div>
-
-        {/* Journey steps */}
-        <div className="space-y-2">
-          {STEPS.map((s, i) => (
-            <div key={i} className="flex items-center gap-3"
-              style={{ animation: `obFadeIn 0.4s ${0.3 + i * 0.1}s both`, opacity: 0 }}>
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
-                style={{
-                  background: s.done ? 'rgba(52,211,153,0.15)' : s.active ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)',
-                  border: s.done ? '1px solid rgba(52,211,153,0.35)' : s.active ? '1px solid rgba(255,255,255,0.18)' : '1px solid rgba(255,255,255,0.06)',
-                }}>
-                {s.done
-                  ? <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="#34d399" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
-                  : s.active
-                  ? <div className="h-2 w-2 rounded-full bg-white/60" style={{ animation: 'obPulse 1.8s infinite' }} />
-                  : <div className="h-1.5 w-1.5 rounded-full bg-white/15" />}
-              </div>
-              <span className="text-[12px] font-medium"
-                style={{ color: s.done ? 'rgba(52,211,153,0.75)' : s.active ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.20)' }}>
-                {s.label}
-              </span>
-            </div>
-          ))}
-        </div>
       </div>
 
-      {/* Bottom — security note */}
-      <div style={{ animation: 'obFadeIn 0.6s 0.5s both', opacity: 0 }}
-        className="flex items-center gap-3 rounded-[14px] border border-white/[0.05] bg-white/[0.015] px-4 py-3">
-        <Shield className="h-4 w-4 shrink-0 text-white/28" />
-        <p className="text-[11px] leading-relaxed text-white/25">Code expires in 10 minutes. Do not share it with anyone.</p>
-      </div>
     </div>
   );
 }
@@ -1189,175 +1228,120 @@ function OtpLeftPanel({ email }: { email: string }) {
    GO LEFT PANEL — referral earn-free animated diagram
 ═══════════════════════════════════════════════════════════════ */
 function GoLeftPanel() {
+  const benefits = [
+    {
+      title: 'Business Pages',
+      desc: 'Create a full business presence with products, jobs & reviews',
+      icon: (
+        <svg className="h-[18px] w-[18px] text-indigo-300/85" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+        </svg>
+      ),
+    },
+    {
+      title: 'Unlimited Services',
+      desc: 'List as many services as you want — free is limited to 2',
+      icon: (
+        <svg className="h-[18px] w-[18px] text-indigo-300/85" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+      ),
+    },
+    {
+      title: 'Direct Messaging',
+      desc: 'Chat with professionals, clients and collaborators',
+      icon: (
+        <svg className="h-[18px] w-[18px] text-indigo-300/85" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+        </svg>
+      ),
+    },
+    {
+      title: 'Public Face Badge',
+      desc: 'Apply for verified creator status on the platform',
+      icon: (
+        <svg className="h-[18px] w-[18px] text-indigo-300/85" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+        </svg>
+      ),
+    },
+    {
+      title: 'E-Sign Documents',
+      desc: 'Send contracts for OTP-verified e-signature',
+      icon: (
+        <svg className="h-[18px] w-[18px] text-indigo-300/85" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+        </svg>
+      ),
+    },
+    {
+      title: '5 GB Drive Storage',
+      desc: 'Free cloud storage for files, documents and media',
+      icon: (
+        <svg className="h-[18px] w-[18px] text-indigo-300/85" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+        </svg>
+      ),
+    },
+  ];
+
   return (
     <div className="flex h-full w-full flex-col justify-between p-10 xl:p-14 select-none">
       <style>{`
-        @keyframes goFlowDot {
-          0%   { transform: translateY(-6px); opacity: 0; }
-          18%  { opacity: 1; }
-          82%  { opacity: 1; }
-          100% { transform: translateY(38px); opacity: 0; }
-        }
         @keyframes goNodeIn {
           0%   { opacity: 0; transform: translateX(-14px); }
           100% { opacity: 1; transform: translateX(0); }
         }
-        @keyframes goBadgeGlow {
-          0%, 100% { box-shadow: 0 0 18px rgba(201,168,76,0.30), 0 4px 24px rgba(201,168,76,0.14); }
-          50%      { box-shadow: 0 0 32px rgba(201,168,76,0.55), 0 4px 40px rgba(201,168,76,0.28); }
-        }
-        @keyframes goCheckDraw {
-          0%   { stroke-dashoffset: 24; }
-          100% { stroke-dashoffset: 0; }
-        }
-        @keyframes goOrb {
-          0%, 100% { opacity: 0.35; transform: scale(1); }
-          50%      { opacity: 0.60; transform: scale(1.12); }
-        }
       `}</style>
 
-      {/* Logo */}
-      <div style={{ animation: 'obFadeIn 0.5s both' }} className="flex items-center gap-2.5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-[11px] border border-white/[0.12] bg-white/[0.06]">
-          <svg viewBox="0 0 32 32" className="h-4 w-4" fill="none" stroke="white" strokeWidth="1.8">
-            <path d="M6 4h12l8 8v16H6V4z" /><path d="M18 4v8h8" /><path d="M10 16h12M10 20h8" />
-          </svg>
+      {/* Top — eyebrow + headline */}
+      <div style={{ animation: 'obFadeIn 0.5s both' }}>
+        <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border px-3 py-1"
+          style={{ background: 'rgba(99,102,241,0.07)', borderColor: 'rgba(99,102,241,0.22)' }}>
+          <div className="h-1.5 w-1.5 rounded-full" style={{ background: '#818cf8', animation: 'obPulse 2s infinite' }} />
+          <span className="text-[9.5px] font-bold uppercase tracking-[0.24em]" style={{ color: 'rgba(165,180,252,0.75)' }}>Pro Access</span>
         </div>
-        <span className="text-[15px] font-black text-white">Docrud</span>
+        <h3 className="mt-2 text-[1.65rem] font-black tracking-[-0.04em] text-white leading-[1.15]"
+          style={{ animation: 'obSlideUp 0.5s 0.1s both', opacity: 0 }}>
+          Everything unlocked<br />with Infinity ∞
+        </h3>
+        <p className="mt-2 text-[12px] text-white/38 leading-relaxed"
+          style={{ animation: 'obSlideUp 0.5s 0.18s both', opacity: 0 }}>
+          One subscription. Business pages, messaging, e-sign, public face — all yours.
+        </p>
       </div>
 
-      {/* Centre */}
-      <div>
-        {/* Eyebrow */}
-        <div style={{ animation: 'obFadeIn 0.4s 0.1s both', opacity: 0, background: 'rgba(201,168,76,0.07)', borderColor: 'rgba(201,168,76,0.22)' }}
-          className="mb-3 inline-flex items-center gap-1.5 rounded-full border px-3 py-1">
-          <div className="h-1.5 w-1.5 rounded-full" style={{ background: '#E8CC7A', animation: 'obPulse 2s infinite' }} />
-          <span className="text-[9.5px] font-bold uppercase tracking-[0.24em]" style={{ color: 'rgba(232,204,122,0.75)' }}>Referral Program</span>
-        </div>
-
-        {/* Heading */}
-        <div style={{ animation: 'obSlideUp 0.5s 0.15s both', opacity: 0 }}>
-          <h3 className="text-[1.5rem] font-black tracking-[-0.04em] text-white leading-[1.15]">
-            Earn Docrud Go<br />for <span style={{ color: '#E8CC7A' }}>FREE ✦</span>
-          </h3>
-          <p className="mt-1.5 text-[11.5px] text-white/38 leading-relaxed">
-            Refer one friend who joins Docrud — your Go badge unlocks instantly. No payment ever.
-          </p>
-        </div>
-
-        {/* ── Flow diagram ── */}
-        <div className="mt-6">
-
-          {/* Node 1 — You share */}
-          <div style={{ animation: 'goNodeIn 0.5s 0.3s both', opacity: 0 }}
-            className="flex items-center gap-3 rounded-[14px] border border-white/[0.08] bg-white/[0.035] px-3.5 py-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px]"
-              style={{ background: 'linear-gradient(135deg,rgba(255,255,255,0.10),rgba(255,255,255,0.04))', border: '1px solid rgba(255,255,255,0.13)' }}>
-              <svg className="h-4.5 w-4.5 h-[18px] w-[18px] text-white/65" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
+      {/* Benefits list */}
+      <div className="space-y-3">
+        {benefits.map(({ icon, title, desc }, i) => (
+          <div key={title}
+            style={{ animation: `goNodeIn 0.5s ${0.28 + i * 0.10}s both`, opacity: 0 }}
+            className="flex items-center gap-3.5 rounded-[14px] border border-white/[0.07] bg-white/[0.025] px-4 py-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px]"
+              style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.22),rgba(99,102,241,0.08))', border: '1px solid rgba(99,102,241,0.22)' }}>
+              {icon}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[12.5px] font-black text-white/85">You share your link</p>
-              <p className="text-[10.5px] text-white/30 mt-0.5">One unique referral link, yours forever</p>
+              <p className="text-[12px] font-black text-white/88">{title}</p>
+              <p className="text-[10px] text-white/32 mt-0.5 leading-snug">{desc}</p>
             </div>
-            <div className="shrink-0 rounded-full border border-white/[0.09] bg-white/[0.04] px-2.5 py-1 text-[8.5px] font-bold text-white/38">
-              Step 1
-            </div>
-          </div>
-
-          {/* Connector 1 */}
-          <div className="relative ml-[30px] h-9 flex items-center">
-            <div className="absolute left-0 top-0 bottom-0 w-px" style={{ background: 'linear-gradient(to bottom,rgba(255,255,255,0.08),rgba(201,168,76,0.18),rgba(255,255,255,0.04))' }} />
-            {[0, 0.6, 1.2].map((d, i) => (
-              <div key={i} className="absolute left-[-3px] w-[7px] rounded-full"
-                style={{ height: 14, background: 'linear-gradient(to bottom,transparent,rgba(201,168,76,0.85),transparent)', animation: `goFlowDot 1.8s ${d}s ease-in-out infinite` }} />
-            ))}
-            {/* Label */}
-            <p className="absolute left-5 text-[9.5px] text-white/22 font-medium">link clicked</p>
-          </div>
-
-          {/* Node 2 — Friend joins */}
-          <div style={{ animation: 'goNodeIn 0.5s 0.52s both', opacity: 0, background: 'rgba(99,102,241,0.05)', borderColor: 'rgba(99,102,241,0.18)' }}
-            className="flex items-center gap-3 rounded-[14px] border px-3.5 py-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px]"
-              style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.22),rgba(99,102,241,0.08))', border: '1px solid rgba(99,102,241,0.28)' }}>
-              <svg className="h-[18px] w-[18px] text-indigo-400/75" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-              </svg>
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[12.5px] font-black text-white/85">Friend clicks &amp; joins</p>
-              <p className="text-[10.5px] text-white/30 mt-0.5">They create their Docrud profile</p>
-            </div>
-            <div className="shrink-0 flex items-center gap-1 rounded-full border px-2.5 py-1"
-              style={{ background: 'rgba(99,102,241,0.10)', borderColor: 'rgba(99,102,241,0.22)' }}>
-              <div className="h-1.5 w-1.5 rounded-full bg-indigo-400" style={{ animation: 'obPulse 1.6s infinite' }} />
-              <span className="text-[8px] font-bold text-indigo-400/80">Step 2</span>
-            </div>
-          </div>
-
-          {/* Connector 2 */}
-          <div className="relative ml-[30px] h-9 flex items-center">
-            <div className="absolute left-0 top-0 bottom-0 w-px" style={{ background: 'linear-gradient(to bottom,rgba(99,102,241,0.15),rgba(201,168,76,0.25),rgba(201,168,76,0.08))' }} />
-            {[0, 0.6, 1.2].map((d, i) => (
-              <div key={i} className="absolute left-[-3px] w-[7px] rounded-full"
-                style={{ height: 14, background: 'linear-gradient(to bottom,transparent,rgba(201,168,76,0.85),transparent)', animation: `goFlowDot 1.8s ${d + 0.3}s ease-in-out infinite` }} />
-            ))}
-            <p className="absolute left-5 text-[9.5px] text-white/22 font-medium">profile created</p>
-          </div>
-
-          {/* Node 3 — Badge unlocks */}
-          <div style={{ animation: 'goNodeIn 0.5s 0.74s both, goBadgeGlow 2.8s 1.4s ease-in-out infinite', opacity: 0, background: 'rgba(201,168,76,0.07)', borderColor: 'rgba(201,168,76,0.28)' } as React.CSSProperties}
-            className="flex items-center gap-3 rounded-[14px] border px-3.5 py-3">
-            <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px]"
-              style={{ background: 'linear-gradient(135deg,#C9A84C,#F0D878)', boxShadow: '0 4px 18px rgba(201,168,76,0.45)' }}>
-              {/* Pulse ring */}
-              <div className="absolute -inset-1 rounded-[13px]"
-                style={{ border: '1.5px solid rgba(201,168,76,0.35)', animation: 'splashPulse 2.5s ease-out infinite' }} />
-              <span className="text-[17px] font-black leading-none" style={{ color: '#1a1208' }}>✦</span>
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[12.5px] font-black leading-tight" style={{ color: '#F0D878' }}>Your Go badge unlocks</p>
-              <p className="text-[10.5px] text-white/38 mt-0.5">Gold verified. Zero cost.</p>
-            </div>
-            {/* Animated checkmark */}
-            <div className="shrink-0 flex h-7 w-7 items-center justify-center rounded-full border"
-              style={{ background: 'rgba(201,168,76,0.15)', borderColor: 'rgba(201,168,76,0.38)' }}>
-              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="#E8CC7A" strokeWidth="2.8">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"
-                  strokeDasharray="24" style={{ animation: 'goCheckDraw 0.55s 1.5s ease both' }} />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Stats strip ── */}
-        <div style={{ animation: 'obFadeIn 0.5s 0.9s both', opacity: 0 }}
-          className="mt-4 grid grid-cols-3 divide-x divide-white/[0.05] rounded-[14px] border border-white/[0.05] bg-white/[0.02]">
-          {[
-            { val: '₹0', sub: 'Cost to you' },
-            { val: '1',  sub: 'Friend needed' },
-            { val: '⚡', sub: 'Instant unlock' },
-          ].map(({ val, sub }) => (
-            <div key={sub} className="flex flex-col items-center py-3">
-              <span className="text-[17px] font-black leading-none"
-                style={{ color: val === '⚡' ? '#E8CC7A' : 'rgba(255,255,255,0.80)' }}>{val}</span>
-              <span className="mt-1 text-[9px] text-white/28 leading-tight text-center">{sub}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Bottom trust */}
-      <div style={{ animation: 'obFadeIn 0.6s 0.5s both', opacity: 0 }}
-        className="flex items-center gap-4 rounded-[14px] border border-white/[0.05] bg-white/[0.015] px-4 py-3">
-        {[['SOC 2','Certified'],['GDPR','Compliant'],['256-bit','Encrypted']].map(([v,l]) => (
-          <div key={l} className="flex-1 text-center">
-            <p className="text-[11px] font-black text-white/45">{v}</p>
-            <p className="text-[8.5px] text-white/20 mt-0.5">{l}</p>
           </div>
         ))}
+      </div>
+
+      {/* Bottom — social proof */}
+      <div style={{ animation: 'obFadeIn 0.6s 0.7s both', opacity: 0 }}
+        className="flex items-center gap-3.5 rounded-[14px] border border-white/[0.05] bg-white/[0.015] px-4 py-3.5">
+        <div className="flex shrink-0 -space-x-1.5">
+          {[['K','#6366f1'],['R','#7c3aed'],['A','#0ea5e9'],['S','#10b981'],['M','#f59e0b']].map(([init, bg]) => (
+            <div key={init} className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-[#06060f] text-[7.5px] font-black text-white"
+              style={{ background: bg }}>{init}</div>
+          ))}
+        </div>
+        <div className="min-w-0">
+          <p className="text-[11px] font-black text-white/65">2,800+ professionals upgraded</p>
+          <p className="text-[9px] text-white/28 mt-0.5">this month alone</p>
+        </div>
       </div>
     </div>
   );
@@ -1366,156 +1350,229 @@ function GoLeftPanel() {
 /* ═══════════════════════════════════════════════════════════════
    PROFILE LEFT PANEL — live profile card preview
 ═══════════════════════════════════════════════════════════════ */
+const DOCRUD_FEATURES = [
+  { icon: Network,       label: 'Professional\nConnections', color: '#60a5fa' },
+  { icon: Zap,           label: 'Gigs &\nFreelance',         color: '#34d399' },
+  { icon: Briefcase,     label: 'Jobs &\nOpportunities',     color: '#a78bfa' },
+  { icon: Rss,           label: 'Daily\nFeed',               color: '#fb923c' },
+  { icon: FileText,      label: 'Doc\nEditor',               color: '#f472b6' },
+  { icon: Table2,        label: '.xlsx /\n.csv Editor',      color: '#22d3ee' },
+  { icon: PenLine,       label: 'Scratch-\npad',             color: '#fbbf24' },
+  { icon: Bot,           label: 'AI Doc\nGen',               color: '#818cf8' },
+  { icon: FileSignature, label: 'E-Sign\nStudio',            color: '#4ade80' },
+  { icon: Layers,        label: 'PDF\nTools',                color: '#fb7185' },
+] as const;
+
+/* Shared feature grid used in both desktop left-panel and mobile in-form strip */
+function DocrudFeatureGrid({ staggerBase = 0.18, compact = false }: { staggerBase?: number; compact?: boolean }) {
+  return (
+    <div className={`grid grid-cols-5 ${compact ? 'gap-2' : 'gap-2.5'}`}>
+      {DOCRUD_FEATURES.map(({ icon: Icon, label, color }, i) => {
+        const floatDur = 3.8 + i * 0.28;
+        const floatDelay = staggerBase + 0.55 + i * 0.09;
+        return (
+          <div key={label}
+            style={{ animation: `obFloat ${floatDur}s ease-in-out infinite ${floatDelay}s` }}>
+            <div
+              style={{
+                animation: `obScaleIn 0.32s ${staggerBase + i * 0.042}s both`,
+                opacity: 0,
+                background: `linear-gradient(145deg, ${color}12 0%, ${color}05 55%, rgba(255,255,255,0.015) 100%)`,
+                border: `1px solid ${color}20`,
+                boxShadow: `0 4px 18px ${color}14, 0 1px 0 rgba(255,255,255,0.06) inset, 0 -1px 0 rgba(0,0,0,0.25) inset`,
+              }}
+              className={`group flex flex-col items-center justify-center gap-2 rounded-[14px] cursor-default select-none transition-all duration-300 hover:scale-[1.06] ${compact ? 'py-2.5 px-0.5' : 'py-3 px-1'}`}
+            >
+              <div
+                className="flex shrink-0 items-center justify-center rounded-[9px] transition-all duration-300 group-hover:scale-110 group-hover:brightness-125"
+                style={{
+                  width: compact ? 26 : 30, height: compact ? 26 : 30,
+                  background: `radial-gradient(circle at 35% 35%, ${color}35 0%, ${color}12 60%, transparent 100%)`,
+                  boxShadow: `0 0 10px ${color}28`,
+                }}
+              >
+                <Icon style={{ color, width: compact ? 12 : 14, height: compact ? 12 : 14 }} />
+              </div>
+              <span
+                className="whitespace-pre-line text-center font-semibold leading-[1.3] text-white/55 group-hover:text-white/85 transition-colors duration-200"
+                style={{ fontSize: compact ? '8px' : '9px' }}
+              >
+                {label}
+              </span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function ProfileLeftPanel({ name, headline, bio, location, avatarUrl, bannerUrl, openToWork, skills }: {
   name: string; headline: string; bio: string; location: string;
   avatarUrl: string; bannerUrl: string; openToWork: boolean; skills: string[];
 }) {
   const displayName = name.trim() || 'Your Name';
 
-  // Profile completion calc
   const fields = [
-    !!name.trim(),
-    !!headline.trim(),
-    !!bio.trim(),
-    !!avatarUrl.trim(),
-    !!bannerUrl.trim(),
-    !!location.trim(),
-    skills.length > 0,
+    !!name.trim(), !!headline.trim(), !!bio.trim(),
+    !!avatarUrl.trim(), !!bannerUrl.trim(), !!location.trim(), skills.length > 0,
   ];
-  const filled = fields.filter(Boolean).length;
-  const completion = Math.round((filled / fields.length) * 100);
-  const completionColor = completion >= 70 ? '#34d399' : completion >= 40 ? '#E8CC7A' : 'rgba(255,255,255,0.35)';
-
+  const filled    = fields.filter(Boolean).length;
+  const completion      = Math.round((filled / fields.length) * 100);
+  const completionColor = completion >= 70 ? '#34d399' : completion >= 40 ? '#a5b4fc' : 'rgba(255,255,255,0.45)';
+  const completionGlow  = completion >= 70 ? 'rgba(52,211,153,0.25)' : completion >= 40 ? 'rgba(165,180,252,0.25)' : 'rgba(255,255,255,0.08)';
   const STEP_LABELS = ['Name','Headline','Bio','Avatar','Banner','Location','Skills'];
 
   return (
-    <div className="flex h-full w-full flex-col justify-between p-10 xl:p-14 select-none">
+    <div className="flex h-full w-full flex-col overflow-hidden p-7 xl:p-9 select-none gap-4 xl:gap-5">
+
       {/* Logo */}
-      <div style={{ animation: 'obFadeIn 0.5s both' }} className="flex items-center gap-2.5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-[11px] border border-white/[0.12] bg-white/[0.06]">
-          <svg viewBox="0 0 32 32" className="h-4 w-4" fill="none" stroke="white" strokeWidth="1.8">
+      <div className="flex shrink-0 items-center gap-2.5" style={{ animation: 'obFadeIn 0.5s both' }}>
+        <div className="flex h-8 w-8 items-center justify-center rounded-[11px]"
+          style={{ background: 'linear-gradient(135deg,rgba(255,255,255,0.10) 0%,rgba(255,255,255,0.04) 100%)', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 2px 12px rgba(0,0,0,0.4)' }}>
+          <svg viewBox="0 0 32 32" className="h-3.5 w-3.5" fill="none" stroke="white" strokeWidth="1.8">
             <path d="M6 4h12l8 8v16H6V4z" /><path d="M18 4v8h8" /><path d="M10 16h12M10 20h8" />
           </svg>
         </div>
-        <span className="text-[15px] font-black text-white">Docrud</span>
+        <span className="text-[15px] font-black text-white tracking-tight">Docrud</span>
       </div>
 
-      {/* Label */}
-      <div style={{ animation: 'obSlideUp 0.55s 0.08s both' }}>
-        <div className="mb-3 flex items-center gap-2">
-          <div className="h-1.5 w-1.5 rounded-full" style={{ background: completionColor, transition: 'background 0.5s', animation: 'obPulse 2s infinite' }} />
-          <span className="text-[10px] font-bold uppercase tracking-[0.26em] text-white/28">live profile preview</span>
-          <span className="ml-auto text-[10px] font-black" style={{ color: completionColor, transition: 'color 0.5s' }}>{completion}%</span>
+      {/* ── Live profile preview card ── */}
+      <div className="shrink-0" style={{ animation: 'obSlideUp 0.55s 0.08s both' }}>
+        {/* Label row */}
+        <div className="mb-2.5 flex items-center justify-between px-0.5">
+          <div className="flex items-center gap-2">
+            <div className="relative flex h-2 w-2">
+              <div className="absolute inset-0 rounded-full animate-ping" style={{ background: completionColor, opacity: 0.5 }} />
+              <div className="relative rounded-full" style={{ background: completionColor, width: 8, height: 8 }} />
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/40">Live preview</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="h-1.5 rounded-full transition-all duration-700" style={{ width: 48, background: 'rgba(255,255,255,0.07)' }}>
+              <div className="h-full rounded-full transition-all duration-700" style={{ width: `${completion}%`, background: completionColor, boxShadow: `0 0 8px ${completionGlow}` }} />
+            </div>
+            <span className="text-[10px] font-black tabular-nums transition-colors duration-500" style={{ color: completionColor }}>{completion}%</span>
+          </div>
         </div>
 
-        {/* Profile card */}
-        <div className="overflow-hidden rounded-[20px] border border-white/[0.08] bg-white/[0.02]"
-          style={{ boxShadow: '0 8px 48px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)' }}>
+        {/* Card */}
+        <div className="overflow-hidden rounded-[22px]"
+          style={{
+            background: 'linear-gradient(160deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.015) 100%)',
+            border: '1px solid rgba(255,255,255,0.09)',
+            boxShadow: `0 12px 40px rgba(0,0,0,0.60), 0 1px 0 rgba(255,255,255,0.06) inset, 0 0 0 1px rgba(0,0,0,0.3)`,
+            backdropFilter: 'blur(12px)',
+          }}>
 
           {/* Banner */}
-          <div className="relative h-24 overflow-hidden">
+          <div className="relative h-[68px] overflow-hidden">
             {bannerUrl
               ? <img src={bannerUrl} alt="" className="h-full w-full object-cover" />
-              : <div className="h-full w-full" style={{ background: 'linear-gradient(135deg,rgba(201,168,76,0.15) 0%,rgba(99,102,241,0.10) 50%,rgba(236,72,153,0.08) 100%)' }} />
+              : <>
+                  <div className="absolute inset-0" style={{ background: 'linear-gradient(125deg,rgba(201,168,76,0.20) 0%,rgba(99,102,241,0.14) 45%,rgba(236,72,153,0.10) 80%,rgba(14,165,233,0.08) 100%)' }} />
+                  {/* Shimmer sweep */}
+                  <div className="absolute inset-0 opacity-30" style={{ background: 'linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.10) 50%, transparent 65%)', animation: 'obShimmer 3.5s ease-in-out infinite' }} />
+                  {[
+                    {l:'8%',t:'22%',d:'0s'},{l:'52%',t:'16%',d:'0.6s'},{l:'75%',t:'58%',d:'1.1s'},{l:'31%',t:'70%',d:'0.4s'},{l:'88%',t:'32%',d:'1.7s'},
+                  ].map((p,i) => (
+                    <div key={i} className="absolute rounded-full bg-white/30"
+                      style={{ left:p.l, top:p.t, width: i % 2 === 0 ? 2 : 1.5, height: i % 2 === 0 ? 2 : 1.5, animation:`obParticle ${3.2+i*0.55}s ease-in-out infinite ${p.d}` }} />
+                  ))}
+                </>
             }
-            <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom,transparent 50%,rgba(8,8,12,0.8) 100%)' }} />
-            {/* Floating particles when no banner */}
-            {!bannerUrl && [
-              {l:'8%',t:'25%',d:'0s'},{l:'60%',t:'15%',d:'0.5s'},{l:'80%',t:'60%',d:'1s'},{l:'35%',t:'70%',d:'0.3s'},
-            ].map((p,i) => (
-              <div key={i} className="absolute h-1 w-1 rounded-full bg-white/20"
-                style={{ left:p.l, top:p.t, animation:`obParticle ${3+i*0.6}s ease-in-out infinite ${p.d}` }} />
-            ))}
-            {/* Open to work ribbon */}
+            <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom,transparent 20%,rgba(8,8,14,0.90) 100%)' }} />
             {openToWork && (
-              <div className="absolute bottom-2 right-2 flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5"
-                style={{ animation: 'obFadeIn 0.3s both' }}>
-                <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                <span className="text-[8.5px] font-bold text-emerald-400">Open to Work</span>
+              <div className="absolute bottom-2 right-2.5 flex items-center gap-1 rounded-full border border-emerald-500/35 bg-emerald-500/15 px-2 py-0.5 backdrop-blur-sm"
+                style={{ animation:'obFadeIn 0.4s both', boxShadow: '0 2px 8px rgba(16,185,129,0.20)' }}>
+                <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" style={{ animation: 'obPulse 2s infinite' }} />
+                <span className="text-[8px] font-bold text-emerald-400">Open to Work</span>
               </div>
             )}
           </div>
 
+          {/* Profile info */}
           <div className="px-4 pb-4 -mt-7">
-            {/* Avatar */}
-            <div className="relative mb-3 inline-block">
-              <div className="absolute inset-[-3px] rounded-full border-2 border-[#08080c]" />
-              <div className="h-12 w-12 overflow-hidden rounded-full border-2 border-[#08080c] bg-white/[0.08]"
-                style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}>
-                {avatarUrl
-                  ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
-                  : <div className="flex h-full w-full items-center justify-center text-[13px] font-black text-white/70"
-                      style={{ background: 'linear-gradient(135deg,rgba(201,168,76,0.25),rgba(180,140,50,0.10))' }}>
-                      {initials(displayName)}
-                    </div>
-                }
+            <div className="mb-3 flex items-end gap-3">
+              {/* Avatar */}
+              <div className="relative shrink-0">
+                <div className="h-12 w-12 overflow-hidden rounded-[14px]"
+                  style={{ border: '2.5px solid rgba(8,8,14,1)', boxShadow: '0 4px 16px rgba(0,0,0,0.6)' }}>
+                  {avatarUrl
+                    ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+                    : <div className="flex h-full w-full items-center justify-center text-[13px] font-black text-white/80"
+                        style={{ background: 'linear-gradient(135deg,rgba(201,168,76,0.30) 0%,rgba(99,102,241,0.25) 100%)' }}>
+                        {initials(displayName)}
+                      </div>
+                  }
+                </div>
+                {/* Completion ring */}
+                <svg className="absolute -inset-0.5 pointer-events-none" style={{ width: 54, height: 54 }} viewBox="0 0 54 54">
+                  <circle cx="27" cy="27" r="25" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="1.5" />
+                  <circle cx="27" cy="27" r="25" fill="none" stroke={completionColor} strokeWidth="1.5"
+                    strokeDasharray={`${157 * completion / 100} 157`} strokeLinecap="round"
+                    style={{ transformOrigin: '27px 27px', transform: 'rotate(-90deg)', transition: 'stroke-dasharray 0.6s ease, stroke 0.5s ease', opacity: 0.7 }} />
+                </svg>
+              </div>
+
+              {/* Name + headline */}
+              <div className="flex-1 min-w-0 pb-0.5">
+                <p className="text-[14px] font-black leading-tight text-white truncate transition-all duration-400"
+                  style={{ opacity: name.trim() ? 1 : 0.28, letterSpacing: '-0.01em' }}>{displayName}</p>
+                <p className="mt-0.5 text-[10.5px] leading-snug text-white/45 truncate transition-all duration-400"
+                  style={{ opacity: headline.trim() ? 1 : 0.25 }}>
+                  {headline.trim() || 'Your headline will appear here'}
+                </p>
+                {location.trim() && (
+                  <div className="mt-1 flex items-center gap-1" style={{ animation:'obFadeIn 0.3s both' }}>
+                    <MapPin className="h-2.5 w-2.5 text-white/28 shrink-0" />
+                    <span className="text-[9px] text-white/35 truncate">{location}</span>
+                  </div>
+                )}
               </div>
             </div>
-
-            {/* Name + headline */}
-            <div className="mb-2">
-              <p className="text-[14px] font-black text-white leading-tight transition-all duration-300"
-                style={{ opacity: name.trim() ? 1 : 0.25 }}>
-                {displayName}
-              </p>
-              <p className="mt-0.5 text-[10.5px] text-white/40 leading-snug transition-all duration-300 line-clamp-1"
-                style={{ opacity: headline.trim() ? 1 : 0.22 }}>
-                {headline.trim() || 'Your headline will appear here'}
-              </p>
-              {location.trim() && (
-                <div className="mt-1 flex items-center gap-1" style={{ animation: 'obFadeIn 0.3s both' }}>
-                  <MapPin className="h-2.5 w-2.5 text-white/25" />
-                  <span className="text-[9.5px] text-white/30">{location}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Bio */}
-            {bio.trim() && (
-              <p className="mb-2.5 text-[10px] leading-relaxed text-white/35 line-clamp-2 transition-all duration-300"
-                style={{ animation: 'obFadeIn 0.3s both' }}>
-                {bio}
-              </p>
-            )}
 
             {/* Skills */}
             {skills.length > 0 && (
-              <div className="mb-3 flex flex-wrap gap-1" style={{ animation: 'obFadeIn 0.3s both' }}>
-                {skills.slice(0, 4).map(s => (
-                  <span key={s} className="rounded-full border border-white/[0.07] bg-white/[0.04] px-2 py-0.5 text-[8.5px] text-white/35">
-                    {s}
-                  </span>
+              <div className="mb-3 flex flex-wrap gap-1.5" style={{ animation:'obFadeIn 0.3s both' }}>
+                {skills.slice(0, 5).map(s => (
+                  <span key={s} className="rounded-full border border-white/[0.08] bg-white/[0.05] px-2 py-0.5 text-[8.5px] font-medium text-white/45">{s}</span>
                 ))}
-                {skills.length > 4 && <span className="text-[8.5px] text-white/22">+{skills.length - 4}</span>}
+                {skills.length > 5 && <span className="text-[8.5px] text-white/25 self-center">+{skills.length - 5}</span>}
               </div>
             )}
 
-            {/* Segmented progress */}
+            {/* Segmented strength bar */}
             <div>
-              <div className="mb-1.5 flex gap-0.5">
+              <div className="mb-1 flex gap-1">
                 {STEP_LABELS.map((l, i) => (
-                  <div key={l} title={l} className="h-1 flex-1 rounded-full transition-all duration-500"
-                    style={{ background: fields[i] ? completionColor : 'rgba(255,255,255,0.07)' }} />
+                  <div key={l} title={l} className="h-[3.5px] flex-1 rounded-full transition-all duration-600"
+                    style={{ background: fields[i] ? completionColor : 'rgba(255,255,255,0.07)', boxShadow: fields[i] ? `0 0 6px ${completionGlow}` : 'none' }} />
                 ))}
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-[9px] text-white/22">Profile strength</span>
-                <span className="text-[9px] font-black transition-all duration-500" style={{ color: completionColor }}>{completion}%</span>
-              </div>
+              <p className="text-[8px] text-white/25 font-medium">Profile strength · {completion}% complete</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Bottom trust */}
-      <div style={{ animation: 'obFadeIn 0.6s 0.4s both', opacity: 0 }}
-        className="flex items-center gap-4 rounded-[14px] border border-white/[0.05] bg-white/[0.015] px-4 py-3">
-        {[['SOC 2','Certified'],['GDPR','Compliant'],['256-bit','Encrypted']].map(([v,l]) => (
-          <div key={l} className="flex-1 text-center">
-            <p className="text-[11px] font-black text-white/45">{v}</p>
-            <p className="text-[8.5px] text-white/20 mt-0.5">{l}</p>
+      {/* ── Everything inside Docrud ── */}
+      <div className="flex flex-1 flex-col min-h-0" style={{ animation: 'obSlideUp 0.55s 0.22s both' }}>
+        {/* Section header */}
+        <div className="mb-3 flex items-center gap-2.5">
+          <div className="h-px flex-1" style={{ background: 'linear-gradient(to right, transparent, rgba(255,255,255,0.10))' }} />
+          <div className="flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1">
+            <Sparkles className="h-2.5 w-2.5 text-white/35" />
+            <span className="text-[9px] font-bold uppercase tracking-[0.25em] text-white/40">Everything inside Docrud</span>
           </div>
-        ))}
+          <div className="h-px flex-1" style={{ background: 'linear-gradient(to left, transparent, rgba(255,255,255,0.10))' }} />
+        </div>
+
+        <DocrudFeatureGrid staggerBase={0.22} />
+
+        <p className="mt-2.5 text-center text-[8px] font-medium text-white/22 tracking-wide">
+          Smart Forms · Portfolio · Resume ATS · Collaboration · and more
+        </p>
       </div>
     </div>
   );
@@ -1552,14 +1609,20 @@ function LeftPanelSwitch({ screen, headline, bio, sName, sEmail, avatarUrl, bann
 /* ═══════════════════════════════════════════════════════════════
    PAGE
 ═══════════════════════════════════════════════════════════════ */
-export default function OnboardingPage() {
-  const { data: session, status } = useSession();
+function OnboardingPageInner() {
+  const { data: session, status, update: updateSession } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const skipSplash = searchParams?.get('start') === 'signup';
+  const incomingRef = searchParams?.get('ref') ?? '';
   const [screen, setScreen] = useState(skipSplash ? SIGNUP_SCR : 0);
   const [showSplash, setShowSplash] = useState(!skipSplash);
+
+  // Referral state
+  const [referralCode, setReferralCode] = useState(incomingRef);
+  const [referrer, setReferrer] = useState<{ name: string; headline?: string | null; avatarUrl?: string | null } | null>(null);
+  const [referrerLoading, setReferrerLoading] = useState(!!incomingRef);
 
   const [sName,    setSName]    = useState('');
   const [sEmail,   setSEmail]   = useState('');
@@ -1586,6 +1649,7 @@ export default function OnboardingPage() {
   const [otpError,  setOtpError]  = useState('');
   const [otpOk,     setOtpOk]     = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const otpVerifiedRef            = useRef(false); // ref so closures always see current value
 
   const [avatarUrl,       setAvatarUrl]       = useState('');
   const [bannerUrl,       setBannerUrl]       = useState('');
@@ -1594,6 +1658,12 @@ export default function OnboardingPage() {
   const [bannerUrlInput,  setBannerUrlInput]  = useState('');
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [bannerUploading, setBannerUploading] = useState(false);
+  const [resumeParsing,     setResumeParsing]     = useState(false);
+  const [resumeParseErr,    setResumeParseErr]    = useState('');
+  const [resumeFilled,      setResumeFilled]      = useState(false);
+  const [resumeFilledFields, setResumeFilledFields] = useState<Set<string>>(new Set());
+  const [profileLoaded,     setProfileLoaded]     = useState(false);
+  const resumeFileRef = useRef<HTMLInputElement>(null);
 
   async function uploadImage(file: File, type: 'avatar' | 'banner'): Promise<string | null> {
     const fd = new FormData();
@@ -1613,7 +1683,6 @@ export default function OnboardingPage() {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    /* Show a local preview immediately, then replace with permanent URL */
     const preview = URL.createObjectURL(file);
     setAvatarUrl(preview);
     setAvatarUrlInput('');
@@ -1625,6 +1694,8 @@ export default function OnboardingPage() {
     if (permanent) {
       setAvatarUrl(permanent);
       URL.revokeObjectURL(preview);
+      /* Persist immediately so user doesn't need to re-upload after onboarding */
+      void fetch('/api/profile/me', { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ avatarUrl: permanent }) });
     }
   }
 
@@ -1643,7 +1714,109 @@ export default function OnboardingPage() {
     if (permanent) {
       setBannerUrl(permanent);
       URL.revokeObjectURL(preview);
+      void fetch('/api/profile/me', { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ bannerUrl: permanent }) });
     }
+  }
+
+  async function handleResumeFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setResumeParsing(true);
+    setResumeParseErr('');
+    setResumeFilled(false);
+    setResumeFilledFields(new Set());
+    try {
+      const fd = new FormData();
+      fd.append('resume', file);
+      const res = await fetch('/api/onboarding/parse-resume', { method: 'POST', body: fd });
+      const data = await res.json() as {
+        headline?: string | null; bio?: string | null; location?: string | null;
+        website?: string | null; skills?: string[]; error?: string;
+        experience?: Array<{ title: string; company: string; period: string; desc?: string }>;
+        education?: Array<{ degree: string; school: string; year?: string }>;
+      };
+      if (!res.ok) { setResumeParseErr(data.error ?? 'Parse failed.'); return; }
+
+      const filled = new Set<string>();
+      const patch: Record<string, unknown> = {};
+
+      if (data.headline) {
+        setHeadline(data.headline.slice(0, 100));
+        patch.headline = data.headline.slice(0, 100);
+        filled.add('headline');
+      }
+      if (data.bio) {
+        setBio(data.bio.slice(0, 500));
+        patch.bio = data.bio.slice(0, 500);
+        filled.add('bio');
+      }
+      if (data.location) {
+        setLocation(data.location);
+        patch.location = data.location;
+        filled.add('location');
+      }
+      if (data.website) {
+        setWebsite(data.website);
+        patch.website = data.website;
+        filled.add('website');
+      }
+      if (data.skills?.length) {
+        setSkills(prev => {
+          const seen = new Set(prev);
+          const merged = [...prev, ...data.skills!.filter((s: string) => !seen.has(s))];
+          return merged.slice(0, 20);
+        });
+        filled.add('skills');
+      }
+      if (data.experience?.length) {
+        setExperience(data.experience);
+        filled.add('experience');
+      }
+      if (data.education?.length) {
+        setEducation(data.education);
+        filled.add('education');
+      }
+
+      setResumeFilledFields(filled);
+      setResumeFilled(true);
+
+      // Persist immediately so data survives a page refresh
+      if (Object.keys(patch).length > 0) {
+        void fetch('/api/profile/me', {
+          method: 'PATCH',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(patch),
+        });
+      }
+    } catch { setResumeParseErr('Something went wrong — try again.'); }
+    finally { setResumeParsing(false); }
+  }
+
+  async function handleProfileContinue() {
+    const [resolvedAvatar, resolvedBanner] = await Promise.all([
+      pendingAvatarUploadRef.current,
+      pendingBannerUploadRef.current,
+    ]);
+    const finalAvatarUrl = resolvedAvatar ?? (avatarUrl.startsWith('blob:') ? '' : avatarUrl);
+    const finalBannerUrl = resolvedBanner ?? (bannerUrl.startsWith('blob:') ? '' : bannerUrl);
+    void fetch('/api/profile/me', {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        headline:    headline   || undefined,
+        bio:         bio        || undefined,
+        location:    location   || undefined,
+        website:     website    || undefined,
+        openToWork,
+        skills:      skills.length ? skills : undefined,
+        experience:  experience.length ? experience : undefined,
+        education:   education.length  ? education  : undefined,
+        avatarUrl:   finalAvatarUrl || undefined,
+        bannerUrl:   finalBannerUrl || undefined,
+      }),
+    });
+    next();
   }
 
   function applyAvatarUrlInput(val: string) {
@@ -1663,8 +1836,16 @@ export default function OnboardingPage() {
   const [skills,     setSkills]     = useState<string[]>([]);
   const [skillInput, setSkillInput] = useState('');
   const [interests,  setInterests]  = useState<string[]>([]);
+  const [experience, setExperience] = useState<Array<{ title: string; company: string; period: string; desc?: string }>>([]);
+  const [education,  setEducation]  = useState<Array<{ degree: string; school: string; year?: string }>>([]);
 
-  const [suggestions, setSuggestions] = useState<Array<{ id:string; name:string; profile:{ headline?:string; avatarUrl?:string } }>>([]);
+  const [suggestions, setSuggestions] = useState<Array<{
+    id: string; name: string; accountType?: string; docrudGo?: boolean;
+    skillOverlap?: number; matchedSkills?: string[];
+    profile: { headline?: string; avatarUrl?: string; bannerUrl?: string; location?: string; skills?: string[]; openToWork?: boolean };
+    stats?: { followers: number; gigsCount: number };
+    upraiseCount?: number;
+  }>>([]);
   const [followed,    setFollowed]    = useState<string[]>([]);
   const [completing,  setCompleting]  = useState(false);
 
@@ -1690,14 +1871,37 @@ export default function OnboardingPage() {
     if (status === 'loading') return;
     if (status === 'authenticated') {
       if (hasSignedUpInSession.current) return;
+      // If the user is an individual with an unverified email, keep them on the
+      // onboarding page and jump to the OTP step so they can verify.
+      if (session?.user?.accountType === 'individual' && session?.user?.emailVerified === false) {
+        setScreen(OTP_SCR);
+        return;
+      }
       router.replace('/');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status]);
+  }, [status, session?.user?.emailVerified]);
+
+  // Fetch referrer info when a ref code is in the URL
+  useEffect(() => {
+    if (!incomingRef) return;
+    setReferrerLoading(true);
+    fetch(`/api/public/referrer?code=${encodeURIComponent(incomingRef)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then((d: { name?: string; headline?: string | null; avatarUrl?: string | null } | null) => {
+        if (d?.name) setReferrer({ name: d.name, headline: d.headline, avatarUrl: d.avatarUrl });
+      })
+      .catch(() => {})
+      .finally(() => setReferrerLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (screen !== PEOPLE_SCR) return;
-    fetch('/api/onboarding/suggest-people')
+    const qs = new URLSearchParams();
+    if (skills.length)    qs.set('skills',    skills.join(','));
+    if (interests.length) qs.set('interests', interests.join(','));
+    fetch(`/api/onboarding/suggest-people?${qs}`)
       .then(r => r.json())
       .then((d: { people?: typeof suggestions }) => { if (Array.isArray(d.people)) setSuggestions(d.people); })
       .catch(() => {});
@@ -1724,6 +1928,37 @@ export default function OnboardingPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [screen]);
 
+  /* Pre-load existing profile data so returning users see their saved info */
+  useEffect(() => {
+    if (status !== 'authenticated' || profileLoaded) return;
+    fetch('/api/profile/me')
+      .then(r => r.json())
+      .then((d: { profile?: {
+        headline?: string; bio?: string; location?: string; website?: string;
+        openToWork?: boolean; avatarUrl?: string; bannerUrl?: string;
+        skills?: string[]; interests?: string[];
+        experience?: Array<{ title: string; company: string; period: string; desc?: string }>;
+        education?: Array<{ degree: string; school: string; year?: string }>;
+      } }) => {
+        const p = d.profile;
+        if (!p) return;
+        if (p.headline)               setHeadline(p.headline);
+        if (p.bio)                    setBio(p.bio);
+        if (p.location)               setLocation(p.location);
+        if (p.website)                setWebsite(p.website);
+        if (p.openToWork !== undefined) setOpenToWork(p.openToWork);
+        if (p.avatarUrl)              { setAvatarUrl(p.avatarUrl); setAvatarUrlInput(p.avatarUrl); }
+        if (p.bannerUrl)              { setBannerUrl(p.bannerUrl); setBannerUrlInput(p.bannerUrl); }
+        if (p.skills?.length)         setSkills(p.skills);
+        if (p.interests?.length)      setInterests(p.interests);
+        if (p.experience?.length)     setExperience(p.experience);
+        if (p.education?.length)      setEducation(p.education);
+      })
+      .catch(() => {})
+      .finally(() => setProfileLoaded(true));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, profileLoaded]);
+
   /* Load Razorpay checkout script once */
   useEffect(() => {
     const existing = document.getElementById('rzp-script');
@@ -1735,15 +1970,24 @@ export default function OnboardingPage() {
     document.head.appendChild(script);
   }, []);
 
-  const next = useCallback(() => setScreen(s => Math.min(s + 1, TOTAL_SCR - 1)), []);
+  const next = useCallback(() => setScreen(s => {
+    // Hard gate: OTP screen cannot be skipped without verified email
+    if (s === OTP_SCR && !otpVerifiedRef.current) return s;
+    return Math.min(s + 1, TOTAL_SCR - 1);
+  }), []);
   const skip  = () => router.push('/login');
 
   async function sendOtp() {
     setOtpError('');
     try {
-      await fetch('/api/onboarding/send-otp', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ email: session?.user?.email ?? sEmail }) });
-      setOtpSent(true);
-    } catch { /* silent */ }
+      const res = await fetch('/api/onboarding/send-otp', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ email: sEmail || session?.user?.email }) });
+      if (res.ok) {
+        setOtpSent(true);
+      } else {
+        const d = await res.json().catch(() => ({})) as { error?: string };
+        setOtpError(d.error ?? 'Failed to send verification code. Please try again.');
+      }
+    } catch { setOtpError('Network error. Please check your connection and try again.'); }
   }
 
   async function verifyOtp() {
@@ -1751,7 +1995,14 @@ export default function OnboardingPage() {
     try {
       const res = await fetch('/api/onboarding/verify-otp', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ otp: otpDigits.join('') }) });
       const d = await res.json() as { verified?: boolean; error?: string };
-      if (d.verified) { setOtpOk(true); setTimeout(next, 900); }
+      if (d.verified) {
+        otpVerifiedRef.current = true; // set ref synchronously so next() gate passes
+        setOtpOk(true);
+        // Refresh the JWT so it picks up emailVerified: true from the profile.
+        // This ensures the middleware lets the user through after onboarding completes.
+        void updateSession();
+        setTimeout(next, 900);
+      }
       else setOtpError(d.error ?? 'Invalid code. Please try again.');
     } catch { setOtpError('Something went wrong.'); }
     finally { setVerifying(false); }
@@ -1769,7 +2020,7 @@ export default function OnboardingPage() {
   async function handleSignup() {
     setSLoading(true); setSError('');
     try {
-      const res = await fetch('/api/individual/signup', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ name:sName.trim(), email:sEmail.trim(), password:sPass, policyAccepted:true }) });
+      const res = await fetch('/api/individual/signup', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ name:sName.trim(), email:sEmail.trim(), password:sPass, policyAccepted:true, referralCode: referralCode || undefined }) });
       const d = await res.json() as { error?: string };
       if (!res.ok) { setSError(d.error ?? 'Signup failed.'); return; }
       const si = await signIn('credentials', { email:sEmail.trim(), password:sPass, policyAccepted:'accepted', redirect:false });
@@ -1792,7 +2043,7 @@ export default function OnboardingPage() {
       const finalBannerUrl = resolvedBanner ?? (bannerUrl.startsWith('blob:') ? '' : bannerUrl);
       await Promise.all([
         ...followed.map(id => fetch('/api/profile/follow', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ targetUserId:id, action:'follow' }) })),
-        fetch('/api/onboarding/complete', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ profile:{ headline, bio, location, website, avatarUrl: finalAvatarUrl, bannerUrl: finalBannerUrl, openToWork, skills, interests, onboardingDone:true, profileSetupDone:true } }) }),
+        fetch('/api/onboarding/complete', { method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ profile:{ headline, bio, location, website, avatarUrl: finalAvatarUrl, bannerUrl: finalBannerUrl, openToWork, skills, interests, experience, education, onboardingDone:true, profileSetupDone:true } }) }),
       ]);
       setScreen(DONE_SCR);
     } catch { setScreen(DONE_SCR); }
@@ -1881,12 +2132,6 @@ export default function OnboardingPage() {
             </button>
           </div>
 
-          {/* Trust badges */}
-          <div className="flex flex-wrap items-center gap-1.5" style={{ animation: 'obFadeIn 0.5s 0.3s both' }}>
-            {['SOC 2','GDPR','E2E Encrypted','99.9% SLA'].map(b => (
-              <span key={b} className="rounded-full border border-white/[0.06] bg-white/[0.02] px-2 py-0.5 text-[9px] font-medium text-white/25">{b}</span>
-            ))}
-          </div>
         </div>
       );
 
@@ -2053,36 +2298,99 @@ export default function OnboardingPage() {
       case SIGNUP_SCR: return (
         <div className="flex flex-col gap-5">
 
-          {/* Mobile logo */}
+          {/* Mobile header: logo only */}
           <div className="flex lg:hidden items-center gap-2" style={{ animation: 'obFadeIn 0.35s both' }}>
-            <div className="flex h-7 w-7 items-center justify-center rounded-[9px] border border-white/[0.12] bg-white/[0.06]">
-              <svg viewBox="0 0 32 32" className="h-3.5 w-3.5" fill="none" stroke="white" strokeWidth="1.8">
+            <div className="flex h-8 w-8 items-center justify-center rounded-[10px] border border-white/[0.10] bg-white/[0.04]">
+              <svg viewBox="0 0 32 32" className="h-3.5 w-3.5" fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth="1.8">
                 <path d="M6 4h12l8 8v16H6V4z" /><path d="M18 4v8h8" /><path d="M10 16h12M10 20h8" />
               </svg>
             </div>
-            <span className="text-[14px] font-black text-white">Docrud</span>
+            <span className="text-[13.5px] font-black tracking-[-0.02em] text-white/80">Docrud</span>
           </div>
 
           {/* Heading */}
           <div style={{ animation: 'obSlideUp 0.45s 0.05s both', opacity: 0 }}>
-            <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-white/[0.07] bg-white/[0.03] px-3 py-1">
-              <div className="h-1.5 w-1.5 rounded-full" style={{ background: '#34d399', animation: 'obPulse 2s infinite' }} />
-              <span className="text-[9.5px] font-semibold uppercase tracking-[0.26em] text-white/30">Free · No credit card</span>
-            </div>
-            <h2 className="text-[1.5rem] sm:text-[1.75rem] font-black tracking-[-0.04em] text-white leading-[1.1]">
+            <h2 className="text-[1.75rem] sm:text-[2rem] font-black tracking-[-0.045em] text-white leading-[1.05]">
               Create your profile.
             </h2>
-            <p className="mt-1 text-[12px] text-white/35">Join 3,400+ professionals. Takes 30 seconds.</p>
+            <p className="mt-2 text-[12px] sm:text-[12.5px] text-white/32 leading-[1.65]">
+              Join 3,400+ professionals. Takes 30 seconds.
+            </p>
           </div>
 
+          {/* ── Referrer banner — shown when visiting via referral link ── */}
+          {(referralCode && (referrerLoading || referrer)) && (
+            <div style={{ animation: 'obSlideUp 0.45s 0.08s both', opacity: 0 }}>
+              {referrerLoading ? (
+                <div className="flex items-center gap-3 rounded-[16px] border border-white/[0.07] bg-white/[0.03] px-4 py-3 animate-pulse">
+                  <div className="h-9 w-9 rounded-full bg-white/[0.07] shrink-0" />
+                  <div className="space-y-1.5 flex-1">
+                    <div className="h-2.5 w-28 rounded-full bg-white/[0.07]" />
+                    <div className="h-2 w-44 rounded-full bg-white/[0.05]" />
+                  </div>
+                </div>
+              ) : referrer && (
+                <div className="relative overflow-hidden rounded-[16px]"
+                  style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.12) 0%,rgba(139,92,246,0.08) 50%,rgba(99,102,241,0.06) 100%)', border: '1px solid rgba(99,102,241,0.22)', boxShadow: '0 4px 20px rgba(99,102,241,0.12)' }}>
+                  {/* Shimmer sweep */}
+                  <div className="pointer-events-none absolute inset-0 opacity-40"
+                    style={{ background: 'linear-gradient(105deg,transparent 35%,rgba(255,255,255,0.06) 50%,transparent 65%)', animation: 'obShimmer 4s ease-in-out infinite' }} />
+                  <div className="relative flex items-center gap-3 px-4 py-3">
+                    {/* Avatar */}
+                    <div className="relative shrink-0">
+                      <div className="h-10 w-10 overflow-hidden rounded-full border-2"
+                        style={{ borderColor: 'rgba(99,102,241,0.35)', boxShadow: '0 0 12px rgba(99,102,241,0.30)' }}>
+                        {referrer.avatarUrl
+                          ? <img src={referrer.avatarUrl} alt={referrer.name} className="h-full w-full object-cover" />
+                          : <div className="flex h-full w-full items-center justify-center text-[12px] font-black text-white/80"
+                              style={{ background: 'linear-gradient(135deg,#4f46e5,#7c3aed)' }}>
+                              {referrer.name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase()}
+                            </div>
+                        }
+                      </div>
+                      {/* Online dot */}
+                      <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-[#050508] bg-emerald-400" />
+                    </div>
+                    {/* Text */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-indigo-400/70">Invited by</span>
+                      </div>
+                      <p className="text-[13px] font-black text-white leading-tight truncate" style={{ letterSpacing: '-0.01em' }}>{referrer.name}</p>
+                      {referrer.headline && (
+                        <p className="text-[10px] text-white/40 truncate mt-0.5">{referrer.headline}</p>
+                      )}
+                    </div>
+                    {/* Gift icon */}
+                    <div className="shrink-0 flex flex-col items-center gap-0.5">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-[10px]"
+                        style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.25)' }}>
+                        <span className="text-[16px]">🎁</span>
+                      </div>
+                      <span className="text-[7.5px] font-bold text-indigo-400/60">Bonus</span>
+                    </div>
+                  </div>
+                  {/* Bottom strip */}
+                  <div className="px-4 pb-2.5 flex items-center gap-1.5">
+                    <div className="h-1 w-1 rounded-full bg-emerald-400" style={{ animation: 'obPulse 2s infinite' }} />
+                    <span className="text-[9px] text-white/30">
+                      You were personally invited — your account is activated instantly.
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Form card */}
-          <div style={{ animation: 'obSlideUp 0.45s 0.12s both', opacity: 0, boxShadow: '0 0 0 1px rgba(255,255,255,0.03), 0 24px 64px rgba(0,0,0,0.45)' }}
-            className="overflow-hidden rounded-[20px] border border-white/[0.07] bg-white/[0.03] backdrop-blur-sm">
-            <div className="p-4 sm:p-5 space-y-3">
+          <div className="overflow-hidden rounded-[22px] border border-white/[0.08] backdrop-blur-sm"
+            style={{ animation: 'obSlideUp 0.45s 0.12s both', opacity: 0, background: 'linear-gradient(160deg,rgba(255,255,255,0.03) 0%,rgba(255,255,255,0.012) 100%)', boxShadow: '0 1px 0 rgba(255,255,255,0.05) inset, 0 0 0 1px rgba(255,255,255,0.025), 0 32px 80px rgba(0,0,0,0.55)' }}>
+
+            <div className="p-4 sm:p-5 space-y-3.5">
 
               {/* Full name */}
-              <div className="space-y-1">
-                <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/28">Full name</label>
+              <div className="space-y-1.5">
+                <label className="block text-[9.5px] font-bold uppercase tracking-[0.22em] text-white/28">Full name</label>
                 <div className="relative">
                   <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-white/20">
                     <Users className="h-3.5 w-3.5" />
@@ -2093,8 +2401,8 @@ export default function OnboardingPage() {
               </div>
 
               {/* Email */}
-              <div className="space-y-1">
-                <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/28">Email address</label>
+              <div className="space-y-1.5">
+                <label className="block text-[9.5px] font-bold uppercase tracking-[0.22em] text-white/28">Email address</label>
                 <div className="relative">
                   <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-white/20">
                     <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8"><path strokeLinecap="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
@@ -2105,8 +2413,8 @@ export default function OnboardingPage() {
               </div>
 
               {/* Password */}
-              <div className="space-y-1">
-                <label className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/28">Password</label>
+              <div className="space-y-1.5">
+                <label className="block text-[9.5px] font-bold uppercase tracking-[0.22em] text-white/28">Password</label>
                 <div className="relative">
                   <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-white/20">
                     <LockKeyhole className="h-3.5 w-3.5" />
@@ -2119,16 +2427,15 @@ export default function OnboardingPage() {
                     {showPass ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                   </button>
                 </div>
-                {/* Password strength */}
                 {sPass.length > 0 && (
                   <div className="flex items-center gap-2 pt-0.5">
                     <div className="flex flex-1 gap-1">
                       {[1,2,3,4].map(i => (
-                        <div key={i} className="h-1 flex-1 rounded-full transition-all duration-300"
+                        <div key={i} className="h-[3px] flex-1 rounded-full transition-all duration-300"
                           style={{ background: sPass.length >= i * 2 + 2 ? (sPass.length >= 10 ? '#34d399' : '#fbbf24') : 'rgba(255,255,255,0.07)' }} />
                       ))}
                     </div>
-                    <span className="text-[9.5px] text-white/28">
+                    <span className="text-[9px] font-semibold text-white/28">
                       {sPass.length < 6 ? 'Weak' : sPass.length < 10 ? 'Fair' : 'Strong'}
                     </span>
                   </div>
@@ -2136,36 +2443,50 @@ export default function OnboardingPage() {
               </div>
             </div>
 
+            {/* Hairline divider */}
+            <div className="mx-4 sm:mx-5 h-px bg-gradient-to-r from-transparent via-white/[0.07] to-transparent" />
+
             {/* Error */}
             {sError && (
-              <div className="mx-4 mb-4 flex items-start gap-2 rounded-[10px] border border-rose-500/20 bg-rose-500/[0.06] px-3 py-2.5 text-[12px] text-rose-300/75">
+              <div className="mx-4 sm:mx-5 mt-3.5 flex items-start gap-2 rounded-[10px] border border-rose-500/20 bg-rose-500/[0.06] px-3 py-2.5 text-[12px] text-rose-300/75">
                 <span className="mt-0.5 shrink-0">✕</span>{sError}
               </div>
             )}
 
             {/* CTA */}
-            <div className="border-t border-white/[0.04] px-4 pb-4 pt-3 sm:px-5 sm:pb-5">
+            <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-4 space-y-2.5">
               <button onClick={() => void handleSignup()}
                 disabled={sLoading || !sName.trim() || !sEmail.trim() || sPass.length < 8}
-                className={`h-10 sm:h-11 w-full ${WHITE_BTN} disabled:opacity-35`} style={WHITE_BTN_SHADOW}>
+                className={`h-11 w-full ${WHITE_BTN} disabled:opacity-28 text-[13.5px]`}
+                style={{ ...WHITE_BTN_SHADOW, boxShadow: '0 4px 28px rgba(255,255,255,0.13), 0 1px 0 rgba(255,255,255,0.9) inset' }}>
                 {sLoading
                   ? <div className="h-4 w-4 rounded-full border-2 border-[#050508]/25 border-t-[#050508] animate-spin" />
                   : <><span>Create profile</span><ArrowRight className="h-3.5 w-3.5" /></>}
               </button>
-              <p className="mt-2.5 text-center text-[10px] text-white/18">
+              <p className="text-center text-[10px] text-white/18">
                 By continuing you agree to our{' '}
-                <span className="text-white/35 underline underline-offset-2 cursor-pointer">Terms</span>
+                <span className="text-white/38 underline underline-offset-2 cursor-pointer hover:text-white/60 transition-colors">Terms</span>
                 {' '}&amp;{' '}
-                <span className="text-white/35 underline underline-offset-2 cursor-pointer">Privacy Policy</span>.
+                <span className="text-white/38 underline underline-offset-2 cursor-pointer hover:text-white/60 transition-colors">Privacy Policy</span>.
               </p>
             </div>
           </div>
 
-          {/* Sign in link */}
-          <p style={{ animation: 'obFadeIn 0.4s 0.4s both', opacity: 0 }}
+          {/* Recently joined slider — mobile only */}
+          <div className="lg:hidden" style={{ animation: 'obFadeIn 0.4s 0.5s both', opacity: 0 }}>
+            <div className="mb-2 flex items-center gap-2">
+              <div className="h-1.5 w-1.5 rounded-full bg-emerald-400/60" style={{ animation: 'obPulse 2s ease-in-out infinite' }} />
+              <span className="text-[8px] font-bold uppercase tracking-[0.26em] text-white/20">Recently joined</span>
+              <span className="ml-auto rounded-full border border-white/[0.05] bg-white/[0.02] px-2 py-px text-[7.5px] font-bold text-white/18">Live</span>
+            </div>
+            <ProfileSlider speed={42} compact />
+          </div>
+
+          {/* Sign in */}
+          <p style={{ animation: 'obFadeIn 0.4s 0.6s both', opacity: 0 }}
             className="text-center text-[12px] text-white/28">
             Already have an account?{' '}
-            <button onClick={skip} className="font-semibold text-white/55 hover:text-white transition-colors">
+            <button onClick={skip} className="font-semibold text-white/55 hover:text-white/90 transition-colors">
               Sign in →
             </button>
           </p>
@@ -2175,34 +2496,46 @@ export default function OnboardingPage() {
       /* ── 5  OTP ── */
       case OTP_SCR: return (
         <div className="flex flex-col gap-5">
+
+          {/* Mobile verify badge — hidden on desktop */}
+          <div className="lg:hidden flex items-center justify-between" style={{ animation: 'obFadeIn 0.3s both', opacity: 0 }}>
+            <div className="flex h-7 w-7 items-center justify-center rounded-[9px] bg-white/[0.08]">
+              <LockKeyhole className="h-3.5 w-3.5 text-white/55" />
+            </div>
+            <div className="flex items-center gap-1.5 rounded-full border border-blue-400/20 bg-blue-400/[0.05] px-2.5 py-1">
+              <div className="h-1.5 w-1.5 rounded-full bg-blue-400/80" style={{ animation: 'obPulse 2s infinite' }} />
+              <span className="text-[8.5px] font-bold uppercase tracking-[0.22em] text-blue-300/50">Verify email</span>
+            </div>
+          </div>
+
           {/* Heading */}
           <div style={{ animation: 'obSlideUp 0.45s 0.05s both', opacity: 0 }}>
-            <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-white/[0.07] bg-white/[0.03] px-3 py-1">
-              <div className="h-1.5 w-1.5 rounded-full bg-blue-400" style={{ animation: 'obPulse 2s infinite' }} />
-              <span className="text-[9.5px] font-semibold uppercase tracking-[0.26em] text-white/30">Step 2 of 5 — Verify</span>
-            </div>
-            <h2 className="text-[1.5rem] sm:text-[1.75rem] font-black tracking-[-0.04em] text-white leading-[1.1]">
+            <h2 className="text-[1.75rem] sm:text-[2rem] font-black tracking-[-0.045em] text-white leading-[1.05]">
               Check your email.
             </h2>
-            <p className="mt-1 text-[12px] text-white/35">
-              6-digit code sent to{' '}
-              <span className="font-semibold text-white/60">{session?.user?.email ?? sEmail}</span>
+            <p className="mt-2 text-[12.5px] text-white/30 leading-relaxed">
+              We sent a 6-digit code to{' '}
+              <span className="font-semibold text-white/55">{session?.user?.email ?? sEmail}</span>
             </p>
           </div>
 
           {/* OTP input card */}
-          <div style={{ animation: 'obSlideUp 0.45s 0.12s both', opacity: 0, boxShadow: '0 0 0 1px rgba(255,255,255,0.03), 0 24px 64px rgba(0,0,0,0.45)' }}
-            className="overflow-hidden rounded-[20px] border border-white/[0.07] bg-white/[0.03] backdrop-blur-sm">
-            <div className="p-5">
-              <div className="mb-4 flex items-center justify-between">
-                <p className="text-[10.5px] font-bold uppercase tracking-[0.20em] text-white/28">Verification code</p>
-                <span className="text-[10px] text-white/20">
-                  {otpDigits.filter(Boolean).length}/6
+          <div style={{ animation: 'obSlideUp 0.45s 0.12s both', opacity: 0, background: 'linear-gradient(160deg,rgba(255,255,255,0.035) 0%,rgba(255,255,255,0.015) 100%)', boxShadow: '0 0 0 1px rgba(255,255,255,0.04), 0 32px 80px rgba(0,0,0,0.5)' }}
+            className="overflow-hidden rounded-[22px] border border-white/[0.06] backdrop-blur-sm">
+
+            <div className="p-5 sm:p-6">
+              <div className="mb-5 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-1.5 w-1.5 rounded-full bg-blue-400/65" style={{ animation: 'obPulse 2.5s ease-in-out infinite' }} />
+                  <p className="text-[9.5px] font-bold uppercase tracking-[0.22em] text-white/22">Verification code</p>
+                </div>
+                <span className="rounded-full border border-white/[0.06] bg-white/[0.025] px-2 py-0.5 text-[9px] font-bold text-white/20">
+                  {otpDigits.filter(Boolean).length} / 6
                 </span>
               </div>
 
-              {/* 6 boxes in a strict grid so they never wrap */}
-              <div className="grid grid-cols-6 gap-2">
+              {/* 6 boxes */}
+              <div className="grid grid-cols-6 gap-2 sm:gap-2.5">
                 {otpDigits.map((d, i) => (
                   <input
                     key={i}
@@ -2212,39 +2545,39 @@ export default function OnboardingPage() {
                     onChange={e => handleOtpChange(i, e.target.value)}
                     onKeyDown={e => handleOtpKey(i, e)}
                     style={{
-                      background: d ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)',
-                      borderColor: d ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.08)',
+                      background: d ? 'rgba(255,255,255,0.09)' : 'rgba(255,255,255,0.04)',
+                      borderColor: d ? 'rgba(255,255,255,0.24)' : 'rgba(255,255,255,0.07)',
                     }}
-                    className="h-12 w-full min-w-0 rounded-[11px] border text-center text-[1.1rem] font-black text-white outline-none transition-all duration-150 focus:border-white/[0.35] focus:bg-white/[0.10] focus:shadow-[0_0_0_3px_rgba(255,255,255,0.06)]"
+                    className="h-12 sm:h-[52px] w-full min-w-0 rounded-[12px] border text-center text-[1.2rem] font-black text-white outline-none transition-all duration-150 focus:border-white/[0.30] focus:bg-white/[0.09] focus:shadow-[0_0_0_3px_rgba(255,255,255,0.05)]"
                   />
                 ))}
               </div>
 
-              {/* Progress dots */}
-              <div className="mt-3 flex justify-center gap-1">
-                {otpDigits.map((d, i) => (
-                  <div key={i} className="h-1 w-1 rounded-full transition-all duration-200"
-                    style={{ background: d ? 'rgba(255,255,255,0.60)' : 'rgba(255,255,255,0.12)' }} />
-                ))}
+              {/* Progress track */}
+              <div className="mt-4 h-[2px] w-full overflow-hidden rounded-full bg-white/[0.06]">
+                <div className="h-full rounded-full bg-white/45 transition-all duration-300"
+                  style={{ width: `${(otpDigits.filter(Boolean).length / 6) * 100}%` }} />
               </div>
 
               {otpError && (
-                <p className="mt-3 text-center text-[12px] text-rose-300/65"
-                  style={{ animation: 'obScaleIn 0.2s ease both' }}>
-                  {otpError}
+                <p className="mt-3 text-[11.5px] text-rose-300/65" style={{ animation: 'obScaleIn 0.2s ease both' }}>
+                  <span className="mr-1 text-rose-400/55">✕</span>{otpError}
                 </p>
               )}
               {otpOk && (
-                <div className="mt-3 flex items-center justify-center gap-2 rounded-[11px] border border-emerald-500/20 bg-emerald-500/[0.06] py-2.5 text-[12.5px] font-semibold text-emerald-400"
+                <div className="mt-3.5 flex items-center justify-center gap-2 rounded-[12px] border border-emerald-500/20 bg-emerald-500/[0.05] py-2.5 text-[12.5px] font-semibold text-emerald-400/90"
                   style={{ animation: 'obScaleIn 0.3s ease both' }}>
-                  <CheckCircle2 className="h-4 w-4" /> Email verified!
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Email verified!
                 </div>
               )}
             </div>
 
-            <div className="border-t border-white/[0.04] px-5 pb-5 pt-3.5">
+            {/* Hairline + CTA */}
+            <div className="mx-5 sm:mx-6 h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
+            <div className="px-5 sm:px-6 pb-5 sm:pb-6 pt-4">
               <button onClick={() => void verifyOtp()} disabled={otpDigits.join('').length < 6 || verifying || otpOk}
-                className={`h-10 sm:h-11 w-full ${WHITE_BTN} disabled:opacity-35`} style={WHITE_BTN_SHADOW}>
+                className={`h-11 w-full ${WHITE_BTN} disabled:opacity-25 text-[13.5px]`}
+                style={{ boxShadow: '0 4px 28px rgba(255,255,255,0.13), 0 1px 0 rgba(255,255,255,0.9) inset' }}>
                 {verifying
                   ? <div className="h-4 w-4 rounded-full border-2 border-[#050508]/25 border-t-[#050508] animate-spin" />
                   : <><span>Verify &amp; continue</span><ArrowRight className="h-3.5 w-3.5" /></>}
@@ -2252,15 +2585,67 @@ export default function OnboardingPage() {
             </div>
           </div>
 
-          {/* Resend + skip */}
-          <div style={{ animation: 'obFadeIn 0.4s 0.4s both', opacity: 0 }}
-            className="flex items-center justify-between text-[12px] text-white/28">
-            <button onClick={() => void sendOtp()} className="font-medium hover:text-white/55 transition-colors">
+          {/* Security note */}
+          <div style={{ animation: 'obFadeIn 0.4s 0.35s both', opacity: 0 }}
+            className="flex items-center gap-2.5 rounded-[12px] border border-white/[0.04] bg-white/[0.018] px-3.5 py-2.5">
+            <Shield className="h-3.5 w-3.5 shrink-0 text-white/22" />
+            <p className="text-[11px] text-white/28 leading-snug">
+              Code expires in <span className="font-semibold text-white/45">10 minutes</span>. Never share it with anyone.
+            </p>
+          </div>
+
+          {/* Resend */}
+          <div style={{ animation: 'obFadeIn 0.4s 0.45s both', opacity: 0 }}
+            className="text-center text-[11.5px] text-white/25">
+            Didn&apos;t get it?{' '}
+            <button onClick={() => void sendOtp()} className="font-semibold text-white/40 hover:text-white/65 transition-colors">
               Resend code
             </button>
-            <button onClick={next} className="font-medium hover:text-white/55 transition-colors">
-              Skip for now →
-            </button>
+          </div>
+
+          {/* Live activity feed — mobile only */}
+          <div className="lg:hidden" style={{ animation: 'obFadeIn 0.4s 0.55s both', opacity: 0 }}>
+            <style>{`@keyframes feedScrollUp{0%{transform:translateY(0)}100%{transform:translateY(-50%)}}`}</style>
+            <div className="mb-2.5 flex items-center gap-2">
+              <div className="h-1.5 w-1.5 rounded-full bg-emerald-400/60" style={{ animation: 'obPulse 2s ease-in-out infinite' }} />
+              <span className="text-[8px] font-bold uppercase tracking-[0.3em] text-white/20">Live activity</span>
+              <div className="h-px flex-1 bg-white/[0.05]" />
+              <span className="rounded-full border border-white/[0.05] bg-white/[0.015] px-2 py-px text-[7px] font-bold text-white/15">Real-time</span>
+            </div>
+            <div className="relative overflow-hidden rounded-[16px] border border-white/[0.06] bg-white/[0.012]"
+              style={{
+                height: 168,
+                maskImage: 'linear-gradient(to bottom,transparent,black 12%,black 88%,transparent)',
+                WebkitMaskImage: 'linear-gradient(to bottom,transparent,black 12%,black 88%,transparent)',
+              }}>
+              <div style={{ animation: 'feedScrollUp 22s linear infinite', display: 'flex', flexDirection: 'column' }}>
+                {[...OTP_FEED, ...OTP_FEED].map((item, i) => (
+                  <div key={i} style={{ padding: '9px 12px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', gap: 9, flexShrink: 0 }}>
+                    <img
+                      src={item.avatar}
+                      alt={item.user}
+                      style={{ flexShrink: 0, width: 28, height: 28, borderRadius: 8, objectFit: 'cover', border: '1px solid rgba(255,255,255,0.10)' }}
+                    />
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <p style={{ fontSize: 10, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <span style={{ fontWeight: 800, color: 'rgba(255,255,255,0.68)' }}>{item.user}</span>
+                        <span style={{ fontWeight: 500, color: 'rgba(255,255,255,0.28)', marginLeft: 4 }}>{item.action}</span>
+                      </p>
+                      <p style={{ fontSize: 8.5, color: 'rgba(255,255,255,0.22)', margin: 0, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {item.subject}
+                      </p>
+                    </div>
+                    <div style={{ flexShrink: 0, textAlign: 'right' }}>
+                      <span style={{
+                        display: 'block', fontSize: 6.5, fontWeight: 700, borderRadius: 99, padding: '2px 6px', marginBottom: 2,
+                        color: item.color, background: `${item.color}18`, border: `1px solid ${item.color}28`,
+                      }}>{item.tag}</span>
+                      <span style={{ fontSize: 6.5, color: 'rgba(255,255,255,0.16)' }}>{item.time}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       );
@@ -2271,51 +2656,100 @@ export default function OnboardingPage() {
 
           {/* Heading */}
           <div style={{ animation: 'obSlideUp 0.45s 0.05s both', opacity: 0 }}>
-            <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-white/[0.07] bg-white/[0.03] px-3 py-1">
-              <div className="h-1.5 w-1.5 rounded-full" style={{ background: '#E8CC7A', animation: 'obPulse 2s infinite' }} />
-              <span className="text-[9.5px] font-semibold uppercase tracking-[0.26em] text-white/30">Step 3 of 5 — Profile</span>
-            </div>
-            <h2 className="text-[1.45rem] sm:text-[1.65rem] font-black tracking-[-0.04em] text-white leading-[1.1]">Make it yours.</h2>
-            <p className="mt-1 text-[11.5px] text-white/35">Live preview updates as you type.</p>
+            <h2 className="text-[1.65rem] sm:text-[1.85rem] font-black tracking-[-0.045em] text-white leading-[1.05]">Build your profile.</h2>
+            <p className="mt-1.5 text-[12px] text-white/32">This is what the Docrud community will see.</p>
           </div>
 
-          {/* Banner + Avatar combo card */}
-          <div style={{ animation: 'obSlideUp 0.45s 0.1s both', opacity: 0 }}
-            className="overflow-hidden rounded-[18px] border border-white/[0.07] bg-white/[0.025]">
+          {/* ── Resume import ── */}
+          <div style={{ animation: 'obSlideUp 0.45s 0.08s both', opacity: 0 }}>
+            {resumeFilled
+              ? <div className="rounded-[16px] border border-emerald-500/20 bg-emerald-500/[0.05] px-4 py-3 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400/80" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[12px] font-semibold text-emerald-400/90">Profile filled from resume</p>
+                      <p className="text-[10.5px] text-white/30 mt-0.5">Review and edit below — everything can be changed.</p>
+                    </div>
+                    <button onClick={() => { setResumeFilled(false); setResumeFilledFields(new Set()); }} className="text-[10px] text-white/25 hover:text-white/50 transition-colors shrink-0">
+                      Re-upload
+                    </button>
+                  </div>
+                  {/* Field-level import summary */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {resumeFilledFields.has('headline')   && <span className="rounded-full border border-emerald-500/20 bg-emerald-500/[0.08] px-2 py-0.5 text-[9px] font-semibold text-emerald-400/70">Headline</span>}
+                    {resumeFilledFields.has('bio')        && <span className="rounded-full border border-emerald-500/20 bg-emerald-500/[0.08] px-2 py-0.5 text-[9px] font-semibold text-emerald-400/70">Bio</span>}
+                    {resumeFilledFields.has('location')   && <span className="rounded-full border border-emerald-500/20 bg-emerald-500/[0.08] px-2 py-0.5 text-[9px] font-semibold text-emerald-400/70">Location</span>}
+                    {resumeFilledFields.has('website')    && <span className="rounded-full border border-emerald-500/20 bg-emerald-500/[0.08] px-2 py-0.5 text-[9px] font-semibold text-emerald-400/70">Website</span>}
+                    {resumeFilledFields.has('skills')     && <span className="rounded-full border border-emerald-500/20 bg-emerald-500/[0.08] px-2 py-0.5 text-[9px] font-semibold text-emerald-400/70">{skills.length} Skills</span>}
+                    {resumeFilledFields.has('experience') && <span className="rounded-full border border-emerald-500/20 bg-emerald-500/[0.08] px-2 py-0.5 text-[9px] font-semibold text-emerald-400/70">{experience.length} Roles</span>}
+                    {resumeFilledFields.has('education')  && <span className="rounded-full border border-emerald-500/20 bg-emerald-500/[0.08] px-2 py-0.5 text-[9px] font-semibold text-emerald-400/70">{education.length} Education</span>}
+                  </div>
+                </div>
+              : <button type="button" onClick={() => resumeFileRef.current?.click()} disabled={resumeParsing}
+                  className="group relative w-full overflow-hidden rounded-[16px] border border-white/[0.08] bg-white/[0.025] px-4 py-3.5 text-left transition-all hover:border-white/[0.14] hover:bg-white/[0.04] disabled:opacity-60">
+                  <div className="flex items-center gap-3.5">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] border border-white/[0.08] bg-white/[0.04]">
+                      {resumeParsing
+                        ? <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/20 border-t-white/70" />
+                        : <svg className="h-4 w-4 text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                          </svg>
+                      }
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[12.5px] font-semibold text-white/70">
+                        {resumeParsing ? 'Reading your resume…' : 'Import from resume'}
+                      </p>
+                      <p className="text-[10.5px] text-white/30 mt-0.5">
+                        {resumeParsing ? 'AI + OCR extracting your details…' : 'Upload PDF or Word — we auto-fill your profile'}
+                      </p>
+                    </div>
+                    <span className="shrink-0 rounded-full border border-white/[0.07] bg-white/[0.04] px-2 py-0.5 text-[7.5px] font-bold uppercase tracking-[0.2em] text-white/30">AI</span>
+                  </div>
+                  {resumeParseErr && (
+                    <p className="mt-2.5 text-[10.5px] text-rose-300/65"><span className="mr-1">✕</span>{resumeParseErr}</p>
+                  )}
+                </button>
+            }
+          </div>
 
-            {/* Clickable banner zone */}
+          {/* ── Banner + Avatar ── */}
+          <div style={{ animation: 'obSlideUp 0.45s 0.12s both', opacity: 0, background: 'linear-gradient(160deg,rgba(255,255,255,0.03) 0%,rgba(255,255,255,0.012) 100%)' }}
+            className="overflow-hidden rounded-[20px] border border-white/[0.07]">
+
+            {/* Banner */}
             <button type="button" onClick={() => bannerFileRef.current?.click()}
-              className="group relative flex h-[80px] w-full items-center justify-center overflow-hidden transition-all"
-              style={{ background: bannerUrl ? undefined : 'linear-gradient(135deg,rgba(201,168,76,0.12) 0%,rgba(99,102,241,0.10) 100%)' }}>
+              className="group relative flex h-[88px] w-full items-center justify-center overflow-hidden transition-all"
+              style={{ background: bannerUrl ? undefined : 'linear-gradient(135deg,rgba(201,168,76,0.10) 0%,rgba(99,102,241,0.08) 50%,rgba(14,165,233,0.06) 100%)' }}>
               {bannerUrl && <img src={bannerUrl} alt="" className="absolute inset-0 h-full w-full object-cover" onError={() => setBannerUrl('')} />}
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity" />
               {bannerUploading
-                ? <div className="relative z-10 flex items-center gap-2 rounded-full border border-white/20 bg-black/70 px-3 py-1.5">
+                ? <div className="relative z-10 flex items-center gap-1.5 rounded-full border border-white/20 bg-black/70 px-3 py-1.5">
                     <div className="h-3 w-3 animate-spin rounded-full border-2 border-white/20 border-t-white/70" />
-                    <span className="text-[9.5px] text-white/80">Uploading…</span>
+                    <span className="text-[9.5px] text-white/70">Uploading…</span>
                   </div>
-                : <div className="relative z-10 flex items-center gap-2 rounded-full border border-white/20 bg-black/55 px-3 py-1.5 backdrop-blur-sm opacity-60 group-hover:opacity-100 transition-opacity">
-                    <svg className="h-3 w-3 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                : <div className="relative z-10 flex items-center gap-1.5 rounded-full border border-white/15 bg-black/50 px-3 py-1.5 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                    <svg className="h-3 w-3 text-white/75" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                     </svg>
-                    <span className="text-[9.5px] font-semibold text-white/90">{bannerUrl ? 'Change banner' : 'Upload banner'}</span>
+                    <span className="text-[9.5px] font-semibold text-white/85">{bannerUrl ? 'Change cover' : 'Upload cover'}</span>
                   </div>
               }
             </button>
 
-            {/* Avatar row */}
-            <div className="flex items-end gap-3 px-4 pb-3.5 pt-0" style={{ marginTop: -20 }}>
+            {/* Avatar + name strip */}
+            <div className="flex items-end gap-3 px-4 pb-4" style={{ marginTop: -22 }}>
               <button type="button" onClick={() => avatarFileRef.current?.click()}
-                className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-full border-2 border-[#0d0d10] bg-white/[0.07] flex items-center justify-center text-[14px] font-black text-white/55 transition-all hover:border-white/25">
+                className="group relative h-[52px] w-[52px] shrink-0 overflow-hidden rounded-[14px] border-2 border-[#0d0d12] bg-white/[0.06] flex items-center justify-center text-[15px] font-black text-white/50 transition-all hover:border-white/20">
                 {avatarUrl
                   ? <img src={avatarUrl} alt="" className="absolute inset-0 h-full w-full object-cover" onError={() => setAvatarUrl('')} />
                   : <span>{initials(userName || 'U')}</span>}
                 {avatarUploading
-                  ? <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/70">
+                  ? <div className="absolute inset-0 flex items-center justify-center rounded-[12px] bg-black/70">
                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white/70" />
                     </div>
-                  : <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/55 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <svg className="h-4 w-4 text-white/90" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  : <div className="absolute inset-0 flex items-center justify-center rounded-[12px] bg-black/55 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <svg className="h-3.5 w-3.5 text-white/85" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0118.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
                       </svg>
@@ -2323,94 +2757,97 @@ export default function OnboardingPage() {
                 }
               </button>
               <div className="flex-1 min-w-0 pb-0.5">
-                <p className="text-[12px] font-bold text-white/75 truncate">{userName || 'Your Name'}</p>
-                <p className="text-[10.5px] text-white/30 truncate">{headline || 'Add a headline below'}</p>
-              </div>
-            </div>
-
-            {/* URL fallback row — uses independent input state; applying only on blur or Enter */}
-            <div className="border-t border-white/[0.05] grid grid-cols-2">
-              <div className="px-3 py-2.5 border-r border-white/[0.05]">
-                <label className="mb-1 block text-[8.5px] font-bold uppercase tracking-[0.18em] text-white/22">
-                  Avatar URL {avatarUrl && !avatarUploading && <span className="text-emerald-400/70 normal-case tracking-normal font-semibold">✓ set</span>}
-                </label>
-                <input
-                  value={avatarUrlInput}
-                  onChange={e => setAvatarUrlInput(e.target.value)}
-                  onBlur={e => applyAvatarUrlInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); applyAvatarUrlInput(avatarUrlInput); } }}
-                  placeholder="or paste URL"
-                  className="h-7 w-full rounded-[8px] border border-white/[0.07] bg-white/[0.03] px-2 text-[11px] text-white placeholder:text-white/18 focus:outline-none focus:border-white/[0.18] transition-all" />
-              </div>
-              <div className="px-3 py-2.5">
-                <label className="mb-1 block text-[8.5px] font-bold uppercase tracking-[0.18em] text-white/22">
-                  Banner URL {bannerUrl && !bannerUploading && <span className="text-emerald-400/70 normal-case tracking-normal font-semibold">✓ set</span>}
-                </label>
-                <input
-                  value={bannerUrlInput}
-                  onChange={e => setBannerUrlInput(e.target.value)}
-                  onBlur={e => applyBannerUrlInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); applyBannerUrlInput(bannerUrlInput); } }}
-                  placeholder="or paste URL"
-                  className="h-7 w-full rounded-[8px] border border-white/[0.07] bg-white/[0.03] px-2 text-[11px] text-white placeholder:text-white/18 focus:outline-none focus:border-white/[0.18] transition-all" />
+                <p className="text-[12.5px] font-bold text-white/75 truncate">{userName || 'Your Name'}</p>
+                <p className="text-[10.5px] text-white/28 truncate">{headline || 'Add a headline below'}</p>
               </div>
             </div>
           </div>
 
-          {/* Headline */}
-          <div style={{ animation: 'obSlideUp 0.45s 0.15s both', opacity: 0 }}
-            className="rounded-[18px] border border-white/[0.07] bg-white/[0.025] px-3.5 py-3">
-            <label className="mb-1.5 block text-[9.5px] font-bold uppercase tracking-[0.16em] text-white/25">Headline</label>
-            <input value={headline} onChange={e => setHeadline(e.target.value)}
+          {/* ── Headline ── */}
+          <div style={{ animation: 'obSlideUp 0.45s 0.16s both', opacity: 0 }}
+            className={`rounded-[18px] border px-3.5 py-3 transition-colors duration-500 ${resumeFilledFields.has('headline') ? 'border-emerald-500/25 bg-emerald-500/[0.04]' : 'border-white/[0.07] bg-white/[0.025]'}`}>
+            <div className="mb-1.5 flex items-center justify-between">
+              <label className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/22">Headline</label>
+              {resumeFilledFields.has('headline') && <span className="text-[8.5px] text-emerald-400/60 font-semibold">from resume</span>}
+            </div>
+            <input value={headline} onChange={e => { setHeadline(e.target.value.slice(0, 100)); setResumeFilledFields(p => { const n = new Set(p); n.delete('headline'); return n; }); }}
               placeholder="e.g. Product Designer at Razorpay" className={INP} />
           </div>
 
-          {/* Bio */}
-          <div style={{ animation: 'obSlideUp 0.45s 0.18s both', opacity: 0 }}
-            className="rounded-[18px] border border-white/[0.07] bg-white/[0.025] px-3.5 py-3">
+          {/* ── Bio ── */}
+          <div style={{ animation: 'obSlideUp 0.45s 0.19s both', opacity: 0 }}
+            className={`rounded-[18px] border px-3.5 py-3 transition-colors duration-500 ${resumeFilledFields.has('bio') ? 'border-emerald-500/25 bg-emerald-500/[0.04]' : 'border-white/[0.07] bg-white/[0.025]'}`}>
             <div className="mb-1.5 flex items-center justify-between">
-              <label className="text-[9.5px] font-bold uppercase tracking-[0.16em] text-white/25">Bio</label>
-              <span className="text-[9.5px] text-white/20">{bio.length}/500</span>
+              <label className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/22">Bio</label>
+              <div className="flex items-center gap-2">
+                {resumeFilledFields.has('bio') && <span className="text-[8.5px] text-emerald-400/60 font-semibold">from resume</span>}
+                <span className="text-[9px] text-white/18">{bio.length}/500</span>
+              </div>
             </div>
-            <textarea value={bio} onChange={e => setBio(e.target.value.slice(0, 500))} rows={2}
-              placeholder="A short bio about yourself…"
-              className="w-full rounded-[12px] border border-white/[0.08] bg-white/[0.04] text-white px-3 py-2.5 text-[13px] placeholder:text-white/20 focus:outline-none focus:border-white/[0.22] focus:shadow-[0_0_0_3px_rgba(255,255,255,0.04)] resize-none transition-all duration-200" />
+            <textarea value={bio} onChange={e => { setBio(e.target.value.slice(0, 500)); setResumeFilledFields(p => { const n = new Set(p); n.delete('bio'); return n; }); }} rows={3}
+              placeholder="A short professional bio…"
+              className="w-full rounded-[12px] border border-white/[0.07] bg-white/[0.035] text-white px-3 py-2.5 text-[12.5px] placeholder:text-white/18 focus:outline-none focus:border-white/[0.20] focus:shadow-[0_0_0_3px_rgba(255,255,255,0.04)] resize-none transition-all duration-200" />
           </div>
 
-          {/* Location + Website */}
-          <div style={{ animation: 'obSlideUp 0.45s 0.21s both', opacity: 0 }}
+          {/* ── Location + Website ── */}
+          <div style={{ animation: 'obSlideUp 0.45s 0.22s both', opacity: 0 }}
             className="grid grid-cols-2 gap-2.5">
-            <div className="rounded-[18px] border border-white/[0.07] bg-white/[0.025] px-3.5 py-3">
-              <label className="mb-1.5 block text-[9.5px] font-bold uppercase tracking-[0.16em] text-white/25">Location</label>
+            <div className={`rounded-[18px] border px-3.5 py-3 transition-colors duration-500 ${resumeFilledFields.has('location') ? 'border-emerald-500/25 bg-emerald-500/[0.04]' : 'border-white/[0.07] bg-white/[0.025]'}`}>
+              <div className="mb-1.5 flex items-center justify-between">
+                <label className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/22">Location</label>
+                {resumeFilledFields.has('location') && <span className="text-[8px] text-emerald-400/60 font-semibold">from resume</span>}
+              </div>
               <div className="relative">
                 <MapPin className="pointer-events-none absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-white/18" />
-                <input value={location} onChange={e => setLocation(e.target.value)} placeholder="Mumbai, IN" className={INP + ' pl-8 text-[12px]'} />
+                <input value={location} onChange={e => { setLocation(e.target.value); setResumeFilledFields(p => { const n = new Set(p); n.delete('location'); return n; }); }} placeholder="Mumbai, IN" className={INP + ' pl-7 text-[12px]'} />
               </div>
             </div>
-            <div className="rounded-[18px] border border-white/[0.07] bg-white/[0.025] px-3.5 py-3">
-              <label className="mb-1.5 block text-[9.5px] font-bold uppercase tracking-[0.16em] text-white/25">Website</label>
+            <div className={`rounded-[18px] border px-3.5 py-3 transition-colors duration-500 ${resumeFilledFields.has('website') ? 'border-emerald-500/25 bg-emerald-500/[0.04]' : 'border-white/[0.07] bg-white/[0.025]'}`}>
+              <div className="mb-1.5 flex items-center justify-between">
+                <label className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/22">Website</label>
+                {resumeFilledFields.has('website') && <span className="text-[8px] text-emerald-400/60 font-semibold">from resume</span>}
+              </div>
               <div className="relative">
                 <Globe className="pointer-events-none absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-white/18" />
-                <input value={website} onChange={e => setWebsite(e.target.value)} placeholder="yoursite.com" className={INP + ' pl-8 text-[12px]'} />
+                <input value={website} onChange={e => { setWebsite(e.target.value); setResumeFilledFields(p => { const n = new Set(p); n.delete('website'); return n; }); }} placeholder="yoursite.com" className={INP + ' pl-7 text-[12px]'} />
               </div>
             </div>
           </div>
 
-          {/* Open to work + CTA */}
-          <div style={{ animation: 'obSlideUp 0.45s 0.24s both', opacity: 0 }} className="space-y-3">
+          {/* ── Open to work + CTA ── */}
+          <div style={{ animation: 'obSlideUp 0.45s 0.25s both', opacity: 0 }} className="space-y-3">
             <button type="button" onClick={() => setOpenToWork(v => !v)}
-              className={`flex w-full cursor-pointer items-center gap-3 rounded-[14px] border px-4 py-3 transition-all duration-200 ${openToWork ? 'border-emerald-500/30 bg-emerald-500/[0.06]' : 'border-white/[0.07] bg-white/[0.025]'}`}>
-              <div className={`h-5 w-10 shrink-0 rounded-full flex items-center px-0.5 transition-all duration-300 ${openToWork ? 'bg-emerald-500' : 'bg-white/[0.10]'}`}>
-                <div className={`h-4 w-4 rounded-full shadow-lg transition-transform duration-300 ${openToWork ? 'translate-x-5 bg-white' : 'bg-white/38'}`} />
+              className={`flex w-full cursor-pointer items-center gap-3 rounded-[14px] border px-4 py-3 transition-all duration-200 ${openToWork ? 'border-emerald-500/25 bg-emerald-500/[0.05]' : 'border-white/[0.06] bg-white/[0.02]'}`}>
+              <div className={`h-5 w-9 shrink-0 rounded-full flex items-center px-0.5 transition-all duration-300 ${openToWork ? 'bg-emerald-500' : 'bg-white/[0.10]'}`}>
+                <div className={`h-4 w-4 rounded-full shadow transition-transform duration-300 ${openToWork ? 'translate-x-4 bg-white' : 'bg-white/35'}`} />
               </div>
               <div className="text-left">
-                <p className={`text-[12px] font-semibold transition-colors ${openToWork ? 'text-emerald-400' : 'text-white/70'}`}>Open to work or opportunities</p>
-                <p className="text-[10px] text-white/28">Visible to recruiters and collaborators</p>
+                <p className={`text-[12px] font-semibold transition-colors ${openToWork ? 'text-emerald-400/90' : 'text-white/60'}`}>Open to work or opportunities</p>
+                <p className="text-[10px] text-white/25">Visible to recruiters and collaborators</p>
               </div>
             </button>
-            <button onClick={next} className={`h-10 sm:h-11 w-full ${WHITE_BTN}`} style={WHITE_BTN_SHADOW}>
-              Continue <ArrowRight className="h-3.5 w-3.5" />
+
+            <button onClick={() => void handleProfileContinue()}
+              className={`h-11 w-full ${WHITE_BTN} text-[13.5px]`}
+              style={{ boxShadow: '0 4px 28px rgba(255,255,255,0.13), 0 1px 0 rgba(255,255,255,0.9) inset' }}>
+              Save &amp; continue <ArrowRight className="h-3.5 w-3.5" />
             </button>
+          </div>
+
+          {/* ── Mobile: Docrud features — desktop shows this in the left panel ── */}
+          <div className="lg:hidden mt-2" style={{ animation: 'obFadeIn 0.4s 0.55s both', opacity: 0 }}>
+            <div className="mb-3 flex items-center gap-2">
+              <div className="h-px flex-1" style={{ background: 'linear-gradient(to right, transparent, rgba(255,255,255,0.10))' }} />
+              <div className="flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1">
+                <Sparkles className="h-2.5 w-2.5 text-white/35" />
+                <span className="text-[9px] font-bold uppercase tracking-[0.22em] text-white/40">Everything inside Docrud</span>
+              </div>
+              <div className="h-px flex-1" style={{ background: 'linear-gradient(to left, transparent, rgba(255,255,255,0.10))' }} />
+            </div>
+            <DocrudFeatureGrid staggerBase={0.58} compact />
+            <p className="mt-2.5 text-center text-[8px] font-medium text-white/25 tracking-wide">
+              Smart Forms · Portfolio · Resume ATS · and more
+            </p>
           </div>
         </div>
       );
@@ -2422,7 +2859,7 @@ export default function OnboardingPage() {
           {/* Heading */}
           <div style={{ animation: 'obSlideUp 0.45s 0.05s both', opacity: 0 }}>
             <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-white/[0.07] bg-white/[0.03] px-3 py-1">
-              <div className="h-1.5 w-1.5 rounded-full" style={{ background: '#E8CC7A', animation: 'obPulse 2s infinite' }} />
+              <div className="h-1.5 w-1.5 rounded-full" style={{ background: '#818cf8', animation: 'obPulse 2s infinite' }} />
               <span className="text-[9.5px] font-semibold uppercase tracking-[0.26em] text-white/30">Step 4 of 5 — Skills</span>
             </div>
             <h2 className="text-[1.45rem] sm:text-[1.65rem] font-black tracking-[-0.04em] text-white leading-[1.1]">What are you good at?</h2>
@@ -2519,41 +2956,194 @@ export default function OnboardingPage() {
 
       /* ── 8  PEOPLE ── */
       case PEOPLE_SCR: return (
-        <div className="flex flex-col gap-4">
-          <div>
-            <h2 className="text-[1.5rem] sm:text-[1.75rem] font-black tracking-tight text-white">Connect with people</h2>
-            <p className="mt-1.5 text-[12px] sm:text-[13px] text-white/38">Follow professionals in your field to stay updated.</p>
+        <div className="flex flex-col gap-5">
+          {/* Header */}
+          <div style={{ animation: 'obSlideUp 0.4s both' }}>
+            <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-white/[0.07] bg-white/[0.03] px-2.5 py-0.5">
+              <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" style={{ animation: 'obPulse 2s infinite' }} />
+              <span className="text-[9px] font-bold uppercase tracking-[0.22em] text-white/35">Step 5 of 5 — People</span>
+            </div>
+            <h2 className="text-[1.5rem] sm:text-[1.75rem] font-black tracking-[-0.035em] text-white leading-[1.1]">
+              People you&apos;ll vibe with
+            </h2>
+            <p className="mt-1 text-[12px] text-white/38 leading-relaxed">
+              {skills.length > 0 || interests.length > 0
+                ? `Matched to your skills — follow to build your network.`
+                : `Follow professionals in your field to stay updated.`}
+            </p>
           </div>
-          <div className="grid grid-cols-2 gap-2.5 max-h-[38vh] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {suggestions.length === 0
-              ? Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-32 animate-pulse rounded-[14px] bg-white/[0.04]" />)
-              : suggestions.map((p, i) => (
-                <div key={p.id}
-                  className="flex flex-col gap-2 rounded-[16px] border border-white/[0.06] bg-white/[0.025] p-3.5 transition-colors hover:border-white/[0.10]"
-                  style={{ animation: `obSlideUp 0.4s ${i * 0.06}s both` }}>
-                  <div className="h-11 w-11 rounded-[12px] border border-white/[0.09] bg-white/[0.06] flex items-center justify-center text-base font-black text-white/55 overflow-hidden">
-                    {p.profile.avatarUrl ? <img src={p.profile.avatarUrl} alt="" className="h-full w-full object-cover" /> : initials(p.name)}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-[12.5px] font-bold text-white/88">{p.name}</p>
-                    {p.profile.headline && <p className="mt-0.5 line-clamp-2 text-[10px] leading-snug text-white/30">{p.profile.headline}</p>}
-                  </div>
-                  <button
-                    onClick={() => setFollowed(prev => prev.includes(p.id) ? prev.filter(x => x !== p.id) : [...prev, p.id])}
-                    className={`mt-auto h-7 w-full rounded-[9px] text-[11px] font-black transition-all ${followed.includes(p.id) ? 'bg-white/[0.09] border border-white/[0.14] text-white/60' : 'bg-white text-[#050508] hover:bg-white/92 shadow-[0_2px_12px_rgba(255,255,255,0.10)]'}`}>
-                    {followed.includes(p.id) ? '✓ Following' : 'Follow'}
-                  </button>
-                </div>
+
+          {/* Skill match chips — show if user has skills */}
+          {(skills.length > 0 || interests.length > 0) && (
+            <div className="flex flex-wrap gap-1.5" style={{ animation: 'obFadeIn 0.4s 0.1s both', opacity: 0 }}>
+              {Array.from(new Set([...skills, ...interests])).slice(0, 5).map(s => (
+                <span key={s} className="flex items-center gap-1 rounded-full border border-indigo-500/25 bg-indigo-500/[0.08] px-2.5 py-0.5 text-[10px] font-semibold text-indigo-300/80">
+                  <span className="h-1 w-1 rounded-full bg-indigo-400/70" />
+                  {s}
+                </span>
               ))}
+              {(skills.length + interests.length) > 5 && (
+                <span className="rounded-full border border-white/[0.07] bg-white/[0.03] px-2.5 py-0.5 text-[10px] text-white/30">
+                  +{(skills.length + interests.length) - 5} more
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Cards grid */}
+          <div className="grid grid-cols-2 gap-2.5 max-h-[42vh] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-1">
+            {suggestions.length === 0
+              ? Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="h-[168px] animate-pulse rounded-[18px] bg-white/[0.04]" style={{ animationDelay: `${i * 0.07}s` }} />
+                ))
+              : suggestions.map((p, i) => {
+                  const isFollowed = followed.includes(p.id);
+                  const hasMatch = (p.skillOverlap ?? 0) > 0;
+                  // Deterministic banner gradient from name char code
+                  const BAND_GRADS = [
+                    'linear-gradient(125deg,rgba(99,102,241,0.55) 0%,rgba(168,85,247,0.35) 100%)',
+                    'linear-gradient(125deg,rgba(16,185,129,0.50) 0%,rgba(14,165,233,0.35) 100%)',
+                    'linear-gradient(125deg,rgba(245,158,11,0.50) 0%,rgba(249,115,22,0.35) 100%)',
+                    'linear-gradient(125deg,rgba(236,72,153,0.50) 0%,rgba(239,68,68,0.35) 100%)',
+                    'linear-gradient(125deg,rgba(14,165,233,0.50) 0%,rgba(99,102,241,0.35) 100%)',
+                    'linear-gradient(125deg,rgba(168,85,247,0.50) 0%,rgba(236,72,153,0.35) 100%)',
+                  ];
+                  const bandGrad = BAND_GRADS[(p.name.charCodeAt(0) || 0) % BAND_GRADS.length];
+
+                  return (
+                    <div key={p.id}
+                      style={{
+                        animation: `obScaleIn 0.35s ${i * 0.055}s both`,
+                        opacity: 0,
+                        boxShadow: isFollowed ? '0 0 0 1px rgba(99,102,241,0.20), 0 4px 20px rgba(99,102,241,0.10)' : '0 2px 16px rgba(0,0,0,0.30)',
+                      }}
+                      className={`group relative flex flex-col overflow-hidden rounded-[18px] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_8px_32px_rgba(0,0,0,0.5)] ${
+                        isFollowed
+                          ? 'border border-indigo-500/30 bg-indigo-500/[0.06]'
+                          : 'border border-white/[0.08] bg-white/[0.03]'
+                      }`}>
+
+                      {/* Banner */}
+                      <div className="relative h-[42px] shrink-0 overflow-hidden">
+                        {p.profile.bannerUrl
+                          ? <img src={p.profile.bannerUrl} alt="" className="h-full w-full object-cover" />
+                          : <div className="h-full w-full" style={{ background: bandGrad }} />
+                        }
+                        {/* Shimmer on banner */}
+                        <div className="absolute inset-0 opacity-20" style={{ background: 'linear-gradient(105deg,transparent 35%,rgba(255,255,255,0.18) 50%,transparent 65%)', animation: `obShimmer ${5 + i * 0.4}s ease-in-out infinite ${i * 0.3}s` }} />
+
+                        {/* Skill match badge */}
+                        {hasMatch && (
+                          <div className="absolute top-1.5 right-1.5 flex items-center gap-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/20 px-1.5 py-0.5 backdrop-blur-sm">
+                            <span className="text-[7px] font-black text-emerald-400 uppercase tracking-wide">Match</span>
+                          </div>
+                        )}
+                        {/* Open to work */}
+                        {p.profile.openToWork && (
+                          <div className="absolute top-1.5 left-1.5 flex items-center gap-0.5 rounded-full border border-emerald-500/25 bg-black/50 px-1.5 py-0.5 backdrop-blur-sm">
+                            <div className="h-1 w-1 rounded-full bg-emerald-400" />
+                            <span className="text-[7px] font-bold text-emerald-300">Open</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Body */}
+                      <div className="flex flex-1 flex-col gap-2 px-3 pb-3 -mt-4">
+                        {/* Avatar */}
+                        <div className="flex items-end justify-between">
+                          <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-[10px]"
+                            style={{ border: '2px solid rgba(8,8,14,0.95)', boxShadow: '0 3px 12px rgba(0,0,0,0.5)' }}>
+                            {p.profile.avatarUrl
+                              ? <img src={p.profile.avatarUrl} alt="" className="h-full w-full object-cover" />
+                              : <div className="flex h-full w-full items-center justify-center text-[10px] font-black text-white/80"
+                                  style={{ background: bandGrad }}>
+                                  {initials(p.name)}
+                                </div>
+                            }
+                          </div>
+                          {/* Go badge */}
+                          {p.docrudGo && (
+                            <div className="flex items-center gap-0.5 rounded-full border border-amber-500/30 bg-amber-500/[0.12] px-1.5 py-0.5">
+                              <span className="text-[8px] font-black text-amber-400">∞</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Name + headline */}
+                        <div className="min-w-0">
+                          <p className="truncate text-[12px] font-black leading-tight text-white/90" style={{ letterSpacing: '-0.01em' }}>{p.name}</p>
+                          {p.profile.headline && (
+                            <p className="mt-0.5 line-clamp-2 text-[9.5px] leading-snug text-white/38">{p.profile.headline}</p>
+                          )}
+                          {p.profile.location && (
+                            <div className="mt-0.5 flex items-center gap-0.5">
+                              <MapPin className="h-2 w-2 text-white/20 shrink-0" />
+                              <span className="truncate text-[8.5px] text-white/25">{p.profile.location}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Skills chips — show matched first */}
+                        {(p.profile.skills ?? []).length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {(p.matchedSkills?.length ? p.matchedSkills : p.profile.skills ?? []).slice(0, 2).map(s => (
+                              <span key={s}
+                                className={`rounded-full px-1.5 py-px text-[7.5px] font-semibold ${
+                                  p.matchedSkills?.includes(s)
+                                    ? 'border border-indigo-500/25 bg-indigo-500/[0.12] text-indigo-300/80'
+                                    : 'border border-white/[0.07] bg-white/[0.04] text-white/35'
+                                }`}>
+                                {s}
+                              </span>
+                            ))}
+                            {(p.profile.skills ?? []).length > 2 && (
+                              <span className="rounded-full border border-white/[0.05] bg-white/[0.02] px-1.5 py-px text-[7px] text-white/20">
+                                +{(p.profile.skills ?? []).length - 2}
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Stats row */}
+                        {(p.stats?.followers ?? 0) > 0 && (
+                          <div className="flex items-center gap-2.5 text-[8.5px] text-white/22">
+                            <span className="font-semibold tabular-nums"><span className="text-white/40">{p.stats!.followers}</span> followers</span>
+                            {p.stats!.gigsCount > 0 && <span className="font-semibold tabular-nums"><span className="text-white/40">{p.stats!.gigsCount}</span> gigs</span>}
+                          </div>
+                        )}
+
+                        {/* Follow button */}
+                        <button
+                          onClick={() => setFollowed(prev => prev.includes(p.id) ? prev.filter(x => x !== p.id) : [...prev, p.id])}
+                          className={`mt-auto h-7 w-full rounded-[10px] text-[11px] font-black transition-all duration-200 ${
+                            isFollowed
+                              ? 'border border-indigo-500/30 bg-indigo-500/[0.12] text-indigo-300'
+                              : 'bg-white text-[#050508] hover:bg-white/90 shadow-[0_2px_12px_rgba(255,255,255,0.12)]'
+                          }`}
+                          style={isFollowed ? {} : { boxShadow: '0 2px 12px rgba(255,255,255,0.10), inset 0 1px 0 rgba(255,255,255,0.9)' }}>
+                          {isFollowed ? '✓ Following' : '+ Follow'}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
           </div>
-          <button onClick={() => void handleComplete()} disabled={completing}
-            className={`h-10 sm:h-11 w-full ${WHITE_BTN} disabled:opacity-55`} style={WHITE_BTN_SHADOW}>
-            {completing
-              ? <div className="h-4 w-4 rounded-full border-2 border-[#050508]/25 border-t-[#050508] animate-spin" />
-              : followed.length > 0
-                ? `Continue with ${followed.length} connection${followed.length > 1 ? 's' : ''}`
-                : 'Skip for now'}
-          </button>
+
+          {/* CTA */}
+          <div className="flex flex-col gap-2" style={{ animation: 'obSlideUp 0.4s 0.3s both', opacity: 0 }}>
+            <button onClick={() => void handleComplete()} disabled={completing}
+              className={`h-10 sm:h-11 w-full ${WHITE_BTN} disabled:opacity-55`} style={WHITE_BTN_SHADOW}>
+              {completing
+                ? <div className="h-4 w-4 rounded-full border-2 border-[#050508]/25 border-t-[#050508] animate-spin" />
+                : followed.length > 0
+                  ? <>Continue with {followed.length} connection{followed.length > 1 ? 's' : ''} <ArrowRight className="h-3.5 w-3.5" /></>
+                  : <>Skip for now <ArrowRight className="h-3.5 w-3.5" /></>
+              }
+            </button>
+            {followed.length > 0 && (
+              <p className="text-center text-[10px] text-white/22">Following {followed.length} professional{followed.length !== 1 ? 's' : ''}</p>
+            )}
+          </div>
         </div>
       );
 
@@ -2563,42 +3153,42 @@ export default function OnboardingPage() {
         /* ── Success state after purchase ── */
         if (goPhase === 'success') return (
           <div className="flex flex-col items-center text-center gap-4" style={{ animation: 'obScaleIn 0.6s both' }}>
-            {/* Gold badge ring */}
+            {/* Infinity badge ring */}
             <div className="relative mx-auto h-24 w-24" style={{ animation: 'obScaleIn 0.7s 0.1s both' }}>
               <div className="absolute -inset-4 rounded-full"
-                style={{ background: 'radial-gradient(circle,rgba(232,204,122,0.25) 0%,transparent 65%)', animation: 'obGlow 3s ease-in-out infinite' }} />
-              <div className="absolute inset-0 rounded-full" style={{ background: 'linear-gradient(135deg,#C9A84C22,#E8CC7A18)', border: '1.5px solid rgba(232,204,122,0.35)' }} />
+                style={{ background: 'radial-gradient(circle,rgba(99,102,241,0.22) 0%,transparent 65%)', animation: 'obGlow 3s ease-in-out infinite' }} />
+              <div className="absolute inset-0 rounded-full" style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.14),rgba(165,180,252,0.10))', border: '1.5px solid rgba(99,102,241,0.35)' }} />
               <svg className="absolute inset-0 h-24 w-24 -rotate-90" viewBox="0 0 96 96">
-                <circle cx="48" cy="48" r="44" fill="none" stroke="rgba(201,168,76,0.15)" strokeWidth="1.5" />
+                <circle cx="48" cy="48" r="44" fill="none" stroke="rgba(99,102,241,0.15)" strokeWidth="1.5" />
                 <circle cx="48" cy="48" r="44" fill="none" strokeWidth="2.5" strokeLinecap="round"
                   strokeDasharray="276" strokeDashoffset="0"
                   style={{ stroke: 'url(#goGrad)', animation: 'obCheckDraw 1.4s 0.3s cubic-bezier(.4,0,.2,1) both' }} />
                 <defs>
                   <linearGradient id="goGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#C9A84C" /><stop offset="50%" stopColor="#F0D878" /><stop offset="100%" stopColor="#C9A84C" />
+                    <stop offset="0%" stopColor="#4f46e5" /><stop offset="50%" stopColor="#a5b4fc" /><stop offset="100%" stopColor="#4f46e5" />
                   </linearGradient>
                 </defs>
               </svg>
               <div className="absolute inset-0 flex items-center justify-center" style={{ animation: 'obScaleIn 0.45s 1.2s both', opacity: 0 }}>
-                <span className="text-[28px]" style={{ filter: 'drop-shadow(0 0 12px rgba(232,204,122,0.6))' }}>✦</span>
+                <span className="text-[30px] font-black" style={{ color: '#a5b4fc', filter: 'drop-shadow(0 0 12px rgba(99,102,241,0.6))' }}>∞</span>
               </div>
             </div>
 
             <div style={{ animation: 'obSlideUp 0.5s 0.5s both' }}>
-              <div className="mb-1 text-[10px] font-black uppercase tracking-[0.3em]" style={{ color: '#C9A84C' }}>Welcome to</div>
+              <div className="mb-1 text-[10px] font-black uppercase tracking-[0.3em]" style={{ color: '#818cf8' }}>You&apos;re now</div>
               <h2 className="text-[1.7rem] sm:text-[1.95rem] font-black tracking-[-0.04em] text-white leading-[1.1]">
-                Docrud Go <span style={{ color: '#E8CC7A' }}>✦</span>
+                Infinity <span style={{ color: '#a5b4fc' }}>∞</span> Member
               </h2>
               <p className="mt-1.5 max-w-[260px] mx-auto text-[12px] sm:text-[12.5px] text-white/40 leading-relaxed">
-                Your gold verified badge is live. Check your email for a full welcome guide.
+                Your Infinity badge is live. Check your email for a full welcome guide.
               </p>
             </div>
 
             <div className="w-full max-w-[280px] flex flex-col gap-2" style={{ animation: 'obSlideUp 0.5s 0.7s both' }}>
               <Link href="/"
                 className="flex h-10 sm:h-11 w-full items-center justify-center gap-2 rounded-[12px] font-black text-[13px] sm:text-[14px] transition-all active:scale-[0.98]"
-                style={{ background: 'linear-gradient(135deg,#C9A84C,#E8CC7A)', color: '#1a1208', boxShadow: '0 4px 24px rgba(201,168,76,0.40)' }}>
-                Explore Docrud ✦
+                style={{ background: 'linear-gradient(135deg,#4f46e5,#6366f1)', color: '#ffffff', boxShadow: '0 4px 24px rgba(99,102,241,0.45)' }}>
+                Go to Dashboard ∞
               </Link>
               <div className="grid grid-cols-2 gap-2">
                 <Link href={`/u/${(session?.user as { id?: string })?.id ?? ''}`}
@@ -2639,7 +3229,7 @@ export default function OnboardingPage() {
             </div>
             <div className="w-full max-w-[260px] flex flex-col gap-2">
               <Link href="/" className={`h-10 sm:h-11 w-full ${WHITE_BTN}`} style={WHITE_BTN_SHADOW}>
-                Explore Docrud <ArrowRight className="h-3.5 w-3.5" />
+                Go to Dashboard <ArrowRight className="h-3.5 w-3.5" />
               </Link>
               <div className="grid grid-cols-2 gap-2">
                 <Link href={`/u/${(session?.user as { id?: string })?.id ?? ''}`}
@@ -2653,7 +3243,7 @@ export default function OnboardingPage() {
               </div>
               {/* Soft upsell nudge */}
               <button onClick={() => setGoPhase('offer')} className="mt-1 text-[10.5px] text-white/20 hover:text-white/45 transition-colors underline underline-offset-2">
-                See Docrud Go offer
+                See Infinity offer
               </button>
             </div>
           </div>
@@ -2684,10 +3274,10 @@ export default function OnboardingPage() {
               amount: data.amount,
               currency: data.currency || 'INR',
               name: 'Docrud',
-              description: 'Docrud Go — Verified Badge',
+              description: 'Infinity ∞ — Verified Professional',
               order_id: data.orderId,
               prefill: { name: data.userName || '', email: data.userEmail || '' },
-              theme: { color: '#C9A84C' },
+              theme: { color: '#6366f1' },
               modal: { backdropclose: false },
               handler: async (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
                 try {
@@ -2725,14 +3315,14 @@ export default function OnboardingPage() {
             {/* Header */}
             <div className="text-center">
               <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl"
-                style={{ background: 'linear-gradient(135deg,#C9A84C,#F0D878)', boxShadow: '0 6px 28px rgba(201,168,76,0.40)' }}>
-                <svg className="h-7 w-7 text-[#1a1208]" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                style={{ background: 'linear-gradient(135deg,#4f46e5,#818cf8)', boxShadow: '0 6px 28px rgba(99,102,241,0.40)' }}>
+                <svg className="h-7 w-7 text-white" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                 </svg>
               </div>
               <h3 className="text-[1.3rem] font-black tracking-[-0.03em] text-white">Refer &amp; Earn Free</h3>
               <p className="mt-1 text-[11px] text-white/38 max-w-[220px] mx-auto leading-relaxed">
-                Share your link. When a friend signs up, your <span style={{ color: '#E8CC7A' }}>Docrud Go ✦</span> activates — zero payment.
+                Share your link. When a friend signs up, your <span style={{ color: '#a5b4fc' }}>Docrud Infinity ∞</span> activates — zero payment.
               </p>
             </div>
 
@@ -2741,12 +3331,12 @@ export default function OnboardingPage() {
               {[
                 { n: '1', label: 'Share your link' },
                 { n: '2', label: 'Friend signs up' },
-                { n: '3', label: 'You get Go free' },
+                { n: '3', label: 'Infinity badge, free' },
               ].map(({ n, label }, i) => (
                 <div key={n} className="flex flex-col items-center gap-1.5 rounded-[12px] py-3 px-2"
-                  style={{ background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.12)', animation: `obSlideUp 0.3s ${i * 0.06}s ease both` }}>
+                  style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.12)', animation: `obSlideUp 0.3s ${i * 0.06}s ease both` }}>
                   <span className="flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-black"
-                    style={{ background: 'linear-gradient(135deg,#C9A84C,#F0D878)', color: '#1a1208' }}>{n}</span>
+                    style={{ background: 'linear-gradient(135deg,#4f46e5,#818cf8)', color: '#fff' }}>{n}</span>
                   <span className="text-[9.5px] font-semibold text-white/50 text-center leading-tight">{label}</span>
                 </div>
               ))}
@@ -2754,9 +3344,9 @@ export default function OnboardingPage() {
 
             {/* Referral link */}
             <div className="rounded-[14px] p-[1.5px]"
-              style={{ background: 'linear-gradient(135deg,#C9A84C55,#F0D87844,#C9A84C55)' }}>
-              <div className="rounded-[13px] bg-[#100d06] px-3 py-3">
-                <p className="mb-1.5 text-[9.5px] font-black uppercase tracking-[0.2em]" style={{ color: '#C9A84C' }}>Your Referral Link</p>
+              style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.45),rgba(165,180,252,0.30),rgba(99,102,241,0.45))' }}>
+              <div className="rounded-[13px] bg-[#06060f] px-3 py-3">
+                <p className="mb-1.5 text-[9.5px] font-black uppercase tracking-[0.2em]" style={{ color: '#818cf8' }}>Your Referral Link</p>
                 {refLinkLoading ? (
                   <div className="h-9 animate-pulse rounded-xl bg-white/[0.06]" />
                 ) : (
@@ -2824,7 +3414,7 @@ export default function OnboardingPage() {
                     }
                   }}
                   placeholder="colleague@company.com"
-                  className="h-10 flex-1 rounded-xl border border-white/[0.09] bg-white/[0.04] px-3 text-[12px] text-white placeholder:text-white/22 outline-none transition focus:border-amber-500/25 focus:ring-2 focus:ring-amber-500/[0.08]"
+                  className="h-10 flex-1 rounded-xl border border-white/[0.09] bg-white/[0.04] px-3 text-[12px] text-white placeholder:text-white/22 outline-none transition focus:border-indigo-500/25 focus:ring-2 focus:ring-indigo-500/[0.08]"
                 />
                 <button
                   type="button"
@@ -2846,11 +3436,11 @@ export default function OnboardingPage() {
                       .catch((err: unknown) => setRefSendErr(err instanceof Error ? err.message : 'Failed.'))
                       .finally(() => setRefSending(false));
                   }}
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-500/25 bg-amber-500/[0.10] transition hover:bg-amber-500/[0.18] disabled:opacity-40"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-indigo-500/25 bg-indigo-500/[0.10] transition hover:bg-indigo-500/[0.18] disabled:opacity-40"
                 >
                   {refSending
-                    ? <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-amber-300/30 border-t-amber-300" />
-                    : <svg className="h-4 w-4 text-amber-300" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
+                    ? <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-indigo-300/30 border-t-indigo-300" />
+                    : <svg className="h-4 w-4 text-indigo-300" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
                   }
                 </button>
               </div>
@@ -2859,7 +3449,7 @@ export default function OnboardingPage() {
             </div>
 
             <p className="text-center text-[9.5px] text-white/20 leading-4">
-              Referrals can be sent to multiple people. Docrud Go activates <strong className="text-white/30">once per referrer</strong> — the moment a referred profile is created.
+              Referrals can be sent to multiple people. Docrud Infinity activates <strong className="text-white/30">once per referrer</strong> — the moment a referred profile is created.
             </p>
 
             {/* Back + skip */}
@@ -2908,39 +3498,36 @@ export default function OnboardingPage() {
               <p className="mt-1 text-[11.5px] text-white/38">Your profile is live. Time to stand out.</p>
             </div>
 
-            {/* ── Docrud Go Premium Card ── */}
-            <div style={{ animation: 'obSlideUp 0.45s 0.12s both', opacity: 0, background: 'linear-gradient(135deg,#C9A84C 0%,#F0D878 35%,#C9A84C 65%,#A07830 100%)' }}
+            {/* ── Docrud Infinity Premium Card ── */}
+            <div style={{ animation: 'obSlideUp 0.45s 0.12s both', opacity: 0, background: 'linear-gradient(135deg,#4f46e5 0%,#818cf8 35%,#a5b4fc 55%,#6366f1 80%,#3730a3 100%)' }}
               className="relative overflow-hidden rounded-[20px] p-[1.5px]">
-              <div className="relative overflow-hidden rounded-[19px]" style={{ background: '#0e0b05' }}>
+              <div className="relative overflow-hidden rounded-[19px]" style={{ background: '#06060f' }}>
 
                 {/* Ambient top glow */}
                 <div className="pointer-events-none absolute inset-0"
-                  style={{ background: 'radial-gradient(ellipse 100% 60% at 50% -5%,rgba(232,204,122,0.13) 0%,transparent 55%)' }} />
+                  style={{ background: 'radial-gradient(ellipse 100% 60% at 50% -5%,rgba(99,102,241,0.12) 0%,transparent 55%)' }} />
 
                 {/* Shimmer line */}
                 <div className="pointer-events-none absolute left-0 right-0 top-0 h-px"
-                  style={{ background: 'linear-gradient(90deg,transparent 0%,rgba(240,216,120,0.6) 50%,transparent 100%)' }} />
+                  style={{ background: 'linear-gradient(90deg,transparent 0%,rgba(165,180,252,0.55) 50%,transparent 100%)' }} />
 
                 <div className="relative px-5 pt-5 pb-5">
 
-                  {/* ── Top: offer label + scarcity ── */}
+                  {/* ── Top: plan name + price ── */}
                   <div className="mb-4 flex items-start justify-between gap-3">
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex items-center gap-2">
-                        <div className="h-1.5 w-1.5 rounded-full shrink-0" style={{ background: '#E8CC7A', animation: 'obPulse 2s infinite' }} />
-                        <span className="text-[9px] font-black uppercase tracking-[0.32em]" style={{ color: '#C9A84C' }}>First Login Offer</span>
-                      </div>
+                    <div className="flex flex-col gap-1">
                       <h3 className="text-[1.35rem] font-black tracking-[-0.04em] text-white leading-tight">
-                        Docrud Go <span style={{ color: '#E8CC7A' }}>✦</span>
+                        Infinity <span style={{ color: '#a5b4fc' }}>∞</span>
                       </h3>
-                      <p className="text-[10.5px] text-white/40 leading-snug">Unlock your verified professional identity.</p>
+                      <p className="text-[8.5px] font-semibold uppercase tracking-[0.14em]" style={{ color: 'rgba(165,180,252,0.50)' }}>one plan · all access</p>
+                      <p className="text-[10px] text-white/35 leading-snug mt-0.5">Unlock your verified professional identity.</p>
                     </div>
 
                     {/* Price block */}
                     <div className="shrink-0 text-right pt-0.5">
                       <div className="flex items-baseline justify-end gap-1 mb-0.5">
                         <span className="text-[10px] text-white/25 line-through">₹499</span>
-                        <span className="text-[26px] font-black leading-none tracking-[-0.03em]" style={{ color: '#F0D878' }}>₹99</span>
+                        <span className="text-[26px] font-black leading-none tracking-[-0.03em]" style={{ color: '#a5b4fc' }}>₹99</span>
                       </div>
                       <span className="text-[9px] text-white/28">one-time · no renewal</span>
                     </div>
@@ -2948,7 +3535,7 @@ export default function OnboardingPage() {
 
                   {/* ── Scarcity bar — live data ── */}
                   <div className="mb-4 rounded-[10px] px-3 py-2.5"
-                    style={{ background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.16)' }}>
+                    style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.16)' }}>
                     {goStats === null ? (
                       /* Loading skeleton */
                       <div className="space-y-2">
@@ -2963,18 +3550,18 @@ export default function OnboardingPage() {
                       <>
                         <div className="flex items-center justify-between mb-1.5">
                           <span className="text-[9.5px] font-bold text-white/45">Spots claimed</span>
-                          <span className="text-[9.5px] font-black" style={{ color: '#E8CC7A' }}>
+                          <span className="text-[9.5px] font-black" style={{ color: '#818cf8' }}>
                             {goStats.claimed.toLocaleString()} / {goStats.total.toLocaleString()}
                           </span>
                         </div>
                         <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
                           <div className="h-full rounded-full transition-all duration-700"
-                            style={{ width: `${goStats.pct}%`, background: 'linear-gradient(90deg,#C9A84C,#F0D878)' }} />
+                            style={{ width: `${goStats.pct}%`, background: 'linear-gradient(90deg,#4f46e5,#818cf8)' }} />
                         </div>
                         <p className="mt-1.5 text-[9px] text-white/30">
                           Limited to first <span className="font-black text-white/50">{goStats.total.toLocaleString()} users</span> only
                           {goStats.remaining > 0
-                            ? <> — <span style={{ color: '#E8CC7A' }}>{goStats.remaining.toLocaleString()} spots left.</span></>
+                            ? <> — <span style={{ color: '#818cf8' }}>{goStats.remaining.toLocaleString()} spots left.</span></>
                             : <span style={{ color: '#fb7185' }}> — offer closed.</span>
                           }
                         </p>
@@ -2983,18 +3570,18 @@ export default function OnboardingPage() {
                   </div>
 
                   {/* ── Divider ── */}
-                  <div className="mb-4 h-px" style={{ background: 'linear-gradient(90deg,rgba(201,168,76,0.18),rgba(201,168,76,0.04) 80%,transparent)' }} />
+                  <div className="mb-4 h-px" style={{ background: 'linear-gradient(90deg,rgba(99,102,241,0.18),rgba(99,102,241,0.04) 80%,transparent)' }} />
 
                   {/* ── 3 benefit pillars ── */}
                   <div className="mb-4 grid grid-cols-3 gap-2">
                     {[
                       { icon: '🔍', title: 'More Visibility',  desc: '3× profile views & priority search' },
                       { icon: '⚡', title: 'Advanced Access',  desc: 'Premium gigs, AI tools & features'  },
-                      { icon: '✦', title: 'Trusted Badge',    desc: 'Gold badge builds instant credibility' },
+                      { icon: '∞', title: 'Infinity Badge',   desc: 'Verified badge, instant credibility'  },
                     ].map(({ icon, title, desc }) => (
                       <div key={title} className="flex flex-col items-center gap-1.5 rounded-[11px] px-2 py-3"
-                        style={{ background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.13)' }}>
-                        <span className="text-[16px] leading-none">{icon}</span>
+                        style={{ background: 'rgba(99,102,241,0.05)', border: '1px solid rgba(99,102,241,0.12)' }}>
+                        <span className="text-[16px] leading-none" style={icon === '∞' ? { color: '#a5b4fc', fontWeight: 900 } : undefined}>{icon}</span>
                         <p className="text-[9px] font-black text-white/78 leading-tight text-center">{title}</p>
                         <p className="text-[8px] text-white/32 leading-snug text-center">{desc}</p>
                       </div>
@@ -3005,8 +3592,8 @@ export default function OnboardingPage() {
                   <div className="mb-4 flex items-center gap-2.5 rounded-[10px] px-3 py-2.5"
                     style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.055)' }}>
                     <div className="flex shrink-0 -space-x-1.5">
-                      {[['K','#C9A84C'],['R','#7c3aed'],['A','#0ea5e9'],['S','#10b981']].map(([init, bg]) => (
-                        <div key={init} className="flex h-5 w-5 items-center justify-center rounded-full border border-[#0e0b05] text-[7px] font-black text-white"
+                      {[['K','#6366f1'],['R','#7c3aed'],['A','#0ea5e9'],['S','#10b981']].map(([init, bg]) => (
+                        <div key={init} className="flex h-5 w-5 items-center justify-center rounded-full border border-[#06060f] text-[7px] font-black text-white"
                           style={{ background: bg }}>
                           {init}
                         </div>
@@ -3024,67 +3611,54 @@ export default function OnboardingPage() {
                     </div>
                   )}
 
-                  {/* ── CTA ── */}
-                  <button
-                    onClick={() => void handleGoPayment()}
-                    disabled={goPhase === 'paying'}
-                    className="w-full flex items-center justify-center gap-2 rounded-[12px] h-11 font-black text-[13px] tracking-[-0.01em] transition-all active:scale-[0.98] disabled:opacity-60"
-                    style={{ background: 'linear-gradient(135deg,#C9A84C 0%,#F0D878 48%,#C9A84C 100%)', color: '#1a1208', boxShadow: '0 4px 28px rgba(201,168,76,0.48), inset 0 1px 0 rgba(255,255,255,0.28)' }}>
-                    {goPhase === 'paying'
-                      ? <><div className="h-4 w-4 rounded-full border-2 border-[#1a1208]/30 border-t-[#1a1208] animate-spin" /> Processing…</>
-                      : <>✦ Unlock Docrud Go — ₹99</>
-                    }
-                  </button>
+                  {/* ── CTA row ── */}
+                  <div className="flex items-stretch gap-2">
+
+                    {/* Earn Free — secondary */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGoPhase('refer');
+                        if (!refLink) {
+                          setRefLinkLoading(true);
+                          fetch('/api/referrals/stats')
+                            .then(r => r.json())
+                            .then((d: { link?: string; code?: string }) => {
+                              setRefLink(d.link || '');
+                              setRefCode(d.code || '');
+                            })
+                            .catch(() => {})
+                            .finally(() => setRefLinkLoading(false));
+                        }
+                      }}
+                      className="flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-[12px] h-11 px-3.5 font-bold text-[10.5px] tracking-[0.01em] transition-all active:scale-[0.97] border whitespace-nowrap hover:bg-indigo-500/10"
+                      style={{ borderColor: 'rgba(99,102,241,0.28)', background: 'rgba(99,102,241,0.05)', color: 'rgba(165,180,252,0.80)' }}>
+                      <svg className="h-3.5 w-3.5 shrink-0 mb-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+                      </svg>
+                      Earn Free
+                    </button>
+
+                    {/* Unlock Infinity — primary */}
+                    <button
+                      onClick={() => void handleGoPayment()}
+                      disabled={goPhase === 'paying'}
+                      className="flex-1 flex items-center justify-center gap-2 rounded-[12px] h-11 font-black text-[13px] tracking-[-0.01em] transition-all active:scale-[0.98] disabled:opacity-60"
+                      style={{ background: 'linear-gradient(135deg,#4f46e5 0%,#6366f1 50%,#4f46e5 100%)', color: '#ffffff', boxShadow: '0 4px 28px rgba(99,102,241,0.50), inset 0 1px 0 rgba(255,255,255,0.15)' }}>
+                      {goPhase === 'paying'
+                        ? <><div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Processing…</>
+                        : <>∞ Unlock Infinity — ₹99</>
+                      }
+                    </button>
+                  </div>
 
                   {/* ── Sub-note ── */}
                   <p className="mt-2.5 text-center text-[9px] text-white/22">
-                    Secure payment via Razorpay · Instant activation · No auto-renewal
+                    Secure payment · Instant activation · No renewal
                   </p>
                 </div>
               </div>
             </div>
-
-            {/* ── OR divider ── */}
-            <div className="relative flex items-center gap-3" style={{ animation: 'obFadeIn 0.5s 0.22s both', opacity: 0 }}>
-              <div className="flex-1 h-px bg-white/[0.07]" />
-              <span className="text-[9.5px] font-black uppercase tracking-[0.28em] text-white/18">or</span>
-              <div className="flex-1 h-px bg-white/[0.07]" />
-            </div>
-
-            {/* ── Refer-a-friend earn-free CTA ── */}
-            <button
-              type="button"
-              style={{ animation: 'obSlideUp 0.45s 0.26s both', opacity: 0, borderColor: 'rgba(201,168,76,0.16)', background: 'rgba(201,168,76,0.03)' }}
-              onClick={() => {
-                setGoPhase('refer');
-                if (!refLink) {
-                  setRefLinkLoading(true);
-                  fetch('/api/referrals/stats')
-                    .then(r => r.json())
-                    .then((d: { link?: string; code?: string }) => {
-                      setRefLink(d.link || '');
-                      setRefCode(d.code || '');
-                    })
-                    .catch(() => {})
-                    .finally(() => setRefLinkLoading(false));
-                }
-              }}
-              className="group w-full flex items-center gap-3.5 rounded-[14px] border px-4 py-3.5 text-left transition-all hover:border-amber-500/25 hover:bg-amber-500/[0.04] active:scale-[0.98]"
-            >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] transition-transform group-hover:scale-105"
-                style={{ background: 'linear-gradient(135deg,#C9A84C,#F0D878)', boxShadow: '0 4px 16px rgba(201,168,76,0.35)' }}>
-                <svg className="h-5 w-5 text-[#1a1208]" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                </svg>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[12.5px] font-black text-white/82">Earn Docrud Go — FREE</p>
-                <p className="text-[10.5px] text-white/32 leading-snug mt-0.5">Refer one friend who joins → your Go badge unlocks, no payment needed.</p>
-              </div>
-              <svg className="h-4 w-4 shrink-0 text-white/18 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6" />
-              </svg>
-            </button>
 
             {/* Skip */}
             <button
@@ -3103,16 +3677,17 @@ export default function OnboardingPage() {
 
   /* ════════════ MAIN RENDER ════════════ */
   return (
-    <div className="relative flex min-h-[100dvh] overflow-hidden bg-[#050508] text-white">
+    <div className="relative flex min-h-[100dvh] overflow-hidden text-white"
+      style={{ background: 'radial-gradient(circle at 0% 0%, rgba(249,115,22,0.10) 0%, transparent 38%), radial-gradient(circle at 100% 100%, rgba(249,115,22,0.10) 0%, transparent 38%), #050508' }}>
       <SplashScreen visible={showSplash} onSkip={() => { setShowSplash(false); setScreen(SIGNUP_SCR); }} />
       <BgOrbs />
 
       {/* LEFT PANEL — desktop only */}
-      <div className="relative hidden lg:flex lg:w-[52%] xl:w-[56%] shrink-0 flex-col overflow-hidden">
+      <div className="relative hidden lg:flex lg:w-[52%] xl:w-[56%] shrink-0 flex-col overflow-hidden h-[100dvh]">
         <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-white/[0.07] to-transparent" />
         <div className="pointer-events-none absolute inset-0"
           style={{ background: 'radial-gradient(ellipse at 30% 50%,rgba(255,255,255,0.015) 0%,transparent 60%)' }} />
-        <ScreenIn key={`left-${screen}`}>
+        <ScreenIn key={`left-${screen}`} className="h-full">
           <LeftPanelSwitch screen={screen} headline={headline} bio={bio} sName={sName} sEmail={sEmail} avatarUrl={avatarUrl} bannerUrl={bannerUrl} location={location} openToWork={openToWork} skills={skills} />
         </ScreenIn>
       </div>
@@ -3123,6 +3698,7 @@ export default function OnboardingPage() {
         {/* Always-mounted hidden file inputs — never unmount so refs stay valid */}
         <input ref={bannerFileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={handleBannerFile} />
         <input ref={avatarFileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={handleAvatarFile} />
+        <input ref={resumeFileRef} type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" className="hidden" onChange={handleResumeFile} />
 
         {/* Top bar — fixed height */}
         <div className="relative z-10 flex h-12 shrink-0 items-center justify-between px-5 sm:px-6">
@@ -3146,7 +3722,7 @@ export default function OnboardingPage() {
         {/* Scrollable content area */}
         <div className="relative flex flex-col flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className="pointer-events-none absolute inset-0 bg-[#050508]/15" />
-          <div className="relative z-10 mx-auto w-full max-w-[380px] px-5 sm:px-7 py-6 my-auto">
+          <div className="relative z-10 mx-auto w-full max-w-[380px] px-5 sm:px-7 pt-5 pb-8">
             <ScreenIn key={screen}>
               {renderForm()}
             </ScreenIn>
@@ -3170,5 +3746,13 @@ export default function OnboardingPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function OnboardingPage() {
+  return (
+    <Suspense>
+      <OnboardingPageInner />
+    </Suspense>
   );
 }

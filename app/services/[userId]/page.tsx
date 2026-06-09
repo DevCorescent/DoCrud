@@ -33,6 +33,7 @@ import {
   X,
   Zap,
 } from 'lucide-react';
+import InfinityUpgradeModal from '@/components/InfinityUpgradeModal';
 
 /* ─── Types ─────────────────────────────────────────────────────────── */
 interface ServicePackage {
@@ -408,7 +409,7 @@ function ServiceDetailModal({ service, reviews, onClose, onBook }: { service: Se
             <X className="h-4 w-4 text-white/80" />
           </button>
           {service.featured && (
-            <div className="absolute top-4 left-4 flex items-center gap-1 rounded-full px-2.5 py-1 text-[9.5px] font-black uppercase tracking-wider" style={{ background: 'linear-gradient(135deg,#C9A84C,#F0D878)', color: '#1a1208' }}>
+            <div className="absolute top-4 left-4 flex items-center gap-1 rounded-full px-2.5 py-1 text-[9.5px] font-black uppercase tracking-wider" style={{ background: 'linear-gradient(135deg,#4f46e5,#6366f1)', color: '#ffffff' }}>
               <Star className="h-2.5 w-2.5" /> Featured
             </div>
           )}
@@ -707,6 +708,7 @@ function ServiceEditModal({ service, onClose, onSaved, onDeleted }: {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [err, setErr] = useState('');
+  const [showInfinityModal, setShowInfinityModal] = useState(false);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -718,7 +720,8 @@ function ServiceEditModal({ service, onClose, onSaved, onDeleted }: {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const d = await res.json() as { service?: Service; error?: string };
+      const d = await res.json() as { service?: Service; error?: string; code?: string };
+      if (res.status === 403 && d.code === 'INFINITY_REQUIRED') { setShowInfinityModal(true); return; }
       if (!res.ok || !d.service) { setErr(d.error ?? 'Failed to save'); return; }
       onSaved(d.service);
       onClose();
@@ -748,6 +751,8 @@ function ServiceEditModal({ service, onClose, onSaved, onDeleted }: {
   const lbl = 'block text-[10.5px] font-semibold text-white/40 mb-1.5 uppercase tracking-wide';
 
   return (
+    <>
+    {showInfinityModal && <InfinityUpgradeModal feature="services_limit" onClose={() => setShowInfinityModal(false)} />}
     <div className="fixed inset-0 z-[70] flex items-start justify-center p-4 pt-10 overflow-y-auto">
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
       <div className="relative z-10 w-full max-w-2xl bg-[#111113] border border-white/[0.09] rounded-[24px] overflow-hidden shadow-[0_40px_100px_rgba(0,0,0,0.95)] mb-10">
@@ -897,6 +902,7 @@ function ServiceEditModal({ service, onClose, onSaved, onDeleted }: {
         </form>
       </div>
     </div>
+    </>
   );
 }
 
@@ -912,7 +918,7 @@ function ServiceCard({ service, reviews, shared, editMode, settings, onView, onB
   return (
     <div className="group relative flex flex-col rounded-[24px] border border-white/[0.07] bg-gradient-to-b from-white/[0.04] to-transparent overflow-hidden hover:border-white/[0.15] hover:shadow-[0_12px_48px_rgba(0,0,0,0.6),0_0_0_1px_rgba(99,102,241,0.08)] transition-all duration-300 cursor-pointer">
       {service.featured && (
-        <div className="absolute top-3.5 right-3.5 z-10 flex items-center gap-1 rounded-full px-2.5 py-1 text-[9.5px] font-black uppercase tracking-wider shadow-[0_2px_12px_rgba(201,168,76,0.4)]" style={{ background: 'linear-gradient(135deg,#C9A84C,#F0D878)', color: '#1a1208' }}>
+        <div className="absolute top-3.5 right-3.5 z-10 flex items-center gap-1 rounded-full px-2.5 py-1 text-[9.5px] font-black uppercase tracking-wider shadow-[0_2px_12px_rgba(99,102,241,0.4)]" style={{ background: 'linear-gradient(135deg,#4f46e5,#6366f1)', color: '#ffffff' }}>
           <Star className="h-2.5 w-2.5" /> Featured
         </div>
       )}
@@ -1046,7 +1052,7 @@ function ServiceListCard({ service, reviews, shared, editMode, settings, onView,
           </div>
         )}
         {service.featured && (
-          <div className="absolute top-1 left-1 rounded-full px-1.5 py-0.5 text-[8px] font-black uppercase" style={{ background: 'linear-gradient(135deg,#C9A84C,#F0D878)', color: '#1a1208' }}>★</div>
+          <div className="absolute top-1 left-1 rounded-full px-1.5 py-0.5 text-[8px] font-black uppercase" style={{ background: 'linear-gradient(135deg,#4f46e5,#6366f1)', color: '#ffffff' }}>★</div>
         )}
       </div>
       {/* Info */}
@@ -1404,9 +1410,9 @@ export default function ServicesPage() {
                 )}
               </div>
               {profile.docrudGo && (
-                <div className="absolute -bottom-1 -right-1 flex items-center justify-center" title="Docrud Go — Verified">
-                  <div className="h-7 w-7 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#C9A84C,#F0D878)', boxShadow: '0 2px 8px rgba(201,168,76,0.5)' }}>
-                    <Star className="h-3.5 w-3.5 text-[#1a1208]" />
+                <div className="absolute -bottom-1 -right-1 flex items-center justify-center" title="Docrud Infinity — Verified">
+                  <div className="h-7 w-7 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#4f46e5,#818cf8)', boxShadow: '0 2px 8px rgba(99,102,241,0.5)' }}>
+                    <span className="text-[13px] font-black text-white leading-none">∞</span>
                   </div>
                 </div>
               )}
@@ -1419,7 +1425,7 @@ export default function ServicesPage() {
                   {catSettings.headline ?? user.name}
                 </h1>
                 {profile.docrudGo && (
-                  <span className="rounded-full px-2 py-0.5 text-[9.5px] font-black tracking-wide" style={{ background: 'linear-gradient(135deg,#1a1208,#2d1f0a)', border: '1px solid rgba(201,168,76,0.35)', color: '#E8CC7A' }}>✦ Go</span>
+                  <span className="rounded-full px-2 py-0.5 text-[9.5px] font-black tracking-wide" style={{ background: 'linear-gradient(135deg,#0f0e2e,#1e1b4b)', border: '1px solid rgba(99,102,241,0.40)', color: '#a5b4fc' }}>∞ Infinity</span>
                 )}
               </div>
               {(catSettings.subheadline ?? profile.headline) && <p className="text-[13px] text-white/50 mb-2">{catSettings.subheadline ?? profile.headline}</p>}

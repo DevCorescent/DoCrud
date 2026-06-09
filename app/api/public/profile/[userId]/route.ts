@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getStoredUsers, getAuthSession } from '@/lib/server/auth';
 import { getProfileData, getFollowCounts, isFollowing as checkIsFollowing } from '@/lib/server/user-profiles';
 import { getPublicGigListings } from '@/lib/server/gigs';
+import { getPublicAnalyticsForUser } from '@/lib/server/file-transfers';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,11 +28,12 @@ export async function GET(req: NextRequest, { params }: { params: { userId: stri
       ? users.find((u) => u.email.toLowerCase() === session.user!.email!.toLowerCase())
       : null;
 
-    const [profile, counts, allGigs, followingThisUser] = await Promise.all([
+    const [profile, counts, allGigs, followingThisUser, publishAnalytics] = await Promise.all([
       getProfileData(userId),
       getFollowCounts(userId),
       getPublicGigListings(),
       sessionUser ? checkIsFollowing(sessionUser.id, userId) : Promise.resolve(false),
+      getPublicAnalyticsForUser(userId),
     ]);
 
     const userGigs = allGigs.filter((g) => g.ownerUserId === userId);
@@ -51,8 +53,11 @@ export async function GET(req: NextRequest, { params }: { params: { userId: stri
       stats: {
         followers: counts.followers,
         following: counts.following,
-        publishedCount: userGigs.length,
+        publishedCount: publishAnalytics.publishCount,
         gigsCount: userGigs.length,
+        totalViews: publishAnalytics.totalViews,
+        totalLikes: publishAnalytics.totalLikes,
+        totalComments: publishAnalytics.totalComments,
       },
       isFollowing: followingThisUser,
       isOwnProfile: sessionUser?.id === userId,

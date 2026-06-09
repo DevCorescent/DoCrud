@@ -131,19 +131,19 @@ function ReferralSharePanel({
         <div
           className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl"
           style={{
-            background: 'linear-gradient(135deg,#C9A84C,#F0D878,#C9A84C)',
-            boxShadow: '0 8px 32px rgba(201,168,76,0.40)',
+            background: 'linear-gradient(135deg,#4f46e5,#818cf8,#4f46e5)',
+            boxShadow: '0 8px 32px rgba(99,102,241,0.40)',
             animation: 'obCardGlow 4s ease-in-out infinite',
           }}
         >
-          <Gift className="h-8 w-8 text-[#1a1208]" />
+          <Gift className="h-8 w-8 text-white" />
         </div>
         <h2 className="text-[1.55rem] font-black tracking-[-0.04em] text-white">
           Workspace Created! 🎉
         </h2>
         <p className="mt-1.5 text-[13px] text-white/45 max-w-xs mx-auto">
           Now earn your first month of{' '}
-          <span style={{ color: '#E8CC7A' }} className="font-bold">Docrud Go ✦</span>{' '}
+          <span style={{ color: '#a5b4fc' }} className="font-bold">Docrud Infinity ∞</span>{' '}
           for free — just refer a friend.
         </p>
       </div>
@@ -154,7 +154,7 @@ function ReferralSharePanel({
           {[
             { icon: Send,        label: 'Share your link' },
             { icon: Users,       label: 'Friend signs up' },
-            { icon: Star,        label: 'You get Go free' },
+            { icon: Star,        label: 'Infinity badge, free' },
           ].map(({ icon: Icon, label }, i) => (
             <div
               key={label}
@@ -171,10 +171,10 @@ function ReferralSharePanel({
       {/* ── Referral link card ── */}
       <div
         className="mb-4 w-full max-w-sm rounded-2xl p-[1.5px]"
-        style={{ background: 'linear-gradient(135deg,#C9A84C55,#F0D87844,#C9A84C55)' }}
+        style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.45),rgba(165,180,252,0.30),rgba(99,102,241,0.45))' }}
       >
-        <div className="rounded-[15px] bg-[#100d06] px-4 py-4">
-          <p className="mb-2 text-[10px] font-black uppercase tracking-[0.22em]" style={{ color: '#C9A84C' }}>
+        <div className="rounded-[15px] bg-[#06060f] px-4 py-4">
+          <p className="mb-2 text-[10px] font-black uppercase tracking-[0.22em]" style={{ color: '#818cf8' }}>
             Your Referral Link
           </p>
           {loading ? (
@@ -224,9 +224,9 @@ function ReferralSharePanel({
             type="button"
             onClick={() => void handleSendInvite()}
             disabled={sending || !inviteEmail.trim()}
-            className="flex h-10 shrink-0 items-center gap-1.5 rounded-xl border border-amber-500/25 bg-amber-500/[0.10] px-3.5 text-[12px] font-bold text-amber-300 transition hover:bg-amber-500/[0.18] disabled:opacity-40"
+            className="flex h-10 shrink-0 items-center gap-1.5 rounded-xl border border-indigo-500/25 bg-indigo-500/[0.10] px-3.5 text-[12px] font-bold text-indigo-300 transition hover:bg-indigo-500/[0.18] disabled:opacity-40"
           >
-            {sending ? <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-amber-300/30 border-t-amber-300" /> : <Send className="h-3.5 w-3.5" />}
+            {sending ? <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-indigo-300/30 border-t-indigo-300" /> : <Send className="h-3.5 w-3.5" />}
             {sending ? 'Sending…' : 'Invite'}
           </button>
         </div>
@@ -244,7 +244,7 @@ function ReferralSharePanel({
 
       {/* ── Fine print ── */}
       <p className="mb-6 max-w-sm text-center text-[10.5px] leading-5 text-white/25">
-        Referrals can be sent multiple times. Docrud Go activates only once per referrer, the moment a referred profile is created.
+        Referrals can be sent multiple times. Docrud Infinity activates only once per referrer, the moment a referred profile is created.
       </p>
 
       {/* ── Continue button ── */}
@@ -511,15 +511,15 @@ export default function BusinessSignupForm({
           </div>
 
           {/* Referral reward teaser in sidebar */}
-          <div className="mt-8 rounded-2xl p-[1px]" style={{ background: 'linear-gradient(135deg,#C9A84C44,#F0D87833,#C9A84C44)' }}>
-            <div className="rounded-[15px] bg-[#100d06]/90 px-3 py-3">
+          <div className="mt-8 rounded-2xl p-[1px]" style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.44),rgba(165,180,252,0.28),rgba(99,102,241,0.44))' }}>
+            <div className="rounded-[15px] bg-[#06060f]/90 px-3 py-3">
               <div className="flex items-center gap-2 mb-1">
-                <Gift className="h-3.5 w-3.5 shrink-0" style={{ color: '#C9A84C' }} />
-                <span className="text-[9.5px] font-black uppercase tracking-[0.2em]" style={{ color: '#C9A84C' }}>Referral Reward</span>
+                <Gift className="h-3.5 w-3.5 shrink-0" style={{ color: '#818cf8' }} />
+                <span className="text-[9.5px] font-black uppercase tracking-[0.2em]" style={{ color: '#6366f1' }}>Referral Reward</span>
               </div>
               <p className="text-[10.5px] leading-4 text-white/40">
                 Refer a colleague after signup → they activate → you get{' '}
-                <span style={{ color: '#E8CC7A' }}>Docrud Go ✦</span> free for 1 month.
+                <span style={{ color: '#a5b4fc' }}>Docrud Infinity ∞</span> free for 1 month.
               </p>
             </div>
           </div>
@@ -599,20 +599,20 @@ export default function BusinessSignupForm({
                       <div
                         className="flex items-center gap-3 rounded-2xl border p-3.5"
                         style={{
-                          borderColor: 'rgba(201,168,76,0.25)',
-                          background: 'rgba(201,168,76,0.06)',
+                          borderColor: 'rgba(99,102,241,0.25)',
+                          background: 'rgba(99,102,241,0.06)',
                           animation: 'obScaleIn 0.25s ease both',
                         }}
                       >
                         <div
                           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
-                          style={{ background: 'linear-gradient(135deg,#C9A84C,#F0D878)', boxShadow: '0 0 12px rgba(201,168,76,0.4)' }}
+                          style={{ background: 'linear-gradient(135deg,#4f46e5,#818cf8)', boxShadow: '0 0 12px rgba(99,102,241,0.4)' }}
                         >
-                          <Gift className="h-4 w-4 text-[#1a1208]" />
+                          <Gift className="h-4 w-4 text-white" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[12px] font-bold" style={{ color: '#E8CC7A' }}>
-                            You were referred! ✦
+                          <p className="text-[12px] font-bold" style={{ color: '#a5b4fc' }}>
+                            You were referred! ∞
                           </p>
                           <p className="text-[11px] text-white/40 truncate">
                             Referral code: <span className="font-mono font-semibold text-white/60">{referralCode}</span>
@@ -724,7 +724,7 @@ export default function BusinessSignupForm({
                           />
                         </Field>
                         <p className="mt-1.5 text-[10.5px] text-white/25">
-                          Got a referral code? Enter it here — your referrer gets Docrud Go free when you activate.
+                          Got a referral code? Enter it here — your referrer gets Docrud Infinity free when you activate.
                         </p>
                       </div>
                     )}
@@ -836,32 +836,32 @@ export default function BusinessSignupForm({
                       </div>
                     </div>
 
-                    {/* ── ₹99 Docrud Go upgrade card ── */}
+                    {/* ── ₹99 Docrud Infinity upgrade card ── */}
                     <div
                       className="relative overflow-hidden rounded-2xl p-[1.5px]"
-                      style={{ background: 'linear-gradient(135deg,#C9A84C,#F0D878 40%,#C9A84C 70%,#A07830)', animation: 'obCardGlow 4s ease-in-out infinite' }}
+                      style={{ background: 'linear-gradient(135deg,#4f46e5,#818cf8 40%,#4f46e5 70%,#3730a3)', animation: 'obCardGlow 4s ease-in-out infinite' }}
                     >
-                      <div className="relative overflow-hidden rounded-[15px] bg-[#100d06] px-4 py-4">
-                        <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse 90% 70% at 50% -10%,rgba(232,204,122,0.08) 0%,transparent 60%)' }} />
+                      <div className="relative overflow-hidden rounded-[15px] bg-[#06060f] px-4 py-4">
+                        <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse 90% 70% at 50% -10%,rgba(99,102,241,0.08) 0%,transparent 60%)' }} />
                         <div className="relative flex items-start justify-between gap-3 mb-2">
                           <div>
                             <div className="flex items-center gap-1.5 mb-0.5">
-                              <span className="text-[9px] font-black uppercase tracking-[0.28em]" style={{ color: '#C9A84C' }}>Upgrade after signup</span>
+                              <span className="text-[9px] font-black uppercase tracking-[0.28em]" style={{ color: '#6366f1' }}>Upgrade after signup</span>
                             </div>
                             <p className="text-[15px] font-black tracking-[-0.03em] text-white leading-tight">
-                              Docrud Go <span style={{ color: '#E8CC7A' }}>✦</span>
+                              Docrud Infinity <span style={{ color: '#a5b4fc' }}>∞</span>
                             </p>
-                            <p className="text-[10.5px] text-white/35">Gold badge + all features unlocked</p>
+                            <p className="text-[10.5px] text-white/35">Infinity badge + all features unlocked</p>
                           </div>
                           <div className="shrink-0 text-right">
-                            <div className="text-[20px] font-black leading-none" style={{ color: '#F0D878' }}>₹99</div>
+                            <div className="text-[20px] font-black leading-none" style={{ color: '#a5b4fc' }}>₹99</div>
                             <div className="text-[9px] text-white/30">one-time</div>
                           </div>
                         </div>
                         <div className="relative grid grid-cols-3 gap-1 mb-2">
-                          {[['✦','Gold badge'],['3×','More views'],['★','Premium gigs']].map(([icon, label]) => (
-                            <div key={label} className="flex items-center gap-1 rounded-lg px-2 py-1.5" style={{ background: 'rgba(201,168,76,0.07)', border: '1px solid rgba(201,168,76,0.12)' }}>
-                              <span className="text-[10px]" style={{ color: '#C9A84C' }}>{icon}</span>
+                          {[['∞','Infinity badge'],['3×','More views'],['★','Premium gigs']].map(([icon, label]) => (
+                            <div key={label} className="flex items-center gap-1 rounded-lg px-2 py-1.5" style={{ background: 'rgba(99,102,241,0.07)', border: '1px solid rgba(99,102,241,0.12)' }}>
+                              <span className="text-[10px] font-bold" style={{ color: '#818cf8' }}>{icon}</span>
                               <span className="text-[9.5px] font-semibold text-white/55 truncate">{label}</span>
                             </div>
                           ))}
@@ -869,19 +869,19 @@ export default function BusinessSignupForm({
 
                         {/* ── OR Divider ── */}
                         <div className="relative flex items-center gap-2 my-3">
-                          <div className="flex-1 h-px" style={{ background: 'rgba(201,168,76,0.20)' }} />
-                          <span className="text-[10px] font-black uppercase tracking-[0.25em] px-2" style={{ color: '#C9A84C99' }}>OR</span>
-                          <div className="flex-1 h-px" style={{ background: 'rgba(201,168,76,0.20)' }} />
+                          <div className="flex-1 h-px" style={{ background: 'rgba(99,102,241,0.20)' }} />
+                          <span className="text-[10px] font-black uppercase tracking-[0.25em] px-2" style={{ color: 'rgba(99,102,241,0.55)' }}>OR</span>
+                          <div className="flex-1 h-px" style={{ background: 'rgba(99,102,241,0.20)' }} />
                         </div>
 
                         {/* ── Referral earn-free strip ── */}
-                        <div className="relative rounded-xl px-3 py-2.5" style={{ background: 'rgba(201,168,76,0.05)', border: '1px solid rgba(201,168,76,0.14)' }}>
+                        <div className="relative rounded-xl px-3 py-2.5" style={{ background: 'rgba(99,102,241,0.05)', border: '1px solid rgba(99,102,241,0.14)' }}>
                           <div className="flex items-center gap-2 mb-1">
-                            <Gift className="h-3.5 w-3.5 shrink-0" style={{ color: '#C9A84C' }} />
-                            <p className="text-[11px] font-black" style={{ color: '#E8CC7A' }}>Earn Docrud Go FREE</p>
+                            <Gift className="h-3.5 w-3.5 shrink-0" style={{ color: '#818cf8' }} />
+                            <p className="text-[11px] font-black" style={{ color: '#a5b4fc' }}>Earn Docrud Infinity FREE</p>
                           </div>
                           <p className="text-[10.5px] text-white/40 leading-4">
-                            Refer a colleague → they sign up → you get Docrud Go for <strong className="text-white/65">1 month free</strong>, no payment needed.
+                            Refer a colleague → they sign up → you get Docrud Infinity for <strong className="text-white/65">1 month free</strong>, no payment needed.
                           </p>
                           <div className="mt-2 flex items-center gap-2 text-[10px] text-white/30">
                             <span className="flex items-center gap-1"><Send className="h-2.5 w-2.5" /> Share your link after signup</span>

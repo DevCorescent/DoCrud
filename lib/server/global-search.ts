@@ -535,6 +535,7 @@ export async function runGlobalSearch(params: {
             headline: p.headline,
             location: p.location,
             skills: skills.slice(0, 6),
+            avatarUrl: p.avatarUrl,
           },
         } satisfies GlobalSearchResult,
         score,

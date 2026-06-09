@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/server/auth';
 import { buildDashboardMetrics } from '@/lib/server/dashboard';
 import { getHistoryEntries } from '@/lib/server/history';
+import { getDbPool } from '@/lib/server/database';
+import { selectHistoryRowsForUser } from '@/lib/server/db/history-rows';
 import { compactDashboard, compactHistory, generateAiText, getAiModelName, isAiConfigured, normalizeAiList, normalizeAiText, parseStructuredJson } from '@/lib/server/ai';
 import { supportFaqs } from '@/lib/support-faqs';
 
@@ -51,7 +53,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Query is required' }, { status: 400 });
     }
 
-    const history = getVisibleHistory(await getHistoryEntries(), session);
+    const userEmail = session.user.email || '';
+    const userRole = session.user.role;
+    const history = getDbPool()
+      ? await selectHistoryRowsForUser({ role: userRole, email: userEmail, orgId: session.user.id })
+      : getVisibleHistory(await getHistoryEntries(), session);
     const dashboard = buildDashboardMetrics(history);
 
     if (!isAiConfigured()) {

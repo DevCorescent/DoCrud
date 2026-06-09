@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/server/auth';
 import { buildDashboardMetrics } from '@/lib/server/dashboard';
 import { getHistoryEntries } from '@/lib/server/history';
+import { getDbPool } from '@/lib/server/database';
+import { selectHistoryRowsForUser } from '@/lib/server/db/history-rows';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,14 +14,21 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const history = await getHistoryEntries();
-    const visibleHistory = session.user.role === 'admin'
-      ? history
-      : session.user.role === 'employee'
-        ? history.filter((entry) => entry.employeeEmail?.toLowerCase() === (session.user.email || '').toLowerCase())
-      : session.user.role === 'client'
-        ? history.filter((entry) => entry.organizationId === session.user.id || entry.clientEmail?.toLowerCase() === (session.user.email || '').toLowerCase())
-        : history.filter((entry) => entry.generatedBy === session.user.email);
+    const userEmail = session.user.email || '';
+    const userRole = session.user.role;
+    let visibleHistory;
+    if (getDbPool()) {
+      visibleHistory = await selectHistoryRowsForUser({ role: userRole, email: userEmail, orgId: session.user.id });
+    } else {
+      const history = await getHistoryEntries();
+      visibleHistory = userRole === 'admin'
+        ? history
+        : userRole === 'employee'
+          ? history.filter((entry) => entry.employeeEmail?.toLowerCase() === userEmail.toLowerCase())
+        : userRole === 'client'
+          ? history.filter((entry) => entry.organizationId === session.user.id || entry.clientEmail?.toLowerCase() === userEmail.toLowerCase())
+          : history.filter((entry) => entry.generatedBy === userEmail);
+    }
 
     return NextResponse.json(buildDashboardMetrics(visibleHistory));
   } catch (error) {

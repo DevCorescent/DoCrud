@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { getAuthSession } from '@/lib/server/auth';
-import { createEmailLogEntry, getHistoryEntries, updateHistoryEntry } from '@/lib/server/history';
+import { createEmailLogEntry, getHistoryEntryById, updateHistoryEntry } from '@/lib/server/history';
 import { appendEmailOutboxEvent, buildTrackingPixel, createOutboundEmailId, rewriteLinksForTracking, updateEmailOutboxEvent } from '@/lib/server/email-outbox';
 import { isValidEmail } from '@/lib/server/security';
 import { getAutomationSettings, getMailSettings } from '@/lib/server/settings';
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
 
     const origin = request.nextUrl.origin;
     const historyEntry = historyId
-      ? (await getHistoryEntries()).find((entry) => entry.id === historyId) || null
+      ? await getHistoryEntryById(historyId)
       : null;
     const templateEmail = historyEntry
       ? buildDocumentDeliveryEmail({

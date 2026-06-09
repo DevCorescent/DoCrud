@@ -29,6 +29,11 @@ export type WebTelemetryEvent = {
   ctaId?: string;
   userAgent?: string;
   ip?: string;
+  // Search-specific enrichment fields
+  searchContext?: string;   // which search bar fired this (e.g. "global", "published_feed", "file_drive")
+  resultsCount?: number;    // how many results were returned
+  hasResults?: boolean;     // convenience bool
+  queryLength?: number;     // character count of query
 };
 
 export type SecurityBlocklist = {

@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
-import { getAuthSession, getStoredUsers } from '@/lib/server/auth';
+import { getAuthSession } from '@/lib/server/auth';
 import { getEffectiveSaasPlanForUser, getRoadmapPromotionSnapshot, getUserUsageSummary } from '@/lib/server/saas';
 import { getHistoryEntries } from '@/lib/server/history';
 import { getFileTransfers } from '@/lib/server/file-transfers';
+import { getStoredUserByEmail } from '@/lib/server/users';
+import { getDbPool } from '@/lib/server/database';
+import { selectHistoryRowsForUser } from '@/lib/server/db/history-rows';
+import { selectFileTransferRowsForUser } from '@/lib/server/db/file-transfers-rows';
 import { getVisibleVirtualIdCards } from '@/lib/server/virtual-ids';
 import { getVisibleCertificates } from '@/lib/server/certificates';
 import { ProfileOverview } from '@/types/document';
@@ -39,33 +43,34 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const [users, history, transfers] = await Promise.all([
-      getStoredUsers(),
-      getHistoryEntries(),
-      getFileTransfers(),
+    const userEmail = session.user.email || '';
+    const userRole = session.user.role;
+    const isDbMode = Boolean(getDbPool());
+    const [storedUser, visibleHistory, visibleTransfers] = await Promise.all([
+      getStoredUserByEmail(userEmail),
+      isDbMode
+        ? selectHistoryRowsForUser({ role: userRole, email: userEmail, orgId: session.user.id })
+        : getHistoryEntries().then((history) => userRole === 'admin'
+            ? history
+            : userRole === 'employee'
+              ? history.filter((e) => e.employeeEmail?.toLowerCase() === userEmail.toLowerCase())
+              : userRole === 'client'
+                ? history.filter((e) => e.organizationId === session.user.id || e.clientEmail?.toLowerCase() === userEmail.toLowerCase())
+                : history.filter((e) => e.generatedBy === userEmail)),
+      isDbMode
+        ? selectFileTransferRowsForUser({ role: userRole, email: userEmail, orgId: session.user.id })
+        : getFileTransfers().then((transfers) => userRole === 'admin'
+            ? transfers
+            : userRole === 'client'
+              ? transfers.filter((e) => e.organizationId === session.user.id || e.uploadedBy.toLowerCase() === userEmail.toLowerCase())
+              : transfers.filter((e) => e.uploadedBy.toLowerCase() === userEmail.toLowerCase())),
     ]);
-
-    const storedUser = users.find((user) => user.email === session.user.email) || null;
     const plan = storedUser ? await getEffectiveSaasPlanForUser(storedUser) : null;
-    const usageSummary = storedUser ? await getUserUsageSummary(storedUser, history) : null;
+    const usageSummary = storedUser ? await getUserUsageSummary(storedUser, visibleHistory) : null;
     const [virtualIds, certificates] = storedUser ? await Promise.all([
       getVisibleVirtualIdCards(storedUser),
       getVisibleCertificates(storedUser),
     ]) : [[], []];
-
-    const visibleHistory = session.user.role === 'admin'
-      ? history
-      : session.user.role === 'employee'
-        ? history.filter((entry) => entry.employeeEmail?.toLowerCase() === (session.user.email || '').toLowerCase())
-        : session.user.role === 'client'
-          ? history.filter((entry) => entry.organizationId === session.user.id || entry.clientEmail?.toLowerCase() === (session.user.email || '').toLowerCase())
-          : history.filter((entry) => entry.generatedBy === session.user.email);
-
-    const visibleTransfers = session.user.role === 'admin'
-      ? transfers
-      : session.user.role === 'client'
-        ? transfers.filter((entry) => entry.organizationId === session.user.id || entry.uploadedBy.toLowerCase() === (session.user.email || '').toLowerCase())
-        : transfers.filter((entry) => entry.uploadedBy.toLowerCase() === (session.user.email || '').toLowerCase());
 
     const lastThirtyDays = new Date();
     lastThirtyDays.setDate(lastThirtyDays.getDate() - 30);

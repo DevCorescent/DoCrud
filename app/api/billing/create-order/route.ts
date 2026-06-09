@@ -44,8 +44,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Plan not available' }, { status: 404 });
     }
 
+    // Guard against stale client requests for removed plans
+    const removedPlanIds = ['workspace-pro', 'workspace-build-your-own', 'talent-directory-pass', 'gigs-pass', 'drive-starter', 'drive-pro'];
+    if (removedPlanIds.includes(planId)) {
+      return NextResponse.json(
+        { error: 'This plan has been discontinued. Upgrade to Docrud Infinity instead.', redirectTo: '/pricing' },
+        { status: 410 },
+      );
+    }
+
     if (plan.billingModel !== 'subscription' && plan.billingModel !== 'payg' && plan.billingModel !== 'custom') {
-      return NextResponse.json({ error: 'This plan is not available for direct Razorpay checkout.' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'This plan is not available for checkout. Upgrade to Docrud Infinity at /pricing.' },
+        { status: 410 },
+      );
     }
 
     const targetAudience = user.accountType === 'individual' ? 'individual' : 'business';

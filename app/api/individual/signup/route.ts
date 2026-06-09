@@ -3,6 +3,7 @@ import { getStoredUsers, saveStoredUsers } from '@/lib/server/auth';
 import { createPasswordHash, isValidEmail, normalizeEmail } from '@/lib/server/security';
 import { applyRoadmapPromotionToSubscription, getDefaultPublicPlan } from '@/lib/server/saas';
 import { buildPolicyAcceptance } from '@/lib/policy-consent';
+import { processProfileActivation, markInviteSignedUp } from '@/lib/server/referrals';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +16,7 @@ export async function POST(request: NextRequest) {
       profession?: string;
       primaryUseCase?: string;
       policyAccepted?: boolean;
+      referralCode?: string;
     };
 
     if (!payload.name?.trim() || !isValidEmail(payload.email || '') || !payload.password || payload.password.length < 8) {
@@ -32,6 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     const selectedPlan = await getDefaultPublicPlan('business');
+    const referralCode = typeof payload.referralCode === 'string' ? payload.referralCode.trim() : '';
 
     const now = new Date().toISOString();
     const userId = `individual-${Date.now()}`;
@@ -46,6 +49,7 @@ export async function POST(request: NextRequest) {
       createdAt: now,
       organizationName: payload.profession?.trim() || 'Individual Workspace',
       createdFromSignup: true,
+      referredByCode: referralCode || undefined,
       policyAcceptance: buildPolicyAcceptance('individual_signup', request.headers.get('x-forwarded-for') || undefined),
       subscription: applyRoadmapPromotionToSubscription({
         planId: selectedPlan.id,
@@ -64,11 +68,30 @@ export async function POST(request: NextRequest) {
     users.push(newUser);
     await saveStoredUsers(users);
 
+    // Process referral activation (non-fatal — never block signup)
+    if (referralCode) {
+      const origin = new URL(request.url).origin;
+      try {
+        await Promise.all([
+          processProfileActivation({
+            refereeUserId: userId,
+            refereeEmail: normalizedEmail,
+            referralCode,
+            origin,
+          }),
+          markInviteSignedUp(normalizedEmail, userId),
+        ]);
+      } catch (refErr) {
+        console.error('[individual/signup] referral activation non-fatal error:', refErr);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       email: normalizedEmail,
       planName: selectedPlan.name,
-      message: 'Your docrud workspace trial is ready. Non-AI features open immediately after login, and a few AI tries are included to help you get started smoothly.',
+      referralActivated: !!referralCode,
+      message: 'Your docrud workspace trial is ready.',
     }, { status: 201 });
   } catch (error) {
     console.error(error);

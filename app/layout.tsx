@@ -1,11 +1,23 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import Script from 'next/script'
+import { Manrope } from 'next/font/google'
 import './globals.css'
 import { SessionProvider } from './components/SessionProvider'
 import { ThemeController } from './components/ThemeController'
 import SplashScreen from '@/components/SplashScreen'
+import GlobalBottomNav from '@/components/GlobalBottomNav'
+import { PresenceProvider } from './components/PresenceProvider'
+import { TelemetryTracker } from './components/TelemetryTracker'
 import { getPublicAppBaseUrl } from '@/lib/url'
 import { policyCompany } from '@/lib/policies'
+
+const manrope = Manrope({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-manrope',
+  preload: true,
+  fallback: ['system-ui', '-apple-system', 'sans-serif'],
+})
 
 const siteUrl = getPublicAppBaseUrl()
 const metadataBase = new URL(siteUrl)
@@ -53,6 +65,15 @@ const siteKeywords = [
   'professional ecosystem',
   'opportunity marketplace',
 ]
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  themeColor: '#0d0e11',
+  colorScheme: 'dark',
+}
 
 export const metadata: Metadata = {
   metadataBase,
@@ -143,7 +164,6 @@ export const metadata: Metadata = {
     google: 'docrud-google-site-verification',
   },
   other: {
-    'theme-color': '#0d0e11',
     'msapplication-TileColor': '#0d0e11',
     'msapplication-TileImage': '/docrud-favicon.png',
   },
@@ -242,7 +262,7 @@ export default function RootLayout({
           },
           {
             '@type': 'Offer',
-            name: 'Docrud Go',
+            name: 'Docrud Infinity',
             price: '99',
             priceCurrency: 'INR',
             availability: 'https://schema.org/InStock',
@@ -321,11 +341,9 @@ export default function RootLayout({
   }
 
   return (
-    <html lang="en">
+    <html lang="en" className={manrope.variable}>
       <head>
         {/* Indexing & browser hints */}
-        <meta name="theme-color" content="#0d0e11" />
-        <meta name="color-scheme" content="dark" />
         <meta name="msapplication-TileColor" content="#0d0e11" />
         <meta name="msapplication-TileImage" content="/docrud-favicon.png" />
         <meta name="mobile-web-app-capable" content="yes" />
@@ -338,9 +356,8 @@ export default function RootLayout({
         <meta name="geo.placename" content="India" />
         <meta name="language" content="English" />
         <meta name="revisit-after" content="3 days" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet" />
+        {/* Preload the app icon (LCP candidate in nav) */}
+        <link rel="preload" href="/docrud-icon.png" as="image" type="image/png" />
         <Script
           src={`https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsId}`}
           strategy="afterInteractive"
@@ -354,15 +371,19 @@ export default function RootLayout({
           `}
         </Script>
       </head>
-      <body className="bg-slate-100 text-slate-950 antialiased">
+      <body className={`${manrope.className} bg-slate-100 text-slate-950 antialiased`}>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
         <SessionProvider>
-          <SplashScreen />
-          <ThemeController />
-          {children}
+          <PresenceProvider>
+            <TelemetryTracker />
+            <SplashScreen />
+            <ThemeController />
+            {children}
+            <GlobalBottomNav />
+          </PresenceProvider>
         </SessionProvider>
       </body>
     </html>

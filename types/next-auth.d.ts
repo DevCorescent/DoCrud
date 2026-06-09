@@ -16,6 +16,7 @@ declare module 'next-auth' {
       accountType?: 'business' | 'individual';
       workspaceAccessMode?: 'standard' | 'board_room_only';
       boardRoomIds?: string[];
+      emailVerified?: boolean;
     };
   }
 
@@ -46,5 +47,6 @@ declare module 'next-auth/jwt' {
     accountType?: 'business' | 'individual';
     workspaceAccessMode?: 'standard' | 'board_room_only';
     boardRoomIds?: string[];
+    emailVerified?: boolean;
   }
 }

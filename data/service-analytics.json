@@ -1707,5 +1707,22 @@
     "source": "profile",
     "id": "evt_1779359235523_8phaq",
     "createdAt": "2026-05-21T10:27:15.523Z"
+  },
+  {
+    "serviceId": "svc_1779178215277_8xmqiv",
+    "serviceUserId": "individual-1779109829969",
+    "type": "view",
+    "visitorId": "v_1779878495354_qzd1v7",
+    "source": "profile",
+    "id": "evt_1779878495718_fqgmj",
+    "createdAt": "2026-05-27T10:41:35.718Z"
+  },
+  {
+    "serviceId": "svc_1779178215277_8xmqiv",
+    "serviceUserId": "individual-1779109829969",
+    "type": "book_click",
+    "source": "profile",
+    "id": "evt_1779878502859_5zhrd",
+    "createdAt": "2026-05-27T10:41:42.859Z"
   }
 ]

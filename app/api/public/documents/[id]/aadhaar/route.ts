@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAccessEvent, getHistoryEntries, updateHistoryEntry } from '@/lib/server/history';
+import { createAccessEvent, getHistoryEntryById, updateHistoryEntry } from '@/lib/server/history';
 import { getRequestIp, getRequestUserAgent, getDeviceLabel } from '@/lib/server/public-documents';
 import { getAadhaarRuntimeConfig, requestAadhaarOtp, verifyAadhaarOtp, type AadhaarIdentityType } from '@/lib/server/aadhaar';
 
@@ -33,8 +33,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       return NextResponse.json({ error: 'Aadhaar verification is not configured yet. Ask your admin to complete the UIDAI gateway setup.' }, { status: 503 });
     }
 
-    const history = await getHistoryEntries();
-    const entry = history.find((item) => item.shareId === params.id || item.id === params.id);
+    const entry = await getHistoryEntryById(params.id);
     if (!entry) {
       return NextResponse.json({ error: 'Document not found' }, { status: 404 });
     }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { documentTemplates } from '@/data/templates';
-import { createAccessEvent, getHistoryEntries, updateHistoryEntry } from '@/lib/server/history';
+import { createAccessEvent, getHistoryEntries, getHistoryEntryById, updateHistoryEntry } from '@/lib/server/history';
 import { renderDocumentTemplate } from '@/lib/template';
 import { getCustomTemplatesFromRepository } from '@/lib/server/repositories';
 import { getSignatureSettings } from '@/lib/server/settings';
@@ -39,8 +39,7 @@ function resolveTemplatePageOptions(template: any) {
 
 export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const history = await getHistoryEntries();
-    const entry = history.find((item) => item.shareId === params.id || item.id === params.id);
+    const entry = await getHistoryEntryById(params.id);
     const aadhaarRuntime = await getAadhaarRuntimeConfig();
 
     if (!entry) {
@@ -263,8 +262,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       docsheetWorkbook?: unknown;
     };
 
-    const history = await getHistoryEntries();
-    const entry = history.find((item) => item.shareId === params.id || item.id === params.id);
+    const entry = await getHistoryEntryById(params.id);
     if (!entry) {
       return NextResponse.json({ error: 'Document not found' }, { status: 404 });
     }

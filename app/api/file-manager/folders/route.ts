@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/server/auth';
 import { appendFileManagerFolder, getFileManagerFolders, removeFileManagerFolder, updateFileManagerFolder } from '@/lib/server/file-manager';
-import { getFileTransfers, saveFileTransfers } from '@/lib/server/file-transfers';
+import { getFileTransfers, patchFileTransfersByFolderId, saveFileTransfers } from '@/lib/server/file-transfers';
+import { getDbPool } from '@/lib/server/database';
 import { FileManagerFolder } from '@/types/document';
 
 export const dynamic = 'force-dynamic';
@@ -93,9 +94,12 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (payload.name?.trim()) {
-      const transfers = await getFileTransfers();
-      const nextTransfers = transfers.map((entry) => entry.folderId === updated.id ? { ...entry, folderName: updated.name } : entry);
-      await saveFileTransfers(nextTransfers);
+      if (getDbPool()) {
+        await patchFileTransfersByFolderId(updated.id, { folderName: updated.name });
+      } else {
+        const transfers = await getFileTransfers();
+        await saveFileTransfers(transfers.map((entry) => entry.folderId === updated.id ? { ...entry, folderName: updated.name } : entry));
+      }
     }
 
     return NextResponse.json(updated);
@@ -129,9 +133,12 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Folder could not be removed.' }, { status: 500 });
     }
 
-    const transfers = await getFileTransfers();
-    const nextTransfers = transfers.map((entry) => entry.folderId === id ? { ...entry, folderId: undefined, folderName: undefined } : entry);
-    await saveFileTransfers(nextTransfers);
+    if (getDbPool()) {
+      await patchFileTransfersByFolderId(id, { folderId: null, folderName: null });
+    } else {
+      const transfers = await getFileTransfers();
+      await saveFileTransfers(transfers.map((entry) => entry.folderId === id ? { ...entry, folderId: undefined, folderName: undefined } : entry));
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

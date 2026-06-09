@@ -1,6 +1,7 @@
 import { generateSharePassword } from '@/lib/server/history';
 import { fileDirectoryLockersPath } from '@/lib/server/storage';
-import { getFileTransfers, saveFileTransfers } from '@/lib/server/file-transfers';
+import { getFileTransfers, patchFileTransfersByLockerId, saveFileTransfers } from '@/lib/server/file-transfers';
+import { getDbPool } from '@/lib/server/database';
 import { readJsonFile, writeJsonFile } from '@/lib/server/storage';
 import { FileDirectoryLocker, FileDirectoryLockerHistoryEvent } from '@/types/document';
 
@@ -46,7 +47,8 @@ export async function rotateLockerPassword(lockerId: string, options: {
   nextPassword?: string;
   rotationDays?: number;
 }) {
-  const [lockers, transfers] = await Promise.all([getFileLockers(), getFileTransfers()]);
+  const usingDb = Boolean(getDbPool());
+  const [lockers, transfers] = await Promise.all([getFileLockers(), usingDb ? Promise.resolve([]) : getFileTransfers()]);
   const index = lockers.findIndex((locker) => locker.id === lockerId);
   if (index === -1) return null;
 
@@ -72,18 +74,21 @@ export async function rotateLockerPassword(lockerId: string, options: {
     ],
   };
 
-  const nextTransfers = transfers.map((transfer) => (
-    transfer.lockerId === lockerId
-      ? {
-          ...transfer,
-          accessPassword: nextPassword,
-          updatedAt: now,
-        }
-      : transfer
-  ));
-
   const nextLockers = lockers.map((locker, itemIndex) => itemIndex === index ? updatedLocker : locker);
-  await Promise.all([saveFileLockers(nextLockers), saveFileTransfers(nextTransfers)]);
+
+  if (usingDb) {
+    await Promise.all([
+      saveFileLockers(nextLockers),
+      patchFileTransfersByLockerId(lockerId, { accessPassword: nextPassword }),
+    ]);
+  } else {
+    const nextTransfers = transfers.map((transfer) => (
+      transfer.lockerId === lockerId
+        ? { ...transfer, accessPassword: nextPassword, updatedAt: now }
+        : transfer
+    ));
+    await Promise.all([saveFileLockers(nextLockers), saveFileTransfers(nextTransfers)]);
+  }
   return updatedLocker;
 }
 

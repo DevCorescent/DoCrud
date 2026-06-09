@@ -11,14 +11,20 @@ import {
   Landmark,
   Loader2,
   Mail,
+  Plus,
   ShieldAlert,
   ShieldCheck,
   Sparkles,
+  Trash2,
   TrendingUp,
   Users,
   Wrench,
   TicketPercent,
   AlertTriangle,
+  Image as ImageIcon,
+  GripVertical,
+  ExternalLink,
+  Layout,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -29,6 +35,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { PlatformConfig, PlatformFeatureControlKey, SaasOverview, UserIntelligenceOverview } from '@/types/document';
 import SuperAdminMailCenter from '@/components/SuperAdminMailCenter';
 import SuperAdminUserCenter from '@/components/SuperAdminUserCenter';
+import HomepageCommandCenter from '@/components/HomepageCommandCenter';
 
 type TelemetryOverview = {
   generatedAt: string;
@@ -117,7 +124,7 @@ function prettyFeatureLabel(key: string) {
 }
 
 export default function SuperAdminCommandCenter() {
-  const [tab, setTab] = useState<'overview' | 'traffic' | 'behaviour' | 'events' | 'tenants' | 'users' | 'security' | 'safety' | 'features' | 'commerce' | 'withdrawals' | 'mail'>('overview');
+  const [tab, setTab] = useState<'overview' | 'traffic' | 'behaviour' | 'events' | 'tenants' | 'users' | 'security' | 'safety' | 'features' | 'commerce' | 'withdrawals' | 'mail' | 'banners' | 'homepage'>('overview');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [state, setState] = useState<LoadState>({});
@@ -600,6 +607,13 @@ export default function SuperAdminCommandCenter() {
             <TabsTrigger value="mail" className="rounded-xl">
               <Mail className="mr-2 h-4 w-4" />
               Mail
+            </TabsTrigger>
+            <TabsTrigger value="banners" className="rounded-xl">
+              Banners
+            </TabsTrigger>
+            <TabsTrigger value="homepage" className="rounded-xl">
+              <Layout className="mr-2 h-4 w-4" />
+              Homepage
             </TabsTrigger>
           </TabsList>
 
@@ -1571,11 +1585,11 @@ export default function SuperAdminCommandCenter() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between flex-wrap gap-3">
                   <CardTitle className="flex items-center gap-2 text-base text-slate-950">
-                    <Gift className="h-4 w-4 text-amber-600" />
-                    Referral Program — Docrud Go
+                    <Gift className="h-4 w-4 text-indigo-600" />
+                    Referral Program — Docrud Infinity
                   </CardTitle>
-                  <div className="flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-semibold text-amber-700">
-                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  <div className="flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-[11px] font-semibold text-indigo-700">
+                    <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-pulse" />
                     Live tracking
                   </div>
                 </div>
@@ -1588,7 +1602,7 @@ export default function SuperAdminCommandCenter() {
                     {[
                       { label: 'Invites Sent',    value: referralSummary.totalInvitesSent,    sub: `${referralSummary.invites30d} last 30d`,    color: 'text-indigo-600',  bg: 'bg-indigo-50',  border: 'border-indigo-100' },
                       { label: 'Activations',     value: referralSummary.totalActivations,    sub: `${referralSummary.activations30d} last 30d`, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
-                      { label: 'Bonuses Granted', value: referralSummary.totalBonusesGranted, sub: 'Docrud Go unlocked free',                    color: 'text-amber-600',   bg: 'bg-amber-50',   border: 'border-amber-100' },
+                      { label: 'Bonuses Granted', value: referralSummary.totalBonusesGranted, sub: 'Docrud Infinity unlocked free',               color: 'text-indigo-600',  bg: 'bg-indigo-50',  border: 'border-indigo-100' },
                       { label: 'Conversion Rate', value: `${referralSummary.conversionRate}%`,sub: `${referralSummary.uniqueReferrers} referrers`,color: 'text-violet-600',  bg: 'bg-violet-50',  border: 'border-violet-100' },
                     ].map(({ label, value, sub, color, bg, border }) => (
                       <div key={label} className={`rounded-2xl border ${border} ${bg} px-4 py-3`}>
@@ -1607,11 +1621,11 @@ export default function SuperAdminCommandCenter() {
                 )}
 
                 {/* ── Programme mechanic banner ── */}
-                <div className="flex items-start gap-3 rounded-2xl border border-amber-100 bg-amber-50/60 px-4 py-3">
-                  <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+                <div className="flex items-start gap-3 rounded-2xl border border-indigo-100 bg-indigo-50/60 px-4 py-3">
+                  <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-indigo-500" />
                   <p className="text-[12.5px] text-slate-700 leading-5">
                     <strong className="text-slate-900">How it works:</strong> A user shares their referral link. When the invited person completes signup, the referrer&apos;s{' '}
-                    <strong className="text-amber-700">Docrud Go ✦</strong> badge is activated for free — one-time per referrer. Referrals can be sent to unlimited people.
+                    <strong className="text-indigo-700">Docrud Infinity ∞</strong> badge is activated for free — one-time per referrer. Referrals can be sent to unlimited people.
                   </p>
                 </div>
 
@@ -1666,10 +1680,10 @@ export default function SuperAdminCommandCenter() {
                               <span className={[
                                 'rounded-full px-2.5 py-0.5 text-[10px] font-bold',
                                 act.bonusGrantedAt
-                                  ? 'bg-amber-100 text-amber-700'
+                                  ? 'bg-indigo-100 text-indigo-700'
                                   : 'bg-slate-100 text-slate-500',
                               ].join(' ')}>
-                                {act.bonusGrantedAt ? '✦ Go Granted' : 'Activated'}
+                                {act.bonusGrantedAt ? '∞ Granted' : 'Activated'}
                               </span>
                               <p className="mt-0.5 text-[9.5px] text-slate-400">
                                 {new Date(act.activatedAt).toLocaleDateString('en-IN')}
@@ -1717,7 +1731,7 @@ export default function SuperAdminCommandCenter() {
                           <div className="text-center text-[13px] font-bold text-emerald-700 sm:block">{row.activations}</div>
                           <div className="text-center sm:block">
                             {row.bonusGranted ? (
-                              <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-black text-amber-700">✦ Go Free</span>
+                              <span className="rounded-full bg-indigo-100 px-2.5 py-0.5 text-[10px] font-black text-indigo-700">∞ Infinity Free</span>
                             ) : (
                               <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-semibold text-slate-400">Pending</span>
                             )}
@@ -1868,7 +1882,298 @@ export default function SuperAdminCommandCenter() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="banners" className="mt-6">
+          <AdBannerManager />
+        </TabsContent>
+        <TabsContent value="homepage" className="mt-6">
+          <HomepageCommandCenter />
+        </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   Ad Banner Manager — full CRUD UI for homepage ad banners
+══════════════════════════════════════════════════════════════════ */
+type AdBanner = {
+  id: string;
+  imageUrl: string;
+  title: string;
+  subtitle?: string;
+  ctaLabel?: string;
+  ctaHref?: string;
+  active: boolean;
+  order: number;
+  createdAt: string;
+};
+
+const EMPTY_BANNER: Omit<AdBanner, 'id' | 'createdAt' | 'order'> = {
+  imageUrl: '', title: '', subtitle: '', ctaLabel: '', ctaHref: '', active: true,
+};
+
+function AdBannerManager() {
+  const [banners, setBanners]   = useState<AdBanner[]>([]);
+  const [loading, setLoading]   = useState(true);
+  const [saving, setSaving]     = useState(false);
+  const [msg, setMsg]           = useState<{ ok: boolean; text: string } | null>(null);
+  const [editing, setEditing]   = useState<AdBanner | null>(null);
+  const [form, setForm]         = useState<typeof EMPTY_BANNER>({ ...EMPTY_BANNER });
+  const [uploading, setUploading] = useState(false);
+  const fileRef                 = useRef<HTMLInputElement>(null);
+  const dragOver                = useRef<number | null>(null);
+
+  const flash = (ok: boolean, text: string) => {
+    setMsg({ ok, text });
+    setTimeout(() => setMsg(null), 3500);
+  };
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const r = await fetch('/api/super-admin/ad-banners', { cache: 'no-store' });
+      const d = await r.json();
+      setBanners(Array.isArray(d.banners) ? d.banners : []);
+    } catch { flash(false, 'Failed to load banners'); }
+    setLoading(false);
+  };
+
+  useEffect(() => { void load(); }, []);
+
+  const openNew = () => {
+    setEditing(null);
+    setForm({ ...EMPTY_BANNER });
+  };
+
+  const openEdit = (b: AdBanner) => {
+    setEditing(b);
+    setForm({ imageUrl: b.imageUrl, title: b.title, subtitle: b.subtitle ?? '', ctaLabel: b.ctaLabel ?? '', ctaHref: b.ctaHref ?? '', active: b.active });
+  };
+
+  const handleUpload = async (file: File) => {
+    setUploading(true);
+    try {
+      const fd = new FormData(); fd.append('file', file);
+      const r = await fetch('/api/super-admin/ad-banners/upload', { method: 'POST', body: fd });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Upload failed');
+      setForm(f => ({ ...f, imageUrl: d.url }));
+    } catch (e) { flash(false, e instanceof Error ? e.message : 'Upload failed'); }
+    setUploading(false);
+  };
+
+  const save = async () => {
+    if (!form.imageUrl) { flash(false, 'Please upload an image first'); return; }
+    if (!form.title.trim()) { flash(false, 'Title is required'); return; }
+    setSaving(true);
+    try {
+      const body = editing
+        ? { action: 'upsert', banner: { ...editing, ...form } }
+        : { action: 'upsert', banner: { ...form, id: `banner_${Date.now()}`, order: banners.length, createdAt: new Date().toISOString() } };
+      const r = await fetch('/api/super-admin/ad-banners', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Save failed');
+      setBanners(d.banners);
+      setEditing(null);
+      setForm({ ...EMPTY_BANNER });
+      flash(true, editing ? 'Banner updated' : 'Banner created');
+    } catch (e) { flash(false, e instanceof Error ? e.message : 'Save failed'); }
+    setSaving(false);
+  };
+
+  const deleteBanner = async (id: string) => {
+    if (!confirm('Delete this banner?')) return;
+    setSaving(true);
+    try {
+      const r = await fetch('/api/super-admin/ad-banners', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'delete', id }) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Delete failed');
+      setBanners(d.banners);
+      if (editing?.id === id) { setEditing(null); setForm({ ...EMPTY_BANNER }); }
+      flash(true, 'Banner deleted');
+    } catch (e) { flash(false, e instanceof Error ? e.message : 'Delete failed'); }
+    setSaving(false);
+  };
+
+  const toggleActive = async (b: AdBanner) => {
+    const updated = { ...b, active: !b.active };
+    const r = await fetch('/api/super-admin/ad-banners', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'upsert', banner: updated }) });
+    const d = await r.json();
+    if (r.ok) setBanners(d.banners);
+  };
+
+  const isFormOpen = form.imageUrl !== '' || editing !== null || form.title !== '';
+
+  return (
+    <div className="space-y-5">
+      {/* header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-950">Ad Banners</h2>
+          <p className="text-xs text-slate-500 mt-0.5">Manage homepage advertisement slider banners.</p>
+        </div>
+        <Button size="sm" className="rounded-full bg-slate-950 text-white hover:bg-slate-800" onClick={openNew}>
+          <Plus className="mr-1.5 h-3.5 w-3.5" /> Add Banner
+        </Button>
+      </div>
+
+      {/* flash message */}
+      {msg && (
+        <div className={`rounded-xl border px-4 py-3 text-sm font-medium ${msg.ok ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-rose-200 bg-rose-50 text-rose-800'}`}>
+          {msg.text}
+        </div>
+      )}
+
+      {/* form */}
+      {(isFormOpen || editing) && (
+        <Card className="border-white/60 bg-white/82 backdrop-blur">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm text-slate-950">{editing ? 'Edit Banner' : 'New Banner'}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 pt-0">
+            {/* image upload */}
+            <div>
+              <p className="mb-1.5 text-xs font-medium text-slate-600">Banner Image <span className="text-slate-400">(landscape, 21:9 recommended, max 4 MB)</span></p>
+              {form.imageUrl ? (
+                <div className="relative w-full rounded-xl overflow-hidden border border-white/60" style={{ aspectRatio: '21/9' }}>
+                  <img src={form.imageUrl} alt="preview" className="w-full h-full object-cover" />
+                  <button
+                    onClick={() => setForm(f => ({ ...f, imageUrl: '' }))}
+                    className="absolute top-2 right-2 rounded-full bg-black/60 p-1.5 text-white hover:bg-black/80 transition"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => fileRef.current?.click()}
+                  disabled={uploading}
+                  className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 py-8 text-slate-500 transition hover:border-slate-400 hover:bg-slate-100 disabled:opacity-60"
+                >
+                  {uploading
+                    ? <Loader2 className="h-5 w-5 animate-spin" />
+                    : <ImageIcon className="h-5 w-5" />
+                  }
+                  <span className="text-xs font-medium">{uploading ? 'Uploading…' : 'Click to upload image'}</span>
+                </button>
+              )}
+              <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden"
+                onChange={e => { const f = e.target.files?.[0]; if (f) void handleUpload(f); e.target.value = ''; }} />
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-600">Title *</label>
+                <Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                  placeholder="Your ad headline" className="h-10 rounded-xl border-white/70 bg-white/70 backdrop-blur" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-600">Subtitle</label>
+                <Input value={form.subtitle} onChange={e => setForm(f => ({ ...f, subtitle: e.target.value }))}
+                  placeholder="Supporting text" className="h-10 rounded-xl border-white/70 bg-white/70 backdrop-blur" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-600">CTA Label</label>
+                <Input value={form.ctaLabel} onChange={e => setForm(f => ({ ...f, ctaLabel: e.target.value }))}
+                  placeholder="Learn More" className="h-10 rounded-xl border-white/70 bg-white/70 backdrop-blur" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-600">CTA Link</label>
+                <Input value={form.ctaHref} onChange={e => setForm(f => ({ ...f, ctaHref: e.target.value }))}
+                  placeholder="https://…" className="h-10 rounded-xl border-white/70 bg-white/70 backdrop-blur" />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setForm(f => ({ ...f, active: !f.active }))}
+                className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border transition-colors ${form.active ? 'border-emerald-400 bg-emerald-500' : 'border-slate-300 bg-slate-200'}`}
+              >
+                <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${form.active ? 'translate-x-4' : 'translate-x-0'}`} />
+              </button>
+              <span className="text-sm text-slate-600">Active (show on homepage)</span>
+            </div>
+
+            <div className="flex gap-2">
+              <Button size="sm" className="rounded-full bg-slate-950 text-white hover:bg-slate-800" disabled={saving || uploading} onClick={save}>
+                {saving ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+                {editing ? 'Save Changes' : 'Create Banner'}
+              </Button>
+              <Button size="sm" variant="outline" className="rounded-full" onClick={() => { setEditing(null); setForm({ ...EMPTY_BANNER }); }}>
+                Cancel
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* list */}
+      <Card className="border-white/60 bg-white/82 backdrop-blur">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm text-slate-950">All Banners <span className="font-normal text-slate-500">({banners.length})</span></CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          {loading ? (
+            <div className="flex items-center justify-center py-10 text-slate-400">
+              <Loader2 className="h-5 w-5 animate-spin" />
+            </div>
+          ) : banners.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 py-10 text-center text-sm text-slate-400">
+              No banners yet. Click "Add Banner" to create one.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {banners.map((b) => (
+                <div key={b.id} className="flex items-center gap-3 rounded-2xl border border-white/70 bg-white/60 p-3">
+                  <GripVertical className="h-4 w-4 shrink-0 text-slate-300" />
+
+                  {/* thumbnail */}
+                  <div className="h-14 w-24 shrink-0 overflow-hidden rounded-lg bg-slate-100 border border-slate-200">
+                    <img src={b.imageUrl} alt={b.title} className="h-full w-full object-cover" />
+                  </div>
+
+                  {/* info */}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-slate-950">{b.title}</p>
+                    {b.subtitle && <p className="truncate text-xs text-slate-500">{b.subtitle}</p>}
+                    {b.ctaHref && (
+                      <a href={b.ctaHref} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-600 transition mt-0.5">
+                        <ExternalLink className="h-2.5 w-2.5" /> {b.ctaHref.length > 40 ? b.ctaHref.slice(0, 40) + '…' : b.ctaHref}
+                      </a>
+                    )}
+                  </div>
+
+                  {/* active toggle */}
+                  <button
+                    type="button"
+                    onClick={() => void toggleActive(b)}
+                    className={`shrink-0 rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] transition ${b.active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}
+                  >
+                    {b.active ? 'Live' : 'Off'}
+                  </button>
+
+                  {/* edit */}
+                  <Button size="sm" variant="outline" className="h-7 shrink-0 rounded-full px-3 text-xs" onClick={() => openEdit(b)}>
+                    Edit
+                  </Button>
+
+                  {/* delete */}
+                  <button
+                    type="button"
+                    onClick={() => void deleteBanner(b.id)}
+                    className="shrink-0 rounded-full p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

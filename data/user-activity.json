@@ -1,15 +1,28 @@
 [
   {
-    "id": "ua-1779672786641-jgdhqa",
-    "userId": "1",
-    "userEmail": "admin@company.com",
-    "userName": "Admin User",
-    "role": "admin",
-    "accountType": "business",
-    "createdAt": "2026-05-25T01:33:06.639Z",
-    "eventType": "session_start",
-    "tabId": "dashboard"
-  }
-]ureId": "dashboard"
+    "id": "ua-1780543544540-rjdd80",
+    "userId": "individual-1780403102793",
+    "userEmail": "mohans@yopmail.com",
+    "userName": "mohan singh",
+    "role": "individual",
+    "accountType": "individual",
+    "organizationName": "Individual Workspace",
+    "createdAt": "2026-06-04T03:25:44.539Z",
+    "eventType": "tab_view",
+    "tabId": "dashboard",
+    "featureId": "dashboard"
+  },
+  {
+    "id": "ua-1780485630817-ba2d6v",
+    "userId": "individual-1780403102793",
+    "userEmail": "mohans@yopmail.com",
+    "userName": "mohan singh",
+    "role": "individual",
+    "accountType": "individual",
+    "organizationName": "Individual Workspace",
+    "createdAt": "2026-06-03T11:20:30.816Z",
+    "eventType": "tab_view",
+    "tabId": "dashboard",
+    "featureId": "dashboard"
   }
 ]

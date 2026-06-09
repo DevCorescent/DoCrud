@@ -88,56 +88,129 @@ export function buildSignedReceiptEmail(input: {
     ? 'Thanks for signing. Your receipt is below and the signed PDF is attached for your records.'
     : 'This document has been signed. Receipt details are below and the signed PDF is attached.';
 
-  const html = `
-    <div style="padding: 14px 14px 0;">
-      ${senderNoteText ? `
-        <div style="border:1px solid rgba(15,23,42,.10); background: rgba(148,163,184,.14); border-radius: 16px; padding: 14px 14px; margin-bottom: 14px;">
-          <div style="font-size:12px; letter-spacing:.14em; text-transform:uppercase; font-weight:800; color: rgba(15,23,42,.60);">Note</div>
-          <div style="margin-top:10px; font-size:14px; color:#0f172a;">${escapeHtmlLite(senderNoteText)}</div>
-        </div>
-      ` : ''}
+  const isSignerType = input.recipientType === 'signer';
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+</head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:32px 16px;">
+<tr><td align="center">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 4px 40px rgba(0,0,0,0.10);">
 
-      <div style="border:1px solid rgba(15,23,42,.10); border-radius: 18px; padding: 16px 16px; background:#ffffff;">
-        <div style="font-size:12px; letter-spacing:.14em; text-transform:uppercase; font-weight:900; color: rgba(15,23,42,.55);">${escapeHtmlLite(title)}</div>
-        <div style="margin-top:6px; font-size:18px; font-weight:900; letter-spacing:-.02em; color:#0f172a;">${escapeHtmlLite(docLabel)}</div>
-        ${entry.referenceNumber ? `<div style="margin-top:4px; font-size:13px; color: rgba(15,23,42,.65);">Reference: <strong style="color:#0f172a;">${escapeHtmlLite(entry.referenceNumber)}</strong></div>` : ''}
-        <div style="margin-top: 10px; font-size: 14px; color:#0f172a;">${escapeHtmlLite(messageLead)}</div>
-        <div style="margin-top: 14px;">
-          <a href="${escapeHtmlLite(publicLink)}" style="display:inline-block; text-decoration:none; background:#0f172a; color:#ffffff; padding: 12px 16px; border-radius: 999px; font-weight:800; font-size:14px;">
-            Open execution record
-          </a>
-        </div>
-      </div>
+<!-- header -->
+<tr>
+  <td style="background:linear-gradient(135deg,#052e16 0%,#166534 100%);padding:28px 32px 26px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td>
+          <div style="font-size:11px;font-weight:800;letter-spacing:0.20em;text-transform:uppercase;color:#86efac;margin-bottom:10px;">
+            Signing Receipt &nbsp;·&nbsp; Secure E-Sign
+          </div>
+          <div style="font-size:22px;font-weight:800;color:#f0fdf4;letter-spacing:-0.03em;line-height:1.25;">
+            ${escapeHtmlLite(isSignerType ? 'Document Signed ✓' : 'Signing Complete ✓')}
+          </div>
+          ${entry.referenceNumber ? `<div style="margin-top:6px;font-size:13px;color:#86efac;">Ref&nbsp;#${escapeHtmlLite(entry.referenceNumber)}</div>` : ''}
+        </td>
+        <td align="right" valign="top">
+          <div style="display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.15);">
+            <span style="font-size:22px;">✅</span>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
 
-      <div style="margin-top: 14px; border:1px solid rgba(15,23,42,.10); border-radius: 18px; padding: 16px 16px; background:#ffffff;">
-        <div style="font-size:12px; letter-spacing:.14em; text-transform:uppercase; font-weight:900; color: rgba(15,23,42,.55);">Receipt details</div>
-        <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse: collapse; width:100%; margin-top:10px;">
-          ${detailsRows.map((row) => `
-            <tr>
-              <td style="padding: 8px 0; font-size:13px; color: rgba(15,23,42,.60); width: 42%;">${escapeHtmlLite(row.label)}</td>
-              <td style="padding: 8px 0; font-size:13px; color: #0f172a; font-weight:700;">${escapeHtmlLite(row.value)}</td>
-            </tr>
-          `).join('')}
-        </table>
-      </div>
+<!-- body -->
+<tr>
+  <td style="padding:28px 32px 0;">
+    <p style="margin:0 0 6px;font-size:15px;color:#0f172a;line-height:1.6;">${escapeHtmlLite(messageLead)}</p>
+    ${senderNoteText ? `
+    <div style="margin-top:16px;background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:14px 16px;">
+      <div style="font-size:10px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:#92400e;margin-bottom:6px;">Note from sender</div>
+      <p style="margin:0;font-size:13px;color:#78350f;line-height:1.6;">${escapeHtmlLite(senderNoteText)}</p>
+    </div>` : ''}
+  </td>
+</tr>
 
-      <div style="margin-top: 14px; border:1px solid rgba(15,23,42,.10); border-radius: 18px; padding: 16px 16px; background:#ffffff;">
-        <div style="font-size:12px; letter-spacing:.14em; text-transform:uppercase; font-weight:900; color: rgba(15,23,42,.55);">Guidelines & terms</div>
-        <ul style="margin: 10px 0 0; padding: 0 0 0 18px; color:#0f172a; font-size:13px;">
-          <li style="margin: 6px 0;">Keep this receipt and signed PDF for your records.</li>
-          <li style="margin: 6px 0;">Do not share your password publicly. Access is logged for audit and compliance.</li>
-          <li style="margin: 6px 0;">If you believe this was sent in error, contact the sender immediately.</li>
-        </ul>
-        <div style="margin-top: 10px; font-size: 12px; color: rgba(15,23,42,.60);">
-          ${termsLinks.map((item) => `<a href="${escapeHtmlLite(item.url)}" style="color: rgba(15,23,42,.75); text-decoration: underline; margin-right: 10px;">${escapeHtmlLite(item.label)}</a>`).join('')}
-        </div>
-      </div>
-
-      <div style="margin-top: 14px; font-size: 12px; color: rgba(15,23,42,.60);">
-        ${input.senderEmail ? `Sent by ${escapeHtmlLite(input.senderEmail)} via docrud.` : 'Sent via docrud.'}
+<!-- document card -->
+<tr>
+  <td style="padding:20px 32px 0;">
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:20px;">
+      <div style="font-size:10px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#94a3b8;margin-bottom:8px;">Document</div>
+      <div style="font-size:18px;font-weight:800;color:#0f172a;letter-spacing:-0.02em;line-height:1.3;">${escapeHtmlLite(docLabel)}</div>
+      <div style="margin-top:14px;">
+        <a href="${escapeHtmlLite(publicLink)}" style="display:inline-block;background:#0f172a;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:999px;font-weight:800;font-size:13px;">
+          Open Execution Record →
+        </a>
       </div>
     </div>
-  `.trim();
+  </td>
+</tr>
+
+<!-- receipt details -->
+<tr>
+  <td style="padding:20px 32px 0;">
+    <div style="border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;">
+      <div style="background:#f8fafc;padding:12px 18px;border-bottom:1px solid #e2e8f0;">
+        <span style="font-size:10px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#94a3b8;">Receipt Details</span>
+      </div>
+      <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;">
+        ${detailsRows.map((row, i) => `
+        <tr style="background:${i % 2 === 0 ? '#ffffff' : '#f8fafc'};">
+          <td style="padding:10px 18px;font-size:12px;color:#64748b;width:44%;border-bottom:1px solid #f1f5f9;">${escapeHtmlLite(row.label)}</td>
+          <td style="padding:10px 18px;font-size:12px;color:#0f172a;font-weight:700;border-bottom:1px solid #f1f5f9;">${escapeHtmlLite(row.value)}</td>
+        </tr>`).join('')}
+      </table>
+    </div>
+  </td>
+</tr>
+
+<!-- guidelines -->
+<tr>
+  <td style="padding:20px 32px 0;">
+    <div style="border:1px solid #e2e8f0;border-radius:16px;padding:18px 20px;">
+      <div style="font-size:10px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#94a3b8;margin-bottom:12px;">Important Guidelines</div>
+      <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+        ${[
+          'Retain this receipt and the signed PDF in a secure location for your records.',
+          'Do not share your signing password. All access is cryptographically logged for compliance.',
+          'This receipt constitutes an official audit record of the signing event.',
+          'If you believe this email was sent in error, contact the document sender immediately.',
+        ].map((line) => `
+        <tr>
+          <td style="padding:4px 12px 4px 0;vertical-align:top;width:16px;font-size:13px;color:#10b981;">·</td>
+          <td style="padding:4px 0;font-size:12px;color:#475569;line-height:1.6;">${escapeHtmlLite(line)}</td>
+        </tr>`).join('')}
+      </table>
+      <div style="margin-top:14px;padding-top:12px;border-top:1px solid #f1f5f9;">
+        ${termsLinks.map((item) => `<a href="${escapeHtmlLite(item.url)}" style="font-size:11px;color:#64748b;text-decoration:underline;margin-right:14px;">${escapeHtmlLite(item.label)}</a>`).join('')}
+      </div>
+    </div>
+  </td>
+</tr>
+
+<!-- footer -->
+<tr>
+  <td style="padding:24px 32px 28px;">
+    <p style="margin:20px 0 0;font-size:12px;color:#94a3b8;line-height:1.7;">
+      ${input.senderEmail ? `Sent by <strong style="color:#64748b;">${escapeHtmlLite(input.senderEmail)}</strong> via secure e-sign platform.` : 'Sent via secure e-sign platform.'}
+      All signing events are immutably recorded with IP, timestamp, and device data.
+    </p>
+    <p style="margin:8px 0 0;font-size:11px;color:#cbd5e1;">
+      End-to-end audit trail &nbsp;·&nbsp; OTP identity verification &nbsp;·&nbsp; Tamper-evident receipt
+    </p>
+  </td>
+</tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>`.trim();
 
   const text = [
     `Receipt: ${docLabel}`,

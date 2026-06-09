@@ -8,6 +8,7 @@ export type MailPolicyKey =
   | 'smtp_test'
   | 'bulk_campaign'
   | 'otp_verification'
+  | 'individual_welcome'
   | 'business_welcome'
   | 'billing_reminders'
   | 'billing_receipts'
@@ -16,7 +17,9 @@ export type MailPolicyKey =
   | 'gigs_safety'
   | 'docrud_go_welcome'
   | 'social_notifications'
-  | 'public_face_notifications';
+  | 'public_face_notifications'
+  | 'business_verification'
+  | 'feed_moderation';
 
 export type MailPolicies = Record<MailPolicyKey, boolean>;
 
@@ -28,6 +31,7 @@ export const defaultMailPolicies: MailPolicies = {
   smtp_test: true,
   bulk_campaign: true,
   otp_verification: true,
+  individual_welcome: true,
   business_welcome: true,
   billing_reminders: true,
   billing_receipts: true,
@@ -37,6 +41,8 @@ export const defaultMailPolicies: MailPolicies = {
   docrud_go_welcome: true,
   social_notifications: true,
   public_face_notifications: true,
+  business_verification: true,
+  feed_moderation: true,
 };
 
 export async function getMailPolicies(): Promise<MailPolicies> {
@@ -53,6 +59,7 @@ export async function saveMailPolicies(next: MailPolicies) {
     smtp_test: Boolean(next.smtp_test),
     bulk_campaign: Boolean(next.bulk_campaign),
     otp_verification: Boolean(next.otp_verification),
+    individual_welcome: Boolean(next.individual_welcome),
     business_welcome: Boolean(next.business_welcome),
     billing_reminders: Boolean(next.billing_reminders),
     billing_receipts: Boolean(next.billing_receipts),
@@ -62,6 +69,8 @@ export async function saveMailPolicies(next: MailPolicies) {
     docrud_go_welcome: Boolean(next.docrud_go_welcome),
     social_notifications: Boolean(next.social_notifications),
     public_face_notifications: Boolean(next.public_face_notifications),
+    business_verification: Boolean(next.business_verification),
+    feed_moderation: Boolean(next.feed_moderation),
   };
   await writeJsonFile(mailPoliciesPath, cleaned);
 }

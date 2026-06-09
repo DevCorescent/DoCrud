@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/server/auth';
-import { appendHistoryEntry, deleteHistoryEntry, getHistoryEntries, updateHistoryEntry } from '@/lib/server/history';
+import { appendHistoryEntry, deleteHistoryEntry, getHistoryEntries, getHistoryEntryById, updateHistoryEntry } from '@/lib/server/history';
 import { DocumentHistory } from '@/types/document';
 import { defaultBackgroundVerificationDocuments, ensureEmployeeAccessAccount, isOnboardingTemplate } from '@/lib/server/onboarding';
-import { getStoredUsers } from '@/lib/server/auth';
+import { getStoredUserByEmail } from '@/lib/server/users';
+import { getDbPool } from '@/lib/server/database';
+import { selectHistoryRowsForUser } from '@/lib/server/db/history-rows';
 import { canUserAccessFeature, getUserUsageSummary } from '@/lib/server/saas';
 import { getBusinessSettings } from '@/lib/server/business';
 import { applyWatermarkToPdfDataUrl } from '@/lib/server/shared-uploaded-pdf';
@@ -36,15 +38,22 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const history = await getHistoryEntries();
-    const isPlanScopedUser = session.user.role === 'client' || session.user.role === 'individual';
-    const visibleHistory = session.user.role === 'admin'
-      ? history
-      : session.user.role === 'employee'
-        ? history.filter((entry) => entry.employeeEmail?.toLowerCase() === (session.user.email || '').toLowerCase())
-      : isPlanScopedUser
-        ? history.filter((entry) => entry.organizationId === session.user.id || entry.clientEmail?.toLowerCase() === (session.user.email || '').toLowerCase())
-        : history.filter((entry) => entry.generatedBy === session.user.email);
+    const userEmail = session.user.email || '';
+    const userRole = session.user.role;
+    let visibleHistory;
+    if (getDbPool()) {
+      visibleHistory = await selectHistoryRowsForUser({ role: userRole, email: userEmail, orgId: session.user.id });
+    } else {
+      const history = await getHistoryEntries();
+      const isPlanScopedUser = userRole === 'client' || userRole === 'individual';
+      visibleHistory = userRole === 'admin'
+        ? history
+        : userRole === 'employee'
+          ? history.filter((entry) => entry.employeeEmail?.toLowerCase() === userEmail.toLowerCase())
+        : isPlanScopedUser
+          ? history.filter((entry) => entry.organizationId === session.user.id || entry.clientEmail?.toLowerCase() === userEmail.toLowerCase())
+          : history.filter((entry) => entry.generatedBy === userEmail);
+    }
 
     return NextResponse.json(visibleHistory);
   } catch (error) {
@@ -61,7 +70,7 @@ export async function POST(request: NextRequest) {
     }
 
     const payload = await request.json() as Partial<DocumentHistory>;
-    const storedUser = (await getStoredUsers()).find((user) => user.email === session.user.email);
+    const storedUser = await getStoredUserByEmail(session.user.email || '');
     const isPlanScopedUser = storedUser?.role === 'client' || storedUser?.role === 'individual';
     if (isPlanScopedUser && storedUser) {
       const [canGenerate, usageSummary] = await Promise.all([
@@ -163,8 +172,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'History ID is required' }, { status: 400 });
     }
 
-    const history = await getHistoryEntries();
-    const current = history.find((entry) => entry.id === payload.id);
+    const current = await getHistoryEntryById(payload.id);
     if (!current) {
       return NextResponse.json({ error: 'History entry not found' }, { status: 404 });
     }
@@ -208,8 +216,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'History ID is required' }, { status: 400 });
     }
 
-    const history = await getHistoryEntries();
-    const current = history.find((entry) => entry.id === id);
+    const current = await getHistoryEntryById(id);
     if (!current) {
       return NextResponse.json({ error: 'History entry not found' }, { status: 404 });
     }

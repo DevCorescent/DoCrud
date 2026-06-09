@@ -10,6 +10,7 @@ import {
 } from '@/lib/server/messages';
 import { getProfileData } from '@/lib/server/user-profiles';
 import { readJsonFile, usersPath } from '@/lib/server/storage';
+import { hasInfinity } from '@/lib/server/infinity';
 
 interface UserRecord {
   id: string;
@@ -49,6 +50,11 @@ export async function GET() {
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const userId = session.user.id;
+
+  const infinityOk = await hasInfinity(userId);
+  if (!infinityOk) {
+    return NextResponse.json({ error: 'Docrud Infinity required', code: 'INFINITY_REQUIRED', feature: 'chat' }, { status: 403 });
+  }
   const [conversations, requests] = await Promise.all([
     getConversations(userId),
     getMessageRequests(userId),
@@ -73,6 +79,11 @@ export async function POST(req: NextRequest) {
 
   if (!toUserId) return NextResponse.json({ error: 'toUserId required' }, { status: 400 });
   if (toUserId === session.user.id) return NextResponse.json({ error: 'Cannot message yourself' }, { status: 400 });
+
+  const infinity = await hasInfinity(session.user.id);
+  if (!infinity) {
+    return NextResponse.json({ error: 'Docrud Infinity required', code: 'INFINITY_REQUIRED', feature: 'chat' }, { status: 403 });
+  }
 
   const { conversation } = await getOrCreateConversation(session.user.id, toUserId, source);
 

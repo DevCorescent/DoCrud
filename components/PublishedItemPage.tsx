@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import {
@@ -18,6 +19,8 @@ import {
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
+  BarChart3,
+  ChevronDown,
   BookOpen,
   Briefcase,
   CalendarDays,
@@ -43,8 +46,10 @@ import {
   Share2,
   ShoppingBag,
   Terminal,
+  Star,
   ThumbsUp,
   Trash2,
+  TrendingUp,
   Twitter,
   User,
   Users,
@@ -73,6 +78,9 @@ type PublishedItem = {
   thumbnailUrl?: string;
   likesCount?: number;
   likedByViewer?: boolean;
+  trendCount?: number;
+  trendedByViewer?: boolean;
+  viewCount?: number;
   canDelete?: boolean;
   uploadedByUserId?: string;
 };
@@ -193,6 +201,24 @@ const ALL_MOCK: PublishedItem[] = [
 /* ─── structured body parser ────────────────────────────────────── */
 const META_RE = /^([A-Za-z][A-Za-z\s\/()]{1,28}):\s+(.+)$/;
 
+/** Detect single-line inline "Key: Value Key2: Value2 …" metadata */
+function isInlineMeta(text: string): boolean {
+  return ((text.match(/\b[A-Z][A-Za-z][\w\s\/()]{1,22}:\s+/g) || []).length) >= 2;
+}
+
+/** Parse inline single-line "Key: Value" pairs */
+function parseInlineMeta(raw: string): { key: string; value: string }[] {
+  const text = raw.replace(/\s+/g, ' ').trim();
+  const pairs: { key: string; value: string }[] = [];
+  const re = /([A-Z][A-Za-z][\w\s\/()]{1,22}):\s+([^:]+?)(?=\s+[A-Z][A-Za-z][\w\s\/()]{1,22}:|\s*$)/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    const k = m[1].trim(); const v = m[2].trim();
+    if (v.length > 0 && v.length < 200) pairs.push({ key: k, value: v });
+  }
+  return pairs;
+}
+
 function parseBody(raw: string): { meta: { key: string; value: string }[]; prose: string[] } {
   const meta: { key: string; value: string }[] = [];
   const prose: string[] = [];
@@ -205,6 +231,10 @@ function parseBody(raw: string): { meta: { key: string; value: string }[]; prose
         const m = l.trim().match(META_RE);
         if (m) meta.push({ key: m[1].trim(), value: m[2].trim() });
       }
+    } else if (lines.length === 1 && isInlineMeta(lines[0])) {
+      /* Single-line inline metadata like "Hackathon: X Organiser: Y Prize: Z …" */
+      const inlinePairs = parseInlineMeta(lines[0]);
+      meta.push(...inlinePairs);
     } else {
       const cleaned = lines.filter(l => !META_RE.test(l.trim())).join('\n');
       if (cleaned.trim()) prose.push(cleaned.trim());
@@ -272,106 +302,74 @@ function BodyRenderer({ body, category }: { body: string; category: string }) {
 }
 
 /* ─── Category CTA sub-components ──────────────────────────────── */
-function EventRegisterCTA({ itemId, itemTitle, itemCategory, body }: { itemId: string; itemTitle: string; itemCategory: string; body: string }) {
-  const regUrl = body?.match(/^Registration URL:\s*(.+)$/im)?.[1]?.trim() || '';
-  const [attending, setAttending] = useState(0);
-  const [hasRegistered, setHasRegistered] = useState(false);
+function InterestCTA({
+  itemId, accentColor, label,
+  initialCount, initialInterested,
+}: {
+  itemId: string; accentColor: string; label: string;
+  initialCount: number; initialInterested: boolean;
+}) {
+  const [interested, setInterested] = useState(initialInterested);
+  const [count, setCount]           = useState(initialCount);
+  const inFlight                    = useRef(false);
 
-  useEffect(() => {
-    try { setAttending(Number(localStorage.getItem(`attending_${itemId}`) || '0')); } catch {}
+  useEffect(() => { setInterested(initialInterested); }, [initialInterested]);
+  useEffect(() => { setCount(initialCount); }, [initialCount]);
+
+  const toggle = async () => {
+    if (inFlight.current) return;
+    const next = !interested;
+    setInterested(next);
+    setCount(c => next ? c + 1 : Math.max(0, c - 1));
+    inFlight.current = true;
     try {
-      const r = JSON.parse(localStorage.getItem('pub_registrations') || '[]') as Array<{itemId: string}>;
-      setHasRegistered(r.some(x => x.itemId === itemId));
-    } catch {}
-  }, [itemId]);
-  const handleRegister = () => {
-    try {
-      const raw = localStorage.getItem('pub_registrations') || '[]';
-      const regs = JSON.parse(raw) as Array<{itemId: string; title: string; category: string; registeredAt: number}>;
-      if (!regs.find(r => r.itemId === itemId)) {
-        regs.unshift({ itemId, title: itemTitle, category: itemCategory, registeredAt: Date.now() });
-        localStorage.setItem('pub_registrations', JSON.stringify(regs.slice(0, 200)));
-      }
-      if (!hasRegistered) {
-        const newCount = attending + 1;
-        localStorage.setItem(`attending_${itemId}`, String(newCount));
-        setAttending(newCount);
-        setHasRegistered(true);
-      }
-    } catch {}
-    if (regUrl) window.open(regUrl, '_blank', 'noopener,noreferrer');
+      const res = await fetch(`/api/published/${itemId}/interest`, { method: 'POST' });
+      if (res.ok) {
+        const d = await res.json() as { interested: boolean; interestedCount: number };
+        setInterested(d.interested);
+        setCount(d.interestedCount);
+      } else { setInterested(!next); setCount(c => next ? Math.max(0, c - 1) : c + 1); }
+    } catch { setInterested(!next); } finally { inFlight.current = false; }
   };
+
+  const borderCls  = `border-${accentColor}-500/25`;
+  const bgCls      = `bg-${accentColor}-500/[0.06]`;
+  const activeCls  = `border-${accentColor}-500/30 bg-${accentColor}-500/10 text-${accentColor}-400`;
+  const inactiveCls = `bg-${accentColor}-500 text-white shadow-lg shadow-${accentColor}-500/20 hover:bg-${accentColor}-400`;
+
   return (
-    <div className="mt-8 rounded-2xl border border-pink-500/20 bg-pink-500/[0.05] p-5">
+    <div className={`mt-8 rounded-2xl border p-5 ${borderCls} ${bgCls}`}>
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-pink-400/60 mb-1">Register for this event</p>
+          <p className={`text-[11px] font-semibold uppercase tracking-wider text-${accentColor}-400/60 mb-1`}>{label}</p>
           <div className="flex items-center gap-1.5 text-[12px] text-white/40">
             <Users className="h-3.5 w-3.5" />
-            <span className="tabular-nums font-semibold text-white/60">{attending}</span> attending
+            <span className="tabular-nums font-semibold text-white/60">{count}</span>
+            <span>{count === 1 ? 'person' : 'people'} interested</span>
           </div>
         </div>
         <button
           type="button"
-          onClick={handleRegister}
-          className={`inline-flex items-center gap-2 rounded-xl px-6 py-3 text-[14px] font-bold transition active:scale-[0.98] ${hasRegistered ? 'border border-pink-500/30 bg-pink-500/10 text-pink-400' : 'bg-pink-500 text-white shadow-lg shadow-pink-500/20 hover:bg-pink-400'}`}
+          onClick={() => void toggle()}
+          className={`inline-flex items-center gap-2 rounded-xl px-6 py-3 text-[14px] font-bold transition active:scale-[0.98] ${interested ? activeCls : inactiveCls}`}
         >
-          {hasRegistered ? '✓ Registered' : regUrl ? (<>Register <ExternalLink className="h-4 w-4" /></>) : 'Register Now'}
+          {interested ? (
+            <><Star className="h-4 w-4 fill-current" /> Interested</>
+          ) : (
+            <><Star className="h-4 w-4" /> Interested</>
+          )}
         </button>
       </div>
     </div>
   );
 }
 
-function HackathonRegisterCTA({ itemId, itemTitle, itemCategory, body }: { itemId: string; itemTitle: string; itemCategory: string; body: string }) {
-  const regUrl = body?.match(/^Registration URL:\s*(.+)$/im)?.[1]?.trim() || '';
-  const [attending, setAttending] = useState(0);
-  const [hasRegistered, setHasRegistered] = useState(false);
+function EventRegisterCTA({ itemId, initialCount, initialInterested }: { itemId: string; initialCount: number; initialInterested: boolean }) {
+  return <InterestCTA itemId={itemId} accentColor="pink" label="Interested in this event?" initialCount={initialCount} initialInterested={initialInterested} />;
+}
 
-  useEffect(() => {
-    try { setAttending(Number(localStorage.getItem(`attending_${itemId}`) || '0')); } catch {}
-    try {
-      const r = JSON.parse(localStorage.getItem('pub_registrations') || '[]') as Array<{itemId: string}>;
-      setHasRegistered(r.some(x => x.itemId === itemId));
-    } catch {}
-  }, [itemId]);
-  const handleRegister = () => {
-    try {
-      const raw = localStorage.getItem('pub_registrations') || '[]';
-      const regs = JSON.parse(raw) as Array<{itemId: string; title: string; category: string; registeredAt: number}>;
-      if (!regs.find(r => r.itemId === itemId)) {
-        regs.unshift({ itemId, title: itemTitle, category: itemCategory, registeredAt: Date.now() });
-        localStorage.setItem('pub_registrations', JSON.stringify(regs.slice(0, 200)));
-      }
-      if (!hasRegistered) {
-        const newCount = attending + 1;
-        localStorage.setItem(`attending_${itemId}`, String(newCount));
-        setAttending(newCount);
-        setHasRegistered(true);
-      }
-    } catch {}
-    if (regUrl) window.open(regUrl, '_blank', 'noopener,noreferrer');
-  };
-  return (
-    <div className="mt-8 rounded-2xl border border-orange-500/20 bg-orange-500/[0.05] p-5">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-orange-400/60 mb-1">Register for this hackathon</p>
-          <div className="flex items-center gap-1.5 text-[12px] text-white/40">
-            <Users className="h-3.5 w-3.5" />
-            <span className="tabular-nums font-semibold text-white/60">{attending}</span> registered
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={handleRegister}
-          className={`inline-flex items-center gap-2 rounded-xl px-6 py-3 text-[14px] font-bold transition active:scale-[0.98] ${hasRegistered ? 'border border-orange-500/30 bg-orange-500/10 text-orange-400' : 'bg-orange-500 text-white shadow-lg shadow-orange-500/20 hover:bg-orange-400'}`}
-        >
-          {hasRegistered ? '✓ Registered' : regUrl ? (<>Register <ExternalLink className="h-4 w-4" /></>) : 'Register Now'}
-        </button>
-      </div>
-    </div>
-  );
+function HackathonRegisterCTA({ itemId, initialCount, initialInterested }: { itemId: string; initialCount: number; initialInterested: boolean }) {
+  return <InterestCTA itemId={itemId} accentColor="orange" label="Interested in this hackathon?" initialCount={initialCount} initialInterested={initialInterested} />;
 }
 
 /* ─── helpers ───────────────────────────────────────────────────── */
@@ -392,9 +390,8 @@ function initials(name: string) {
 }
 function getShareUrl(item: PublishedItem) {
   if (typeof window === 'undefined') return '';
-  return item.shareId
-    ? `${window.location.origin}/transfer/${item.shareId}`
-    : `${window.location.origin}/published/${item.id}`;
+  /* always use /published/:id — the canonical, publicly accessible URL */
+  return `${window.location.origin}/published/${item.id}`;
 }
 
 /* ─── comment helpers ───────────────────────────────────────────── */
@@ -453,6 +450,786 @@ function saveLocalComments(id: string, comments: Comment[]) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   LIVE TREND CHART
+═══════════════════════════════════════════════════════════════════ */
+type TrendPoint = { ts: number; likes: number; trends: number; comments: number; score: number; };
+type ChartMetric = 'score' | 'likes' | 'trends' | 'comments';
+
+const METRIC_CFG = {
+  score:    { label: 'Engagement', color: '#a78bfa', grad: ['#a78bfa','#6d28d9'], unit: 'pts' },
+  likes:    { label: 'Likes',      color: '#f472b6', grad: ['#f472b6','#be185d'], unit: '' },
+  trends:   { label: 'Trend 🔥',  color: '#fb923c', grad: ['#fb923c','#c2410c'], unit: '' },
+  comments: { label: 'Comments',  color: '#34d399', grad: ['#34d399','#065f46'], unit: '' },
+} as const;
+
+function engagementScore(l: number, t: number, c: number) {
+  return Math.round(l * 1.0 + t * 2.8 + c * 1.6);
+}
+
+/* ── Tiny sparkline for tab badges ── */
+function Sparkline({ values, color }: { values: number[]; color: string }) {
+  if (values.length < 2) return <div style={{ width: 32, height: 14 }} />;
+  const peak = Math.max(...values, 1);
+  const W = 32; const H = 14;
+  const pts = values.map((v, i) => ({ x: (i / (values.length - 1)) * W, y: H - (v / peak) * H }));
+  const d = pts.map((p, i) => {
+    if (i === 0) return `M${p.x},${p.y}`;
+    const prev = pts[i - 1]; const cpX = (prev.x + p.x) / 2;
+    return `C${cpX},${prev.y} ${cpX},${p.y} ${p.x},${p.y}`;
+  }).join(' ');
+  return (
+    <svg width={W} height={H} style={{ overflow: 'visible', flexShrink: 0 }}>
+      <path d={d} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.70" />
+    </svg>
+  );
+}
+
+/* ── Arc gauge ── */
+function ArcGauge({ value, color, size = 56 }: { value: number; color: string; size?: number }) {
+  const r = size * 0.38; const cx = size / 2; const cy = size / 2;
+  const startAngle = -210; const sweepAngle = 240;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const arc = (angle: number) => {
+    const a = toRad(startAngle + angle);
+    return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+  };
+  const trackEnd = arc(sweepAngle);
+  const fillEnd  = arc(Math.min(1, value / 100) * sweepAngle);
+  const largeTrack = sweepAngle > 180 ? 1 : 0;
+  const largeFill  = (Math.min(1, value / 100) * sweepAngle) > 180 ? 1 : 0;
+  const s0 = arc(0);
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ overflow: 'visible' }}>
+      {/* track */}
+      <path
+        d={`M${s0.x.toFixed(2)},${s0.y.toFixed(2)} A${r},${r} 0 ${largeTrack},1 ${trackEnd.x.toFixed(2)},${trackEnd.y.toFixed(2)}`}
+        fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="4" strokeLinecap="round"
+      />
+      {/* fill */}
+      {value > 0 && (
+        <path
+          d={`M${s0.x.toFixed(2)},${s0.y.toFixed(2)} A${r},${r} 0 ${largeFill},1 ${fillEnd.x.toFixed(2)},${fillEnd.y.toFixed(2)}`}
+          fill="none" stroke={color} strokeWidth="4" strokeLinecap="round"
+          style={{ filter: `drop-shadow(0 0 4px ${color}60)` }}
+        />
+      )}
+      {/* value */}
+      <text x={cx} y={cy + 4} textAnchor="middle" style={{ fontSize: size * 0.22, fontWeight: 800, fill: color, fontFamily: 'ui-monospace,monospace', fontVariantNumeric: 'tabular-nums' }}>{value}</text>
+    </svg>
+  );
+}
+
+/* ── Score gauge with interactive signal breakdown tooltip ── */
+type ScoreSignal = { label: string; value: number; max: number; color?: string };
+function ScoreGauge({ label, value, color, signals, size = 52, tooltip }: {
+  label: string; value: number; color: string; signals: ScoreSignal[]; size?: number; tooltip?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative flex flex-col items-center gap-0.5" style={{ userSelect: 'none' }}>
+      <button type="button" onClick={() => setOpen(o => !o)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, background: 'none', border: 'none', padding: 2, cursor: 'pointer', borderRadius: 8 }}>
+        <ArcGauge value={value} color={color} size={size} />
+        <p style={{ fontSize: 7.5, color: 'rgba(255,255,255,0.30)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>{label}</p>
+      </button>
+      {open && (
+        <div className="absolute z-50 ltc-in"
+          style={{
+            top: '100%', right: 0, marginTop: 6,
+            minWidth: 180,
+            background: 'rgba(8,8,14,0.98)',
+            border: `1px solid ${color}35`,
+            borderRadius: 12,
+            padding: '10px 12px',
+            boxShadow: `0 12px 40px rgba(0,0,0,0.80), 0 0 0 1px ${color}18`,
+          }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <p style={{ fontSize: 9.5, fontWeight: 700, color: 'rgba(255,255,255,0.70)', letterSpacing: '0.04em' }}>
+              {label} Score <span style={{ color }}>{value}/100</span>
+            </p>
+            <button type="button" onClick={() => setOpen(false)} style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', background:'none', border:'none', cursor:'pointer', lineHeight:1 }}>✕</button>
+          </div>
+          {tooltip && (
+            <p style={{ fontSize: 8, color: 'rgba(255,255,255,0.25)', marginBottom: 8, paddingBottom: 6, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              {tooltip}
+            </p>
+          )}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {signals.map(s => {
+              const pct = Math.min(100, Math.round((s.value / s.max) * 100));
+              const barColor = s.color ?? color;
+              return (
+                <div key={s.label}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
+                    <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.45)', fontWeight: 600 }}>{s.label}</span>
+                    <span style={{ fontSize: 8, color: barColor, fontVariantNumeric: 'tabular-nums', fontWeight: 700 }}>
+                      {s.value}<span style={{ color: 'rgba(255,255,255,0.20)', fontWeight: 400 }}>/{s.max}</span>
+                    </span>
+                  </div>
+                  <div style={{ height: 4, borderRadius: 999, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${pct}%`, background: barColor, borderRadius: 999, boxShadow: `0 0 6px ${barColor}50`, transition: 'width 0.5s cubic-bezier(0.25,0.46,0.45,0.94)' }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <p style={{ fontSize: 7.5, color: 'rgba(255,255,255,0.18)', marginTop: 8, lineHeight: 1.4 }}>
+            Tap anywhere to close
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Core chart panel (used in sidebar + mobile sheet) ── */
+function LiveTrendChart({ itemId, isReal, likeCount, trendCount, commentCount, viewCount = 0, postedAt, compact = false }: {
+  itemId: string; isReal: boolean;
+  likeCount: number; trendCount: number; commentCount: number; viewCount?: number; postedAt: string;
+  compact?: boolean;
+}) {
+  const WINDOW = 40;
+  const [history, setHistory]   = useState<TrendPoint[]>([]);
+  const [metric, setMetric]     = useState<ChartMetric>('score');
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+  const [pulse, setPulse]       = useState(false);
+  const [animKey, setAnimKey]   = useState(0);
+  const mountedRef  = useRef(false);
+  const svgRef      = useRef<SVGSVGElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  /* ── Seed historical data on mount ── */
+  useEffect(() => {
+    if (mountedRef.current) return;
+    mountedRef.current = true;
+    const now  = Date.now();
+    const ageMs = Math.max(now - new Date(postedAt).getTime(), 60_000);
+    const pts   = Math.min(WINDOW - 2, Math.max(12, Math.floor(ageMs / 18_000)));
+    const seed: TrendPoint[] = [];
+    for (let i = pts; i >= 0; i--) {
+      const p      = (pts - i) / pts;
+      const curve  = 1 - Math.pow(1 - p, 1.8);
+      const jitter = 0.78 + Math.random() * 0.44;
+      const l = Math.round(likeCount    * curve * jitter);
+      const t = Math.round(trendCount   * curve * jitter);
+      const c = Math.round(commentCount * curve * jitter);
+      seed.push({ ts: now - i * 18_000, likes: l, trends: t, comments: c, score: engagementScore(l,t,c) });
+    }
+    const last = seed[seed.length - 1];
+    if (last) { last.likes = likeCount; last.trends = trendCount; last.comments = commentCount; last.score = engagementScore(likeCount,trendCount,commentCount); }
+    setHistory(seed);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* ── Append point when counts change ── */
+  useEffect(() => {
+    if (!mountedRef.current || history.length === 0) return;
+    const now = Date.now();
+    setHistory(prev => {
+      const last = prev[prev.length - 1];
+      if (last && last.likes === likeCount && last.trends === trendCount && last.comments === commentCount) return prev;
+      return [...prev, { ts: now, likes: likeCount, trends: trendCount, comments: commentCount, score: engagementScore(likeCount,trendCount,commentCount) }].slice(-WINDOW);
+    });
+    setAnimKey(k => k + 1);
+  }, [likeCount, trendCount, commentCount]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => { setPulse(true); const t = setTimeout(() => setPulse(false), 800); return () => clearTimeout(t); }, [animKey]);
+
+  /* ── Derived ── */
+  const cfg     = METRIC_CFG[metric];
+  const values  = useMemo(() => history.map(h => h[metric]), [history, metric]);
+  const peak    = useMemo(() => Math.max(...values, 1), [values]);
+  const minV    = useMemo(() => Math.min(...values, 0), [values]);
+  const latestVal = values[values.length - 1] ?? 0;
+  const displayIdx = hoverIdx ?? values.length - 1;
+  const current    = values[displayIdx] ?? 0;
+  const prev3      = values[Math.max(0, values.length - 4)] ?? values[0] ?? 0;
+  const delta      = latestVal - prev3;
+  const velocity   = values.length >= 2 ? values[values.length-1] - values[values.length-2] : 0;
+  const momentum: 'rising'|'steady'|'cooling' = delta > 0 ? 'rising' : delta < -2 ? 'cooling' : 'steady';
+  const mColor  = momentum === 'rising' ? '#34d399' : momentum === 'cooling' ? '#f87171' : '#fbbf24';
+
+  /* ── Health Score (0-100): content sustainability ── */
+  const { healthScore, healthSignals } = useMemo(() => {
+    const ageH        = Math.max(0.1, (Date.now() - new Date(postedAt).getTime()) / 3_600_000);
+    const totalEng    = likeCount + trendCount * 2.8 + commentCount * 1.6;
+
+    // Signal A — Engagement density per hour (0-35)
+    // Benchmark: 8 weighted-engagement-points/hour = excellent
+    const density = Math.min(35, (totalEng / ageH / 8) * 35);
+
+    // Signal B — Engagement breadth: all 3 types contributing (0-25)
+    const activeTypes = [likeCount > 0, trendCount > 0, commentCount > 0].filter(Boolean).length;
+    const breadth = activeTypes === 3 ? 25 : activeTypes === 2 ? 14 : activeTypes === 1 ? 5 : 0;
+
+    // Signal C — Momentum direction from history (0-20)
+    const histScores = history.map(h => h.score);
+    const recentAvg  = histScores.length >= 4 ? histScores.slice(-3).reduce((s,v) => s+v, 0) / 3 : 0;
+    const earlyAvg   = histScores.length >= 4 ? histScores.slice(0, 3).reduce((s,v) => s+v, 0) / 3 : 0;
+    const momentumPts = recentAvg > earlyAvg * 1.05 ? 20 : recentAvg >= earlyAvg * 0.9 ? 11 : 3;
+
+    // Signal D — Comment depth: discussion means quality content (0-20)
+    const commentDepth = Math.min(20, (commentCount / Math.max(likeCount, 1)) * 40);
+
+    const score = Math.min(100, Math.round(density + breadth + momentumPts + commentDepth));
+    return {
+      healthScore: score,
+      healthSignals: [
+        { label: 'Eng. Density',  value: Math.round(density),      max: 35 },
+        { label: 'Breadth',       value: breadth,                   max: 25 },
+        { label: 'Momentum',      value: momentumPts,               max: 20 },
+        { label: 'Comment Depth', value: Math.round(commentDepth),  max: 20 },
+      ],
+    };
+  }, [likeCount, trendCount, commentCount, postedAt, history]);
+  const hColor = healthScore >= 70 ? '#34d399' : healthScore >= 35 ? '#fbbf24' : '#f87171';
+
+  /* ── Viral Score (0-100): spreading potential ── */
+  const { viralScore, viralSignals } = useMemo(() => {
+    const ageH     = Math.max(0.1, (Date.now() - new Date(postedAt).getTime()) / 3_600_000);
+    const totalEng = likeCount + trendCount * 2.8 + commentCount * 1.6;
+
+    // Signal 1 — Trend Amplification (0-30): trends = active sharing, the #1 viral signal
+    // A post where >40% of total engagement is trends is extremely viral
+    const trendShare   = trendCount / Math.max(totalEng / 2.8, 1); // normalize back to count
+    const amplification = Math.min(30, trendShare * 55);
+
+    // Signal 2 — Engagement Velocity per hour (0-25): time-normalized reach speed
+    // Benchmark: 6 weighted-points/hour = viral territory
+    const velocity2 = Math.min(25, (totalEng / ageH / 6) * 25);
+
+    // Signal 3 — Growth Acceleration (0-20): is the rate INCREASING?
+    // Compare last-25% of history vs first-25%
+    const hScores = history.map(h => h.score);
+    let acceleration = 0;
+    if (hScores.length >= 8) {
+      const quarter    = Math.max(1, Math.floor(hScores.length / 4));
+      const earlyMean  = hScores.slice(0, quarter).reduce((s,v) => s+v, 0) / quarter;
+      const recentMean = hScores.slice(-quarter).reduce((s,v) => s+v, 0) / quarter;
+      const gr         = earlyMean > 0 ? (recentMean - earlyMean) / earlyMean : 0;
+      acceleration     = Math.min(20, Math.max(0, gr * 25));
+    } else if (hScores.length >= 3) {
+      const first = hScores[0]; const last = hScores[hScores.length - 1];
+      const gr    = first > 0 ? (last - first) / first : 0;
+      acceleration = Math.min(20, Math.max(0, gr * 18));
+    }
+
+    // Signal 4 — Reach Efficiency (0-15): engagement / impressions
+    // If viewCount available: use real rate; otherwise infer from age curve
+    let reachEff = 0;
+    if (viewCount > 0 && totalEng > 0) {
+      // Industry benchmark: >5% eng rate is viral, >2% is good
+      const engRate = totalEng / viewCount;
+      reachEff = Math.min(15, (engRate / 0.05) * 15);
+    } else if (totalEng > 0) {
+      // No view data: use recency — new posts score higher for same engagement
+      const recencyFactor = Math.max(0, 1 - ageH / 48); // decays over 48h
+      reachEff = Math.min(15, recencyFactor * 10 + Math.min(5, totalEng / 10));
+    }
+
+    // Signal 5 — Social Proof Diversity (0-10): multiple engagement types = broader appeal
+    const activeTypes = [likeCount > 0, trendCount > 0, commentCount > 0].filter(Boolean).length;
+    const diversity   = activeTypes === 3 ? 10 : activeTypes === 2 ? 5 : 2;
+
+    const score = Math.min(100, Math.round(amplification + velocity2 + acceleration + reachEff + diversity));
+    return {
+      viralScore: score,
+      viralSignals: [
+        { label: 'Trend Amplif.', value: Math.round(amplification), max: 30, color: METRIC_CFG.trends.color },
+        { label: 'Eng. Velocity', value: Math.round(velocity2),     max: 25, color: METRIC_CFG.score.color },
+        { label: 'Acceleration',  value: Math.round(acceleration),  max: 20, color: '#34d399' },
+        { label: 'Reach Effic.',  value: Math.round(reachEff),      max: 15, color: '#60a5fa' },
+        { label: 'Diversity',     value: diversity,                  max: 10, color: METRIC_CFG.likes.color },
+      ],
+    };
+  }, [likeCount, trendCount, commentCount, viewCount, postedAt, history]);
+  const vColor = viralScore >= 70 ? '#f472b6' : viralScore >= 40 ? '#fb923c' : '#818cf8';
+
+  const projection = useMemo(() => {
+    const tph = 3600 / 18;
+    return Math.max(latestVal, Math.round(latestVal + velocity * tph * 0.55));
+  }, [latestVal, velocity]);
+
+  /* engagement mix ratios */
+  const total = likeCount + trendCount + commentCount || 1;
+  const likeRatio    = likeCount    / total;
+  const trendRatio   = trendCount   / total;
+  const commentRatio = commentCount / total;
+
+  /* ── SVG geometry — fully responsive via viewBox ── */
+  const VW = 400; const VH = compact ? 110 : 150;
+  const PAD = { l: 36, r: 10, t: 12, b: 24 };
+  const cW  = VW - PAD.l - PAD.r;
+  const cH  = VH - PAD.t - PAD.b;
+
+  const svgPts = useMemo(() => {
+    if (values.length < 2) return [];
+    const range = Math.max(peak - minV, 1);
+    return values.map((v, i) => ({
+      x: PAD.l + (i / (values.length - 1)) * cW,
+      y: PAD.t + (1 - (v - minV) / range) * cH,
+    }));
+  }, [values, peak, minV, cW, cH]);
+
+  const linePath = useMemo(() => {
+    if (svgPts.length < 2) return '';
+    return svgPts.map((p, i) => {
+      if (i === 0) return `M${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+      const prev = svgPts[i-1]; const cpX = (prev.x + p.x) / 2;
+      return `C${cpX.toFixed(1)},${prev.y.toFixed(1)} ${cpX.toFixed(1)},${p.y.toFixed(1)} ${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+    }).join(' ');
+  }, [svgPts]);
+
+  const areaPath = useMemo(() => {
+    if (!linePath || svgPts.length < 2) return '';
+    const bot = PAD.t + cH;
+    return `${linePath} L${svgPts[svgPts.length-1].x.toFixed(1)},${bot} L${PAD.l},${bot} Z`;
+  }, [linePath, svgPts, cH]);
+
+  const gradId  = `ltc2-${metric}-${itemId.replace(/[^a-z0-9]/gi,'_')}`;
+  const lastPt  = svgPts[svgPts.length - 1];
+  const hoverPt = hoverIdx !== null ? svgPts[hoverIdx] : null;
+
+  /* 5 Y-axis gridlines */
+  const yLines = useMemo(() => {
+    const range = Math.max(peak - minV, 1);
+    return [0, 0.25, 0.5, 0.75, 1].map(f => ({
+      y: PAD.t + (1 - f) * cH,
+      label: f === 0 ? '0' : Math.round(minV + f * range).toLocaleString(),
+    }));
+  }, [peak, minV, cH]);
+
+  /* Pointer scrub — pixel-accurate using getBoundingClientRect */
+  const handleSvgPointer = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
+    const rect = svgRef.current?.getBoundingClientRect();
+    if (!rect || svgPts.length < 2) return;
+    const scaleX = VW / rect.width;
+    const relX   = (e.clientX - rect.left) * scaleX - PAD.l;
+    const pct    = Math.max(0, Math.min(1, relX / cW));
+    setHoverIdx(Math.round(pct * (svgPts.length - 1)));
+  }, [svgPts.length, cW]);
+
+  const sparklines = useMemo(() => ({
+    score:    history.map(h => h.score),
+    likes:    history.map(h => h.likes),
+    trends:   history.map(h => h.trends),
+    comments: history.map(h => h.comments),
+  }), [history]);
+
+  const tooltipTs = hoverIdx !== null ? history[hoverIdx]?.ts : null;
+
+  /* ── format helpers ── */
+  const fmt  = (n: number) => n >= 1000 ? `${(n/1000).toFixed(1)}k` : n.toLocaleString();
+  const sign = (n: number) => n > 0 ? `+${n}` : `${n}`;
+
+  return (
+    <div ref={containerRef} className="rounded-2xl border select-none overflow-hidden"
+      style={{ borderColor: 'rgba(255,255,255,0.09)', background: '#06060a' }}>
+      <style>{`
+        @keyframes ltc-pulse{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:0;transform:scale(3)}}
+        @keyframes ltc-in{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+        .ltc-in{animation:ltc-in .18s ease both}
+        @keyframes ltc-spin{to{transform:rotate(360deg)}}
+      `}</style>
+
+      {/* ══ HEADER ══════════════════════════════════════════════════════ */}
+      <div className="flex items-center justify-between px-4 pt-4 pb-3.5"
+        style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.015)' }}>
+        <div className="flex items-center gap-2.5">
+          <div className="h-8 w-8 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: `${cfg.color}16`, border: `1px solid ${cfg.color}28` }}>
+            <TrendingUp className="h-4 w-4" style={{ color: cfg.color }} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[13px] font-bold text-white/90 tracking-tight">Analytics</span>
+              <span className="flex items-center gap-1 rounded-full px-2 py-[3px]"
+                style={{ background:'rgba(52,211,153,0.10)', border:'1px solid rgba(52,211,153,0.22)' }}>
+                <span className="h-[5px] w-[5px] rounded-full bg-emerald-400"
+                  style={{ animation:'ltc-pulse 2s ease infinite' }}/>
+                <span className="text-[8px] font-bold text-emerald-300 tracking-widest">LIVE</span>
+              </span>
+            </div>
+            <p className="text-[9px] text-white/25 font-medium mt-0.5">
+              {isReal ? 'Real-time · 5s interval' : 'Simulated'} · {history.length} readings
+            </p>
+          </div>
+        </div>
+
+        {/* Gauge cluster — hover for signal breakdown */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <ScoreGauge label="Viral" value={viralScore} color={vColor}
+            signals={viralSignals} size={compact ? 44 : 52}
+            tooltip={viewCount > 0 ? `${viewCount.toLocaleString()} impressions` : undefined} />
+          <ScoreGauge label="Health" value={healthScore} color={hColor}
+            signals={healthSignals} size={compact ? 44 : 52} /></div>
+      </div>
+
+      {/* ══ STAT CARDS ═════════════════════════════════════════════════ */}
+      <div className="grid grid-cols-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        {([
+          { key: 'score',    label: 'Engagement', val: engagementScore(likeCount,trendCount,commentCount), sub: 'score', color: METRIC_CFG.score.color },
+          { key: 'likes',    label: 'Likes',       val: likeCount,    sub: 'total',    color: METRIC_CFG.likes.color },
+          { key: 'trends',   label: 'Trends 🔥',   val: trendCount,   sub: 'trending', color: METRIC_CFG.trends.color },
+          { key: 'comments', label: 'Comments',    val: commentCount, sub: 'replies',  color: METRIC_CFG.comments.color },
+        ] as const).map((m, idx) => {
+          const isActive = metric === m.key;
+          const sp       = sparklines[m.key];
+          const spPeak   = Math.max(...sp, 1);
+          const spMin    = Math.min(...sp, 0);
+          const spPts    = sp.slice(-10).map((v, i, a) => ({ x: (i/(a.length-1||1))*36, y: 14-(((v-spMin)/Math.max(spPeak-spMin,1))*14) }));
+          const spPath   = spPts.length > 1 ? spPts.map((p,i) => i===0?`M${p.x.toFixed(1)},${p.y.toFixed(1)}`:`L${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') : '';
+          return (
+            <button key={m.key} type="button"
+              onClick={() => { setMetric(m.key as ChartMetric); setHoverIdx(null); }}
+              style={{
+                padding: '12px 10px 10px',
+                background: isActive ? `${m.color}0d` : 'transparent',
+                borderBottom: `2px solid ${isActive ? m.color : 'transparent'}`,
+                borderRight: idx < 3 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                display: 'flex', flexDirection: 'column', gap: 4,
+                transition: 'background 0.2s ease',
+                cursor: 'pointer',
+              }}>
+              <div className="flex items-start justify-between gap-1">
+                <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: isActive ? m.color : 'rgba(255,255,255,0.30)', lineHeight: 1 }}>
+                  {m.label}
+                </span>
+                {/* mini sparkline */}
+                {spPath && (
+                  <svg width="36" height="14" style={{ flexShrink: 0, overflow: 'visible', marginTop: -1 }}>
+                    <path d={spPath} fill="none" stroke={isActive ? m.color : 'rgba(255,255,255,0.12)'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </div>
+              <p style={{ fontSize: compact ? 16 : 19, fontWeight: 800, lineHeight: 1, fontVariantNumeric: 'tabular-nums', color: isActive ? m.color : 'rgba(255,255,255,0.82)' }}>
+                {fmt(m.val)}
+              </p>
+              <p style={{ fontSize: 8, color: 'rgba(255,255,255,0.22)', lineHeight: 1 }}>{m.sub}</p>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ══ CHART ══════════════════════════════════════════════════════ */}
+      <div className="relative" style={{ paddingTop: 6, paddingBottom: 0 }}>
+        {values.length >= 2 ? (
+          <>
+            {/* Hover tooltip */}
+            {hoverPt && tooltipTs !== null && (
+              <div className="absolute z-20 pointer-events-none ltc-in"
+                style={{
+                  left: `${(hoverPt.x / VW) * 100}%`,
+                  top: `${(hoverPt.y / VH) * 100}%`,
+                  transform: 'translate(-50%,-120%)',
+                  padding: '6px 10px',
+                  borderRadius: 10,
+                  background: 'rgba(8,8,14,0.97)',
+                  border: `1px solid ${cfg.color}45`,
+                  boxShadow: `0 8px 24px rgba(0,0,0,0.70), 0 0 0 1px ${cfg.color}18`,
+                  whiteSpace: 'nowrap',
+                  zIndex: 30,
+                }}>
+                <p style={{ fontSize: 13, fontWeight: 800, color: cfg.color, fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>{current.toLocaleString()} <span style={{ fontSize: 9, opacity: 0.6 }}>{cfg.unit}</span></p>
+                <p style={{ fontSize: 8.5, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>
+                  {new Date(tooltipTs).toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit', second:'2-digit' })}
+                </p>
+                {/* all metric values at this point */}
+                {hoverIdx !== null && (
+                  <div style={{ display:'flex', gap:8, marginTop:5, paddingTop:5, borderTop:'1px solid rgba(255,255,255,0.08)' }}>
+                    {(['likes','trends','comments'] as const).map(k => (
+                      <div key={k} style={{ display:'flex', alignItems:'center', gap:3 }}>
+                        <div style={{ width:5, height:5, borderRadius:999, background: METRIC_CFG[k].color, flexShrink:0 }} />
+                        <span style={{ fontSize:8, color:'rgba(255,255,255,0.45)', fontVariantNumeric:'tabular-nums' }}>{history[hoverIdx]?.[k] ?? 0}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <svg ref={svgRef} width="100%" viewBox={`0 0 ${VW} ${VH}`}
+              preserveAspectRatio="xMidYMid meet"
+              style={{ display:'block', cursor:'crosshair', touchAction:'none', userSelect:'none' }}
+              onPointerMove={handleSvgPointer}
+              onPointerLeave={() => setHoverIdx(null)}>
+              <defs>
+                <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%"   stopColor={cfg.color} stopOpacity="0.35" />
+                  <stop offset="65%"  stopColor={cfg.color} stopOpacity="0.06" />
+                  <stop offset="100%" stopColor={cfg.color} stopOpacity="0.00" />
+                </linearGradient>
+                <filter id="ltc-glow">
+                  <feGaussianBlur stdDeviation="1.5" result="blur" />
+                  <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+              </defs>
+
+              {/* Grid lines + Y labels */}
+              {yLines.map(({ y, label }) => (
+                <g key={y}>
+                  <text x={PAD.l - 5} y={y + 3.5} textAnchor="end"
+                    style={{ fontSize: 8, fill:'rgba(255,255,255,0.20)', fontFamily:'ui-monospace,monospace' }}>
+                    {label}
+                  </text>
+                  <line x1={PAD.l} y1={y} x2={VW - PAD.r} y2={y}
+                    stroke="rgba(255,255,255,0.045)" strokeWidth="1" strokeDasharray="3 5" />
+                </g>
+              ))}
+
+              {/* Area */}
+              <path d={areaPath} fill={`url(#${gradId})`} />
+
+              {/* Line */}
+              <path d={linePath} fill="none" stroke={cfg.color} strokeWidth="2.2"
+                strokeLinecap="round" strokeLinejoin="round" filter="url(#ltc-glow)" />
+
+              {/* Hover crosshair */}
+              {hoverPt && (
+                <>
+                  <line x1={hoverPt.x} y1={PAD.t} x2={hoverPt.x} y2={PAD.t + cH}
+                    stroke={cfg.color} strokeWidth="1" strokeDasharray="3 3" opacity="0.45" />
+                  <circle cx={hoverPt.x} cy={hoverPt.y} r="5.5" fill={cfg.color} opacity="0.18" />
+                  <circle cx={hoverPt.x} cy={hoverPt.y} r="4" fill={cfg.color} />
+                  <circle cx={hoverPt.x} cy={hoverPt.y} r="2" fill="#06060a" />
+                </>
+              )}
+
+              {/* Live dot */}
+              {lastPt && !hoverPt && (
+                <>
+                  {pulse && (
+                    <circle cx={lastPt.x} cy={lastPt.y} r="5" fill={cfg.color} opacity="0.0">
+                      <animate attributeName="r" values="5;18" dur="0.65s" fill="freeze" />
+                      <animate attributeName="opacity" values="0.30;0" dur="0.65s" fill="freeze" />
+                    </circle>
+                  )}
+                  <circle cx={lastPt.x} cy={lastPt.y} r="4.5" fill={cfg.color} filter="url(#ltc-glow)" />
+                  <circle cx={lastPt.x} cy={lastPt.y} r="2" fill="#06060a" />
+                </>
+              )}
+
+              {/* X labels */}
+              {history.length >= 2 && [0, Math.floor((history.length-1)/2), history.length-1].map(i => {
+                const p = svgPts[i]; if (!p) return null;
+                return (
+                  <text key={i} x={p.x} y={VH - 6}
+                    textAnchor={i === 0 ? 'start' : i === history.length-1 ? 'end' : 'middle'}
+                    style={{ fontSize: 8, fill:'rgba(255,255,255,0.22)', fontFamily:'ui-monospace,monospace' }}>
+                    {i === history.length-1 ? 'now' : new Date(history[i].ts).toLocaleTimeString('en-IN',{ hour:'2-digit', minute:'2-digit' })}
+                  </text>
+                );
+              })}
+            </svg>
+          </>
+        ) : (
+          <div className="flex flex-col items-center justify-center gap-2.5 py-12">
+            <div className="h-6 w-6 rounded-full border-2 border-white/[0.07] border-t-white/40"
+              style={{ animation:'ltc-spin 0.9s linear infinite' }} />
+            <p className="text-[10px] text-white/20">Collecting data…</p>
+          </div>
+        )}
+      </div>
+
+      {/* ══ ENGAGEMENT MIX BAR ══════════════════════════════════════════ */}
+      {total > 1 && (
+        <div style={{ padding: '10px 14px 12px', borderTop:'1px solid rgba(255,255,255,0.06)' }}>
+          <p style={{ fontSize: 8.5, fontWeight: 700, textTransform:'uppercase', letterSpacing:'0.08em', color:'rgba(255,255,255,0.22)', marginBottom: 7 }}>
+            Engagement Mix
+          </p>
+          {/* stacked bar */}
+          <div style={{ display:'flex', height: 6, borderRadius: 999, overflow:'hidden', gap: 1 }}>
+            {likeCount > 0    && <div style={{ flex: likeRatio,    background: METRIC_CFG.likes.color,    borderRadius: 999 }} />}
+            {trendCount > 0   && <div style={{ flex: trendRatio,   background: METRIC_CFG.trends.color,   borderRadius: 999 }} />}
+            {commentCount > 0 && <div style={{ flex: commentRatio, background: METRIC_CFG.comments.color, borderRadius: 999 }} />}
+          </div>
+          {/* legend */}
+          <div style={{ display:'flex', gap: 12, marginTop: 6 }}>
+            {([
+              { label:'Likes',    pct: likeRatio,    color: METRIC_CFG.likes.color },
+              { label:'Trends',   pct: trendRatio,   color: METRIC_CFG.trends.color },
+              { label:'Comments', pct: commentRatio, color: METRIC_CFG.comments.color },
+            ] as const).map(l => (
+              <div key={l.label} style={{ display:'flex', alignItems:'center', gap: 4 }}>
+                <div style={{ width: 6, height: 6, borderRadius: 2, background: l.color, flexShrink:0 }} />
+                <span style={{ fontSize: 8, color:'rgba(255,255,255,0.32)', fontVariantNumeric:'tabular-nums' }}>
+                  {l.label} {Math.round(l.pct * 100)}%
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ══ METRICS STRIP ═══════════════════════════════════════════════ */}
+      <div className="grid grid-cols-4" style={{ borderTop:'1px solid rgba(255,255,255,0.06)', background:'rgba(255,255,255,0.018)' }}>
+        {[
+          { label:'Current', value: fmt(current), sub: cfg.label.split(' ')[0], color: cfg.color },
+          { label:'Peak',    value: fmt(peak),    sub: 'session max',            color:'rgba(255,255,255,0.65)' },
+          { label:'Change',  value: sign(delta),  sub: 'last 3 pts',             color: delta > 0 ? '#34d399' : delta < 0 ? '#f87171' : 'rgba(255,255,255,0.4)' },
+          { label:'Rate',    value: sign(velocity), sub: 'per reading',          color: velocity > 0 ? '#34d399' : velocity < 0 ? '#f87171' : 'rgba(255,255,255,0.4)' },
+        ].map((m, idx) => (
+          <div key={m.label} style={{
+            padding:'11px 10px',
+            borderRight: idx < 3 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+            background: '#06060a',
+          }}>
+            <p style={{ fontSize:7.5, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.09em', color:'rgba(255,255,255,0.20)', marginBottom:5 }}>{m.label}</p>
+            <p style={{ fontSize:16, fontWeight:800, lineHeight:1, color:m.color, fontVariantNumeric:'tabular-nums' }}>{m.value}</p>
+            <p style={{ fontSize:7.5, color:'rgba(255,255,255,0.18)', marginTop:3 }}>{m.sub}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* ══ INSIGHT CARDS ═══════════════════════════════════════════════ */}
+      <div className="grid grid-cols-2" style={{ borderTop:'1px solid rgba(255,255,255,0.06)', background:'rgba(255,255,255,0.018)' }}>
+        {/* Projection */}
+        <div style={{ padding:'13px 14px', borderRight:'1px solid rgba(255,255,255,0.05)', background:'#06060a', display:'flex', alignItems:'center', gap:10 }}>
+          <div style={{ width:32, height:32, borderRadius:10, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(99,102,241,0.12)', border:'1px solid rgba(99,102,241,0.22)' }}>
+            <Eye className="h-4 w-4 text-indigo-400" />
+          </div>
+          <div>
+            <p style={{ fontSize:8, textTransform:'uppercase', letterSpacing:'0.09em', color:'rgba(255,255,255,0.25)', marginBottom:3 }}>1h Projection</p>
+            <p style={{ fontSize:16, fontWeight:800, color:'rgba(255,255,255,0.85)', fontVariantNumeric:'tabular-nums', lineHeight:1 }}>
+              {projection > 0 ? fmt(projection) : '—'}
+            </p>
+            <p style={{ fontSize:8, color:'rgba(255,255,255,0.22)', marginTop:3 }}>est. {cfg.label.split(' ')[0]}</p>
+          </div>
+        </div>
+        {/* Momentum */}
+        <div style={{ padding:'13px 14px', background:'#06060a', display:'flex', alignItems:'center', gap:10 }}>
+          <div style={{ width:32, height:32, borderRadius:10, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', background:`${mColor}14`, border:`1px solid ${mColor}28` }}>
+            <Zap className="h-4 w-4" style={{ color: mColor }} />
+          </div>
+          <div>
+            <p style={{ fontSize:8, textTransform:'uppercase', letterSpacing:'0.09em', color:'rgba(255,255,255,0.25)', marginBottom:3 }}>Momentum</p>
+            <p style={{ fontSize:16, fontWeight:800, lineHeight:1, color:mColor }}>
+              {momentum === 'rising' ? '↑ Rising' : momentum === 'cooling' ? '↓ Cooling' : '→ Steady'}
+            </p>
+            <p style={{ fontSize:8, color:`${mColor}70`, marginTop:3, fontVariantNumeric:'tabular-nums' }}>
+              {sign(delta)} pts · {(likeCount+trendCount+commentCount).toLocaleString()} reach
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ══ INSIGHT BANNER ══════════════════════════════════════════════ */}
+      <div style={{ padding:'12px 16px', borderTop:'1px solid rgba(255,255,255,0.06)', background:`${cfg.color}07`, display:'flex', alignItems:'flex-start', gap:10 }}>
+        <div style={{ width:20, height:20, borderRadius:999, flexShrink:0, marginTop:1, display:'flex', alignItems:'center', justifyContent:'center', background:`${cfg.color}1e`, border:`1px solid ${cfg.color}30` }}>
+          <span style={{ fontSize:9, color:cfg.color, lineHeight:1 }}>✦</span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p style={{ fontSize:11, fontWeight:600, lineHeight:1.5, color:`${cfg.color}cc` }}>
+            {momentum === 'rising'
+              ? `📈 Strong growth detected — ${sign(delta)} pts in last 3 readings.${viralScore > 60 ? ' 🚀 Viral potential detected — share now.' : ' Keep engaging to amplify reach.'}`
+              : momentum === 'cooling'
+                ? `📉 Engagement is slowing. Replying to comments or resharing can re-ignite reach.`
+                : `⚡ Steady at ${fmt(current)} ${cfg.label.toLowerCase()}. Consistent audience holding strong.`
+            }
+          </p>
+          <div style={{ display:'flex', gap:10, marginTop:5, flexWrap:'wrap' }}>
+            <span style={{ fontSize:8, color:'rgba(255,255,255,0.22)' }}>{isReal ? '● live' : '● simulated'}</span>
+            <span style={{ fontSize:8, color: vColor }}>Viral {viralScore}/100</span>
+            <span style={{ fontSize:8, color: hColor }}>Health {healthScore}/100</span>
+            <span style={{ fontSize:8, color:'rgba(255,255,255,0.22)' }}>{history.length} readings</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Mobile floating analytics button + bottom sheet ── */
+function MobileAnalyticsButton({ itemId, isReal, likeCount, trendCount, commentCount, viewCount, postedAt, momentum }: {
+  itemId: string; isReal: boolean;
+  likeCount: number; trendCount: number; commentCount: number; viewCount: number; postedAt: string;
+  momentum: 'rising'|'steady'|'cooling';
+}) {
+  const [open, setOpen] = useState(false);
+  const total   = likeCount + trendCount + commentCount;
+  const mColor  = momentum === 'rising' ? '#34d399' : momentum === 'cooling' ? '#f87171' : '#fbbf24';
+  const mIcon   = momentum === 'rising' ? '↑' : momentum === 'cooling' ? '↓' : '→';
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
+  if (!mounted) return null;
+  return (
+    <>
+      {/* Floating button */}
+      <button type="button" onClick={() => setOpen(true)}
+        className="lg:hidden fixed z-[60] flex items-center gap-2 rounded-full font-semibold shadow-2xl transition-all active:scale-95"
+        style={{
+          bottom: 'max(80px, calc(env(safe-area-inset-bottom) + 72px))',
+          right: 16,
+          height: 44,
+          padding: '0 14px 0 10px',
+          background: 'linear-gradient(135deg,rgba(24,20,48,0.95),rgba(12,10,28,0.98))',
+          border: `1px solid ${mColor}30`,
+          boxShadow: `0 8px 32px rgba(0,0,0,0.60), 0 0 0 1px ${mColor}15, 0 0 20px ${mColor}12`,
+          backdropFilter: 'blur(16px)',
+        }}>
+        {/* Pulse dot */}
+        <div className="relative flex-shrink-0" style={{ width:8, height:8 }}>
+          <div className="absolute inset-0 rounded-full" style={{ background: mColor, animation:'ltc-pulse 2s ease infinite' }}/>
+          <div className="absolute inset-0 rounded-full" style={{ background: mColor }}/>
+        </div>
+        <TrendingUp className="h-3.5 w-3.5 flex-shrink-0" style={{ color: mColor }} />
+        <span className="text-[11.5px] text-white/85">Analytics</span>
+        <span className="text-[10px] font-bold tabular-nums" style={{ color: mColor }}>{total.toLocaleString()}</span>
+        <span className="text-[11px] font-bold" style={{ color: mColor }}>{mIcon}</span>
+      </button>
+
+      {/* Mobile bottom sheet portal */}
+      {open && createPortal(
+        <div className="fixed inset-0 z-[200] flex flex-col justify-end"
+          onClick={() => setOpen(false)}>
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+          <div className="relative flex flex-col rounded-t-[24px] overflow-hidden"
+            style={{
+              maxHeight: '88svh',
+              background: 'linear-gradient(160deg,rgba(24,18,50,0.96),rgba(8,8,18,0.98))',
+              border: '1px solid rgba(255,255,255,0.10)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12), 0 -24px 60px rgba(0,0,0,0.50)',
+            }}
+            onClick={e => e.stopPropagation()}>
+            {/* Handle */}
+            <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
+              <div className="w-10 h-1 rounded-full bg-white/20" />
+            </div>
+            {/* Sheet header */}
+            <div className="flex items-center justify-between px-5 pb-3 flex-shrink-0">
+              <div>
+                <p className="text-[15px] font-bold text-white/90 tracking-tight">Live Analytics</p>
+                <p className="text-[10.5px] text-white/35">{isReal ? 'Real-time data · 5s refresh' : 'Simulated history'}</p>
+              </div>
+              <button type="button" onClick={() => setOpen(false)}
+                className="h-8 w-8 rounded-full flex items-center justify-center transition-all active:scale-95"
+                style={{ background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.10)' }}>
+                <X className="h-4 w-4 text-white/50" />
+              </button>
+            </div>
+            {/* Scrollable chart content */}
+            <div className="flex-1 overflow-y-auto px-4 pb-6" style={{ scrollbarWidth:'none' }}>
+              <LiveTrendChart
+                itemId={`${itemId}-mobile`}
+                isReal={isReal}
+                likeCount={likeCount}
+                trendCount={trendCount}
+                commentCount={commentCount}
+                viewCount={viewCount}
+                postedAt={postedAt}
+                compact={false}
+              />
+            </div>
+            {/* Bottom safe area */}
+            <div style={{ height:'max(16px,env(safe-area-inset-bottom))', flexShrink:0 }} />
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    MAIN COMPONENT
 ═══════════════════════════════════════════════════════════════════ */
 export default function PublishedItemPage({ id }: { id: string }) {
@@ -464,6 +1241,9 @@ export default function PublishedItemPage({ id }: { id: string }) {
   const [loading,       setLoading]       = useState(true);
   const [likeCount,     setLikeCount]     = useState(0);
   const [liked,         setLiked]         = useState(false);
+  const [trendCount,    setTrendCount]    = useState(0);
+  const [trended,       setTrended]       = useState(false);
+  const [viewCount,     setViewCount]     = useState(0);
   const [isRealItem,    setIsRealItem]    = useState(false);
   const [comments,      setComments]      = useState<Comment[]>([]);
   const [commentText,   setCommentText]   = useState('');
@@ -473,12 +1253,19 @@ export default function PublishedItemPage({ id }: { id: string }) {
   const [copied,        setCopied]        = useState(false);
   const [embedCopied,   setEmbedCopied]   = useState(false);
   const [reportOpen,    setReportOpen]    = useState(false);
+  const [reportReason,  setReportReason]  = useState('');
+  const [reportDetail,  setReportDetail]  = useState('');
+  const [reportSending, setReportSending] = useState(false);
+  const [reportDone,    setReportDone]    = useState(false);
+  const [reportError,   setReportError]   = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError,   setDeleteError]   = useState('');
+  const [showAnalytics, setShowAnalytics] = useState(false);
   const commentRef  = useRef<HTMLTextAreaElement>(null);
   const sharePanelRef = useRef<HTMLDivElement>(null);
   const likeInFlight  = useRef(false);
+  const trendInFlight = useRef(false);
 
   /* ── load item ── */
   useEffect(() => {
@@ -495,6 +1282,9 @@ export default function PublishedItemPage({ id }: { id: string }) {
           setIsRealItem(true);
           setLikeCount(real.likesCount ?? 0);
           setLiked(real.likedByViewer ?? false);
+          setTrendCount(real.trendCount ?? 0);
+          setTrended(real.trendedByViewer ?? false);
+          setViewCount(real.viewCount ?? 0);
           setComments(buildCommentTree(real.comments ?? []));
           // related from list API
           try {
@@ -531,9 +1321,12 @@ export default function PublishedItemPage({ id }: { id: string }) {
           fetch(`/api/public/published/${id}/comments`),
         ]);
         if (lRes.ok) {
-          const d = await lRes.json() as { likesCount?: number; likedByViewer?: boolean };
+          const d = await lRes.json() as { likesCount?: number; likedByViewer?: boolean; trendCount?: number; trendedByViewer?: boolean; viewCount?: number };
           setLikeCount(n => d.likesCount ?? n);
           if (d.likedByViewer !== undefined) setLiked(d.likedByViewer);
+          setTrendCount(n => d.trendCount ?? n);
+          if (d.trendedByViewer !== undefined) setTrended(d.trendedByViewer);
+          if (d.viewCount !== undefined) setViewCount(d.viewCount);
         }
         if (cRes.ok) {
           const cd = await cRes.json() as { comments: ApiComment[] };
@@ -553,7 +1346,7 @@ export default function PublishedItemPage({ id }: { id: string }) {
     return () => document.removeEventListener('mousedown', h);
   }, [showSharePanel]);
 
-  /* ── like (optimistic, real API for real items) ── */
+  /* ── like ── */
   const toggleLike = async () => {
     if (!item || likeInFlight.current) return;
     const next = !liked;
@@ -573,19 +1366,58 @@ export default function PublishedItemPage({ id }: { id: string }) {
     }
   };
 
+  /* ── trend ── */
+  const toggleTrend = async () => {
+    if (!item || trendInFlight.current) return;
+    const next = !trended;
+    setTrended(next);
+    setTrendCount(c => Math.max(0, c + (next ? 1 : -1)));
+    if (isRealItem) {
+      trendInFlight.current = true;
+      try {
+        const res = await fetch(`/api/published/${item.id}/trend`, { method: 'POST' });
+        if (res.ok) {
+          const d = await res.json() as { trended: boolean; trendCount: number };
+          setTrended(d.trended); setTrendCount(d.trendCount);
+        } else { setTrended(trended); setTrendCount(c => Math.max(0, c + (next ? -1 : 1))); }
+      } catch { setTrended(trended); } finally { trendInFlight.current = false; }
+    }
+  };
+
+  const shareUrl = item ? getShareUrl(item) : '';
+
   const copyLink = async () => {
     if (!item) return;
-    try { await navigator.clipboard.writeText(getShareUrl(item)); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch {}
+    try { await navigator.clipboard.writeText(shareUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch {}
   };
   const copyEmbed = async () => {
     if (!item) return;
-    const embed = `<iframe src="${getShareUrl(item)}" width="100%" height="500" frameborder="0" title="${item.title}"></iframe>`;
-    try { await navigator.clipboard.writeText(embed); setEmbedCopied(true); setTimeout(() => setEmbedCopied(false), 2000); } catch {}
+    const snippet = `<blockquote class="docrud-embed" data-id="${item.id}"><a href="${shareUrl}">${item.title}</a></blockquote><script async src="${window.location.origin}/embed.js"><\/script>`;
+    try { await navigator.clipboard.writeText(snippet); setEmbedCopied(true); setTimeout(() => setEmbedCopied(false), 2000); } catch {}
   };
   const nativeShare = async () => {
     if (!item || !navigator.share) return;
-    try { await navigator.share({ title: item.title, text: item.body.slice(0, 120), url: getShareUrl(item) }); } catch {}
+    const snippet = item.body ? item.body.replace(/\n+/g, ' ').slice(0, 140).trimEnd() + '…' : '';
+    try { await navigator.share({ title: item.title, text: snippet, url: shareUrl }); } catch {}
   };
+
+  function tweetUrl() {
+    const text = encodeURIComponent(item!.title.slice(0, 200));
+    const url  = encodeURIComponent(shareUrl);
+    return `https://twitter.com/intent/tweet?text=${text}&url=${url}&via=docrud`;
+  }
+  function linkedInUrl() {
+    return `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+  }
+  function whatsAppUrl() {
+    return `https://wa.me/?text=${encodeURIComponent(`${item!.title}\n${shareUrl}`)}`;
+  }
+  function emailUrl() {
+    const subject = encodeURIComponent(item!.title);
+    const snippet = item!.body ? item!.body.replace(/\n+/g, ' ').slice(0, 200) : '';
+    const body    = encodeURIComponent(`${item!.title}\n\n${snippet ? snippet + '\n\n' : ''}${shareUrl}`);
+    return `mailto:?subject=${subject}&body=${body}`;
+  }
 
   /* ── delete own post ── */
   const deleteItem = async () => {
@@ -703,7 +1535,6 @@ export default function PublishedItemPage({ id }: { id: string }) {
 
   const tagCls    = TAG_CLS[item.category] ?? 'bg-white/10 text-white/70 border-white/10';
   const CatIcon   = TABS_MAP[item.category] ?? FileText;
-  const shareUrl  = getShareUrl(item);
   const totalComments = comments.reduce((s, c) => s + 1 + c.replies.length, 0);
 
   const enrichedItem = {
@@ -715,6 +1546,7 @@ export default function PublishedItemPage({ id }: { id: string }) {
 
   const sharedCatProps = {
     item: enrichedItem, likeCount, liked, toggleLike,
+    trendCount, trended, toggleTrend,
     comments, commentText, displayName,
     setCommentText, submitComment, submitReply,
     likeComment: (id: string) => void likeComment(id),
@@ -808,6 +1640,18 @@ export default function PublishedItemPage({ id }: { id: string }) {
               <span className="tabular-nums">{likeCount}</span>
             </button>
 
+            <button
+              type="button"
+              onClick={() => void toggleTrend()}
+              className={`inline-flex h-8 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition ${
+                trended ? 'border-orange-500/30 bg-orange-500/10 text-orange-400' : 'border-white/[0.08] bg-white/[0.04] text-white/50 hover:bg-white/[0.09] hover:text-orange-400'
+              }`}
+              title="Mark as trending"
+            >
+              <TrendingUp className={`h-3.5 w-3.5 transition-transform ${trended ? 'scale-110' : ''}`} />
+              <span className="tabular-nums">{trendCount > 0 ? (trendCount >= 1000 ? `${(trendCount / 1000).toFixed(1)}k` : String(trendCount)) : 'Trend'}</span>
+            </button>
+
             <div className="relative" ref={sharePanelRef}>
               <button
                 type="button"
@@ -825,14 +1669,14 @@ export default function PublishedItemPage({ id }: { id: string }) {
                     <p className="mt-0.5 truncate text-[10px] text-white/30">{shareUrl}</p>
                   </div>
                   <div className="space-y-0.5 p-2">
-                    <ShareBtn icon={copied ? Check : Copy} label={copied ? 'Copied!' : 'Copy link'} accent={copied} onClick={copyLink} />
-                    <ShareBtn icon={Twitter} label="Share on X / Twitter" onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(item.title)}&url=${encodeURIComponent(shareUrl)}`, '_blank')} />
-                    <ShareBtn icon={ExternalLink} label="Share on LinkedIn" onClick={() => window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`, '_blank')} />
-                    <ShareBtn icon={MessageCircle} label="Share on WhatsApp" onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`${item.title} — ${shareUrl}`)}`, '_blank')} />
-                    <ShareBtn icon={Mail} label="Share via Email" onClick={() => { window.location.href = `mailto:?subject=${encodeURIComponent(item.title)}&body=${encodeURIComponent(`${item.title}\n\n${shareUrl}`)}`; }} />
+                    <ShareBtn icon={copied ? Check : Copy}         label={copied ? 'Copied!' : 'Copy link'}         accent={copied}      onClick={copyLink} />
+                    <ShareBtn icon={Twitter}                        label="Share on X / Twitter"                                          onClick={() => window.open(tweetUrl(),    '_blank')} />
+                    <ShareBtn icon={ExternalLink}                   label="Share on LinkedIn"                                             onClick={() => window.open(linkedInUrl(), '_blank')} />
+                    <ShareBtn icon={MessageCircle}                  label="Share on WhatsApp"                                             onClick={() => window.open(whatsAppUrl(), '_blank')} />
+                    <ShareBtn icon={Mail}                           label="Share via Email"                                               onClick={() => { window.location.href = emailUrl(); }} />
                     <div className="my-1 border-t border-white/[0.06]" />
-                    <ShareBtn icon={embedCopied ? Check : Code2} label={embedCopied ? 'Embed copied!' : 'Copy embed code'} accent={embedCopied} onClick={copyEmbed} />
-                    {'share' in navigator && <ShareBtn icon={Share2} label="More options…" onClick={nativeShare} />}
+                    <ShareBtn icon={embedCopied ? Check : Code2}   label={embedCopied ? 'Embed copied!' : 'Copy embed code'} accent={embedCopied} onClick={copyEmbed} />
+                    {'share' in navigator && <ShareBtn icon={Share2} label="More options…"                                                onClick={nativeShare} />}
                   </div>
                 </div>
               )}
@@ -928,6 +1772,20 @@ export default function PublishedItemPage({ id }: { id: string }) {
             </div>
             )}
 
+            {/* moderation status banner */}
+            {(item as any).moderationStatus === 'suspended' && (
+              <div className="mt-4 flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                <span><strong>This item has been suspended</strong> by the moderation team and is not visible to other users.</span>
+              </div>
+            )}
+            {(item as any).moderationStatus === 'under_review' && (
+              <div className="mt-4 flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-400">
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
+                <span>This item is currently <strong>under review</strong> by our moderation team.</span>
+              </div>
+            )}
+
             {/* title */}
             <h1 className="mt-5 text-[1.75rem] font-bold leading-[1.2] tracking-[-0.03em] text-white sm:text-[2rem] lg:text-[2.25rem]">
               {item.title}
@@ -950,11 +1808,36 @@ export default function PublishedItemPage({ id }: { id: string }) {
                 </button>
                 <button
                   type="button"
+                  onClick={() => void toggleTrend()}
+                  className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-[13px] font-semibold transition ${
+                    trended ? 'bg-orange-500/10 text-orange-400' : 'text-white/40 hover:bg-white/[0.06] hover:text-orange-400'
+                  }`}
+                  title="Mark as trending"
+                >
+                  <TrendingUp className={`h-4 w-4 transition-transform ${trended ? 'scale-110' : ''}`} />
+                  <span className="tabular-nums">{trendCount > 0 ? trendCount : ''}</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => commentRef.current?.focus()}
                   className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-[13px] font-semibold text-white/40 transition hover:bg-white/[0.06] hover:text-white/80"
                 >
                   <MessageCircle className="h-4 w-4" />
                   <span className="tabular-nums">{totalComments}</span>
+                </button>
+                {/* Analytics icon button */}
+                <button
+                  type="button"
+                  onClick={() => setShowAnalytics(true)}
+                  title="Live analytics"
+                  className="relative inline-flex h-9 w-9 items-center justify-center rounded-xl transition active:scale-90"
+                  style={{ color: showAnalytics ? '#a78bfa' : 'rgba(255,255,255,0.28)',
+                    background: showAnalytics ? 'rgba(167,139,250,0.10)' : 'transparent' }}
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  {/* live pulse dot */}
+                  <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-emerald-400"
+                    style={{ animation: 'ltc-pulse 2s ease infinite' }} />
                 </button>
                 <button
                   type="button"
@@ -1132,11 +2015,19 @@ export default function PublishedItemPage({ id }: { id: string }) {
             })()}
 
             {item.category === 'event' && (
-              <EventRegisterCTA itemId={item.id} itemTitle={item.title} itemCategory={item.category} body={item.body} />
+              <EventRegisterCTA
+                itemId={item.id}
+                initialCount={(item as PublishedItem & { interestedCount?: number }).interestedCount ?? 0}
+                initialInterested={(item as PublishedItem & { interestedByViewer?: boolean }).interestedByViewer ?? false}
+              />
             )}
 
             {item.category === 'hackathon' && (
-              <HackathonRegisterCTA itemId={item.id} itemTitle={item.title} itemCategory={item.category} body={item.body} />
+              <HackathonRegisterCTA
+                itemId={item.id}
+                initialCount={(item as PublishedItem & { interestedCount?: number }).interestedCount ?? 0}
+                initialInterested={(item as PublishedItem & { interestedByViewer?: boolean }).interestedByViewer ?? false}
+              />
             )}
 
             {item.category === 'gig' && (() => {
@@ -1248,112 +2139,368 @@ export default function PublishedItemPage({ id }: { id: string }) {
                 </div>
               )}
 
-              {/* chips/tags card */}
-              {item.chips && item.chips.length > 0 && (
-                <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5">
-                  <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/30">Tags</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {item.chips.map(c => (
-                      <span key={c} className="rounded-lg border border-white/[0.09] bg-white/[0.04] px-2.5 py-1 text-[11.5px] font-medium text-white/55">{c}</span>
-                    ))}
+              {/* ── Accordion sidebar tabs ── */}
+              <SidebarAccordion defaultOpen="engagement">
+                {item.chips && item.chips.length > 0 && (
+                  <SidebarTab id="tags" label="Tags" badge={item.chips.length}>
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {item.chips.map(c => (
+                        <span key={c} className="rounded-lg border border-white/[0.09] bg-white/[0.04] px-2.5 py-1 text-[11.5px] font-medium text-white/55">{c}</span>
+                      ))}
+                    </div>
+                  </SidebarTab>
+                )}
+
+                <SidebarTab id="share" label="Share">
+                  <div className="space-y-1.5 pt-1">
+                    <SideShareBtn icon={copied ? Check : Link2}          label={copied ? 'Copied!' : 'Copy link'} onClick={copyLink}                                        accent={copied} />
+                    <SideShareBtn icon={Twitter}                         label="X / Twitter"                      onClick={() => window.open(tweetUrl(),    '_blank')} />
+                    <SideShareBtn icon={ExternalLink}                    label="LinkedIn"                         onClick={() => window.open(linkedInUrl(), '_blank')} />
+                    <SideShareBtn icon={MessageCircle}                   label="WhatsApp"                         onClick={() => window.open(whatsAppUrl(), '_blank')} />
+                    <SideShareBtn icon={Mail}                            label="Email"                            onClick={() => { window.location.href = emailUrl(); }} />
+                    <SideShareBtn icon={embedCopied ? Check : Code2}     label={embedCopied ? 'Embed copied!' : 'Embed'} onClick={copyEmbed}                        accent={embedCopied} />
                   </div>
-                </div>
-              )}
+                </SidebarTab>
 
-              {/* share card */}
-              <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5">
-                <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/30">Share</p>
-                <div className="space-y-1.5">
-                  <SideShareBtn icon={copied ? Check : Link2} label={copied ? 'Copied!' : 'Copy link'} onClick={copyLink} accent={copied} />
-                  <SideShareBtn icon={Twitter}      label="X / Twitter"  onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(item.title)}&url=${encodeURIComponent(shareUrl)}`, '_blank')} />
-                  <SideShareBtn icon={ExternalLink} label="LinkedIn"      onClick={() => window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`, '_blank')} />
-                  <SideShareBtn icon={MessageCircle}label="WhatsApp"     onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`${item.title} — ${shareUrl}`)}`, '_blank')} />
-                  <SideShareBtn icon={Mail}         label="Email"        onClick={() => { window.location.href = `mailto:?subject=${encodeURIComponent(item.title)}&body=${encodeURIComponent(`${item.title}\n\n${shareUrl}`)}`; }} />
-                  <SideShareBtn icon={embedCopied ? Check : Code2} label={embedCopied ? 'Embed copied!' : 'Embed'} onClick={copyEmbed} accent={embedCopied} />
-                </div>
-              </div>
-
-              {/* engagement card */}
-              <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5">
-                <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/30">Engagement</p>
-                <div className="space-y-2">
-                  <button
-                    type="button"
-                    onClick={toggleLike}
-                    className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
-                      liked ? 'bg-rose-500/10 text-rose-400' : 'border border-white/[0.07] bg-white/[0.03] text-white/50 hover:bg-white/[0.07] hover:text-white'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2"><ThumbsUp className="h-4 w-4" />{liked ? 'Liked' : 'Like this'}</span>
-                    <span className="tabular-nums text-xs">{likeCount}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => commentRef.current?.focus()}
-                    className="flex w-full items-center justify-between rounded-xl border border-white/[0.07] bg-white/[0.03] px-3 py-2.5 text-sm font-semibold text-white/50 transition hover:bg-white/[0.07] hover:text-white"
-                  >
-                    <span className="flex items-center gap-2"><MessageCircle className="h-4 w-4" />Comment</span>
-                    <span className="tabular-nums text-xs">{totalComments}</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* related items */}
-              {related.length > 0 && (
-                <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5">
-                  <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/30">Related</p>
-                  <div className="space-y-2">
-                    {related.map(r => {
-                      const rcls = TAG_CLS[r.category] ?? 'bg-white/10 text-white/70 border-white/10';
-                      return (
-                        <Link
-                          key={r.id}
-                          href={`/published/${r.id}`}
-                          className="group flex items-start gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 transition hover:border-white/[0.12] hover:bg-white/[0.05]"
-                        >
-                          <span className={`mt-0.5 shrink-0 inline-flex items-center rounded-lg border px-1.5 py-0.5 text-[8.5px] font-bold tracking-wide ${rcls}`}>
-                            {r.badge.length > 10 ? r.badge.slice(0, 10) + '…' : r.badge}
-                          </span>
-                          <p className="line-clamp-2 text-[12px] font-semibold leading-snug text-white/65 group-hover:text-white/90 transition-colors">
-                            {r.title}
-                          </p>
-                        </Link>
-                      );
-                    })}
+                <SidebarTab id="analytics" label="Analytics">
+                  <div className="pt-1">
+                    <LiveTrendChart
+                      itemId={item.id}
+                      isReal={isRealItem}
+                      likeCount={likeCount}
+                      trendCount={trendCount}
+                      commentCount={totalComments}
+                      viewCount={viewCount}
+                      postedAt={item.postedAt}
+                    />
                   </div>
-                  <Link href="/published" className="mt-3 flex items-center gap-1 text-[11px] font-medium text-white/30 transition hover:text-white/60">
-                    Browse all <ArrowRight className="h-3 w-3" />
-                  </Link>
-                </div>
-              )}
+                </SidebarTab>
+
+                <SidebarTab id="engagement" label="Engagement" badge={likeCount + trendCount + totalComments || undefined}>
+                  <div className="space-y-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={toggleLike}
+                      className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
+                        liked ? 'bg-rose-500/10 text-rose-400' : 'border border-white/[0.07] bg-white/[0.03] text-white/50 hover:bg-white/[0.07] hover:text-white'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2"><ThumbsUp className="h-4 w-4" />{liked ? 'Liked' : 'Like'}</span>
+                      <span className="tabular-nums text-xs">{likeCount}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void toggleTrend()}
+                      className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
+                        trended ? 'bg-orange-500/10 text-orange-400' : 'border border-white/[0.07] bg-white/[0.03] text-white/50 hover:bg-white/[0.07] hover:text-orange-400'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2"><TrendingUp className="h-4 w-4" />{trended ? 'Trending' : 'Trend'}</span>
+                      <span className="tabular-nums text-xs">{trendCount > 0 ? trendCount : ''}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => commentRef.current?.focus()}
+                      className="flex w-full items-center justify-between rounded-xl border border-white/[0.07] bg-white/[0.03] px-3 py-2.5 text-sm font-semibold text-white/50 transition hover:bg-white/[0.07] hover:text-white"
+                    >
+                      <span className="flex items-center gap-2"><MessageCircle className="h-4 w-4" />Comment</span>
+                      <span className="tabular-nums text-xs">{totalComments}</span>
+                    </button>
+                  </div>
+                </SidebarTab>
+
+                {related.length > 0 && (
+                  <SidebarTab id="related" label="Related" badge={related.length}>
+                    <div className="space-y-2 pt-1">
+                      {related.map(r => {
+                        const rcls = TAG_CLS[r.category] ?? 'bg-white/10 text-white/70 border-white/10';
+                        return (
+                          <Link
+                            key={r.id}
+                            href={`/published/${r.id}`}
+                            className="group flex items-start gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 transition hover:border-white/[0.12] hover:bg-white/[0.05]"
+                          >
+                            <span className={`mt-0.5 shrink-0 inline-flex items-center rounded-lg border px-1.5 py-0.5 text-[8.5px] font-bold tracking-wide ${rcls}`}>
+                              {r.badge.length > 10 ? r.badge.slice(0, 10) + '…' : r.badge}
+                            </span>
+                            <p className="line-clamp-2 text-[12px] font-semibold leading-snug text-white/65 group-hover:text-white/90 transition-colors">
+                              {r.title}
+                            </p>
+                          </Link>
+                        );
+                      })}
+                      <Link href="/published" className="mt-1 flex items-center gap-1 text-[11px] font-medium text-white/30 transition hover:text-white/60">
+                        Browse all <ArrowRight className="h-3 w-3" />
+                      </Link>
+                    </div>
+                  </SidebarTab>
+                )}
+              </SidebarAccordion>
             </div>
           </aside>
         </div>
         </div>{/* /px-4 wrapper */}
       </div>}
 
+      {/* ── Analytics drawer — right panel on desktop, bottom sheet on mobile ── */}
+      {item && showAnalytics && typeof document !== 'undefined' && createPortal(
+        <AnalyticsDrawer
+          onClose={() => setShowAnalytics(false)}
+          isRealItem={isRealItem}
+          itemId={item.id}
+          title={item.title}
+          likeCount={likeCount}
+          trendCount={trendCount}
+          totalComments={totalComments}
+          viewCount={viewCount}
+          postedAt={item.postedAt}
+        />,
+        document.body
+      )}
+
       {/* ── report modal ── */}
       {reportOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" onClick={() => setReportOpen(false)}>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" onClick={() => { if (!reportSending) { setReportOpen(false); setReportReason(''); setReportDetail(''); setReportDone(false); setReportError(''); } }}>
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" aria-hidden />
           <div className="relative w-full max-w-sm rounded-2xl border border-white/[0.08] bg-[#111114] p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-bold text-white">Report this item</h3>
-              <button onClick={() => setReportOpen(false)} className="text-white/30 transition hover:text-white"><X className="h-4 w-4" /></button>
+              <button onClick={() => { setReportOpen(false); setReportReason(''); setReportDetail(''); setReportDone(false); setReportError(''); }} className="text-white/30 transition hover:text-white" disabled={reportSending}><X className="h-4 w-4" /></button>
             </div>
-            <div className="mt-4 space-y-1.5">
-              {['Misinformation / inaccurate content','Spam or duplicate','Inappropriate or offensive','Copyright violation','Other'].map(r => (
+
+            {reportDone ? (
+              <div className="py-6 text-center space-y-3">
+                <div className="w-12 h-12 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto">
+                  <svg className="w-6 h-6 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                </div>
+                <p className="text-sm text-white font-medium">Report submitted</p>
+                <p className="text-xs text-white/40">Our moderation team will review this item. Thank you for helping keep the platform safe.</p>
+                <button onClick={() => { setReportOpen(false); setReportDone(false); setReportReason(''); setReportDetail(''); }} className="mt-2 text-xs text-white/40 hover:text-white transition">Close</button>
+              </div>
+            ) : (
+              <>
+                <p className="text-xs text-white/40 mb-3">Why are you reporting this item?</p>
+                <div className="space-y-1.5">
+                  {['Misinformation / inaccurate content','Spam or duplicate','Inappropriate or offensive','Copyright violation','Harassment or abuse','Other'].map(r => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setReportReason(r)}
+                      className={`flex w-full items-center rounded-xl border px-4 py-3 text-left text-sm transition ${reportReason === r ? 'border-amber-500/40 bg-amber-500/10 text-white' : 'border-white/[0.06] bg-white/[0.03] text-white/55 hover:bg-white/[0.08] hover:text-white'}`}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+                {reportReason && (
+                  <textarea
+                    value={reportDetail}
+                    onChange={(e) => setReportDetail(e.target.value)}
+                    placeholder="Optional: add more details…"
+                    rows={2}
+                    maxLength={500}
+                    className="mt-3 w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/25 focus:outline-none focus:border-amber-500/40 resize-none"
+                  />
+                )}
+                {reportError && <p className="mt-2 text-xs text-red-400">{reportError}</p>}
                 <button
-                  key={r}
                   type="button"
-                  onClick={() => setReportOpen(false)}
-                  className="flex w-full items-center rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-3 text-left text-sm text-white/55 transition hover:bg-white/[0.08] hover:text-white"
+                  disabled={!reportReason || reportSending}
+                  onClick={async () => {
+                    if (!reportReason || !item) return;
+                    setReportSending(true); setReportError('');
+                    try {
+                      const res = await fetch(`/api/public/published/${item.id}/report`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ reason: reportReason, detail: reportDetail }),
+                      });
+                      if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed'); }
+                      setReportDone(true);
+                    } catch (e) {
+                      setReportError(e instanceof Error ? e.message : 'Failed to submit. Try again.');
+                    } finally { setReportSending(false); }
+                  }}
+                  className="mt-4 w-full rounded-xl bg-red-500/80 py-2.5 text-sm font-semibold text-white transition hover:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  {r}
+                  {reportSending && <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                  {reportSending ? 'Submitting…' : 'Submit Report'}
                 </button>
-              ))}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── AnalyticsDrawer ───────────────────────────────────────────── */
+function AnalyticsDrawer({
+  onClose, isRealItem, itemId, title, likeCount, trendCount, totalComments, viewCount, postedAt,
+}: {
+  onClose: () => void; isRealItem: boolean; itemId: string; title: string;
+  likeCount: number; trendCount: number; totalComments: number; viewCount: number; postedAt: string;
+}) {
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)');
+    setIsDesktop(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  const panelStyle: CSSProperties = isDesktop
+    ? {
+        position: 'fixed', top: 0, right: 0, bottom: 0, width: 420,
+        background: 'linear-gradient(160deg,#0c0c13 0%,#07070f 100%)',
+        borderLeft: '1px solid rgba(255,255,255,0.09)',
+        boxShadow: '-32px 0 80px rgba(0,0,0,0.60), inset 1px 0 0 rgba(255,255,255,0.04)',
+        animation: 'ltc-slidein 0.26s cubic-bezier(0.22,1,0.36,1) both',
+        display: 'flex', flexDirection: 'column', zIndex: 310,
+        overflow: 'hidden',
+      }
+    : {
+        position: 'fixed', bottom: 0, left: 0, right: 0,
+        maxHeight: '92svh',
+        background: 'linear-gradient(170deg,#0c0c13 0%,#07070f 100%)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        borderBottom: 'none',
+        borderRadius: '24px 24px 0 0',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 -32px 80px rgba(0,0,0,0.65)',
+        animation: 'ltc-sheetup 0.28s cubic-bezier(0.22,1,0.36,1) both',
+        display: 'flex', flexDirection: 'column', zIndex: 310,
+        overflow: 'hidden',
+      };
+
+  return (
+    <>
+      <style>{`
+        @keyframes ltc-sheetup{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:none}}
+        @keyframes ltc-slidein{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:none}}
+      `}</style>
+
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 z-[305]"
+        style={{ background: isDesktop ? 'rgba(0,0,0,0.45)' : 'rgba(0,0,0,0.78)', backdropFilter: 'blur(6px)', WebkitTapHighlightColor: 'transparent' }}
+        onClick={onClose}
+      />
+
+      {/* Panel */}
+      <div style={panelStyle} onClick={e => e.stopPropagation()}>
+        {/* Ambient glow — desktop only */}
+        {isDesktop && (
+          <div style={{ position:'absolute',top:-120,right:-60,width:300,height:300,borderRadius:'50%',
+            background:'radial-gradient(circle,rgba(139,92,246,0.07) 0%,transparent 70%)',pointerEvents:'none' }} />
+        )}
+
+        {/* Drag handle — mobile only */}
+        {!isDesktop && (
+          <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
+            <div style={{ width: 36, height: 4, borderRadius: 99, background: 'rgba(255,255,255,0.15)' }} />
+          </div>
+        )}
+
+        {/* Header */}
+        <div className="flex items-center justify-between flex-shrink-0"
+          style={{ padding: isDesktop ? '20px 20px 16px' : '8px 20px 16px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          <div className="flex items-center gap-3">
+            <div className="relative flex-shrink-0 flex items-center justify-center rounded-xl overflow-hidden"
+              style={{ width: 38, height: 38, background: 'linear-gradient(135deg,rgba(139,92,246,0.22) 0%,rgba(99,102,241,0.14) 100%)', border: '1px solid rgba(139,92,246,0.30)' }}>
+              <BarChart3 style={{ width: 17, height: 17, color: '#a78bfa', position: 'relative', zIndex: 1 }} />
+              <div style={{ position:'absolute',inset:0,background:'radial-gradient(circle at 65% 25%,rgba(167,139,250,0.22),transparent 65%)' }} />
+            </div>
+            <div>
+              <p style={{ fontSize: 14, fontWeight: 700, color: '#fff', letterSpacing: '-0.01em', lineHeight: 1 }}>Post Analytics</p>
+              <div className="flex items-center gap-1.5" style={{ marginTop: 5 }}>
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#34d399', flexShrink: 0, animation: 'ltc-pulse 1.8s ease infinite', display: 'inline-block' }} />
+                <p style={{ fontSize: 10, fontWeight: 500, color: 'rgba(255,255,255,0.32)', letterSpacing: '0.04em' }}>
+                  {isRealItem ? 'LIVE · every 5s' : 'SESSION DATA'}&ensp;
+                  <span style={{ color: 'rgba(255,255,255,0.18)' }}>· {title.slice(0, 24)}{title.length > 24 ? '…' : ''}</span>
+                </p>
+              </div>
             </div>
           </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex items-center justify-center flex-shrink-0 transition-all hover:scale-105 active:scale-90"
+            style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)' }}
+          >
+            <X style={{ width: 15, height: 15, color: 'rgba(255,255,255,0.38)' }} />
+          </button>
+        </div>
+
+        {/* Chart body */}
+        <div className="flex-1 overflow-y-auto" style={{ padding: '16px', scrollbarWidth: 'none' }}>
+          <LiveTrendChart
+            itemId={`${itemId}-sheet`}
+            isReal={isRealItem}
+            likeCount={likeCount}
+            trendCount={trendCount}
+            commentCount={totalComments}
+            viewCount={viewCount}
+            postedAt={postedAt}
+            compact={false}
+          />
+          <div style={{ height: 'max(20px, env(safe-area-inset-bottom))' }} />
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ─── SidebarAccordion ──────────────────────────────────────────── */
+function SidebarAccordion({ children, defaultOpen }: { children: React.ReactNode; defaultOpen?: string }) {
+  const [open, setOpen] = useState<string | null>(defaultOpen ?? null);
+  return (
+    <div className="rounded-2xl border border-white/[0.08] overflow-hidden" style={{ background: 'rgba(255,255,255,0.025)' }}>
+      {React.Children.map(children, (child) => {
+        if (!React.isValidElement(child)) return null;
+        const id = (child.props as { id: string }).id;
+        return React.cloneElement(child as React.ReactElement<SidebarTabProps>, {
+          isOpen: open === id,
+          onToggle: () => setOpen(prev => prev === id ? null : id),
+        });
+      })}
+    </div>
+  );
+}
+
+type SidebarTabProps = {
+  id: string; label: string; badge?: number; children: React.ReactNode;
+  isOpen?: boolean; onToggle?: () => void;
+};
+function SidebarTab({ label, badge, children, isOpen = false, onToggle }: SidebarTabProps) {
+  return (
+    <div className="border-b border-white/[0.06] last:border-b-0">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-white/[0.03] active:bg-white/[0.05]"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: isOpen ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.38)' }}>
+            {label}
+          </span>
+          {badge !== undefined && (
+            <span className="rounded-full px-1.5 py-px text-[9px] font-bold tabular-nums leading-none"
+              style={{ background: isOpen ? 'rgba(167,139,250,0.18)' : 'rgba(255,255,255,0.07)', color: isOpen ? '#c4b5fd' : 'rgba(255,255,255,0.28)' }}>
+              {badge}
+            </span>
+          )}
+        </div>
+        <ChevronDown
+          className="h-3.5 w-3.5 flex-shrink-0 transition-transform duration-200"
+          style={{ color: 'rgba(255,255,255,0.25)', transform: isOpen ? 'rotate(180deg)' : 'none' }}
+        />
+      </button>
+      {isOpen && (
+        <div className="px-4 pb-4" style={{ animation: 'sidebar-tab-in 0.18s cubic-bezier(0.22,1,0.36,1) both' }}>
+          <style>{`@keyframes sidebar-tab-in{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}`}</style>
+          {children}
         </div>
       )}
     </div>

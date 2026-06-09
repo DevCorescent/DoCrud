@@ -22,6 +22,11 @@ type TelemetryEventPayload = {
   sessionId?: string;
   userId?: string;
   userRole?: string;
+  // Search enrichment
+  searchContext?: string;
+  resultsCount?: number;
+  hasResults?: boolean;
+  queryLength?: number;
 };
 
 function safeId(prefix: string) {

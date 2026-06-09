@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import puppeteer from 'puppeteer';
 import { documentTemplates } from '@/data/templates';
-import { createAccessEvent, getHistoryEntries, updateHistoryEntry } from '@/lib/server/history';
+import { createAccessEvent, getHistoryEntries, getHistoryEntryById, updateHistoryEntry } from '@/lib/server/history';
 import { type DocumentDesignPreset, isDocumentDesignPreset } from '@/lib/document-designs';
 import { getCustomTemplatesFromRepository } from '@/lib/server/repositories';
 import { renderDocumentTemplate } from '@/lib/template';
@@ -53,8 +53,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const internal = request.nextUrl.searchParams.get('internal') === '1';
     const password = request.nextUrl.searchParams.get('password')?.trim().toUpperCase();
     const signingToken = request.nextUrl.searchParams.get('token')?.trim() || '';
-    const history = await getHistoryEntries();
-    const entry = history.find((item) => item.shareId === params.id || item.id === params.id);
+    const entry = await getHistoryEntryById(params.id);
     if (!entry) {
       return NextResponse.json({ error: 'Document not found' }, { status: 404 });
     }

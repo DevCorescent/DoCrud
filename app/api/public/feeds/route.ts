@@ -92,7 +92,25 @@ export async function GET() {
           likesRaw: t.likesCount ?? 0,
           comments: t.commentsCount ?? 0,
           href: `/published/${t.id}`,
-          thumbnailUrl: t.thumbnailUrl || null,
+          // Resolve thumbnail URL — never expose raw base64 data: URLs to the feed
+          thumbnailUrl: (() => {
+            const u = t.thumbnailUrl;
+            // 1. Explicit valid URL (API path or https://)
+            if (u && !u.startsWith('data:')) return u;
+            // 2. Main content is an image → thumbnail endpoint handles it
+            if (t.mimeType?.startsWith('image/') && t.dataUrl?.startsWith('data:image/')) {
+              return `/api/public/thumbnail/${t.id}`;
+            }
+            // 3. HTML gallery post/product → thumbnail endpoint parses first image
+            if (
+              t.mimeType === 'text/html' &&
+              (t.directoryCategory === 'post' || t.directoryCategory === 'product') &&
+              t.dataUrl?.startsWith('data:text/html')
+            ) {
+              return `/api/public/thumbnail/${t.id}`;
+            }
+            return null;
+          })(),
           mimeType: t.mimeType || null,
           createdAt: t.createdAt,
           featured: !!(t.featured && t.featuredUntil && new Date(t.featuredUntil) > new Date()),

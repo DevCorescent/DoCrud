@@ -1,6 +1,15 @@
 import { CustomPlanConfiguration, SaasFeatureKey, SaasPlan, User } from '@/types/document';
 import { getSaasPlansFromRepository, saveSaasPlansToRepository } from '@/lib/server/repositories';
 
+// In-memory cache for saas plans — refreshed every 60 s. Plans change rarely
+// (admin action) so a short TTL gives near-zero DB overhead on JWT refreshes.
+let plansCache: { plans: SaasPlan[]; expiresAt: number } | null = null;
+const PLANS_CACHE_TTL_MS = 60_000;
+
+function invalidatePlansCache() {
+  plansCache = null;
+}
+
 function addDays(isoDate: string, days: number) {
   const base = new Date(isoDate);
   base.setDate(base.getDate() + days);
@@ -109,13 +118,17 @@ export function getSubscriptionCycleRemaining(params: {
   return { maxPerCycle: max, used, remaining: Math.max(max - used, 0) };
 }
 
+/**
+ * Only one base plan exists: the free workspace tier.
+ * All upgrades go through Docrud Infinity (handled in /api/billing/infinity).
+ */
 export const defaultSaasPlans: SaasPlan[] = [
   {
     id: 'workspace-trial',
-    name: 'docrud Workspace Trial',
-    description: 'Start with a clean login-based workspace for 30 days. Every admin-enabled non-AI feature is ready immediately, while AI stays habit-forming with a few guided tries before upgrade.',
+    name: 'docrud Free',
+    description: 'Free workspace with core features. Upgrade to Docrud Infinity to unlock everything.',
     targetAudience: 'business',
-    priceLabel: 'Free for 30 days',
+    priceLabel: 'Free',
     amountInPaise: 0,
     billingModel: 'free',
     includedFeatures: trialWorkspaceFeatures,
@@ -128,114 +141,14 @@ export const defaultSaasPlans: SaasPlan[] = [
     maxTalentConnectsPerCycle: 5,
     maxGigProposalsPerCycle: 10,
     maxMarketplaceTemplatePublishes: 1,
-    overagePriceLabel: 'Upgrade to Workspace Pro before AI usage and higher monthly volume become daily blockers',
+    overagePriceLabel: 'Upgrade to Docrud Infinity to unlock unlimited access',
     watermarkOnFreeGenerations: false,
-    isPublic: true,
+    isPublic: false,   // not shown as a purchasable option — it is the automatic default
     isDefault: true,
     active: true,
-    ctaLabel: 'Start Trial',
+    ctaLabel: 'Get Started Free',
     createdAt: '2026-04-15T00:00:00.000Z',
-    updatedAt: '2026-04-15T00:00:00.000Z',
-  },
-  {
-    id: 'workspace-pro',
-    name: 'docrud Workspace Pro',
-    description: 'Full docrud workspace access at one simple monthly price. Unlock every feature, sustainable AI credits, governed collaboration, and the smoothest upgrade path in the product.',
-    targetAudience: 'business',
-    billingModel: 'subscription',
-    priceLabel: '₹299 / month',
-    amountInPaise: 29900,
-    includedFeatures: fullWorkspaceFeatures,
-    freeDocumentGenerations: 100,
-    maxDocumentGenerations: 600,
-    freeAiRuns: 0,
-    monthlyAiCredits: defaultProAiCredits,
-    maxInternalUsers: 25,
-    maxMailboxThreads: 3000,
-    maxTalentConnectsPerCycle: 30,
-    maxGigProposalsPerCycle: 50,
-    maxMarketplaceTemplatePublishes: 20,
-    overagePriceLabel: 'Includes 300 AI credits monthly. Upgrade to Build Your Own when you need more seats, volume, or specific governance add-ons.',
-    watermarkOnFreeGenerations: false,
-    isPublic: true,
-    isDefault: false,
-    active: true,
-    ctaLabel: 'Upgrade to Pro',
-    createdAt: '2026-04-15T00:00:00.000Z',
-    updatedAt: '2026-04-15T00:00:00.000Z',
-  },
-  {
-    id: 'workspace-build-your-own',
-    name: 'Build Your Own Workspace',
-    description: 'Shape a monthly docrud workspace around the exact features, capacity, and AI intensity you want. The pricing stays transparent and the resulting workspace behaves like a regular subscription plan.',
-    targetAudience: 'business',
-    priceLabel: 'Custom monthly pricing',
-    amountInPaise: 0,
-    billingModel: 'custom',
-    includedFeatures: trialWorkspaceFeatures,
-    freeDocumentGenerations: 100,
-    maxDocumentGenerations: 400,
-    freeAiRuns: 0,
-    monthlyAiCredits: 0,
-    maxInternalUsers: 20,
-    maxMailboxThreads: 1500,
-    maxTalentConnectsPerCycle: 40,
-    maxGigProposalsPerCycle: 80,
-    maxMarketplaceTemplatePublishes: 100,
-    overagePriceLabel: 'AI credits, extra capacity, and selected modules are priced into your live monthly total.',
-    watermarkOnFreeGenerations: false,
-    isPublic: true,
-    isDefault: false,
-    active: true,
-    ctaLabel: 'Build Your Plan',
-    createdAt: '2026-04-15T00:00:00.000Z',
-    updatedAt: '2026-04-15T00:00:00.000Z',
-  },
-  {
-    id: 'talent-directory-pass',
-    name: 'Talent Directory Pass',
-    description: 'Unlock Talent Directory workflow inside your dashboard: manage unlocked contacts, keep notes, and run JD match scoring with a monthly connect allowance.',
-    targetAudience: 'business',
-    billingModel: 'subscription',
-    priceLabel: '₹199 / month',
-    amountInPaise: 19900,
-    includedFeatures: ['dashboard', 'tutorials', 'talent_directory'],
-    freeDocumentGenerations: 0,
-    maxDocumentGenerations: 50,
-    freeAiRuns: 0,
-    monthlyAiCredits: 0,
-    maxTalentConnectsPerCycle: 30,
-    maxGigProposalsPerCycle: 0,
-    watermarkOnFreeGenerations: false,
-    isPublic: true,
-    isDefault: false,
-    active: true,
-    ctaLabel: 'Get Talent Pass',
-    createdAt: '2026-05-02T00:00:00.000Z',
-    updatedAt: '2026-05-02T00:00:00.000Z',
-  },
-  {
-    id: 'gigs-pass',
-    name: 'Gigs Pass',
-    description: 'Use the gigs studio inside your dashboard: browse listings, manage outgoing proposals, and keep inbound responses organized with a monthly proposal allowance.',
-    targetAudience: 'business',
-    billingModel: 'subscription',
-    priceLabel: '₹199 / month',
-    amountInPaise: 19900,
-    includedFeatures: ['dashboard', 'tutorials', 'gigs'],
-    freeDocumentGenerations: 0,
-    maxDocumentGenerations: 50,
-    freeAiRuns: 0,
-    monthlyAiCredits: 0,
-    maxTalentConnectsPerCycle: 0,
-    maxGigProposalsPerCycle: 30,
-    watermarkOnFreeGenerations: false,
-    isPublic: true,
-    isDefault: false,
-    active: true,
-    ctaLabel: 'Get Gigs Pass',
-    createdAt: '2026-05-02T00:00:00.000Z',
-    updatedAt: '2026-05-02T00:00:00.000Z',
+    updatedAt: '2026-06-08T00:00:00.000Z',
   },
 ];
 
@@ -274,10 +187,14 @@ export const saasFeatureCatalog: Array<{ key: SaasFeatureKey; label: string }> =
 ];
 
 export async function getSaasPlans() {
+  if (plansCache && plansCache.expiresAt > Date.now()) {
+    return plansCache.plans;
+  }
+
   const storedPlans = await getSaasPlansFromRepository(defaultSaasPlans);
   const storedPlanMap = new Map(storedPlans.map((plan) => [plan.id, plan]));
 
-  return defaultSaasPlans.map((standard) => {
+  const merged = defaultSaasPlans.map((standard) => {
     const stored = storedPlanMap.get(standard.id);
     if (!stored) {
       return standard;
@@ -309,9 +226,13 @@ export async function getSaasPlans() {
       updatedAt: stored.updatedAt || standard.updatedAt,
     };
   });
+
+  plansCache = { plans: merged, expiresAt: Date.now() + PLANS_CACHE_TTL_MS };
+  return merged;
 }
 
 export async function saveSaasPlans(plans: SaasPlan[]) {
+  invalidatePlansCache();
   await saveSaasPlansToRepository(plans);
 }
 

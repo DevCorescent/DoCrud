@@ -20,6 +20,7 @@ import {
   Share2,
   Star,
   ThumbsUp,
+  TrendingUp,
   Trophy,
   Video as VideoIcon,
   X as XIcon,
@@ -62,6 +63,9 @@ interface CategoryPageProps {
   likeCount: number;
   liked: boolean;
   toggleLike: () => void;
+  trendCount: number;
+  trended: boolean;
+  toggleTrend: () => void;
   comments: Comment[];
   commentText: string;
   displayName: string;
@@ -234,7 +238,7 @@ function ImageSlider({ images }: { images: string[] }) {
 }
 
 export function PostDetailContent({
-  item, likeCount, liked, toggleLike,
+  item, likeCount, liked, toggleLike, trendCount, trended, toggleTrend,
   comments, commentText, displayName,
   setCommentText, submitComment, submitReply, likeComment,
   totalComments, commentRef,
@@ -324,6 +328,17 @@ export function PostDetailContent({
 
         <button
           type="button"
+          onClick={toggleTrend}
+          className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 ${
+            trended ? 'bg-orange-500/15 text-orange-400' : 'bg-white/[0.04] text-white/45 hover:bg-white/[0.08] hover:text-orange-400'
+          }`}
+        >
+          <TrendingUp className={`h-4 w-4 transition-transform ${trended ? 'scale-110' : ''}`} />
+          <span className="tabular-nums">{trendCount > 0 ? trendCount : ''}</span>
+        </button>
+
+        <button
+          type="button"
           onClick={() => commentRef.current?.focus()}
           className="inline-flex items-center gap-2 rounded-xl bg-white/[0.04] px-4 py-2 text-sm font-semibold text-white/45 transition hover:bg-white/[0.08] hover:text-white/80"
         >
@@ -366,7 +381,7 @@ export function PostDetailContent({
    2. PollDetailContent — Interactive live poll
 ═══════════════════════════════════════════════════════════════════ */
 export function PollDetailContent({
-  item, likeCount, liked, toggleLike,
+  item, likeCount, liked, toggleLike, trendCount, trended, toggleTrend,
   comments, commentText, displayName,
   setCommentText, submitComment, submitReply, likeComment,
   totalComments, commentRef,
@@ -780,7 +795,7 @@ const PIE_COLORS = [
 ];
 
 export function ChartDetailContent({
-  item, likeCount, liked, toggleLike,
+  item, likeCount, liked, toggleLike, trendCount, trended, toggleTrend,
   comments, commentText, displayName,
   setCommentText, submitComment, submitReply, likeComment,
   totalComments, commentRef,
@@ -1050,6 +1065,16 @@ export function ChartDetailContent({
           <BarChart2 className="h-4 w-4" />
           <span className="tabular-nums">{likeCount}</span>
         </button>
+        <button
+          type="button"
+          onClick={toggleTrend}
+          className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition ${
+            trended ? 'border-orange-500/30 bg-orange-500/10 text-orange-400' : 'border-white/[0.08] bg-white/[0.04] text-white/50 hover:bg-white/[0.08] hover:text-orange-400'
+          }`}
+        >
+          <TrendingUp className={`h-4 w-4 ${trended ? 'scale-110' : ''}`} />
+          <span className="tabular-nums">{trendCount > 0 ? trendCount : ''}</span>
+        </button>
       </div>
 
       <CommentSection
@@ -1065,7 +1090,7 @@ export function ChartDetailContent({
    5. ThreadDetailContent — Long-form thread reader
 ═══════════════════════════════════════════════════════════════════ */
 export function ThreadDetailContent({
-  item, likeCount, liked, toggleLike,
+  item, likeCount, liked, toggleLike, trendCount, trended, toggleTrend,
   comments, commentText, displayName,
   setCommentText, submitComment, submitReply, likeComment,
   totalComments, commentRef,
@@ -1251,7 +1276,7 @@ function parseVideoUrl(url: string | undefined): VideoInfo {
 }
 
 export function VideoDetailContent({
-  item, likeCount, liked, toggleLike,
+  item, likeCount, liked, toggleLike, trendCount, trended, toggleTrend,
   comments, commentText, displayName,
   setCommentText, submitComment, submitReply, likeComment,
   totalComments, commentRef,
@@ -1445,6 +1470,16 @@ export function VideoDetailContent({
         </button>
         <button
           type="button"
+          onClick={toggleTrend}
+          className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition ${
+            trended ? 'border-orange-500/30 bg-orange-500/10 text-orange-400' : 'border-white/[0.08] bg-white/[0.04] text-white/50 hover:bg-white/[0.08] hover:text-orange-400'
+          }`}
+        >
+          <TrendingUp className={`h-4 w-4 ${trended ? 'scale-110' : ''}`} />
+          <span className="tabular-nums">{trendCount > 0 ? trendCount : ''}</span>
+        </button>
+        <button
+          type="button"
           className="inline-flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-white/50 transition hover:bg-white/[0.08] hover:text-white"
         >
           <Share2 className="h-4 w-4" />
@@ -1556,7 +1591,7 @@ function AnimatedStat({ value, label }: { value: string; label: string }) {
 }
 
 export function MilestoneDetailContent({
-  item, likeCount, liked, toggleLike,
+  item, likeCount, liked, toggleLike, trendCount, trended, toggleTrend,
   comments, commentText, displayName,
   setCommentText, submitComment, submitReply, likeComment,
   totalComments, commentRef,
@@ -1678,7 +1713,7 @@ export function MilestoneDetailContent({
    8. TutorialDetailContent — Step-by-step tutorial
 ═══════════════════════════════════════════════════════════════════ */
 export function TutorialDetailContent({
-  item, likeCount, liked, toggleLike,
+  item, likeCount, liked, toggleLike, trendCount, trended, toggleTrend,
   comments, commentText, displayName,
   setCommentText, submitComment, submitReply, likeComment,
   totalComments, commentRef,

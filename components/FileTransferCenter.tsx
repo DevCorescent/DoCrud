@@ -1,6 +1,7 @@
 'use client';
 
 import { type ChangeEvent, useEffect, useMemo, useState } from 'react';
+import { useSearchTracker, SEARCH_CONTEXTS } from '@/lib/search-tracking';
 import {
   ArrowLeft,
   ArrowRight,
@@ -147,6 +148,7 @@ export default function FileTransferCenter({ variant = 'workspace', mode = 'stan
 
   // history
   const [search, setSearch] = useState('');
+  const trackSearch = useSearchTracker(SEARCH_CONTEXTS.FILE_TRANSFERS);
   const [historyPage, setHistoryPage] = useState(1);
   const [expandedId, setExpandedId] = useState('');
   const [editDraft, setEditDraft] = useState({ title: '', notes: '', accessPassword: '' });
@@ -312,6 +314,11 @@ export default function FileTransferCenter({ variant = 'workspace', mode = 'stan
       return inFolder && matchSearch;
     })
   , [transfers, search, selectedFolder]);
+
+  useEffect(() => {
+    if (search.trim()) trackSearch(search, filteredTransfers.length);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, filteredTransfers.length]);
 
   const PAGE = 8;
   const pageCount = Math.max(1, Math.ceil(filteredTransfers.length / PAGE));

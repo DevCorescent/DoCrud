@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAccessEvent, getHistoryEntries, updateHistoryEntry } from '@/lib/server/history';
+import { createAccessEvent, getHistoryEntryById, updateHistoryEntry } from '@/lib/server/history';
 import { getDeviceLabel, getRequestIp, getRequestUserAgent } from '@/lib/server/public-documents';
 
 export const dynamic = 'force-dynamic';
@@ -23,8 +23,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     }
     const photoDataUrl = String(payload.photoDataUrl);
 
-    const history = await getHistoryEntries();
-    const entry = history.find((item) => item.shareId === params.id || item.id === params.id);
+    const entry = await getHistoryEntryById(params.id);
     if (!entry) {
       return NextResponse.json({ error: 'Document not found' }, { status: 404 });
     }

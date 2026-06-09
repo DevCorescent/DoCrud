@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import type { Transporter } from 'nodemailer';
 import type { OutboundEmailEvent } from '@/lib/server/email-outbox';
 import {
   appendEmailOutboxEvent,
@@ -11,6 +12,47 @@ import { isValidEmail } from '@/lib/server/security';
 import { getMailSettings } from '@/lib/server/settings';
 import { getMailPolicies, type MailPolicyKey } from '@/lib/server/mail-policies';
 import { buildEmailChrome, escapeHtmlLite } from '@/lib/server/email-chrome';
+
+/* ─── Persistent pooled SMTP transporter ─────────────────────────────────────
+   Creating a new transporter on every send triggers a fresh TCP + TLS
+   handshake (~200–800 ms). With pool:true the connections stay alive and
+   are reused, cutting per-email overhead to ~5–30 ms.
+   The cache is keyed on the SMTP config hash; changing settings in admin
+   automatically rotates to a fresh pool.
+────────────────────────────────────────────────────────────────────────────── */
+let _cachedTransporter: Transporter | null = null;
+let _cachedConfigKey = '';
+
+export async function getCachedTransporter(): Promise<Transporter> {
+  const smtp = await getMailSettings();
+  const configKey = `${smtp.host}|${smtp.port}|${smtp.secure}|${smtp.username}`;
+
+  if (_cachedTransporter && _cachedConfigKey === configKey) {
+    return _cachedTransporter;
+  }
+
+  // Close the old pool before replacing it
+  if (_cachedTransporter) {
+    try { (_cachedTransporter as Transporter & { close?: () => void }).close?.(); } catch { /* ignore */ }
+  }
+
+  _cachedTransporter = nodemailer.createTransport({
+    host: smtp.host,
+    port: Number(smtp.port) || 465,
+    secure: Boolean(smtp.secure),
+    auth: smtp.requireAuth ? { user: smtp.username, pass: smtp.password } : undefined,
+    pool: true,           // keep TCP connections alive between sends
+    maxConnections: 5,
+    maxMessages: 200,
+    connectionTimeout: 30_000,  // GoDaddy cold-start can take 10-15 s
+    greetingTimeout:   20_000,
+    socketTimeout:     30_000,
+    tls: { rejectUnauthorized: false },
+  });
+
+  _cachedConfigKey = configKey;
+  return _cachedTransporter;
+}
 
 type SendTrackedMailInput = {
   policyKey: MailPolicyKey;
@@ -77,12 +119,7 @@ export async function sendTrackedMail(input: SendTrackedMailInput) {
     metadata: input.metadata,
   });
 
-  const transporter = nodemailer.createTransport({
-    host: smtp.host,
-    port: Number(smtp.port) || 465,
-    secure: Boolean(smtp.secure),
-    auth: smtp.requireAuth ? { user: smtp.username, pass: smtp.password } : undefined,
-  });
+  const transporter = await getCachedTransporter();
 
   const trackedText = rewriteLinksForTracking(input.origin, outboxId, text);
   const baseBody = (input.html && input.html.trim())

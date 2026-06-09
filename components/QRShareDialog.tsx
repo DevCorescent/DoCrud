@@ -94,7 +94,7 @@ export default function QRShareDialog({ open, onClose, target, baseUrl }: QRShar
   const handleGenerate = useCallback(() => {
     if (!target) return;
     setGenerating(true); setQrLoaded(false);
-    setTimeout(() => {
+    setTimeout(async () => {
       const rec = createShare(
         target.kind, target.id, target.name, target.fileKind,
         { permission, expiresIn: expiryMs || undefined, password: password || undefined },
@@ -102,6 +102,24 @@ export default function QRShareDialog({ open, onClose, target, baseUrl }: QRShar
       setActiveShare(rec);
       setExistingShares(listSharesForItem(target.id));
       setGenerating(false);
+      /* persist to server so other devices can scan it */
+      try {
+        await fetch('/api/drive/share', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            token:      rec.token,
+            itemId:     rec.itemId,
+            itemName:   rec.itemName,
+            kind:       rec.kind,
+            fileKind:   rec.fileKind,
+            permission: rec.permission,
+            password:   rec.password,
+            expiresAt:  rec.expiresAt,
+            dataUrl:    rec.previewDataUrl,
+          }),
+        });
+      } catch { /* non-fatal — local share still works */ }
     }, 320);
   }, [target, permission, expiryMs, password]);
 
@@ -341,7 +359,7 @@ export default function QRShareDialog({ open, onClose, target, baseUrl }: QRShar
                         {[
                           { icon: Clock,  val: formatExpiry(activeShare) },
                           { icon: Shield, val: activeShare.password ? 'Password protected' : 'No password' },
-                          { icon: Users,  val: `${activeShare.addedBy.length} added to drive` },
+                          { icon: Users,  val: `${activeShare.addedBy.length} added to Ddrive` },
                         ].map(({ icon: Icon, val }) => (
                           <div key={val} style={{ display:'flex', alignItems:'center', gap:7 }}>
                             <Icon size={11} color="rgba(255,255,255,0.30)" />

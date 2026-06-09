@@ -39,6 +39,7 @@ import {
   X,
   Zap,
 } from 'lucide-react';
+import InfinityUpgradeModal from '@/components/InfinityUpgradeModal';
 
 /* ─── types ─────────────────────────────────────────────────────────── */
 interface Template {
@@ -151,7 +152,7 @@ function Toggle({ label, sub, checked, onChange }: { label: string; sub?: string
       checked ? 'border-emerald-500/25 bg-emerald-500/[0.06]' : 'border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.05]',
     ].join(' ')}>
       <div className="min-w-0">
-        <p className="text-[13px] text-white">{label}</p>
+        <p className="text-[12px] sm:text-[13px] text-white leading-snug">{label}</p>
         {sub && <p className="mt-0.5 text-[11px] text-white/35">{sub}</p>}
       </div>
       <input type="checkbox" className="sr-only" checked={checked} onChange={(e) => onChange(e.target.checked)} />
@@ -215,7 +216,7 @@ export default function ESignStudioModal({ open, onClose }: ESignStudioModalProp
   const completedSet = new Set(STEP_ORDER.slice(0, stepIndex));
 
   /* ── source ── */
-  const [sourceMode, setSourceMode] = useState<'upload' | 'template' | 'docword'>('template');
+  const [sourceMode, setSourceMode] = useState<'upload' | 'template' | 'docword' | 'drive'>('template');
   const [uploadedFile, setUploadedFile] = useState<{ name: string; dataUrl: string; size: number } | null>(null);
   const [uploadLoading, setUploadLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -275,6 +276,7 @@ export default function ESignStudioModal({ open, onClose }: ESignStudioModalProp
   const [copied, setCopied] = useState(false);
   const [sendingLinks, setSendingLinks] = useState<Record<string, boolean>>({});
   const [linkStatus, setLinkStatus] = useState<Record<string, 'sent' | 'failed' | 'idle'>>({});
+  const [showInfinityModal, setShowInfinityModal] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyFilter, setHistoryFilter] = useState<'all' | 'signed' | 'pending' | 'expired'>('all');
@@ -288,6 +290,10 @@ export default function ESignStudioModal({ open, onClose }: ESignStudioModalProp
   const [panelFilter, setPanelFilter] = useState<'all' | 'signed' | 'pending' | 'expired'>('all');
   const [panelPage, setPanelPage] = useState(1);
   const PANEL_PAGE_SIZE = 10;
+
+  /* ── drive source ── */
+  const [selectedDriveEntry, setSelectedDriveEntry] = useState<HistoryEntry | null>(null);
+  const [driveSearch, setDriveSearch] = useState('');
 
   /* ── misc ── */
   const [error, setError] = useState('');
@@ -390,6 +396,8 @@ export default function ESignStudioModal({ open, onClose }: ESignStudioModalProp
       setPanelSearch('');
       setPanelFilter('all');
       setPanelPage(1);
+      setSelectedDriveEntry(null);
+      setDriveSearch('');
     }
   }, [open]);
 
@@ -557,7 +565,8 @@ export default function ESignStudioModal({ open, onClose }: ESignStudioModalProp
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ historyId: currentHistoryId, signerKey }),
       });
-      const d = await res.json() as any;
+      const d = await res.json() as { error?: string; code?: string };
+      if (res.status === 403 && d.code === 'INFINITY_REQUIRED') { setShowInfinityModal(true); return; }
       if (!res.ok) throw new Error(d.error || 'Failed');
       setLinkStatus((p) => ({ ...p, [signerKey]: 'sent' }));
     } catch {
@@ -571,6 +580,7 @@ export default function ESignStudioModal({ open, onClose }: ESignStudioModalProp
   const canLeaveSource = () => {
     if (sourceMode === 'upload')   return Boolean(uploadedFile);
     if (sourceMode === 'template') return Boolean(selectedTemplateId);
+    if (sourceMode === 'drive')    return Boolean(selectedDriveEntry);
     return false;
   };
 
@@ -624,7 +634,9 @@ export default function ESignStudioModal({ open, onClose }: ESignStudioModalProp
      RENDER
   ═══════════════════════════════════════════ */
   return (
-    <div className="fixed inset-0 z-[200] flex flex-col overflow-hidden" style={{ background: '#08090a' }}>
+    <>
+    {showInfinityModal && <InfinityUpgradeModal feature="esign" onClose={() => setShowInfinityModal(false)} />}
+    <div className="fixed inset-0 z-[10000] flex flex-col overflow-hidden" style={{ background: '#08090a' }}>
 
       {/* ── ambient background ── */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
@@ -731,16 +743,17 @@ export default function ESignStudioModal({ open, onClose }: ESignStudioModalProp
           {step === 'source' && (
             <div className="space-y-5">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/30">Step 1 of 5</p>
-                <h2 className="mt-1 text-2xl font-semibold tracking-[-0.04em] text-white">Choose document source</h2>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/30">Step 1 of 5</p>
+                <h2 className="mt-1 text-xl sm:text-2xl font-semibold tracking-[-0.04em] text-white leading-tight">Choose document source</h2>
                 <p className="mt-1.5 text-sm text-white/40">Upload a PDF to place signature boxes precisely, or use a saved template.</p>
               </div>
 
               {/* Source mode cards */}
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 {([
                   { id: 'template', icon: <FileText className="h-5 w-5" />, title: 'Use a Template', desc: 'Pick a saved template, fill fields, and generate a document ready for signing.' },
                   { id: 'upload',   icon: <Upload   className="h-5 w-5" />, title: 'Upload PDF',      desc: 'Upload any PDF and drag to place signature boxes exactly where needed.' },
+                  { id: 'drive',    icon: <History  className="h-5 w-5" />, title: 'From Drive', desc: 'Select a recently shared document and resend it for signing without recreating it.' },
                   { id: 'docword',  icon: <PenLine  className="h-5 w-5" />, title: 'Create in DocWord', desc: 'Open DocWord in a new tab to draft a document from scratch, then return.' },
                 ] as const).map((card) => (
                   <button
@@ -845,6 +858,122 @@ export default function ESignStudioModal({ open, onClose }: ESignStudioModalProp
                   <p className="text-[12.5px] leading-relaxed text-white/55">DocWord opened in a new tab. Create your document, then return here and switch to <strong className="text-white/80">Upload PDF</strong> or <strong className="text-white/80">Use a Template</strong>.</p>
                 </div>
               )}
+
+              {/* ── Drive source picker ── */}
+              {sourceMode === 'drive' && (
+                <div className="space-y-3">
+                  {/* Search */}
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/25" />
+                    <input
+                      type="text"
+                      placeholder="Search by document name or reference…"
+                      value={driveSearch}
+                      onChange={(e) => setDriveSearch(e.target.value)}
+                      className="h-10 w-full rounded-xl border border-white/[0.10] bg-white/[0.04] pl-9 pr-4 text-sm text-white placeholder:text-white/20 focus:border-white/25 focus:outline-none transition"
+                    />
+                  </div>
+
+                  {historyLoading ? (
+                    <div className="flex items-center justify-center py-10">
+                      <Loader2 className="h-5 w-5 animate-spin text-white/30" />
+                    </div>
+                  ) : (() => {
+                    const driveEntries = [...history]
+                      .sort((a, b) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime())
+                      .filter((e) => {
+                        if (!e.shareId && !e.shareUrl) return false;
+                        if (!driveSearch) return true;
+                        const q = driveSearch.toLowerCase();
+                        return (e.templateName || '').toLowerCase().includes(q) || (e.referenceNumber || '').toLowerCase().includes(q);
+                      });
+                    if (driveEntries.length === 0) {
+                      return (
+                        <div className="flex flex-col items-center gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.02] py-12 text-center">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.04]">
+                            <History className="h-5 w-5 text-white/25" />
+                          </div>
+                          <p className="text-sm text-white/35">{driveSearch ? 'No documents match your search' : 'No shared documents yet'}</p>
+                          <p className="text-xs text-white/20">Shared documents will appear here once generated.</p>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="space-y-2 max-h-[400px] overflow-y-auto pr-0.5">
+                        {driveEntries.slice(0, 20).map((entry) => {
+                          const signersList = entry.recipientSigners || [];
+                          const allSigned = signersList.length > 0
+                            ? signersList.every((s) => s.signingStatus === 'signed')
+                            : Boolean(entry.recipientSignedAt);
+                          const isExpired = entry.shareExpiresAt ? new Date(entry.shareExpiresAt) < new Date() : false;
+                          const isSelected = selectedDriveEntry?.id === entry.id;
+                          return (
+                            <button
+                              key={entry.id}
+                              type="button"
+                              onClick={() => setSelectedDriveEntry(isSelected ? null : entry)}
+                              className={[
+                                'w-full text-left rounded-xl border p-3.5 transition-all duration-150',
+                                isSelected
+                                  ? 'border-white/25 bg-white/[0.08] shadow-[0_0_0_1px_rgba(255,255,255,0.08)]'
+                                  : 'border-white/[0.07] bg-white/[0.02] hover:border-white/[0.14] hover:bg-white/[0.04]',
+                              ].join(' ')}
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className={[
+                                  'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border mt-0.5',
+                                  allSigned ? 'border-emerald-500/20 bg-emerald-500/[0.08]' : isExpired ? 'border-rose-500/20 bg-rose-500/[0.07]' : 'border-white/[0.08] bg-white/[0.04]',
+                                ].join(' ')}>
+                                  {allSigned ? <FileCheck2 className="h-4 w-4 text-emerald-400" /> : <FileText className="h-4 w-4 text-white/40" />}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <p className="text-[13px] font-semibold text-white leading-tight truncate">
+                                      {entry.templateName || (entry.documentSourceType === 'uploaded_pdf' ? 'Uploaded PDF' : 'Document')}
+                                    </p>
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                      {isSelected && <span className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-white"><Check className="h-2.5 w-2.5 text-slate-950" /></span>}
+                                      <span className={[
+                                        'rounded-full border px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.1em]',
+                                        allSigned ? 'border-emerald-500/25 bg-emerald-500/[0.08] text-emerald-400'
+                                          : isExpired ? 'border-rose-500/25 bg-rose-500/[0.07] text-rose-400'
+                                          : 'border-white/[0.09] bg-white/[0.03] text-white/35',
+                                      ].join(' ')}>
+                                        {allSigned ? 'Signed' : isExpired ? 'Expired' : 'Pending'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
+                                    <span className="flex items-center gap-1 text-[11px] text-white/30">
+                                      <Clock className="h-3 w-3" />{formatRelative(entry.generatedAt)}
+                                    </span>
+                                    {entry.referenceNumber && (
+                                      <span className="font-mono text-[10px] text-white/20">#{entry.referenceNumber}</span>
+                                    )}
+                                    {signersList.length > 0 && (
+                                      <span className="text-[11px] text-white/25">{signersList.length} signer{signersList.length !== 1 ? 's' : ''}</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+
+                  {selectedDriveEntry && (
+                    <div className="flex items-start gap-3 rounded-2xl border border-indigo-500/20 bg-indigo-500/[0.06] px-4 py-3">
+                      <Info className="h-4 w-4 shrink-0 text-indigo-400 mt-0.5" />
+                      <p className="text-[12.5px] leading-relaxed text-white/55">
+                        <strong className="text-white/80">{selectedDriveEntry.templateName || 'Document'}</strong> selected.
+                        Clicking Continue will let you resend this existing document&apos;s signing link to signers — no regeneration needed.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -852,9 +981,9 @@ export default function ESignStudioModal({ open, onClose }: ESignStudioModalProp
           {step === 'signers' && (
             <div className="space-y-5">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/30">Step 2 of 5</p>
-                <h2 className="mt-1 text-2xl font-semibold tracking-[-0.04em] text-white">
-                  {sourceMode === 'upload' ? 'Place signature boxes & add signers' : 'Configure signers'}
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/30">Step 2 of 5</p>
+                <h2 className="mt-1 text-xl sm:text-2xl font-semibold tracking-[-0.04em] text-white leading-tight">
+                  {sourceMode === 'upload' ? 'Signers & signature boxes' : 'Configure signers'}
                 </h2>
                 <p className="mt-1.5 text-sm text-white/40">
                   {sourceMode === 'upload'
@@ -1026,8 +1155,8 @@ export default function ESignStudioModal({ open, onClose }: ESignStudioModalProp
           {step === 'configure' && (
             <div className="space-y-5">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/30">Step 3 of 5</p>
-                <h2 className="mt-1 text-2xl font-semibold tracking-[-0.04em] text-white">Security &amp; document settings</h2>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/30">Step 3 of 5</p>
+                <h2 className="mt-1 text-xl sm:text-2xl font-semibold tracking-[-0.04em] text-white leading-tight">Security &amp; document settings</h2>
                 <p className="mt-1.5 text-sm text-white/40">Configure the link security, watermark, admin signature, and workflow options.</p>
               </div>
 
@@ -1106,8 +1235,8 @@ export default function ESignStudioModal({ open, onClose }: ESignStudioModalProp
           {step === 'send' && (
             <div className="space-y-5">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/30">Step 4 of 5</p>
-                <h2 className="mt-1 text-2xl font-semibold tracking-[-0.04em] text-white">Generate link &amp; send to signers</h2>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/30">Step 4 of 5</p>
+                <h2 className="mt-1 text-xl sm:text-2xl font-semibold tracking-[-0.04em] text-white leading-tight">Generate &amp; send signing links</h2>
                 <p className="mt-1.5 text-sm text-white/40">Create the secure signing link, then dispatch personalised OTP-gated emails to each signer.</p>
               </div>
 
@@ -1202,10 +1331,10 @@ export default function ESignStudioModal({ open, onClose }: ESignStudioModalProp
 
                   {/* Send to each signer */}
                   <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold text-white">Send personalised signing links</p>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-sm font-semibold text-white">Dispatch signing links</p>
                       <button type="button" onClick={() => { signers.forEach((s) => { void sendLink(s.signerKey); }); }}
-                        className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-white/[0.10] bg-white/[0.06] px-3 text-[11px] font-semibold text-white/65 transition hover:bg-white/[0.10] hover:text-white">
+                        className="shrink-0 inline-flex h-8 items-center gap-1.5 rounded-xl border border-white/[0.10] bg-white/[0.06] px-3 text-[11px] font-semibold text-white/65 transition hover:bg-white/[0.10] hover:text-white">
                         <Mail className="h-3 w-3" /> Send to all
                       </button>
                     </div>
@@ -1257,8 +1386,8 @@ export default function ESignStudioModal({ open, onClose }: ESignStudioModalProp
             <div className="space-y-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/30">Step 5 of 5</p>
-                  <h2 className="mt-1 text-2xl font-semibold tracking-[-0.04em] text-white">Track signing activity</h2>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/30">Step 5 of 5</p>
+                  <h2 className="mt-1 text-xl sm:text-2xl font-semibold tracking-[-0.04em] text-white leading-tight">Track signing activity</h2>
                   <p className="mt-1.5 text-sm text-white/40">All signing workflows — recents first. Click any row for full analytics.</p>
                 </div>
                 <button type="button" onClick={() => { void fetchHistory(); setHistoryPage(1); }} disabled={historyLoading}
@@ -1395,7 +1524,7 @@ export default function ESignStudioModal({ open, onClose }: ESignStudioModalProp
       {/* ══════════════════════════════════════
           FOOTER NAV
       ══════════════════════════════════════ */}
-      <footer className="relative z-10 shrink-0 border-t border-white/[0.07] bg-[#0A0B0D]/80 backdrop-blur-xl px-4 py-3 sm:px-6">
+      <footer className="relative z-10 shrink-0 border-t border-white/[0.07] bg-[#0A0B0D]/80 backdrop-blur-xl px-4 sm:px-6" style={{ paddingTop: 12, paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))' }}>
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
           {/* Back */}
           <button type="button" disabled={stepIndex === 0}
@@ -1423,7 +1552,20 @@ export default function ESignStudioModal({ open, onClose }: ESignStudioModalProp
               onClick={() => {
                 setError('');
                 if (step === 'source' && !canLeaveSource()) {
-                  setError(sourceMode === 'upload' ? 'Please upload a PDF to continue.' : 'Please select a template to continue.');
+                  setError(sourceMode === 'upload' ? 'Please upload a PDF to continue.' : sourceMode === 'drive' ? 'Select a document from drive to continue.' : 'Please select a template to continue.');
+                  return;
+                }
+                /* Drive mode: populate send state from selected entry and jump to send step */
+                if (step === 'source' && sourceMode === 'drive' && selectedDriveEntry) {
+                  const absUrl = selectedDriveEntry.shareUrl
+                    ? (selectedDriveEntry.shareUrl.startsWith('/') && typeof window !== 'undefined'
+                        ? `${window.location.origin}${selectedDriveEntry.shareUrl}`
+                        : selectedDriveEntry.shareUrl)
+                    : '';
+                  setShareUrl(absUrl || selectedDriveEntry.shareUrl || '');
+                  setSharePassword(selectedDriveEntry.sharePassword || '');
+                  setCurrentHistoryId(selectedDriveEntry.id);
+                  setStep('send');
                   return;
                 }
                 if (step === 'signers' && !canLeaveSigners()) {
@@ -1434,7 +1576,7 @@ export default function ESignStudioModal({ open, onClose }: ESignStudioModalProp
                 if (next) setStep(next);
               }}
               className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/[0.12] bg-white px-7 text-sm font-semibold text-slate-950 shadow-[0_4px_16px_rgba(255,255,255,0.10)] transition hover:bg-white/90 active:scale-95">
-              {step === 'send' ? 'View Tracking' : 'Continue'}
+              {step === 'source' && sourceMode === 'drive' && selectedDriveEntry ? 'Open in Send' : step === 'send' ? 'View Tracking' : 'Continue'}
               <ArrowRight className="h-4 w-4" />
             </button>
           )}
@@ -1698,7 +1840,7 @@ export default function ESignStudioModal({ open, onClose }: ESignStudioModalProp
           : '';
 
         return (
-          <div className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="fixed inset-0 z-[10200] flex items-end sm:items-center justify-center p-0 sm:p-4">
             {/* Backdrop */}
             <div
               className="absolute inset-0 bg-black/70 backdrop-blur-sm"
@@ -1893,5 +2035,6 @@ export default function ESignStudioModal({ open, onClose }: ESignStudioModalProp
         );
       })()}
     </div>
+    </>
   );
 }

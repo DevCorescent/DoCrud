@@ -3,6 +3,14 @@ import { DEFAULT_DOCUMENT_DESIGN_PRESET, isDocumentDesignPreset } from '@/lib/do
 import { normalizeDocSheetWorkbook } from '@/lib/docsheet';
 import { defaultBackgroundVerificationDocuments, deriveOnboardingProgress, deriveOnboardingStage, isOnboardingTemplate } from '@/lib/server/onboarding';
 import { getHistoryEntriesFromRepository, saveHistoryEntriesToRepository } from '@/lib/server/repositories';
+import { getDbPool } from '@/lib/server/database';
+import {
+  reconcileHistoryRows,
+  deleteHistoryRow,
+  selectAllHistoryRows,
+  selectHistoryRowById,
+  upsertHistoryRow,
+} from '@/lib/server/db/history-rows';
 
 type HistoryInput = Partial<DocumentHistory> & {
   documentType?: string;
@@ -480,36 +488,66 @@ export function createAccessEvent(input: Omit<DocumentAccessEvent, 'id'>): Docum
 }
 
 export async function getHistoryEntries() {
+  if (getDbPool()) {
+    const rows = await selectAllHistoryRows();
+    return rows.map(normalizeHistoryEntry);
+  }
   const history = await getHistoryEntriesFromRepository();
   return history.map(normalizeHistoryEntry);
 }
 
+/** Single-entry lookup by id or shareId — O(1) indexed in DB mode, avoids full-table scan. */
+export async function getHistoryEntryById(idOrShareId: string): Promise<DocumentHistory | null> {
+  if (getDbPool()) {
+    const row = await selectHistoryRowById(idOrShareId);
+    return row ? normalizeHistoryEntry(row) : null;
+  }
+  const entries = await getHistoryEntries();
+  return entries.find((e) => e.id === idOrShareId || e.shareId === idOrShareId) ?? null;
+}
+
 export async function saveHistoryEntries(entries: DocumentHistory[]) {
+  if (getDbPool()) {
+    await reconcileHistoryRows(entries);
+    return;
+  }
   await saveHistoryEntriesToRepository(entries);
 }
 
 export async function appendHistoryEntry(entry: HistoryInput) {
-  const entries = await getHistoryEntries();
   const normalized = normalizeHistoryEntry(entry);
+  if (getDbPool()) {
+    await upsertHistoryRow(normalized);
+    return normalized;
+  }
+  const entries = await getHistoryEntries();
   entries.push(normalized);
   await saveHistoryEntries(entries);
   return normalized;
 }
 
 export async function updateHistoryEntry(id: string, updater: (entry: DocumentHistory) => DocumentHistory) {
+  if (getDbPool()) {
+    const existing = await selectHistoryRowById(id);
+    if (!existing) return null;
+    const next = normalizeHistoryEntry(updater(normalizeHistoryEntry(existing)));
+    await upsertHistoryRow(next);
+    return next;
+  }
   const entries = await getHistoryEntries();
   const index = entries.findIndex((entry) => entry.id === id);
-
   if (index === -1) {
     return null;
   }
-
   entries[index] = normalizeHistoryEntry(updater(entries[index]));
   await saveHistoryEntries(entries);
   return entries[index];
 }
 
 export async function deleteHistoryEntry(id: string) {
+  if (getDbPool()) {
+    return deleteHistoryRow(id);
+  }
   const entries = await getHistoryEntries();
   const nextEntries = entries.filter((entry) => entry.id !== id);
   if (nextEntries.length === entries.length) {

@@ -1,8 +1,18 @@
-import { readFileSync } from 'fs';
 import { AuthSettings, CollaborationSettings, LandingSettings, MailSettings, SignatureSettings, ThemeSettings, WorkflowAutomationSettings } from '@/types/document';
 import { authSettingsPath, automationSettingsPath, collaborationSettingsPath, landingSettingsPath, mailSettingsPath, readJsonFile, signatureSettingsPath, themeSettingsPath, writeJsonFile } from '@/lib/server/storage';
 import { getDbPool } from '@/lib/server/database';
 import { getSettingsValueFromRepository, saveSettingsValueToRepository } from '@/lib/server/repositories';
+
+// In-memory cache for auth settings populated by the first async getAuthSettings() call.
+// getAuthSettingsSync() reads from this cache, avoiding any synchronous file I/O.
+let _authSettingsCache: AuthSettings | null = null;
+const AUTH_SETTINGS_TTL_MS = 60_000;
+let _authSettingsCacheExpiresAt = 0;
+
+function invalidateAuthSettingsCache() {
+  _authSettingsCache = null;
+  _authSettingsCacheExpiresAt = 0;
+}
 
 export const defaultMailSettings: MailSettings = {
   host: 'smtp.titan.email',
@@ -288,30 +298,45 @@ export async function getMailSettings() {
   };
 }
 
-export async function getAuthSettings() {
-  const settings = await readJsonFile<Partial<AuthSettings>>(authSettingsPath, defaultAuthSettings);
+function mergeAuthSettings(partial: Partial<AuthSettings>): AuthSettings {
   return {
     ...defaultAuthSettings,
-    googleEnabled: Boolean(settings.googleEnabled),
-    googleClientId: settings.googleClientId || process.env.GOOGLE_CLIENT_ID || '',
-    googleClientSecret: settings.googleClientSecret || process.env.GOOGLE_CLIENT_SECRET || '',
-    aadhaarVerificationEnabled: Boolean(settings.aadhaarVerificationEnabled),
-    aadhaarProviderLabel: settings.aadhaarProviderLabel?.trim() || defaultAuthSettings.aadhaarProviderLabel,
-    aadhaarApiBaseUrl: settings.aadhaarApiBaseUrl?.trim() || process.env.AADHAAR_API_BASE_URL || '',
-    aadhaarOtpRequestPath: settings.aadhaarOtpRequestPath?.trim() || defaultAuthSettings.aadhaarOtpRequestPath,
-    aadhaarOtpVerifyPath: settings.aadhaarOtpVerifyPath?.trim() || defaultAuthSettings.aadhaarOtpVerifyPath,
-    aadhaarClientId: settings.aadhaarClientId?.trim() || process.env.AADHAAR_CLIENT_ID || '',
-    aadhaarClientSecret: settings.aadhaarClientSecret?.trim() || process.env.AADHAAR_CLIENT_SECRET || '',
-    aadhaarApiKey: settings.aadhaarApiKey?.trim() || process.env.AADHAAR_API_KEY || '',
-    aadhaarAuaCode: settings.aadhaarAuaCode?.trim() || process.env.AADHAAR_AUA_CODE || '',
-    aadhaarSubAuaCode: settings.aadhaarSubAuaCode?.trim() || process.env.AADHAAR_SUB_AUA_CODE || '',
-    aadhaarLicenseKey: settings.aadhaarLicenseKey?.trim() || process.env.AADHAAR_LICENSE_KEY || '',
-    aadhaarEnvironment: settings.aadhaarEnvironment === 'production' ? 'production' : 'sandbox',
+    googleEnabled: Boolean(partial.googleEnabled),
+    googleClientId: partial.googleClientId || process.env.GOOGLE_CLIENT_ID || '',
+    googleClientSecret: partial.googleClientSecret || process.env.GOOGLE_CLIENT_SECRET || '',
+    aadhaarVerificationEnabled: Boolean(partial.aadhaarVerificationEnabled),
+    aadhaarProviderLabel: partial.aadhaarProviderLabel?.trim() || defaultAuthSettings.aadhaarProviderLabel,
+    aadhaarApiBaseUrl: partial.aadhaarApiBaseUrl?.trim() || process.env.AADHAAR_API_BASE_URL || '',
+    aadhaarOtpRequestPath: partial.aadhaarOtpRequestPath?.trim() || defaultAuthSettings.aadhaarOtpRequestPath,
+    aadhaarOtpVerifyPath: partial.aadhaarOtpVerifyPath?.trim() || defaultAuthSettings.aadhaarOtpVerifyPath,
+    aadhaarClientId: partial.aadhaarClientId?.trim() || process.env.AADHAAR_CLIENT_ID || '',
+    aadhaarClientSecret: partial.aadhaarClientSecret?.trim() || process.env.AADHAAR_CLIENT_SECRET || '',
+    aadhaarApiKey: partial.aadhaarApiKey?.trim() || process.env.AADHAAR_API_KEY || '',
+    aadhaarAuaCode: partial.aadhaarAuaCode?.trim() || process.env.AADHAAR_AUA_CODE || '',
+    aadhaarSubAuaCode: partial.aadhaarSubAuaCode?.trim() || process.env.AADHAAR_SUB_AUA_CODE || '',
+    aadhaarLicenseKey: partial.aadhaarLicenseKey?.trim() || process.env.AADHAAR_LICENSE_KEY || '',
+    aadhaarEnvironment: partial.aadhaarEnvironment === 'production' ? 'production' : 'sandbox',
   };
 }
 
+export async function getAuthSettings(): Promise<AuthSettings> {
+  if (_authSettingsCache && _authSettingsCacheExpiresAt > Date.now()) {
+    return _authSettingsCache;
+  }
+
+  const partial = getDbPool()
+    ? await getSettingsValueFromRepository<Partial<AuthSettings>>('auth', 'settings', defaultAuthSettings)
+    : await readJsonFile<Partial<AuthSettings>>(authSettingsPath, defaultAuthSettings);
+
+  const result = mergeAuthSettings(partial || {});
+  _authSettingsCache = result;
+  _authSettingsCacheExpiresAt = Date.now() + AUTH_SETTINGS_TTL_MS;
+  return result;
+}
+
 export async function saveAuthSettings(settings: AuthSettings) {
-  await writeJsonFile(authSettingsPath, {
+  invalidateAuthSettingsCache();
+  const payload = {
     googleEnabled: Boolean(settings.googleEnabled),
     googleClientId: settings.googleClientId.trim(),
     googleClientSecret: settings.googleClientSecret.trim(),
@@ -327,45 +352,21 @@ export async function saveAuthSettings(settings: AuthSettings) {
     aadhaarSubAuaCode: settings.aadhaarSubAuaCode.trim(),
     aadhaarLicenseKey: settings.aadhaarLicenseKey.trim(),
     aadhaarEnvironment: settings.aadhaarEnvironment === 'production' ? 'production' : 'sandbox',
-  });
+  };
+  if (getDbPool()) {
+    await saveSettingsValueToRepository('auth', 'settings', payload);
+    return;
+  }
+  await writeJsonFile(authSettingsPath, payload);
 }
 
+/** Synchronous read — returns the in-memory cache if warm, otherwise falls back to env vars only (no file I/O). Call getAuthSettings() first to populate the cache with DB/file values. */
 export function getAuthSettingsSync(): AuthSettings {
-  try {
-    const content = readFileSync(authSettingsPath, 'utf8');
-    const parsed = JSON.parse(content) as Partial<AuthSettings>;
-    return {
-      ...defaultAuthSettings,
-      googleEnabled: Boolean(parsed.googleEnabled),
-      googleClientId: parsed.googleClientId || process.env.GOOGLE_CLIENT_ID || '',
-      googleClientSecret: parsed.googleClientSecret || process.env.GOOGLE_CLIENT_SECRET || '',
-      aadhaarVerificationEnabled: Boolean(parsed.aadhaarVerificationEnabled),
-      aadhaarProviderLabel: parsed.aadhaarProviderLabel?.trim() || defaultAuthSettings.aadhaarProviderLabel,
-      aadhaarApiBaseUrl: parsed.aadhaarApiBaseUrl?.trim() || process.env.AADHAAR_API_BASE_URL || '',
-      aadhaarOtpRequestPath: parsed.aadhaarOtpRequestPath?.trim() || defaultAuthSettings.aadhaarOtpRequestPath,
-      aadhaarOtpVerifyPath: parsed.aadhaarOtpVerifyPath?.trim() || defaultAuthSettings.aadhaarOtpVerifyPath,
-      aadhaarClientId: parsed.aadhaarClientId?.trim() || process.env.AADHAAR_CLIENT_ID || '',
-      aadhaarClientSecret: parsed.aadhaarClientSecret?.trim() || process.env.AADHAAR_CLIENT_SECRET || '',
-      aadhaarApiKey: parsed.aadhaarApiKey?.trim() || process.env.AADHAAR_API_KEY || '',
-      aadhaarAuaCode: parsed.aadhaarAuaCode?.trim() || process.env.AADHAAR_AUA_CODE || '',
-      aadhaarSubAuaCode: parsed.aadhaarSubAuaCode?.trim() || process.env.AADHAAR_SUB_AUA_CODE || '',
-      aadhaarLicenseKey: parsed.aadhaarLicenseKey?.trim() || process.env.AADHAAR_LICENSE_KEY || '',
-      aadhaarEnvironment: parsed.aadhaarEnvironment === 'production' ? 'production' : 'sandbox',
-    };
-  } catch {
-    return {
-      ...defaultAuthSettings,
-      googleClientId: process.env.GOOGLE_CLIENT_ID || '',
-      googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-      aadhaarApiBaseUrl: process.env.AADHAAR_API_BASE_URL || '',
-      aadhaarClientId: process.env.AADHAAR_CLIENT_ID || '',
-      aadhaarClientSecret: process.env.AADHAAR_CLIENT_SECRET || '',
-      aadhaarApiKey: process.env.AADHAAR_API_KEY || '',
-      aadhaarAuaCode: process.env.AADHAAR_AUA_CODE || '',
-      aadhaarSubAuaCode: process.env.AADHAAR_SUB_AUA_CODE || '',
-      aadhaarLicenseKey: process.env.AADHAAR_LICENSE_KEY || '',
-    };
+  if (_authSettingsCache && _authSettingsCacheExpiresAt > Date.now()) {
+    return _authSettingsCache;
   }
+  // Return env-var-based defaults — no synchronous file or DB read.
+  return mergeAuthSettings({});
 }
 
 export async function saveMailSettings(settings: MailSettings) {
@@ -421,19 +422,30 @@ export async function saveCollaborationSettings(settings: CollaborationSettings)
   await writeJsonFile(collaborationSettingsPath, settings);
 }
 
-export async function getThemeSettings() {
+let _themeCache: ThemeSettings | null = null;
+let _themeCacheExpiresAt = 0;
+const THEME_CACHE_TTL_MS = 60_000;
+
+export async function getThemeSettings(): Promise<ThemeSettings> {
+  if (_themeCache && _themeCacheExpiresAt > Date.now()) return _themeCache;
+
   const settings = getDbPool()
     ? await getSettingsValueFromRepository<Partial<ThemeSettings>>('theme', 'active', defaultThemeSettings)
     : await readJsonFile<Partial<ThemeSettings>>(themeSettingsPath, defaultThemeSettings);
-  return {
+  const result: ThemeSettings = {
     ...defaultThemeSettings,
     ...settings,
     softwareName: !settings.softwareName || settings.softwareName === 'Corescent Document Generator' ? defaultThemeSettings.softwareName : settings.softwareName,
     accentLabel: !settings.accentLabel || settings.accentLabel === 'Enterprise Workflow Suite' ? defaultThemeSettings.accentLabel : settings.accentLabel,
   };
+  _themeCache = result;
+  _themeCacheExpiresAt = Date.now() + THEME_CACHE_TTL_MS;
+  return result;
 }
 
 export async function saveThemeSettings(settings: ThemeSettings) {
+  _themeCache = null;
+  _themeCacheExpiresAt = 0;
   if (getDbPool()) {
     await saveSettingsValueToRepository('theme', 'active', settings);
     return;

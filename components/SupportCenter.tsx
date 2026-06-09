@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { fireSearchEvent, SEARCH_CONTEXTS } from '@/lib/search-tracking';
 import { ArrowRight, Loader2, MessageSquareText, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -52,6 +53,7 @@ export default function SupportCenter() {
       return;
     }
 
+    fireSearchEvent({ query: value, context: SEARCH_CONTEXTS.SUPPORT });
     setMessages((prev) => [...prev, { id: `user-${Date.now()}`, role: 'user', text: value }]);
     setQuery('');
     setLoading(true);

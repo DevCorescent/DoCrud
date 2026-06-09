@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getHistoryEntries } from '@/lib/server/history';
+import { getHistoryEntryById } from '@/lib/server/history';
 import { getMailSettings } from '@/lib/server/settings';
 import { buildEmailChrome } from '@/lib/server/email-chrome';
 import { isValidEmail, normalizeEmail } from '@/lib/server/security';
@@ -22,8 +22,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     };
 
     const action = payload.action === 'verify_otp' ? 'verify_otp' : 'request_otp';
-    const history = await getHistoryEntries();
-    const entry = history.find((item) => item.shareId === params.id || item.id === params.id);
+    const entry = await getHistoryEntryById(params.id);
     if (!entry) return NextResponse.json({ error: 'Document not found' }, { status: 404 });
 
     const normalizePassword = (value?: string | null) => String(value || '').trim().toUpperCase();

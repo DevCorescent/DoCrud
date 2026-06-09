@@ -5,10 +5,12 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useMemo,
   useRef,
   useState,
 } from 'react';
 import { createPortal } from 'react-dom';
+import { useSearchTracker, SEARCH_CONTEXTS } from '@/lib/search-tracking';
 import {
   Search,
   X,
@@ -18,10 +20,10 @@ import {
   BookOpen,
   Newspaper,
   Sparkles,
-  Loader2,
   File,
   UserRound,
   Globe,
+  FileSignature,
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -37,6 +39,7 @@ export interface SearchMeta {
   urgent?: boolean;
   viewCount?: number;
   updatedAt?: string;
+  avatarUrl?: string;
 }
 
 export interface DbSearchResult {
@@ -88,584 +91,501 @@ export interface GlobalSearchBarHandle {
   focus: () => void;
 }
 
-// ─── Cache ────────────────────────────────────────────────────────────────────
+export type SearchFilter = 'all' | 'people' | 'gigs' | 'docs' | 'files'; // 'files' repurposed as 'feed'
+
+// ─── Client-side result cache (30s TTL) ──────────────────────────────────────
 
 const CACHE_TTL_MS = 30_000;
 const resultCache = new Map<string, { results: DbSearchResult[]; ts: number }>();
 
-function getCached(query: string): DbSearchResult[] | null {
-  const entry = resultCache.get(query);
-  if (!entry) return null;
-  if (Date.now() - entry.ts > CACHE_TTL_MS) { resultCache.delete(query); return null; }
-  return entry.results;
+function getCached(key: string): DbSearchResult[] | null {
+  const e = resultCache.get(key);
+  if (!e) return null;
+  if (Date.now() - e.ts > CACHE_TTL_MS) { resultCache.delete(key); return null; }
+  return e.results;
 }
 
-function setCache(query: string, results: DbSearchResult[]) {
-  resultCache.set(query, { results, ts: Date.now() });
-  if (resultCache.size > 60) {
-    const first = resultCache.keys().next().value;
-    if (first) resultCache.delete(first);
-  }
+function setCache(key: string, results: DbSearchResult[]) {
+  resultCache.set(key, { results, ts: Date.now() });
+  if (resultCache.size > 80) { const k = resultCache.keys().next().value; if (k) resultCache.delete(k); }
 }
 
-// ─── Badge helpers ────────────────────────────────────────────────────────────
+// ─── Filters ─────────────────────────────────────────────────────────────────
 
-function badgeCls(badge?: string): string {
+const FILTERS: Array<{ id: SearchFilter; label: string; badges: string[] }> = [
+  { id: 'all',    label: 'All',    badges: [] },
+  { id: 'people', label: 'People', badges: ['PERSON'] },
+  { id: 'gigs',   label: 'Gigs',   badges: ['GIG'] },
+  { id: 'docs',   label: 'Docs',   badges: ['DOC', 'SIGNED', 'TPL', 'KB'] },
+  { id: 'files',  label: 'Feed',   badges: ['BLOG'] },
+];
+
+// ─── Sentiment / intent auto-detect ──────────────────────────────────────────
+
+function detectIntent(q: string): { filter: SearchFilter; label: string } | null {
+  const t = q.toLowerCase();
+  if (/\b(hire|find|looking for|designer|developer|engineer|writer|marketer|freelancer|talent|expert|consultant|professional|person|who)\b/.test(t))
+    return { filter: 'people', label: 'People' };
+  if (/\b(gig|job|opportunity|project|contract|remote|opening|apply)\b/.test(t))
+    return { filter: 'gigs', label: 'Gigs' };
+  if (/\b(doc|document|contract|agreement|template|invoice|nda|letter|sign|signed|esign)\b/.test(t))
+    return { filter: 'docs', label: 'Docs' };
+  return null;
+}
+
+// ─── Icon / colour helpers ────────────────────────────────────────────────────
+
+function badgeColor(badge?: string): string {
   switch ((badge ?? '').toUpperCase()) {
-    case 'GIG':     return 'bg-orange-500/15 text-orange-300 border border-orange-500/20';
-    case 'RESUME':  return 'bg-sky-500/15 text-sky-300 border border-sky-500/20';
-    case 'FILE':    return 'bg-white/[0.07] text-white/45 border border-white/[0.09]';
-    case 'PUBLIC':  return 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/20';
-    case 'PRIVATE': return 'bg-rose-500/15 text-rose-300 border border-rose-500/20';
-    case 'SIGNED':  return 'bg-green-500/15 text-green-300 border border-green-500/20';
-    case 'DOC':     return 'bg-blue-500/15 text-blue-300 border border-blue-500/20';
-    case 'TPL':     return 'bg-violet-500/15 text-violet-300 border border-violet-500/20';
-    case 'KB':      return 'bg-purple-500/15 text-purple-300 border border-purple-500/20';
-    case 'BLOG':    return 'bg-teal-500/15 text-teal-300 border border-teal-500/20';
-    case 'FREE':    return 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/20';
-    case 'NEW':     return 'bg-pink-500/15 text-pink-300 border border-pink-500/20';
-    case 'SOURCE':  return 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/20';
-    default:        return 'bg-white/[0.06] text-white/35 border border-white/[0.08]';
+    case 'GIG':     return 'rgba(251,146,60,0.85)';
+    case 'RESUME':  return 'rgba(56,189,248,0.85)';
+    case 'PERSON':  return 'rgba(167,139,250,0.85)';
+    case 'SIGNED':  return 'rgba(52,211,153,0.85)';
+    case 'DOC':     return 'rgba(96,165,250,0.85)';
+    case 'TPL':     return 'rgba(167,139,250,0.85)';
+    case 'KB':      return 'rgba(167,139,250,0.70)';
+    case 'BLOG':    return 'rgba(45,212,191,0.80)';
+    case 'SOURCE':  return 'rgba(129,140,248,0.80)';
+    case 'FILE':
+    case 'PUBLIC':
+    case 'PRIVATE': return 'rgba(255,255,255,0.35)';
+    default:        return 'rgba(255,255,255,0.30)';
   }
 }
 
-// ─── Skill chips ──────────────────────────────────────────────────────────────
+type IconDef = { Icon: React.ComponentType<{ style?: React.CSSProperties }>; bg: string; fg: string };
 
-function SkillChips({ skills }: { skills: string[] }) {
+function getIconDef(r: DbSearchResult): IconDef {
+  const b = (r.badge ?? '').toUpperCase();
+  if (b === 'GIG')    return { Icon: Briefcase,     bg: 'rgba(251,146,60,0.15)',  fg: 'rgba(253,186,116,0.90)' };
+  if (b === 'SIGNED') return { Icon: FileSignature, bg: 'rgba(52,211,153,0.14)',  fg: 'rgba(110,231,183,0.90)' };
+  if (b === 'DOC' || b === 'TPL')
+                      return { Icon: FileText,       bg: 'rgba(96,165,250,0.14)',  fg: 'rgba(147,197,253,0.90)' };
+  if (b === 'KB')     return { Icon: BookOpen,       bg: 'rgba(167,139,250,0.14)', fg: 'rgba(196,181,253,0.90)' };
+  if (b === 'BLOG')   return { Icon: Newspaper,      bg: 'rgba(45,212,191,0.13)',  fg: 'rgba(94,234,212,0.88)' };
+  if (b === 'SOURCE') return { Icon: Globe,          bg: 'rgba(129,140,248,0.13)', fg: 'rgba(165,180,252,0.88)' };
+  if (r.type === 'feature' || b === 'FREE' || b === 'NEW')
+                      return { Icon: Sparkles,       bg: 'rgba(167,139,250,0.14)', fg: 'rgba(196,181,253,0.88)' };
+  return               { Icon: File,                 bg: 'rgba(255,255,255,0.07)', fg: 'rgba(255,255,255,0.45)' };
+}
+
+// ─── Avatar ───────────────────────────────────────────────────────────────────
+
+function Avatar({ src, name, size = 32, gradient }: { src?: string | null; name?: string; size?: number; gradient?: string }) {
+  const [failed, setFailed] = useState(false);
+  const initials = (name ?? '?').split(' ').map((w) => w[0] ?? '').join('').toUpperCase().slice(0, 2);
+  if (src && !failed) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={src} alt={name ?? ''} onError={() => setFailed(true)}
+        style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', display: 'block', flexShrink: 0 }} />
+    );
+  }
   return (
-    <div className="flex flex-wrap gap-1">
-      {skills.slice(0, 5).map((s) => (
-        <span key={s} className="rounded-full border border-white/[0.08] bg-white/[0.05] px-2 py-0.5 text-[10px] font-medium text-white/50">
-          {s}
+    <div style={{
+      width: size, height: size, borderRadius: '50%', flexShrink: 0,
+      background: gradient ?? 'linear-gradient(135deg,rgba(139,92,246,0.80),rgba(99,102,241,0.80))',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: size * 0.34, fontWeight: 700, color: '#fff', letterSpacing: '-0.01em',
+    }}>
+      {initials || <UserRound style={{ width: size * 0.5, height: size * 0.5 }} />}
+    </div>
+  );
+}
+
+// ─── Relevance bar ────────────────────────────────────────────────────────────
+
+function RelevanceBar({ score }: { score?: number }) {
+  if (typeof score !== 'number' || score <= 0) return null;
+  const w = Math.max(10, Math.min(100, score));
+  const color = score >= 80 ? 'rgba(251,146,60,0.55)' : score >= 50 ? 'rgba(255,255,255,0.20)' : 'rgba(255,255,255,0.10)';
+  return (
+    <div style={{ width: 28, height: 3, borderRadius: 99, background: 'rgba(255,255,255,0.07)', overflow: 'hidden', flexShrink: 0 }}>
+      <div style={{ width: `${w}%`, height: '100%', background: color, borderRadius: 99 }} />
+    </div>
+  );
+}
+
+// ─── Keyword highlighter ─────────────────────────────────────────────────────
+
+function Highlight({ text, query }: { text: string; query: string }) {
+  if (!query.trim()) return <>{text}</>;
+  const tokens = query.trim().split(/\s+/).filter((t) => t.length > 1);
+  if (!tokens.length) return <>{text}</>;
+  const pattern = tokens.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+  const parts = text.split(new RegExp(`(${pattern})`, 'gi'));
+  return (
+    <>
+      {parts.map((part, i) =>
+        tokens.some((t) => t.toLowerCase() === part.toLowerCase()) ? (
+          <mark key={i} style={{ background: 'rgba(251,146,60,0.22)', color: 'rgba(253,186,116,0.95)', borderRadius: 3, padding: '0 1px', fontWeight: 700 }}>
+            {part}
+          </mark>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </>
+  );
+}
+
+// ─── Related keyword chips ────────────────────────────────────────────────────
+
+function RelatedChips({ r, query }: { r: DbSearchResult; query: string }) {
+  const q = query.toLowerCase();
+  const all = [...(r.meta?.skills ?? []), ...(r.meta?.tags ?? [])];
+  // show chips that are NOT already in the query — only matching/related ones
+  const chips = all.filter((t) => {
+    const tl = t.toLowerCase();
+    return tl !== q && !q.includes(tl) && (
+      tl.includes(q) || q.split(/\s+/).some((w) => w.length > 2 && (tl.includes(w) || bigramSimilar(tl, w)))
+    );
+  }).slice(0, 4);
+  if (!chips.length) return null;
+  return (
+    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 3 }}>
+      {chips.map((c) => (
+        <span key={c} style={{ fontSize: 9.5, fontWeight: 500, padding: '1px 6px', borderRadius: 20, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.38)' }}>
+          {c}
         </span>
       ))}
     </div>
   );
 }
 
-// ─── Relevance indicator ──────────────────────────────────────────────────────
-
-function RelevanceScore({ score }: { score?: number }) {
-  if (typeof score !== 'number' || score <= 0) return null;
-  const isHigh = score >= 80;
-  return (
-    <span style={{
-      fontSize: 9,
-      fontWeight: 800,
-      letterSpacing: '0.05em',
-      fontVariantNumeric: 'tabular-nums',
-      flexShrink: 0,
-      lineHeight: 1,
-      color: isHigh ? 'rgba(251,146,60,0.48)' : 'rgba(255,255,255,0.15)',
-    }}>
-      {score}
-    </span>
-  );
+function bigramSimilar(a: string, b: string): boolean {
+  if (a.length < 2 || b.length < 2) return false;
+  const bigrams = (s: string) => { const set = new Set<string>(); for (let i = 0; i < s.length - 1; i++) set.add(s.slice(i, i + 2)); return set; };
+  const ba = bigrams(a); const bb = bigrams(b); let hits = 0;
+  ba.forEach((g) => { if (bb.has(g)) hits++; });
+  return (2 * hits) / (ba.size + bb.size) >= 0.45;
 }
 
-// ─── Card base ────────────────────────────────────────────────────────────────
+// ─── Result row — premium glass design ────────────────────────────────────────
 
-const ENGAGEMENT: Record<string, string> = { one_time: 'One-time', ongoing: 'Ongoing', retainer: 'Retainer' };
-const LOCATION: Record<string, string>   = { remote: 'Remote', hybrid: 'Hybrid', onsite: 'On-site' };
+function ResultRow({ r, onClose, idx, query }: { r: DbSearchResult; onClose: () => void; idx: number; query: string }) {
+  const badge = (r.badge ?? '').toUpperCase();
+  const isPerson = badge === 'PERSON';
+  const isGig    = badge === 'GIG';
+  const bColor   = badgeColor(r.badge);
+  const { Icon, bg, fg } = getIconDef(r);
+  const delay = `${idx * 0.025}s`;
 
-function GigCard({ r, onClose }: { r: DbSearchResult; onClose: () => void }) {
   return (
-    <a href={r.href} onClick={onClose}
-      className="group block rounded-[16px] border border-orange-500/[0.15] bg-orange-500/[0.06] p-3 transition-all hover:border-orange-400/30 hover:bg-orange-500/[0.10]">
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-orange-500/20 text-orange-400">
-            <Briefcase className="h-4 w-4" />
-          </div>
-          <div className="min-w-0">
-            <p className="truncate text-[13px] font-semibold text-white/85">{r.title}</p>
-            <p className="truncate text-[11px] text-white/35">
-              {r.category}{r.meta?.location ? ` · ${LOCATION[r.meta.location] ?? r.meta.location}` : ''}
-            </p>
-          </div>
+    <a
+      href={r.href}
+      onClick={onClose}
+      className="gs-row"
+      style={{
+        display: 'flex', alignItems: 'center', gap: 11,
+        padding: '8px 12px', borderRadius: 12,
+        textDecoration: 'none', cursor: 'pointer',
+        transition: 'background 120ms ease',
+        animation: `gsRowIn 0.20s ${delay} cubic-bezier(0.22,1,0.36,1) both`,
+      }}
+    >
+      {isPerson ? (
+        <Avatar src={r.meta?.avatarUrl} name={r.title} size={34}
+          gradient="linear-gradient(135deg,rgba(139,92,246,0.75),rgba(99,102,241,0.75))" />
+      ) : (
+        <div style={{ width: 34, height: 34, borderRadius: 10, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid rgba(255,255,255,0.06)' }}>
+          <Icon style={{ width: 15, height: 15, color: fg }} />
         </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-1">
-          {r.meta?.urgent && <span className="rounded-full bg-red-500/20 px-2 py-0.5 text-[10px] font-bold text-red-400">URGENT</span>}
-          {r.meta?.budget && <span className="rounded-full bg-orange-500/15 px-2 py-0.5 text-[10px] font-semibold text-orange-300">{r.meta.budget}</span>}
-          {r.meta?.engagement && <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] text-amber-300">{ENGAGEMENT[r.meta.engagement] ?? r.meta.engagement}</span>}
-          <RelevanceScore score={r.relevance} />
-        </div>
-      </div>
-      {r.description && <p className="mt-1.5 pl-11 line-clamp-2 text-[11px] leading-[1.45] text-white/42">{r.description}</p>}
-      {r.meta?.skills && r.meta.skills.length > 0 && <div className="mt-2 pl-11"><SkillChips skills={r.meta.skills} /></div>}
-    </a>
-  );
-}
+      )}
 
-function ProfileCard({ r, onClose }: { r: DbSearchResult; onClose: () => void }) {
-  const initials = r.title.split(' ').map((w) => w[0] ?? '').join('').toUpperCase().slice(0, 2);
-  return (
-    <a href={r.href} onClick={onClose}
-      className="group flex items-start gap-3 rounded-[16px] border border-sky-500/[0.15] bg-sky-500/[0.06] p-3 transition-all hover:border-sky-400/30 hover:bg-sky-500/[0.10]">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sky-500/80 to-blue-600/80 text-[13px] font-bold text-white shadow-lg">
-        {initials || <UserRound className="h-4 w-4" />}
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between gap-2">
-          <p className="truncate text-[13px] font-semibold text-white/85">{r.title}</p>
-          <div className="flex items-center gap-1.5 shrink-0">
-            <RelevanceScore score={r.relevance} />
-            <span className="rounded-full bg-sky-500/15 px-2 py-0.5 text-[10px] font-semibold text-sky-300">{r.category}</span>
-          </div>
-        </div>
-        {r.meta?.headline && <p className="mt-0.5 truncate text-[11px] text-white/35">{r.meta.headline}</p>}
-        {r.meta?.skills && r.meta.skills.length > 0 && <div className="mt-1.5"><SkillChips skills={r.meta.skills} /></div>}
-      </div>
-    </a>
-  );
-}
-
-function PersonCard({ r, onClose }: { r: DbSearchResult; onClose: () => void }) {
-  const initials = r.title.split(' ').map((w) => w[0] ?? '').join('').toUpperCase().slice(0, 2);
-  return (
-    <a href={r.href} onClick={onClose}
-      className="group flex items-start gap-3 rounded-[14px] p-3 transition-all hover:bg-white/[0.04]"
-      style={{ border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.025)' }}>
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500/70 to-indigo-600/70 text-[12px] font-bold text-white shadow-md">
-        {initials || <UserRound className="h-4 w-4" />}
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <p className="truncate text-[13px] font-semibold text-white/85 group-hover:text-white transition-colors">{r.title}</p>
-          {r.meta?.location && (
-            <span className="shrink-0 text-[10px] text-white/28">· {r.meta.location}</span>
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.88)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', letterSpacing: '-0.01em' }}>
+            <Highlight text={r.title} query={query} />
+          </span>
+          {isGig && r.meta?.urgent && (
+            <span style={{ fontSize: 8, fontWeight: 800, color: 'rgba(252,165,165,0.90)', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.20)', borderRadius: 20, padding: '1.5px 5px', flexShrink: 0, letterSpacing: '0.04em' }}>URGENT</span>
+          )}
+          {isGig && r.meta?.budget && (
+            <span style={{ fontSize: 9.5, fontWeight: 650, color: 'rgba(253,186,116,0.85)', background: 'rgba(251,146,60,0.09)', border: '1px solid rgba(251,146,60,0.16)', borderRadius: 20, padding: '1.5px 6px', flexShrink: 0 }}>{r.meta.budget}</span>
           )}
         </div>
-        {r.description && <p className="mt-0.5 line-clamp-2 text-[11px] leading-[1.45] text-white/48">{r.description}</p>}
-        {r.meta?.skills && r.meta.skills.length > 0 && (
-          <div className="mt-1.5 flex flex-wrap gap-1">
-            {r.meta.skills.slice(0, 4).map((s) => (
-              <span key={s} className="rounded-full px-1.5 py-[2px] text-[9.5px] font-medium"
-                style={{ background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.20)', color: 'rgba(196,181,253,0.80)' }}>
-                {s}
-              </span>
-            ))}
-          </div>
-        )}
+        <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.32)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>
+          <Highlight text={r.meta?.headline || r.description} query={query} />
+          {isPerson && r.meta?.location && <span style={{ color: 'rgba(255,255,255,0.22)', marginLeft: 6 }}>{r.meta.location}</span>}
+        </div>
       </div>
-      <div className="flex items-center gap-1.5 shrink-0">
-        <RelevanceScore score={r.relevance} />
-        <ChevronRight className="mt-0.5 h-3.5 w-3.5 text-white/18 transition-transform group-hover:translate-x-0.5" />
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
+        <span style={{ fontSize: 9.5, fontWeight: 600, color: bColor, letterSpacing: '0.04em', opacity: 0.70 }}>{r.category}</span>
+        <ChevronRight style={{ width: 11, height: 11, color: 'rgba(255,255,255,0.14)' }} />
       </div>
     </a>
   );
 }
 
-function GenericCard({ r, onClose, iconCls, Icon }: { r: DbSearchResult; onClose: () => void; iconCls: string; Icon: React.ComponentType<{ className?: string }> }) {
+// ─── Local nav row ────────────────────────────────────────────────────────────
+
+function LocalRow({ item, onClose, idx }: { item: LocalSearchResult; onClose: () => void; idx: number }) {
   return (
-    <a href={r.href} onClick={onClose}
-      className="group flex items-center gap-3 rounded-[16px] border border-white/[0.06] bg-white/[0.03] p-3 transition-all hover:border-white/[0.12] hover:bg-white/[0.055]">
-      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] ${iconCls}`}>
-        <Icon className="h-4 w-4" />
+    <button
+      type="button"
+      onClick={() => { item.onSelect(); onClose(); }}
+      className="gs-row"
+      style={{
+        display: 'flex', alignItems: 'center', gap: 11, width: '100%',
+        padding: '8px 12px', borderRadius: 12, border: 'none', background: 'none',
+        textAlign: 'left', cursor: 'pointer', transition: 'background 120ms ease',
+        animation: `gsRowIn 0.18s ${idx * 0.022}s cubic-bezier(0.22,1,0.36,1) both`,
+      }}
+    >
+      <div style={{ width: 32, height: 32, borderRadius: 9, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <item.Icon className="h-3.5 w-3.5 text-white/45" />
       </div>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-[13px] font-semibold text-white/85">{r.title}</p>
-        <p className="mt-0.5 line-clamp-2 text-[11px] leading-[1.45] text-white/48">{r.description}</p>
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.82)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', letterSpacing: '-0.01em' }}>{item.title}</p>
+        {item.subtitle && <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.30)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>{item.subtitle}</p>}
       </div>
-      <div className="flex items-center gap-1.5 shrink-0">
-        <RelevanceScore score={r.relevance} />
-        {r.badge && <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${badgeCls(r.badge)}`}>{r.badge}</span>}
-      </div>
-    </a>
+      <ChevronRight style={{ width: 11, height: 11, color: 'rgba(255,255,255,0.14)', flexShrink: 0 }} />
+    </button>
   );
 }
 
-function WebSourceCard({ r, onClose }: { r: DbSearchResult; onClose: () => void }) {
-  return (
-    <a href={r.href} onClick={onClose}
-      className="group flex items-center gap-3 rounded-[16px] border border-indigo-500/[0.15] bg-indigo-500/[0.06] p-3 transition-all hover:border-indigo-400/30 hover:bg-indigo-500/[0.10]">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-indigo-500/20 text-indigo-400"><Globe className="h-4 w-4" /></div>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-[13px] font-semibold text-white/85">{r.title}</p>
-        <p className="mt-0.5 line-clamp-2 text-[11px] leading-[1.45] text-white/48">{r.description}</p>
-      </div>
-      <div className="flex items-center gap-1.5 shrink-0">
-        <RelevanceScore score={r.relevance} />
-        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${badgeCls('SOURCE')}`}>SOURCE</span>
-      </div>
-    </a>
-  );
-}
+// ─── Group label ──────────────────────────────────────────────────────────────
 
-function ResultCard({ r, onClose }: { r: DbSearchResult; onClose: () => void }) {
-  const badge = (r.badge ?? '').toUpperCase();
-  if (badge === 'PERSON')                                              return <PersonCard r={r} onClose={onClose} />;
-  if (badge === 'GIG')                                                 return <GigCard r={r} onClose={onClose} />;
-  if (badge === 'RESUME')                                              return <ProfileCard r={r} onClose={onClose} />;
-  if (badge === 'SOURCE')                                              return <WebSourceCard r={r} onClose={onClose} />;
-  if (badge === 'BLOG' || badge === 'KB') {
-    const Icon = badge === 'KB' ? BookOpen : Newspaper;
-    const iconCls = badge === 'KB' ? 'bg-purple-500/20 text-purple-400' : 'bg-teal-500/20 text-teal-400';
-    return <GenericCard r={r} onClose={onClose} iconCls={iconCls} Icon={Icon} />;
-  }
-  if (badge === 'DOC' || badge === 'SIGNED' || badge === 'TPL') {
-    const iconCls = badge === 'SIGNED' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400';
-    return <GenericCard r={r} onClose={onClose} iconCls={iconCls} Icon={FileText} />;
-  }
-  if (badge === 'FILE' || badge === 'PUBLIC' || badge === 'PRIVATE' || r.type === 'file')
-    return <GenericCard r={r} onClose={onClose} iconCls="bg-white/[0.08] text-white/45" Icon={File} />;
-  if (r.type === 'feature' || badge === 'FREE' || badge === 'NEW')
-    return <GenericCard r={r} onClose={onClose} iconCls="bg-white/[0.08] text-white/60" Icon={Sparkles} />;
-  return <GenericCard r={r} onClose={onClose} iconCls="bg-blue-500/20 text-blue-400" Icon={FileText} />;
-}
-
-// ─── Filter definitions ───────────────────────────────────────────────────────
-
-export type SearchFilter = 'all' | 'people' | 'gigs' | 'docs' | 'files';
-
-const FILTERS: Array<{ id: SearchFilter; label: string; badges: string[] }> = [
-  { id: 'all',    label: 'All',      badges: [] },
-  { id: 'people', label: 'People',   badges: ['PERSON', 'RESUME'] },
-  { id: 'gigs',   label: 'Gigs',     badges: ['GIG'] },
-  { id: 'docs',   label: 'Docs',     badges: ['DOC', 'SIGNED', 'TPL', 'BLOG', 'KB'] },
-  { id: 'files',  label: 'Files',    badges: ['FILE', 'PUBLIC', 'PRIVATE', 'SVC'] },
-];
-
-// ─── Group DB results ─────────────────────────────────────────────────────────
-
-const GROUP_ORDER = ['People', 'Gigs', 'Talent', 'Documents', 'Files', 'Knowledge & Blog', 'Web Sources', 'Features & Pages'];
+const GROUP_ORDER = ['People', 'Gigs', 'Documents', 'Feed & Articles', 'Knowledge', 'Web Sources', 'Features & Pages'];
 
 function groupResults(results: DbSearchResult[]) {
   const map: Record<string, DbSearchResult[]> = {};
   for (const r of results) {
-    const badge = (r.badge ?? '').toUpperCase();
-    let label: string;
-    if (badge === 'PERSON') label = 'People';
-    else if (badge === 'GIG') label = 'Gigs';
-    else if (badge === 'RESUME') label = 'Talent';
-    else if (badge === 'DOC' || badge === 'SIGNED' || badge === 'TPL') label = 'Documents';
-    else if (badge === 'FILE' || badge === 'PUBLIC' || badge === 'PRIVATE' || r.type === 'file') label = 'Files';
-    else if (badge === 'BLOG' || badge === 'KB') label = 'Knowledge & Blog';
-    else if (badge === 'SOURCE') label = 'Web Sources';
-    else label = 'Features & Pages';
+    const b = (r.badge ?? '').toUpperCase();
+    let label = 'Features & Pages';
+    if (b === 'PERSON')                                    label = 'People';
+    else if (b === 'GIG')                                  label = 'Gigs';
+    else if (b === 'DOC' || b === 'SIGNED' || b === 'TPL') label = 'Documents';
+    else if (b === 'BLOG' || r.type === 'article')         label = 'Feed & Articles';
+    else if (b === 'KB')                                   label = 'Knowledge';
+    else if (b === 'SOURCE')                               label = 'Web Sources';
     (map[label] ??= []).push(r);
   }
   return GROUP_ORDER.filter((k) => map[k]).map((k) => ({ label: k, items: map[k] }));
 }
 
-// ─── Source cycling loader ────────────────────────────────────────────────────
-
-const SOURCE_PILLS = [
-  { label: 'People',    color: 'rgba(167,139,250,0.92)', bg: 'rgba(139,92,246,0.14)',  border: 'rgba(139,92,246,0.26)' },
-  { label: 'Gigs',      color: 'rgba(253,186,116,0.92)', bg: 'rgba(251,146,60,0.14)',  border: 'rgba(251,146,60,0.26)' },
-  { label: 'Docs',      color: 'rgba(147,197,253,0.92)', bg: 'rgba(96,165,250,0.14)',  border: 'rgba(96,165,250,0.26)' },
-  { label: 'Files',     color: 'rgba(255,255,255,0.55)', bg: 'rgba(255,255,255,0.07)', border: 'rgba(255,255,255,0.12)' },
-  { label: 'Knowledge', color: 'rgba(196,181,253,0.92)', bg: 'rgba(167,139,250,0.14)', border: 'rgba(167,139,250,0.26)' },
-  { label: 'Templates', color: 'rgba(110,231,183,0.92)', bg: 'rgba(52,211,153,0.14)',  border: 'rgba(52,211,153,0.26)' },
-];
-
-function useSourceCycle(active: boolean) {
-  const [idx, setIdx] = useState(0);
-  useEffect(() => {
-    if (!active) return;
-    const t = setInterval(() => setIdx((i) => (i + 1) % SOURCE_PILLS.length), 460);
-    return () => clearInterval(t);
-  }, [active]);
-  return idx;
-}
-
-function LoadingSourceTag({ loading }: { loading: boolean }) {
-  const idx = useSourceCycle(loading);
-  if (!loading) return null;
-  const src = SOURCE_PILLS[idx];
-  return (
-    <span style={{
-      display: 'inline-block', fontSize: 9.5, fontWeight: 700,
-      padding: '2px 8px', borderRadius: 20,
-      background: src.bg, border: `1px solid ${src.border}`, color: src.color,
-      transition: 'color 200ms ease, background 200ms ease, border-color 200ms ease',
-      letterSpacing: '0.01em', whiteSpace: 'nowrap',
-    }}>
-      {src.label}
-    </span>
-  );
-}
-
-function SearchingFromIndicator() {
-  const idx = useSourceCycle(true);
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      {/* Source row */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 9.5, fontWeight: 600, color: 'rgba(255,255,255,0.26)', letterSpacing: '0.05em', flexShrink: 0 }}>
-          Searching from
-        </span>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-          {SOURCE_PILLS.map((s, i) => {
-            const isActive = i === idx;
-            return (
-              <span key={s.label} style={{
-                fontSize: 9.5, fontWeight: 600, padding: '2.5px 9px', borderRadius: 20,
-                background: isActive ? s.bg : 'rgba(255,255,255,0.025)',
-                border: `1px solid ${isActive ? s.border : 'rgba(255,255,255,0.052)'}`,
-                color: isActive ? s.color : 'rgba(255,255,255,0.18)',
-                transition: 'all 240ms cubic-bezier(0.4,0,0.2,1)',
-                transform: isActive ? 'translateY(-1px) scale(1.04)' : 'none',
-              }}>
-                {s.label}
-              </span>
-            );
-          })}
-        </div>
-      </div>
-      {/* Shimmer skeletons */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-        {([0.88, 0.58, 0.36] as number[]).map((opacity, i) => (
-          <div key={i} style={{
-            display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
-            borderRadius: 14, border: '1px solid rgba(255,255,255,0.042)',
-            background: 'rgba(255,255,255,0.018)', opacity,
-          }}>
-            <div className="animate-pulse" style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(255,255,255,0.055)', flexShrink: 0 }} />
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 7 }}>
-              <div className="animate-pulse" style={{ height: 10, borderRadius: 6, background: 'rgba(255,255,255,0.058)', width: `${62 - i * 14}%` }} />
-              <div className="animate-pulse" style={{ height: 8, borderRadius: 5, background: 'rgba(255,255,255,0.034)', width: `${42 - i * 9}%` }} />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ─── Results panel ────────────────────────────────────────────────────────────
-
-interface ResultsPanelProps {
-  query: string;
-  localResults: LocalSearchResult[];
-  grouped: ReturnType<typeof groupResults>;
-  loading: boolean;
-  dbResults: DbSearchResult[];
-  mobileShortcuts: MobileShortcut[];
-  onClose: () => void;
-  activeFilter: SearchFilter;
-  onFilterChange: (f: SearchFilter) => void;
-}
+// ─── Filter chips — minimal pill tabs ────────────────────────────────────────
 
 function FilterChips({ active, onChange }: { active: SearchFilter; onChange: (f: SearchFilter) => void }) {
   return (
-    <div className="flex items-center gap-1.5 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+    <div style={{ display: 'flex', gap: 4, overflowX: 'auto', scrollbarWidth: 'none', padding: '0 12px 10px' }}>
       {FILTERS.map((f) => {
-        const isActive = active === f.id;
+        const on = active === f.id;
         return (
-          <button
-            key={f.id}
-            type="button"
-            onClick={() => onChange(f.id)}
-            className="shrink-0 rounded-full px-2.5 py-[4px] text-[10.5px] font-medium transition-all duration-150"
-            style={{
-              background: isActive ? 'rgba(251,146,60,0.14)' : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${isActive ? 'rgba(251,146,60,0.32)' : 'rgba(255,255,255,0.08)'}`,
-              color: isActive ? 'rgba(253,186,116,0.95)' : 'rgba(255,255,255,0.38)',
-              boxShadow: isActive ? '0 0 8px rgba(251,146,60,0.15)' : 'none',
-            }}
-          >
-            {f.label}
-          </button>
+          <button key={f.id} type="button" onClick={() => onChange(f.id)} style={{
+            flexShrink: 0, borderRadius: 20, padding: '4px 11px',
+            fontSize: 11, fontWeight: on ? 600 : 500,
+            background: on ? 'rgba(255,255,255,0.10)' : 'transparent',
+            border: `1px solid ${on ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.06)'}`,
+            color: on ? 'rgba(255,255,255,0.88)' : 'rgba(255,255,255,0.32)',
+            cursor: 'pointer', transition: 'all 140ms ease',
+            letterSpacing: '-0.005em',
+          }}>{f.label}</button>
         );
       })}
     </div>
   );
 }
 
-function ResultsPanel({ query, localResults, grouped, loading, dbResults, mobileShortcuts, onClose, activeFilter, onFilterChange }: ResultsPanelProps) {
-  const hasQuery = query.trim().length > 0;
+// ─── Main dropdown panel ──────────────────────────────────────────────────────
+
+interface DropdownProps {
+  query: string;
+  localResults: LocalSearchResult[];
+  dbResults: DbSearchResult[];
+  loading: boolean;
+  activeFilter: SearchFilter;
+  onFilterChange: (f: SearchFilter) => void;
+  onClose: () => void;
+  intentHint: { filter: SearchFilter; label: string } | null;
+}
+
+function DropdownPanel({ query, localResults, dbResults, loading, activeFilter, onFilterChange, onClose, intentHint }: DropdownProps) {
+  const grouped = useMemo(() => groupResults(dbResults), [dbResults]);
   const hasLocal = localResults.length > 0;
   const hasDb    = dbResults.length > 0;
-
-  if (!hasQuery) {
-    if (mobileShortcuts.length === 0) {
-      return (
-        <div className="flex flex-col items-center justify-center py-10 gap-2">
-          <Sparkles className="h-6 w-6 text-white/15" />
-          <p className="text-[12px] text-white/25 text-center">Search people, gigs, documents, feeds and more</p>
-        </div>
-      );
-    }
-    return (
-      <div className="space-y-2">
-        <FilterChips active={activeFilter} onChange={onFilterChange} />
-        <p className="px-1 text-[9.5px] font-black uppercase tracking-[0.26em] text-white/20 mb-3 mt-3">Quick access</p>
-        {mobileShortcuts.map((s) => (
-          <button key={s.id} type="button" onClick={() => { s.onSelect(); onClose(); }}
-            className="flex w-full items-center gap-3 rounded-[14px] border border-white/[0.07] bg-white/[0.04] px-4 py-3 text-left transition hover:border-white/[0.12] hover:bg-white/[0.07] active:scale-[0.99]">
-            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] ${s.iconBg ?? 'bg-white/[0.08]'}`}>
-              <s.Icon className={`h-[18px] w-[18px] ${s.iconFg ?? 'text-white/60'}`} />
-            </div>
-            <p className="flex-1 truncate text-[13px] font-semibold text-white/75">{s.label}</p>
-            {s.active
-              ? <span className={`h-2 w-2 shrink-0 rounded-full ${s.dot ?? 'bg-white/30'}`} />
-              : <ChevronRight className="h-4 w-4 shrink-0 text-white/20" />}
-          </button>
-        ))}
-        <p className="text-center text-[11px] text-white/20 pt-2">
-          Type to search across gigs, talent, docs, templates and files
-        </p>
-      </div>
-    );
-  }
-
-  if (!hasLocal && !hasDb && !loading) {
-    return (
-      <div className="rounded-[16px] border border-white/[0.06] bg-white/[0.03] px-5 py-10 text-center">
-        <p className="text-[13px] font-semibold text-white/50">No results for &ldquo;{query}&rdquo;</p>
-        <p className="mt-1.5 text-[11.5px] text-white/25 leading-relaxed">
-          Try a skill, template name, reference number, or feature keyword.
-        </p>
-      </div>
-    );
-  }
+  const hasQuery = query.trim().length > 0;
+  let rowIdx = 0;
 
   return (
-    <div className="space-y-4">
-      {/* Filter chips — always shown when there is a query */}
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+
+      {/* Filter chips */}
       <FilterChips active={activeFilter} onChange={onFilterChange} />
 
-      {/* Local workspace results */}
-      {hasLocal && (
-        <div className="space-y-1" style={{ opacity: loading ? 0.72 : 1, transition: 'opacity 180ms ease' }}>
-          <div className="mb-2.5 flex items-center gap-2.5">
-            <p className="text-[9.5px] font-black uppercase tracking-[0.26em] text-white/20">Workspace</p>
-            <div className="h-px flex-1 bg-white/[0.06]" />
-          </div>
-          {localResults.map((item) => (
-            <button key={item.id} type="button" onClick={() => { item.onSelect(); onClose(); }}
-              className="flex w-full items-center gap-3 rounded-[14px] border border-white/[0.06] bg-white/[0.03] px-3 py-2.5 text-left transition hover:border-white/[0.11] hover:bg-white/[0.055] active:scale-[0.99]">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-white/[0.08] bg-white/[0.05]">
-                <item.Icon className="h-4 w-4 text-white/50" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[13px] font-semibold text-white/80">{item.title}</p>
-                {item.subtitle && <p className="mt-0.5 truncate text-[11px] text-white/35">{item.subtitle}</p>}
-              </div>
-              <ChevronRight className="h-4 w-4 shrink-0 text-white/18" />
-            </button>
-          ))}
-        </div>
+      {/* Intent hint — very subtle */}
+      {intentHint && hasDb && activeFilter === 'all' && (
+        <button type="button" onClick={() => onFilterChange(intentHint.filter)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 8, margin: '0 10px 8px',
+            borderRadius: 10, padding: '7px 12px',
+            border: '1px solid rgba(255,255,255,0.07)',
+            background: 'rgba(255,255,255,0.04)', cursor: 'pointer', textAlign: 'left',
+            transition: 'background 120ms ease',
+            animation: 'gsRowIn 0.22s cubic-bezier(0.22,1,0.36,1) both',
+          }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.07)'; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)'; }}
+        >
+          <Sparkles style={{ width: 11, height: 11, color: 'rgba(255,255,255,0.35)', flexShrink: 0 }} />
+          <span style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.50)', flex: 1 }}>
+            Refine by <strong style={{ fontWeight: 650, color: 'rgba(255,255,255,0.70)' }}>{intentHint.label}</strong>
+          </span>
+          <ChevronRight style={{ width: 11, height: 11, color: 'rgba(255,255,255,0.22)' }} />
+        </button>
       )}
 
-      {/* Loading — animated source indicator */}
-      {loading && !hasDb && <SearchingFromIndicator />}
+      {/* Results */}
+      <div style={{ overflowY: 'auto', maxHeight: 420, scrollbarWidth: 'none', padding: '0 6px 8px' }}>
 
-      {/* DB results grouped — fade slightly while reloading so results never flash blank */}
-      <div style={{ opacity: loading && hasDb ? 0.60 : 1, transition: 'opacity 180ms ease', pointerEvents: loading && hasDb ? 'none' : 'auto' }}>
-        {grouped.map(({ label, items }) => (
-          <div key={label} className="space-y-1.5">
-            <div className="flex items-center gap-2.5">
-              <p className="text-[9.5px] font-black uppercase tracking-[0.26em] text-white/20">{label}</p>
-              <div className="h-px flex-1 bg-white/[0.06]" />
-              <span className="text-[9.5px] tabular-nums text-white/15">{items.length}</span>
+        {hasLocal && (
+          <div style={{ marginBottom: hasDb ? 6 : 0 }}>
+            <p style={{ margin: '0 8px 4px', fontSize: 9.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'rgba(255,255,255,0.20)' }}>Navigation</p>
+            {localResults.map((item) => <LocalRow key={item.id} item={item} onClose={onClose} idx={rowIdx++} />)}
+          </div>
+        )}
+
+        {hasDb && grouped.map(({ label, items }, gi) => (
+          <div key={label} style={{ marginBottom: gi < grouped.length - 1 ? 8 : 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '4px 8px 4px' }}>
+              <span style={{ fontSize: 9.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.22)', whiteSpace: 'nowrap' }}>{label}</span>
+              <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.05)' }} />
+              <span style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.18)', fontVariantNumeric: 'tabular-nums' }}>{items.length}</span>
             </div>
-            {items.map((r) => <ResultCard key={r.id} r={r} onClose={onClose} />)}
+            {items.map((r) => <ResultRow key={r.id} r={r} onClose={onClose} idx={rowIdx++} query={query} />)}
           </div>
         ))}
+
+        {hasQuery && !hasLocal && !hasDb && !loading && (
+          <div style={{ padding: '28px 16px', textAlign: 'center' }}>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.38)', letterSpacing: '-0.01em' }}>No results for &ldquo;{query}&rdquo;</p>
+            <p style={{ margin: '6px 0 0', fontSize: 11.5, color: 'rgba(255,255,255,0.20)', lineHeight: 1.6 }}>Try a different keyword or name</p>
+          </div>
+        )}
+
+        {!hasQuery && !hasLocal && (
+          <div style={{ padding: '22px 16px', textAlign: 'center' }}>
+            <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.22)', letterSpacing: '-0.005em' }}>Search people, gigs, docs, feeds & more</p>
+          </div>
+        )}
       </div>
+
+      {/* Refresh sweep */}
+      {loading && hasDb && (
+        <div style={{ flexShrink: 0, height: 1.5, overflow: 'hidden', background: 'rgba(255,255,255,0.04)' }}>
+          <div style={{ width: '30%', height: '100%', background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.28),transparent)', animation: 'gsSweep 1.1s ease-in-out infinite' }} />
+        </div>
+      )}
     </div>
   );
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
+// ─── Placeholder cycler ───────────────────────────────────────────────────────
 
-const DEFAULT_PLACEHOLDER_CYCLE = [
+const DEFAULT_CYCLE = [
   'Search gigs, people, docs…',
   'Find professionals & talent…',
   'Search documents & files…',
   'Explore feeds & articles…',
-  'Look up templates & tools…',
 ];
+
+// ─── Main component ───────────────────────────────────────────────────────────
 
 const GlobalSearchBar = forwardRef<GlobalSearchBarHandle, GlobalSearchBarProps>(
   function GlobalSearchBar({ getLocalResults, mobileShortcuts = [], className, placeholder, placeholderCycle }, ref) {
-    const [query, setQuery]             = useState('');
-    const [desktopOpen, setDesktopOpen] = useState(false);
-    const [mobileOpen, setMobileOpen]   = useState(false);
-    const [dbResults, setDbResults]     = useState<DbSearchResult[]>([]);
-    const [loading, setLoading]         = useState(false);
-    const [isMounted, setIsMounted]     = useState(false);
-    const [cycleIdx, setCycleIdx]       = useState(0);
-    const [cycleVisible, setCycleVisible] = useState(true);
+
+    const [query,        setQuery]        = useState('');
+    const [desktopOpen,  setDesktopOpen]  = useState(false);
+    const [mobileOpen,   setMobileOpen]   = useState(false);
+    const [dbResults,    setDbResults]    = useState<DbSearchResult[]>([]);
+    const [loading,      setLoading]      = useState(false);
+    const [isMounted,    setIsMounted]    = useState(false);
+    const [cycleIdx,     setCycleIdx]     = useState(0);
     const [activeFilter, setActiveFilter] = useState<SearchFilter>('all');
 
-    const desktopInputRef  = useRef<HTMLInputElement>(null);
-    const mobileInputRef   = useRef<HTMLInputElement>(null);
-    const rootRef          = useRef<HTMLDivElement>(null);
-    const innerRef         = useRef<HTMLDivElement>(null);
-    const portalDropRef    = useRef<HTMLDivElement>(null);
-    const abortRef         = useRef<AbortController | null>(null);
-    const debounceRef      = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const inputDesktopRef = useRef<HTMLInputElement>(null);
+    const inputMobileRef  = useRef<HTMLInputElement>(null);
+    const rootRef         = useRef<HTMLDivElement>(null);
+    const innerRef        = useRef<HTMLDivElement>(null);
+    const portalRef       = useRef<HTMLDivElement>(null);
+    const abortRef        = useRef<AbortController | null>(null);
+    const debounceRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [portalRect, setPortalRect] = useState<{ top: number; left: number; width: number } | null>(null);
 
     useEffect(() => { setIsMounted(true); }, []);
 
-    const cycle = placeholderCycle ?? DEFAULT_PLACEHOLDER_CYCLE;
-    const activePlaceholder = placeholder ?? cycle[cycleIdx];
+    const cycle = placeholderCycle ?? DEFAULT_CYCLE;
 
+    // Cycle placeholder every 2.6s
     useEffect(() => {
-      if (placeholder) return; // static placeholder — no cycling
-      const fade = setInterval(() => {
-        setCycleVisible(false);
-        setTimeout(() => {
-          setCycleIdx((i) => (i + 1) % cycle.length);
-          setCycleVisible(true);
-        }, 320);
-      }, 2800);
-      return () => clearInterval(fade);
+      if (placeholder) return;
+      const id = setInterval(() => setCycleIdx((i) => (i + 1) % cycle.length), 2600);
+      return () => clearInterval(id);
     }, [placeholder, cycle.length]);
 
     const closeAll = useCallback(() => {
       setDesktopOpen(false); setMobileOpen(false);
       setQuery(''); setDbResults([]); setLoading(false); setActiveFilter('all');
+      if (abortRef.current) { abortRef.current.abort(); abortRef.current = null; }
+      if (debounceRef.current) { clearTimeout(debounceRef.current); debounceRef.current = null; }
     }, []);
 
     useImperativeHandle(ref, () => ({
-      open:       () => { setDesktopOpen(true); setTimeout(() => desktopInputRef.current?.focus(), 10); },
-      openMobile: () => { setMobileOpen(true);  setTimeout(() => mobileInputRef.current?.focus(), 10); },
+      open:       () => { setDesktopOpen(true); setTimeout(() => inputDesktopRef.current?.focus(), 10); },
+      openMobile: () => { setMobileOpen(true);  setTimeout(() => inputMobileRef.current?.focus(),  10); },
       close:  closeAll,
-      focus:  () => desktopInputRef.current?.focus(),
+      focus:  () => inputDesktopRef.current?.focus(),
     }));
 
+    // ── Fast fetch with abort, dedupe and cache ──────────────────────────────
     const fetchDb = useCallback((q: string, filter: SearchFilter = 'all') => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
-      // Cancel any in-flight request immediately — no stale results ever land
       if (abortRef.current) { abortRef.current.abort(); abortRef.current = null; }
 
       const trimmed = q.trim();
       if (!trimmed) { setDbResults([]); setLoading(false); return; }
 
-      const cacheKey = `${trimmed}::${filter}`;
-      const cached = getCached(cacheKey);
-      if (cached) { setDbResults(cached); setLoading(false); return; }
+      const key = `${trimmed}::${filter}`;
+      const hit = getCached(key);
+      if (hit) { setDbResults(hit); setLoading(false); return; }
 
-      // ⚡ setLoading only fires AFTER the debounce — rapid typing never triggers the spinner
+      // Only show loading after 120ms — avoids flash for cache hits and very fast responses
+      const loadingTimer = setTimeout(() => setLoading(true), 120);
+
       debounceRef.current = setTimeout(async () => {
-        setLoading(true);
         abortRef.current = new AbortController();
         try {
           const badges = FILTERS.find((f) => f.id === filter)?.badges ?? [];
-          const badgeParam = badges.length ? `&badge=${badges.join(',')}` : '';
-          const res = await fetch(
-            `/api/search?q=${encodeURIComponent(trimmed)}&limit=30${badgeParam}`,
-            { signal: abortRef.current.signal },
-          );
+          const bp = badges.length ? `&badge=${badges.join(',')}` : '';
+          const res = await fetch(`/api/search?q=${encodeURIComponent(trimmed)}&limit=24${bp}`, {
+            signal: abortRef.current.signal,
+          });
           if (!res.ok) throw new Error('search failed');
           const data = await res.json() as { results?: DbSearchResult[] };
           const results = data.results ?? [];
-          setCache(cacheKey, results);
+          setCache(key, results);
           setDbResults(results);
+          trackSearch(trimmed, results.length);
         } catch (err) {
           if (err instanceof Error && err.name === 'AbortError') return;
-          // Keep showing previous results on network error — don't blank the list
-        } finally { setLoading(false); }
-      }, 30);
+          // keep previous results on error — don't blank the list
+        } finally {
+          clearTimeout(loadingTimer);
+          setLoading(false);
+        }
+      }, 180); // 180ms debounce — reduces in-flight requests without feeling sluggish
+
+      return () => clearTimeout(loadingTimer);
     }, []);
 
+    const trackSearch = useSearchTracker(SEARCH_CONTEXTS.GLOBAL);
+
     const handleQueryChange = useCallback((value: string) => {
-      setQuery(value); fetchDb(value, activeFilter);
+      setQuery(value);
+      fetchDb(value, activeFilter);
+      setDesktopOpen(true);
     }, [fetchDb, activeFilter]);
 
     const handleFilterChange = useCallback((f: SearchFilter) => {
@@ -673,258 +593,342 @@ const GlobalSearchBar = forwardRef<GlobalSearchBarHandle, GlobalSearchBarProps>(
       if (query.trim()) fetchDb(query, f);
     }, [fetchDb, query]);
 
-    const localResults = query.trim() ? getLocalResults(query) : [];
-    const grouped = groupResults(dbResults);
+    const localResults  = useMemo(() => query.trim() ? getLocalResults(query) : [], [query, getLocalResults]);
+    const HIDDEN_BADGES = new Set(['RESUME', 'FILE', 'PUBLIC', 'PRIVATE', 'SVC']);
+    const filteredDbResults = useMemo(
+      () => dbResults.filter((r) => !HIDDEN_BADGES.has((r.badge ?? '').toUpperCase()) && r.type !== 'file'),
+      [dbResults], // eslint-disable-line react-hooks/exhaustive-deps
+    );
+    const intentHint    = useMemo(() => {
+      if (query.trim().length < 3) return null;
+      const h = detectIntent(query);
+      return h && h.filter !== activeFilter ? h : null;
+    }, [query, activeFilter]);
 
-    // Track position of the search container for the portalled dropdown
+    // Whether to show the dropdown (only when there are results ready OR we need the filter UI)
+    const hasContent = localResults.length > 0 || filteredDbResults.length > 0 || (!loading && query.trim().length >= 2);
+    const dropdownVisible = desktopOpen && hasContent;
+
+    // Track input bar position for portal
     useEffect(() => {
       if (!desktopOpen || !isMounted) { setPortalRect(null); return; }
       const update = () => {
         if (innerRef.current) {
           const r = innerRef.current.getBoundingClientRect();
-          setPortalRect({ top: r.bottom + 6, left: r.left, width: r.width });
+          setPortalRect({ top: r.bottom + 5, left: r.left, width: r.width });
         }
       };
       update();
       window.addEventListener('resize', update);
       window.addEventListener('scroll', update, true);
-      return () => {
-        window.removeEventListener('resize', update);
-        window.removeEventListener('scroll', update, true);
-      };
+      return () => { window.removeEventListener('resize', update); window.removeEventListener('scroll', update, true); };
     }, [desktopOpen, isMounted]);
 
+    // Click-outside
     useEffect(() => {
       if (!desktopOpen) return;
       const onDown = (e: MouseEvent) => {
-        const inRoot   = rootRef.current?.contains(e.target as Node);
-        const inPortal = portalDropRef.current?.contains(e.target as Node);
-        if (!inRoot && !inPortal) setDesktopOpen(false);
+        if (!rootRef.current?.contains(e.target as Node) && !portalRef.current?.contains(e.target as Node))
+          setDesktopOpen(false);
       };
       window.addEventListener('mousedown', onDown);
       return () => window.removeEventListener('mousedown', onDown);
     }, [desktopOpen]);
 
+    // Escape key
     useEffect(() => {
-      const onKey = (e: KeyboardEvent) => {
-        if (e.key === 'Escape' && (desktopOpen || mobileOpen)) closeAll();
-      };
+      const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && (desktopOpen || mobileOpen)) closeAll(); };
       window.addEventListener('keydown', onKey);
       return () => window.removeEventListener('keydown', onKey);
     }, [desktopOpen, mobileOpen, closeAll]);
 
-    const panelProps: ResultsPanelProps = { query, localResults, grouped, loading, dbResults, mobileShortcuts, onClose: closeAll, activeFilter, onFilterChange: handleFilterChange };
+    const activePlaceholder = placeholder ?? cycle[cycleIdx];
+    const dropProps: DropdownProps = {
+      query, localResults, dbResults: filteredDbResults, loading, activeFilter,
+      onFilterChange: handleFilterChange, onClose: closeAll, intentHint,
+    };
+
+    // Input border glow when actively loading
+    const inputBorder = loading
+      ? '1px solid rgba(251,146,60,0.35)'
+      : desktopOpen
+        ? '1px solid rgba(255,255,255,0.18)'
+        : '1px solid rgba(255,255,255,0.09)';
+
+    const inputShadow = loading
+      ? '0 0 0 3px rgba(251,146,60,0.08), 0 4px 20px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05)'
+      : desktopOpen
+        ? '0 0 0 3px rgba(255,255,255,0.04), 0 4px 20px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05)'
+        : '0 2px 10px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.04)';
 
     return (
       <>
-        {/* ── Desktop: inline bar + dropdown ───────────────────────────────── */}
+        {/* Global styles + keyframes */}
+        {isMounted && (
+          <style>{`
+            .gs-row:hover { background: rgba(255,255,255,0.055) !important; }
+            .gs-row:active { background: rgba(255,255,255,0.038) !important; }
+            @keyframes gsRowIn  { from { opacity:0; transform: translateY(4px); } to { opacity:1; transform:none; } }
+            @keyframes gsSweep  { 0%,100%{transform:translateX(-100%)} 50%{transform:translateX(400%)} }
+            @keyframes gsPulse  { 0%,100%{opacity:0.4} 50%{opacity:1} }
+            @keyframes gsBarSweep { 0%{transform:translateX(-120%)} 100%{transform:translateX(450%)} }
+            @keyframes gsFadeIn { from{opacity:0;transform:translateY(-6px) scale(0.98)} to{opacity:1;transform:none} }
+          `}</style>
+        )}
+
+        {/* ── Desktop bar ── */}
         <div
           ref={rootRef}
           className={`hidden min-w-0 flex-1 px-2 md:flex md:items-center md:justify-center ${className ?? ''}`}
           data-global-search-root
         >
-          <div ref={innerRef} className="relative w-full max-w-[620px]">
-            {/* Search icon */}
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-[14px] w-[14px] -translate-y-1/2 z-10 transition-colors duration-200"
-              style={{ color: desktopOpen ? 'rgba(255,255,255,0.50)' : 'rgba(255,255,255,0.32)' }} />
+          <div ref={innerRef} className="relative w-full max-w-[560px]">
 
-            {/* Input — native placeholder */}
-            <input
-              ref={desktopInputRef}
-              value={query}
-              onChange={(e) => { handleQueryChange(e.target.value); setDesktopOpen(true); }}
-              onFocus={() => setDesktopOpen(true)}
-              onKeyDown={(e) => { if (e.key === 'Escape') closeAll(); }}
-              placeholder={activePlaceholder}
-              className="h-[38px] w-full rounded-full pl-[38px] pr-[80px] text-[13px] font-medium text-white/85 outline-none transition-all duration-200 [&::placeholder]:text-white/38"
+            {/* Search icon */}
+            <Search
               style={{
-                background: desktopOpen ? 'rgba(255,255,255,0.065)' : 'rgba(255,255,255,0.045)',
-                border: desktopOpen
-                  ? '1px solid rgba(255,255,255,0.18)'
-                  : '1px solid rgba(255,255,255,0.09)',
-                backdropFilter: 'blur(28px) saturate(1.5)',
-                WebkitBackdropFilter: 'blur(28px) saturate(1.5)',
-                boxShadow: desktopOpen
-                  ? '0 0 0 3px rgba(251,146,60,0.07), 0 8px 32px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.06)'
-                  : '0 2px 10px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.04)',
+                position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
+                width: 14, height: 14, pointerEvents: 'none', zIndex: 10,
+                color: loading ? 'rgba(251,146,60,0.60)' : desktopOpen ? 'rgba(255,255,255,0.50)' : 'rgba(255,255,255,0.32)',
+                transition: 'color 200ms ease',
               }}
             />
 
-            {/* ⌘K / loading badge */}
-            <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 rounded-full px-2 py-[4px]"
-              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}>
-              {loading
-                ? <Loader2 className="h-[9px] w-[9px] animate-spin text-white/35" />
-                : <>
-                    <span className="text-[9.5px] font-semibold text-white/28 tracking-[0.04em]">⌘</span>
-                    <span className="text-[9.5px] font-semibold text-white/28 tracking-[0.04em]">K</span>
-                  </>}
+            {/* Input */}
+            <input
+              ref={inputDesktopRef}
+              value={query}
+              onChange={(e) => handleQueryChange(e.target.value)}
+              onFocus={() => setDesktopOpen(true)}
+              onKeyDown={(e) => { if (e.key === 'Escape') closeAll(); }}
+              placeholder={activePlaceholder}
+              className="[&::placeholder]:text-white/35"
+              style={{
+                height: 38, width: '100%', borderRadius: 999,
+                paddingLeft: 38, paddingRight: 72,
+                fontSize: 13, fontWeight: 500,
+                color: 'rgba(255,255,255,0.85)',
+                outline: 'none',
+                background: (desktopOpen || loading) ? 'rgba(255,255,255,0.065)' : 'rgba(255,255,255,0.045)',
+                border: inputBorder,
+                backdropFilter: 'blur(28px) saturate(1.5)',
+                WebkitBackdropFilter: 'blur(28px) saturate(1.5)',
+                boxShadow: inputShadow,
+                transition: 'border 200ms ease, box-shadow 200ms ease, background 200ms ease',
+              }}
+            />
+
+            {/* Loading sweep line on input */}
+            {loading && (
+              <div style={{
+                position: 'absolute', bottom: 0, left: 14, right: 14,
+                height: 1.5, borderRadius: 99, overflow: 'hidden',
+                background: 'rgba(255,255,255,0.06)',
+              }}>
+                <div style={{
+                  position: 'absolute', width: '40%', height: '100%',
+                  background: 'linear-gradient(90deg,transparent,rgba(251,146,60,0.70),rgba(253,186,116,0.50),transparent)',
+                  animation: 'gsBarSweep 0.95s cubic-bezier(0.4,0,0.6,1) infinite',
+                }} />
+              </div>
+            )}
+
+            {/* Right pill: ⌘K or dots-loading */}
+            <div style={{
+              position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+              display: 'flex', alignItems: 'center', gap: 2.5,
+              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)',
+              borderRadius: 999, padding: '3px 8px',
+            }}>
+              {loading ? (
+                /* Three pulsing dots */
+                [0, 1, 2].map((i) => (
+                  <div key={i} style={{
+                    width: 4, height: 4, borderRadius: '50%',
+                    background: 'rgba(251,146,60,0.65)',
+                    animation: `gsPulse 1.0s ${i * 0.18}s ease-in-out infinite`,
+                  }} />
+                ))
+              ) : (
+                <>
+                  <span style={{ fontSize: 9.5, fontWeight: 600, color: 'rgba(255,255,255,0.28)', letterSpacing: '0.04em' }}>⌘</span>
+                  <span style={{ fontSize: 9.5, fontWeight: 600, color: 'rgba(255,255,255,0.28)', letterSpacing: '0.04em' }}>K</span>
+                </>
+              )}
             </div>
           </div>
         </div>
 
-        {/* ── Mobile: full-screen overlay ───────────────────────────────────── */}
-        {/* ── Keyframes for loading bar sweep ──────────────────────────────── */}
-        {isMounted && (
-          <style>{`
-            @keyframes gsBarSweep {
-              0%   { transform: translateX(-100%); }
-              100% { transform: translateX(400%); }
-            }
-          `}</style>
-        )}
-
-        {/* ── Desktop: portalled dropdown (escapes header stacking context) ── */}
-        {isMounted && desktopOpen && portalRect && createPortal(
+        {/* ── Desktop portalled dropdown — only when content is ready ── */}
+        {isMounted && dropdownVisible && portalRect && createPortal(
           <div
-            ref={portalDropRef}
+            ref={portalRef}
             style={{
               position: 'fixed',
               top: portalRect.top,
               left: portalRect.left,
               width: portalRect.width,
               zIndex: 9980,
-              borderRadius: 22,
-              overflow: 'hidden',          /* clips the loading bar to rounded corners */
-              background: 'rgba(9,9,13,0.97)',
-              border: '1px solid rgba(255,255,255,0.10)',
-              backdropFilter: 'blur(48px) saturate(1.8)',
-              WebkitBackdropFilter: 'blur(48px) saturate(1.8)',
-              boxShadow: '0 28px 72px rgba(0,0,0,0.82), 0 4px 20px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.07)',
-              display: 'flex',
-              flexDirection: 'column',
+              borderRadius: 18,
+              overflow: 'hidden',
+              background: 'rgba(9,9,12,0.82)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              backdropFilter: 'blur(64px) saturate(2)',
+              WebkitBackdropFilter: 'blur(64px) saturate(2)',
+              boxShadow: '0 24px 64px rgba(0,0,0,0.70), 0 4px 16px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.06)',
+              animation: 'gsFadeIn 0.18s cubic-bezier(0.22,1,0.36,1) both',
+              paddingTop: 10,
             }}
           >
-            {/* ── Loading bar — fixed at top, never scrolls ── */}
-            <div style={{
-              flexShrink: 0, height: 2, width: '100%', overflow: 'hidden',
-              background: 'rgba(255,255,255,0.04)',
-              opacity: loading ? 1 : 0,
-              transition: 'opacity 250ms ease',
-            }}>
-              <div style={{
-                width: '35%', height: '100%',
-                background: 'linear-gradient(90deg, transparent, rgba(251,146,60,0.75), rgba(253,186,116,0.55), transparent)',
-                animation: 'gsBarSweep 1.1s cubic-bezier(0.4,0,0.6,1) infinite',
-              }} />
-            </div>
-
-            {/* ── Scrollable content ── */}
-            <div style={{ maxHeight: 558, overflowY: 'auto', overflowX: 'hidden', padding: 12, scrollbarWidth: 'none' as const }}>
-              {/* Header */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12, paddingBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.055)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-                  <div style={{ position: 'relative', width: 11, height: 11, flexShrink: 0 }}>
-                    <Sparkles style={{ position: 'absolute', inset: 0, width: 11, height: 11, color: 'rgba(251,146,60,0.50)', transition: 'opacity 200ms ease', opacity: loading ? 0 : 1 }} />
-                    <Loader2 style={{ position: 'absolute', inset: 0, width: 11, height: 11, color: 'rgba(251,146,60,0.55)', animation: 'spin 0.75s linear infinite', transition: 'opacity 200ms ease', opacity: loading ? 1 : 0 }} />
-                  </div>
-                  <div style={{ position: 'relative', overflow: 'hidden', minWidth: 0, flex: 1 }}>
-                    {/* Static label — always present, fades when loading */}
-                    <p style={{ fontSize: 10.5, fontWeight: 500, letterSpacing: '0.03em', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', transition: 'opacity 200ms ease, color 200ms ease', color: loading ? 'rgba(255,255,255,0.24)' : 'rgba(255,255,255,0.34)', opacity: loading ? 0 : 1, position: loading ? 'absolute' : 'static' }}>
-                      {query.trim() ? `Results for "${query.trim()}"` : 'Search gigs, people, docs, feeds & more'}
-                    </p>
-                    {/* Searching-from label — fades in when loading */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, transition: 'opacity 200ms ease', opacity: loading ? 1 : 0, position: loading ? 'static' : 'absolute', pointerEvents: loading ? 'auto' : 'none' }}>
-                      <span style={{ fontSize: 10.5, fontWeight: 500, color: 'rgba(255,255,255,0.26)', letterSpacing: '0.03em', whiteSpace: 'nowrap' }}>
-                        Searching from
-                      </span>
-                      <LoadingSourceTag loading={loading} />
-                    </div>
-                  </div>
-                </div>
-                <button type="button" onClick={closeAll}
-                  style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.22)', letterSpacing: '0.08em', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', borderRadius: 6, flexShrink: 0 }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.55)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.22)')}>
-                  ESC
-                </button>
-              </div>
-              <ResultsPanel {...panelProps} />
-            </div>
+            <DropdownPanel {...dropProps} />
           </div>,
           document.body,
         )}
 
+        {/* ── Mobile overlay — premium full-height panel from header ── */}
         {isMounted && mobileOpen && createPortal(
           <>
+            <style>{`
+              @keyframes gsm-backdrop { from{opacity:0} to{opacity:1} }
+              @keyframes gsm-panel    { from{opacity:0;transform:translateY(-12px) scale(0.98)} to{opacity:1;transform:none} }
+              @keyframes gsm-row      { from{opacity:0;transform:translateX(-6px)} to{opacity:1;transform:none} }
+              .gsm-row { transition: background 0.12s ease; -webkit-tap-highlight-color: transparent; }
+              .gsm-row:active { background: rgba(255,255,255,0.07) !important; transform: scale(0.985); transition-duration:0.06s; }
+            `}</style>
+
             {/* Backdrop */}
-            <button type="button" aria-label="Close search" onClick={closeAll} className="md:hidden"
-              style={{
-                position: 'fixed', inset: 0, zIndex: 9998,
-                background: 'rgba(0,0,0,0.65)',
-                backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-                border: 'none', cursor: 'pointer',
-              }}
+            <div
+              onClick={closeAll}
+              style={{ position:'fixed', inset:0, zIndex:9998, background:'rgba(0,0,0,0.68)', backdropFilter:'blur(10px)', WebkitBackdropFilter:'blur(10px)', animation:'gsm-backdrop 0.18s ease both' }}
             />
 
-            {/* Panel */}
-            <div className="md:hidden" data-global-search-root
+            {/* Panel — drops from just below the nav bar */}
+            <div
               style={{
-                position: 'fixed', left: 12, right: 12, top: 80, bottom: 96,
+                position: 'fixed', left: 0, right: 0, top: 56,
+                bottom: 'env(safe-area-inset-bottom, 0px)',
                 zIndex: 9999, display: 'flex', flexDirection: 'column',
-                overflow: 'hidden', borderRadius: 24,
-                border: '1px solid rgba(255,255,255,0.10)',
-                background: 'rgba(10,10,14,0.93)',
-                boxShadow: '0 32px 80px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.07)',
-                backdropFilter: 'blur(48px) saturate(1.6)',
-                WebkitBackdropFilter: 'blur(48px) saturate(1.6)',
+                background: 'rgba(7,7,10,0.97)',
+                backdropFilter: 'blur(52px) saturate(1.8)',
+                WebkitBackdropFilter: 'blur(52px) saturate(1.8)',
+                borderBottom: '1px solid rgba(255,255,255,0.06)',
+                boxShadow: '0 32px 80px rgba(0,0,0,0.85)',
+                animation: 'gsm-panel 0.22s cubic-bezier(0.22,1,0.36,1) both',
+                overflow: 'hidden',
               }}
             >
-              {/* Mobile loading bar */}
-              <div style={{ flexShrink: 0, height: 2, width: '100%', overflow: 'hidden', background: 'rgba(255,255,255,0.04)', opacity: loading ? 1 : 0, transition: 'opacity 250ms ease' }}>
-                <div style={{ width: '35%', height: '100%', background: 'linear-gradient(90deg, transparent, rgba(251,146,60,0.75), rgba(253,186,116,0.55), transparent)', animation: 'gsBarSweep 1.1s cubic-bezier(0.4,0,0.6,1) infinite' }} />
+              {/* Thin amber progress bar */}
+              <div style={{ height: 2, flexShrink: 0, background: 'rgba(255,255,255,0.04)', overflow: 'hidden' }}>
+                {loading && <div style={{ height: '100%', width: '40%', background: 'linear-gradient(90deg,transparent,rgba(251,146,60,0.80),transparent)', animation: 'gsBarSweep 0.9s cubic-bezier(0.4,0,0.6,1) infinite' }} />}
               </div>
-              {/* Header */}
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 10,
-                borderBottom: '1px solid rgba(255,255,255,0.06)',
-                background: 'rgba(255,255,255,0.02)',
-                padding: '10px 12px',
-              }}>
-                {/* Search icon pill */}
-                <div style={{
-                  flexShrink: 0, width: 36, height: 36, borderRadius: 12,
-                  background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  {loading
-                    ? <Loader2 style={{ width: 14, height: 14, color: 'rgba(255,255,255,0.35)', animation: 'spin 1s linear infinite' }} />
-                    : <Sparkles style={{ width: 14, height: 14, color: 'rgba(255,255,255,0.35)' }} />}
-                </div>
 
+              {/* Search input row */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
+                <div style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Search style={{ width: 15, height: 15, color: loading ? 'rgba(251,146,60,0.70)' : 'rgba(255,255,255,0.40)' }} />
+                </div>
                 <input
-                  ref={mobileInputRef}
+                  ref={inputMobileRef}
                   value={query}
                   onChange={(e) => handleQueryChange(e.target.value)}
                   placeholder={activePlaceholder}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck={false}
                   style={{
-                    flex: 1, height: 40, borderRadius: 12, outline: 'none',
-                    border: '1px solid rgba(255,255,255,0.09)',
-                    background: 'rgba(255,255,255,0.05)',
-                    backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-                    paddingLeft: 14, paddingRight: 14,
-                    fontSize: 14, fontWeight: 500,
-                    color: 'rgba(255,255,255,0.80)',
+                    flex: 1, background: 'transparent', border: 'none', outline: 'none',
+                    fontSize: 17, fontWeight: 500, color: 'rgba(255,255,255,0.90)',
+                    caretColor: 'rgba(251,146,60,0.80)', fontFamily: 'inherit', letterSpacing: '-0.01em',
                   }}
                 />
-
-                <button type="button" onClick={closeAll} aria-label="Close search"
-                  style={{
-                    flexShrink: 0, width: 36, height: 36, borderRadius: 12,
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    background: 'rgba(255,255,255,0.04)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: 'pointer', color: 'rgba(255,255,255,0.35)',
-                  }}
+                {query && (
+                  <button
+                    type="button"
+                    onClick={() => handleQueryChange('')}
+                    style={{ width: 28, height: 28, borderRadius: 8, border: 'none', background: 'rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, color: 'rgba(255,255,255,0.45)' }}
+                  >
+                    <X style={{ width: 12, height: 12 }} />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={closeAll}
+                  style={{ height: 34, borderRadius: 9, border: '1px solid rgba(255,255,255,0.09)', background: 'rgba(255,255,255,0.04)', padding: '0 12px', cursor: 'pointer', flexShrink: 0, fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.45)', letterSpacing: '-0.01em' }}
                 >
-                  <X style={{ width: 15, height: 15 }} />
+                  Cancel
                 </button>
               </div>
 
-              {/* Results */}
-              <div style={{ flex: 1, overflowY: 'auto', padding: 12, scrollbarWidth: 'none' }}>
-                <ResultsPanel {...panelProps} />
+              {/* Scrollable results */}
+              <div style={{ flex: 1, overflowY: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
+                {/* Loading skeleton */}
+                {loading && !dbResults.length && query.trim().length > 0 && (
+                  <div style={{ padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {[1, 0.8, 0.6].map((op, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{ width: 38, height: 38, borderRadius: 11, background: `rgba(255,255,255,${op * 0.06})`, flexShrink: 0 }} />
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          <div style={{ height: 13, borderRadius: 5, background: `rgba(255,255,255,${op * 0.07})`, width: `${60 + i * 12}%` }} />
+                          <div style={{ height: 10, borderRadius: 4, background: `rgba(255,255,255,${op * 0.04})`, width: `${40 + i * 8}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Empty state — quick links */}
+                {!query.trim() && (
+                  <div style={{ padding: '16px 14px' }}>
+                    <p style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.22)', marginBottom: 10, paddingLeft: 2 }}>Quick Access</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      {([
+                        { label: 'Feed',               sub: 'Browse published content',     href: '/published',  Icon: Globe },
+                        { label: 'People',             sub: 'Discover professionals',       href: '/people',     Icon: UserRound },
+                        { label: 'E-Sign Studio',      sub: 'Create & sign documents',      href: '/esign',      Icon: FileSignature },
+                        { label: 'Gigs',               sub: 'Find & post opportunities',    href: '/gigs',       Icon: Briefcase },
+                        { label: 'My Documents',       sub: 'Your document workspace',      href: '/documents',  Icon: FileText },
+                      ] as Array<{ label:string; sub:string; href:string; Icon: React.ComponentType<{style?:React.CSSProperties}> }>).map(({ label, sub, href, Icon }, i) => (
+                        <a
+                          key={href}
+                          href={href}
+                          onClick={closeAll}
+                          className="gsm-row"
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 13, padding: '11px 10px',
+                            borderRadius: 14, textDecoration: 'none',
+                            animation: `gsm-row 0.22s ${i * 0.04}s cubic-bezier(0.22,1,0.36,1) both`,
+                          }}
+                        >
+                          <div style={{ width: 40, height: 40, borderRadius: 12, flexShrink: 0, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Icon style={{ width: 17, height: 17, color: 'rgba(255,255,255,0.40)' } as React.CSSProperties} />
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 14.5, fontWeight: 600, color: 'rgba(255,255,255,0.82)', letterSpacing: '-0.01em', lineHeight: 1.2 }}>{label}</div>
+                            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.30)', marginTop: 2, lineHeight: 1.3 }}>{sub}</div>
+                          </div>
+                          <ChevronRight style={{ width: 14, height: 14, color: 'rgba(255,255,255,0.16)', flexShrink: 0 } as React.CSSProperties} />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Results from GlobalSearchBar engine */}
+                {query.trim() && (
+                  <div style={{ paddingTop: 8, paddingBottom: 24 }}>
+                    <DropdownPanel {...dropProps} />
+                  </div>
+                )}
               </div>
+
+              {/* Bottom hint */}
+              {!query.trim() && (
+                <div style={{ padding: '10px 16px', borderTop: '1px solid rgba(255,255,255,0.05)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  <Search style={{ width: 10, height: 10, color: 'rgba(255,255,255,0.18)' } as React.CSSProperties} />
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.20)', letterSpacing: '0.02em' }}>Search documents, people, gigs and more</span>
+                </div>
+              )}
             </div>
           </>,
           document.body,

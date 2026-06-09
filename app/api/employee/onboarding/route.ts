@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthSession } from '@/lib/server/auth';
-import { createAccessEvent, getHistoryEntries, updateHistoryEntry } from '@/lib/server/history';
+import { createAccessEvent, getHistoryEntries, getHistoryEntryById, updateHistoryEntry } from '@/lib/server/history';
+import { getDbPool } from '@/lib/server/database';
+import { selectHistoryRowsForUser } from '@/lib/server/db/history-rows';
 import { deriveOnboardingProgress, deriveOnboardingStage } from '@/lib/server/onboarding';
 import { SubmittedDocument } from '@/types/document';
 
@@ -17,9 +19,12 @@ export async function GET() {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const history = await getHistoryEntries();
+    const userEmail = (session?.user?.email || '').toLowerCase();
+    const entries = getDbPool()
+      ? await selectHistoryRowsForUser({ role: 'employee', email: userEmail, orgId: null })
+      : await getHistoryEntries();
     return NextResponse.json(
-      history.filter((entry) => entry.employeeEmail?.toLowerCase() === (session?.user?.email || '').toLowerCase() && entry.onboardingRequired),
+      entries.filter((entry) => entry.employeeEmail?.toLowerCase() === userEmail && entry.onboardingRequired),
     );
   } catch (error) {
     console.error(error);
@@ -44,8 +49,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Document id is required' }, { status: 400 });
     }
 
-    const history = await getHistoryEntries();
-    const current = history.find((entry) => entry.id === payload.id);
+    const current = await getHistoryEntryById(payload.id);
     if (!current) {
       return NextResponse.json({ error: 'Onboarding record not found' }, { status: 404 });
     }

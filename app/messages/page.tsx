@@ -59,6 +59,7 @@ import {
   PhoneCall,
   ChevronUp as ChevronUpIcon,
 } from 'lucide-react';
+import InfinityUpgradeModal from '@/components/InfinityUpgradeModal';
 
 /* ─── Types ─────────────────────────────────────────────── */
 interface ChatMeta {
@@ -1543,6 +1544,7 @@ function MessagesPageInner() {
   const [autoReplySettings, setAutoReplySettings] = useState<AutoReplySettings | null>(null);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
   const [activeBizPicker, setActiveBizPicker] = useState<BizCategory | null>(null);
+  const [showInfinityModal, setShowInfinityModal] = useState(false);
   const EMPTY_BIZ_PROFILE: BusinessProfile = { catalogues: [], meetings: [], payments: [], contacts: [] };
   const [businessProfile, setBusinessProfile] = useState<BusinessProfile>(EMPTY_BIZ_PROFILE);
 
@@ -1582,6 +1584,7 @@ function MessagesPageInner() {
   const loadConversations = useCallback(async () => {
     try {
       const r = await fetch('/api/messages');
+      if (r.status === 403) { const d = await r.json().catch(() => ({})); if ((d as {code?:string}).code === 'INFINITY_REQUIRED') { setShowInfinityModal(true); return; } }
       if (!r.ok) return;
       const d = await r.json() as { conversations: Conversation[]; requests: Conversation[] };
       const allActive = d.conversations ?? [];
@@ -1912,6 +1915,7 @@ function MessagesPageInner() {
     setShowNewChat(false);
     try {
       const r = await fetch('/api/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ toUserId: user.id, ...(source ? { source } : {}) }) });
+      if (r.status === 403) { const d = await r.json().catch(() => ({})); if ((d as {code?:string}).code === 'INFINITY_REQUIRED') { setShowInfinityModal(true); return; } }
       if (!r.ok) return;
       const d = await r.json() as { conversation: Conversation & { otherUser?: OtherUser } };
       const conv = d.conversation;
@@ -2020,6 +2024,7 @@ function MessagesPageInner() {
 
   return (
     <>
+      {showInfinityModal && <InfinityUpgradeModal feature="chat" onClose={() => setShowInfinityModal(false)} returnTo="/messages" />}
       <style>{`
         body { overflow: hidden; }
         /* Prevent iOS Safari from zooming on input focus */
